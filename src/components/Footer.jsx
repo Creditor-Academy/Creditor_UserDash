@@ -173,18 +173,36 @@ const Footer = () => (
           
           </address>
 
-          <div style={{ marginTop: 10, fontWeight: 600 }}>
-            <a href="mailto:counselor@lmsathena.com" style={styles.link}>
-            admin@lmsathena.com
-            </a>
-          </div>
+          <div style={{ marginTop: 10, fontWeight: 600, pointerEvents: "auto" }}>
+  <a
+    href="mailto:admin@lmsathena.com"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "#225e95",
+      textDecoration: "none",
+      cursor: "pointer",
+      pointerEvents: "auto",
+    }}
+  >
+    admin@lmsathena.com
+  </a>
+</div>
 
-          <div style={{ marginTop: 6 }}>
-            <a href="tel:+919811773207" style={{ ...styles.link, color: "#225e95" }}>
-            +91 9811773207
-            </a>
-          </div>
-        </div>
+<div style={{ marginTop: 6, pointerEvents: "auto" }}>
+  <a
+    href="tel:+919811773207"
+    style={{
+      color: "#225e95",
+      textDecoration: "none",
+      cursor: "pointer",
+      pointerEvents: "auto",
+    }}
+  >
+    +91 9811773207
+  </a>
+</div>
+  </div>
 
         {/* Column 3 - Links */}
         <div style={styles.col} aria-labelledby="footer-links-main">
