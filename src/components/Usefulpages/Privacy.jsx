@@ -123,10 +123,10 @@ const Privacy = () => {
                   organizations and experts create and analyze learning
                   experiences. For questions, contact us at{' '}
                   <a
-                    href="mailto:counselor@lmsathena.com"
+                    href="mailto:admin@lmsathena.com"
                     className="text-sky-700 underline"
                   >
-                    counselor@lmsathena.com
+                    admin@lmsathena.com
                   </a>
                   .
                 </p>
@@ -273,10 +273,10 @@ const Privacy = () => {
                 <p className="text-slate-700">
                   For any privacy-related questions, contact us at{' '}
                   <a
-                    href="mailto:counselor@lmsathena.com"
+                    href="mailto:admin@lmsathena.com"
                     className="underline text-sky-700"
                   >
-                    counselor@lmsathena.com
+                    admin@lmsathena.com
                   </a>{' '}
                   or write to:
                 </p>
@@ -285,7 +285,7 @@ const Privacy = () => {
                   <br />
                   Kirkland, Washington, USA
                   <br />
-                  GF-41, Omaxe Square, Jasola District Centre, New Delhi -
+                  GF-20, Omaxe Square, Jasola District Centre, New Delhi -
                   110025
                 </address>
 
@@ -297,7 +297,7 @@ const Privacy = () => {
                     {copied ? 'Link copied!' : 'Copy contact link'}
                   </button>
                   <a
-                    href="mailto:counselor@lmsathena.com"
+                    href="mailto:admin@lmsathena.com"
                     className="text-sm underline text-sky-600"
                   >
                     Email support
