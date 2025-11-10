@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, expect } from 'vitest';
 
 // Mock Node.js inspector modules to prevent compatibility issues
 vi.mock('node:inspector/promises', () => ({}));
@@ -11,8 +11,59 @@ vi.mock('node:util', () => ({
   format: vi.fn(),
 }));
 
-// Import jest-dom after setting up mocks
-import '@testing-library/jest-dom';
+// Manually add essential DOM matchers to avoid jest-dom import issues
+if (typeof expect !== 'undefined' && expect.extend) {
+  expect.extend({
+    toBeInTheDocument(received) {
+      const pass = received && document.body.contains(received);
+      return {
+        message: () =>
+          `expected element ${pass ? 'not ' : ''}to be in the document`,
+        pass,
+      };
+    },
+    toHaveTextContent(received, expected) {
+      const pass =
+        received &&
+        received.textContent &&
+        received.textContent.includes(expected);
+      return {
+        message: () =>
+          `expected element ${pass ? 'not ' : ''}to have text content "${expected}"`,
+        pass,
+      };
+    },
+    toHaveClass(received, expected) {
+      const pass =
+        received && received.classList && received.classList.contains(expected);
+      return {
+        message: () =>
+          `expected element ${pass ? 'not ' : ''}to have class "${expected}"`,
+        pass,
+      };
+    },
+    toBeDisabled(received) {
+      const pass =
+        received && (received.disabled || received.hasAttribute('disabled'));
+      return {
+        message: () => `expected element ${pass ? 'not ' : ''}to be disabled`,
+        pass,
+      };
+    },
+    toHaveAttribute(received, attribute, value) {
+      const hasAttribute = received && received.hasAttribute(attribute);
+      const pass =
+        value !== undefined
+          ? hasAttribute && received.getAttribute(attribute) === value
+          : hasAttribute;
+      return {
+        message: () =>
+          `expected element ${pass ? 'not ' : ''}to have attribute "${attribute}"${value ? ` with value "${value}"` : ''}`,
+        pass,
+      };
+    },
+  });
+}
 
 // Make Jest globals available for compatibility
 global.jest = {
