@@ -11,6 +11,20 @@ export default defineConfig({
     css: true,
     testTimeout: 10000,
     hookTimeout: 10000,
+    coverage: {
+      provider: 'v8',
+      exclude: [
+        'node_modules/**',
+        'src/test/**',
+        '**/*.test.{js,jsx,ts,tsx}',
+        '**/*.spec.{js,jsx,ts,tsx}',
+        'coverage/**',
+        'dist/**',
+        '.next/**',
+        'build/**',
+      ],
+      reporter: ['text', 'json', 'html'],
+    },
   },
   resolve: {
     alias: {
@@ -20,5 +34,11 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': '"test"',
     global: 'globalThis',
+  },
+  optimizeDeps: {
+    exclude: ['@testing-library/jest-dom'],
+  },
+  ssr: {
+    noExternal: [],
   },
 });
