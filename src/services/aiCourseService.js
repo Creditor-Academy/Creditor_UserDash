@@ -781,9 +781,58 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
     // Use OpenAI service directly
     const result = await openAIService.generateCourseImage(prompt, options);
 
-    if (result.success) {
+    if (result.success && result.data?.url) {
       console.log('✅ Image generation successful with OpenAI DALL-E');
-      return result;
+
+      // Now upload the generated image to S3
+      const imageUrl = result.data.url;
+      console.log('🔄 Uploading AI-generated image to S3...', imageUrl);
+
+      try {
+        // Use AI upload service for AI-generated images
+        const uploadResponse = await uploadAIGeneratedImage(imageUrl, {
+          public: true,
+          folder: options.folder || 'course-thumbnails',
+        });
+
+        if (uploadResponse && uploadResponse.imageUrl) {
+          console.log('✅ AI image uploaded to S3:', uploadResponse.imageUrl);
+
+          return {
+            success: true,
+            data: {
+              originalUrl: imageUrl,
+              s3Url: uploadResponse.imageUrl,
+              url: uploadResponse.imageUrl, // Use S3 URL as primary
+              model: result.data.model,
+              size: result.data.size,
+              provider: 'openai',
+              uploadedToS3: true,
+              folder: options.folder || 'course-thumbnails',
+            },
+          };
+        } else {
+          console.warn('⚠️ S3 upload failed, using original URL');
+          return {
+            ...result,
+            data: {
+              ...result.data,
+              s3Url: null,
+              uploadedToS3: false,
+            },
+          };
+        }
+      } catch (uploadError) {
+        console.error('❌ S3 upload failed:', uploadError);
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            s3Url: null,
+            uploadedToS3: false,
+          },
+        };
+      }
     } else {
       console.warn('🔄 OpenAI image generation failed:', result.error);
 

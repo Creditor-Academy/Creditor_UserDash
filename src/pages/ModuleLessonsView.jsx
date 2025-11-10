@@ -455,17 +455,49 @@ const ModuleLessonsView = () => {
       setIsGeneratingImage(true);
 
       console.log('🎨 Generating AI image with prompt:', prompt);
+      console.log('📋 Generation options:', {
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+        folder: 'lesson-thumbnails',
+        uploadToS3: true,
+      });
 
-      // Generate and upload image using the AI service
+      // Generate and upload image using the AI service with lesson-specific folder
       const result = await generateAndUploadCourseImage(prompt, {
         size: '1024x1024',
         quality: 'standard',
         style: 'vivid',
+        folder: 'lesson-thumbnails', // Ensure it goes to lesson-thumbnails folder
+        uploadToS3: true, // Force S3 upload
       });
 
+      console.log('📦 Raw AI service response:', result);
+
       if (result.success && result.data) {
+        // Debug: Log the full result to see what we got
+        console.log('🔍 AI Image Generation Result:', result.data);
+
+        // Prioritize S3 URL for permanent cloud storage
         const imageUrl =
           result.data.s3Url || result.data.originalUrl || result.data.url;
+
+        if (!result.data.s3Url) {
+          console.warn('⚠️ No S3 URL found, using temporary URL:', imageUrl);
+          console.warn('📊 Available URLs:', {
+            s3Url: result.data.s3Url,
+            originalUrl: result.data.originalUrl,
+            url: result.data.url,
+          });
+          toast({
+            title: 'Warning',
+            description:
+              'Image generated but not uploaded to cloud storage. It may expire.',
+            variant: 'destructive',
+          });
+        } else {
+          console.log('✅ S3 URL found:', result.data.s3Url);
+        }
 
         if (imageUrl) {
           // Set the generated image URL in the appropriate form
@@ -477,7 +509,9 @@ const ModuleLessonsView = () => {
 
           toast({
             title: 'Success',
-            description: 'AI image generated successfully!',
+            description: result.data.s3Url
+              ? 'AI image generated and saved to cloud storage!'
+              : 'AI image generated (temporary URL)!',
           });
         } else {
           throw new Error('No image URL returned from AI generation');
