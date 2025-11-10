@@ -4,7 +4,7 @@ import { vi, expect } from 'vitest';
 vi.mock('node:inspector/promises', () => ({}));
 vi.mock('inspector', () => ({}));
 
-// Mock the problematic modules before importing jest-dom
+// Mock the problematic Node.js modules to prevent bundling issues
 vi.mock('node:inspector', () => ({}));
 vi.mock('node:util', () => ({
   inspect: vi.fn(),
@@ -60,6 +60,28 @@ if (typeof expect !== 'undefined' && expect.extend) {
         message: () =>
           `expected element ${pass ? 'not ' : ''}to have attribute "${attribute}"${value ? ` with value "${value}"` : ''}`,
         pass,
+      };
+    },
+    toBeChecked(received) {
+      if (!received) {
+        return {
+          message: () =>
+            'expected element to be checked but received null/undefined',
+          pass: false,
+        };
+      }
+
+      // Handle different input types and ARIA states
+      const isChecked =
+        received.checked === true ||
+        received.hasAttribute('checked') ||
+        received.getAttribute('aria-checked') === 'true' ||
+        received.getAttribute('data-state') === 'checked';
+
+      return {
+        message: () =>
+          `expected element ${isChecked ? 'not ' : ''}to be checked`,
+        pass: isChecked,
       };
     },
   });
