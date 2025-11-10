@@ -5,7 +5,7 @@ import { Plus, X } from 'lucide-react';
 const faqs = [
   {
     id: 1,
-    q: 'What can you host on Athena LMS?',
+    q: 'What can you host on LMS Athena?',
     a: `You can host live coaching and webinars that build trust, grow your audience and drive revenue — all in one digital learning product. Set up and promote events that turn your expertise into real relationships and business growth.`,
   },
   {
@@ -15,13 +15,13 @@ const faqs = [
   },
   {
     id: 3,
-    q: 'What is the difference between Coaching and Webinar, and a live event in Athena LMSCommunities?',
-    a: `Coaching and Webinars are digital learning products that can be offered either for free or for purchase, and can be hosted outside of a Athena LMS Community.`,
+    q: 'What is the difference between Coaching and Webinar, and a live event in LMS AthenaCommunities?',
+    a: `Coaching and Webinars are digital learning products that can be offered either for free or for purchase, and can be hosted outside of a LMS Athena Community.`,
   },
   {
     id: 4,
     q: 'Do I need an existing video conference platform to host an event?',
-    a: `No, Athena LMS integrates with Zoom, Google Meet, and Microsoft Teams, so you can host your events directly from your Athena LMS account.`,
+    a: `No, LMS Athena integrates with Zoom, Google Meet, and Microsoft Teams, so you can host your events directly from your LMS Athena account.`,
   },
 ];
 

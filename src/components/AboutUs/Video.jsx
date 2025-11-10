@@ -46,11 +46,11 @@ const Video = () => {
           className="text-center mb-12"
         >
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-            We are Athena LMS
+            We are LMS Athena
           </h2>
           
           <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-            Athena LMS transforms the way teams learn, share, and grow. We combine design, interactivity, and deep insights to empower businesses with impactful learning journeys that win hearts and minds.
+            LMS Athena transforms the way teams learn, share, and grow. We combine design, interactivity, and deep insights to empower businesses with impactful learning journeys that win hearts and minds.
           </p>
         </motion.div>
 
@@ -64,23 +64,18 @@ const Video = () => {
         >
           {/* Video Wrapper with Shadow */}
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            {/* Video Element */}
+            {/* Video Iframe */}
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-              <video
-                src="https://websiteathena.s3.eu-north-1.amazonaws.com/Athena+LMS++website+video+2nd.mp4"
+              {/* Add your video source link in the src attribute below */}
+              {/* Example: src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview" */}
+              <iframe
+                src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview"
                 className="absolute top-0 left-0 w-full h-full"
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-                style={{
-                  objectFit: 'cover',
-                  borderRadius: '16px',
-                }}
-              >
-                Your browser does not support the video tag.
-              </video>
+                title="LMS Athena Product Overview"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
             </div>
           </div>
 
@@ -120,10 +115,10 @@ const Video = () => {
         >
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-              Athena LMS-powered success stories
+              LMS Athena-powered success stories
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Explore the features and tools used by top-earning businesses on Athena LMS.
+              Explore the features and tools used by top-earning businesses on LMS Athena.
             </p>
           </div>
 
@@ -147,7 +142,7 @@ const Video = () => {
                   How Creditor Academy Transformed Financial Education
                 </h3>
                 <p className="text-gray-600 group-hover:text-white text-sm leading-relaxed mb-2 flex-grow transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  Creditor Academy revolutionized credit and legal empowerment training with Athena LMS — offering immersive, interactive learning paths that helped thousands achieve financial confidence and independence.
+                  Creditor Academy revolutionized credit and legal empowerment training with LMS Athena — offering immersive, interactive learning paths that helped thousands achieve financial confidence and independence.
                 </p>
                 <a href="#" className="text-gray-900 group-hover:text-white font-medium text-sm flex items-center gap-1 hover:text-blue-600 transition-colors mt-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
                   Read success story →
@@ -174,7 +169,7 @@ const Video = () => {
                   How Hootsuite scaled customer education and revenue
                 </h3>
                 <p className="text-gray-600 group-hover:text-white text-sm leading-relaxed mb-2 flex-grow transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  Social media platform Hootsuite scaled its educational content to reach over 500,000 students and drove revenue through a paid certification program built on Athena LMS Plus.
+                  Social media platform Hootsuite scaled its educational content to reach over 500,000 students and drove revenue through a paid certification program built on LMS Athena Plus.
                 </p>
                 <a href="#" className="text-gray-900 group-hover:text-white font-medium text-sm flex items-center gap-1 hover:text-blue-600 transition-colors mt-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
                   Read case study →
@@ -201,7 +196,7 @@ const Video = () => {
                   How Keap reduced partner onboarding time by 30%
                 </h3>
                 <p className="text-gray-600 group-hover:text-white text-sm leading-relaxed mb-2 flex-grow transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  Keap created an online partner education program that saves time and elevates product knowledge by switching from a legacy LMS to Athena LMS Plus.
+                  Keap created an online partner education program that saves time and elevates product knowledge by switching from a legacy LMS to LMS Athena Plus.
                 </p>
                 <a href="#" className="text-gray-900 group-hover:text-white font-medium text-sm flex items-center gap-1 hover:text-blue-600 transition-colors mt-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
                   Read case study →

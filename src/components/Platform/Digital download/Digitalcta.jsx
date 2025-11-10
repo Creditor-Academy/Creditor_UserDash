@@ -30,7 +30,7 @@ export default function ExpertScale() {
 
             {/* Description */}
             <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">
-            Gain new leads and income streams with digital downloads on Athena LMS.
+            Gain new leads and income streams with digital downloads on LMS Athena.
             </p>
 
            
@@ -60,7 +60,7 @@ export default function ExpertScale() {
             <div className="relative shadow-2xl overflow-hidden aspect-square w-full max-w-2xl mx-auto">
               <img 
                 src={showcase6} 
-                alt="Athena LMS Course Dashboard" 
+                alt="LMS Athena Course Dashboard" 
                 className="w-full h-full object-contain"
               />
             </div>

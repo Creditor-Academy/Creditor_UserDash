@@ -22,7 +22,7 @@ const features = [
   {
     id: 3,
     title: "Upsell your leads",
-    description: "Once you collect a lead in Athena LMS, you can easily upsell them to paid products via email funnels or even a community.",
+    description: "Once you collect a lead in LMS Athena, you can easily upsell them to paid products via email funnels or even a community.",
     mockupBg: "bg-[#e8e8e8]",
     bottomColor: "#ea580c", // orange
     showEmail: true,

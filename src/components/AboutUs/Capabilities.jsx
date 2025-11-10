@@ -76,7 +76,7 @@ const Capabilities = () => {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl md:text-5xl lg:text-6xl font-normal mb-4 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-            <span className="text-white">Athena LMS for</span>
+            <span className="text-white">LMS Athena for</span>
           </h2>
         </motion.div>
 

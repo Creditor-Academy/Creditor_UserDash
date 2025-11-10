@@ -89,7 +89,7 @@ const Navbar = () => {
     cursor: "pointer"
   }}
 >
-  ATHENA LMS
+  LMS ATHENA
 </Link>
 
         

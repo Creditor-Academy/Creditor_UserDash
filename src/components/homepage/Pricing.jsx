@@ -136,7 +136,7 @@ const Pricing = () => {
           </h2>
           
           <p className="text-lg text-white max-w-3xl mx-auto mb-8 font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-            Athena LMS plans give experts, academies, and companies the tools and features they need to grow their business end-to-end.
+            LMS Athena plans give experts, academies, and companies the tools and features they need to grow their business end-to-end.
           </p>
 
           {/* Billing Toggle
