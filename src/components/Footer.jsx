@@ -169,19 +169,19 @@ const Footer = () => (
           <address style={styles.address}>
             Athena LMS<br />
             Kirkland, Washington, USA<br /><br />
-            GF-20, Omaxe Square, Jasola District<br /> Centre
-            New Delhi - 110025
+            GF-20, Omaxe Square, Jasola District<br /> Centre, New Delhi - 110025
+          
           </address>
 
           <div style={{ marginTop: 10, fontWeight: 600 }}>
             <a href="mailto:counselor@lmsathena.com" style={styles.link}>
-              counselor@lmsathena.com
+            admin@lmsathena.com
             </a>
           </div>
 
           <div style={{ marginTop: 6 }}>
             <a href="tel:+919811773207" style={{ ...styles.link, color: "#225e95" }}>
-              +91 9811773207
+            +91 9811773207
             </a>
           </div>
         </div>
