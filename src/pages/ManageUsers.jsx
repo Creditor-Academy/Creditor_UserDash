@@ -50,6 +50,12 @@ const ManageUsers = () => {
   const [forceUpdate, setForceUpdate] = useState(0);
   const [enrollmentProgress, setEnrollmentProgress] = useState({ current: 0, total: 0 });
   
+  // Internal notes state
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [currentNoteUser, setCurrentNoteUser] = useState(null);
+  const [currentNote, setCurrentNote] = useState("");
+  const [userNotes, setUserNotes] = useState({});
+  
   // User details modal state
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUserForDetails, setSelectedUserForDetails] = useState(null);
@@ -65,6 +71,85 @@ const ManageUsers = () => {
     fetchUsers();
     fetchCourses();
   }, []);
+
+  // Extract notes whenever users data changes
+  useEffect(() => {
+    if (users.length > 0) {
+      fetchUserNotes();
+    }
+  }, [users]);
+
+  // Extract user notes from fetched users data
+  const fetchUserNotes = () => {
+    try {
+      console.log('📋 Extracting notes from users array...');
+      // Extract private_note from users array
+      const notesObject = {};
+      users.forEach(user => {
+        if (user.private_note) {
+          console.log(`📝 Found note for user ${user.first_name} ${user.last_name}:`, user.private_note);
+          notesObject[user.id] = user.private_note;
+        }
+      });
+      console.log('📊 Total notes found:', Object.keys(notesObject).length);
+      setUserNotes(notesObject);
+    } catch (error) {
+      console.error('Error extracting user notes:', error);
+    }
+  };
+
+  // Save or update user note to backend using instructor API
+  const saveUserNote = async (userId, noteText) => {
+    try {
+      console.log('💾 Saving note for user:', userId);
+      console.log('📝 Note text:', noteText);
+      console.log('🔗 API URL:', `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`);
+      
+      const response = await axios.post(
+        `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`,
+        { 
+          private_note: noteText.trim() 
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(getAuthHeader() || {}),
+          },
+          withCredentials: true,
+        }
+      );
+      
+      console.log('✅ Save note response:', response.data);
+      
+      if (response.data) {
+        // Update local state
+        const updatedNotes = { ...userNotes };
+        if (noteText.trim()) {
+          updatedNotes[userId] = noteText.trim();
+        } else {
+          delete updatedNotes[userId];
+        }
+        setUserNotes(updatedNotes);
+        
+        // Also update the user in the users array
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user.id === userId 
+              ? { ...user, private_note: noteText.trim() || null }
+              : user
+          )
+        );
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Error saving user note:', error);
+      console.error('Error details:', error.response?.data);
+      setError(`Failed to save note: ${error.response?.data?.message || error.message}`);
+      return false;
+    }
+  };
 
   // Handle userId from search navigation
   useEffect(() => {
@@ -205,6 +290,18 @@ const ManageUsers = () => {
 
       if (response.data && response.data.code === 200) {
         const fetchedUsers = response.data.data || [];
+        
+        // Debug: Check if private_note field exists
+        console.log('👥 Fetched users count:', fetchedUsers.length);
+        const usersWithNotes = fetchedUsers.filter(u => u.private_note);
+        console.log('📝 Users with private_note:', usersWithNotes.length);
+        if (usersWithNotes.length > 0) {
+          console.log('📋 Sample user with note:', {
+            name: `${usersWithNotes[0].first_name} ${usersWithNotes[0].last_name}`,
+            note: usersWithNotes[0].private_note
+          });
+        }
+        
         setUsers(fetchedUsers);
       } else {
         throw new Error('Failed to fetch users');
@@ -332,10 +429,28 @@ const ManageUsers = () => {
 
   // Helper to get createdAt timestamp (ms) for sorting "just added"
   const getCreatedAtTimestamp = (user) => {
-    const created = user?.createdAt || user?.created_at || user?.created_on || user?.createdDate;
+    // Prioritize created_at since that's what the API returns
+    const created = user?.created_at || user?.createdAt || user?.created_on || user?.createdDate;
     if (!created) return null;
     const t = new Date(created).getTime();
     return isNaN(t) ? null : t;
+  };
+
+  // Helper to check if user was enrolled in the last 30 days
+  const isEnrolledThisMonth = (user) => {
+    // Prioritize created_at since that's what the API returns
+    const created = user?.created_at || user?.createdAt || user?.created_on || user?.createdDate;
+    if (!created) return false;
+    
+    const createdDate = new Date(created);
+    const now = new Date();
+    
+    // Calculate 30 days ago from now
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    
+    // Check if user was created within the last 30 days
+    return createdDate >= thirtyDaysAgo && createdDate <= now;
   };
 
   // Helper to get full name for alphabetical sorting
@@ -409,6 +524,16 @@ const ManageUsers = () => {
           return bCreated - aCreated; // newest first
         });
         break;
+      case "enrolled_this_month":
+        // Filter users enrolled this month and sort by newest first
+        return arr.filter(user => isEnrolledThisMonth(user)).sort((a, b) => {
+          const aCreated = getCreatedAtTimestamp(a);
+          const bCreated = getCreatedAtTimestamp(b);
+          if (aCreated === null && bCreated === null) return 0;
+          if (aCreated === null) return 1;
+          if (bCreated === null) return -1;
+          return bCreated - aCreated; // newest first
+        });
       default:
         break;
     }
@@ -917,9 +1042,9 @@ const ManageUsers = () => {
       //   selectedUsers
       // });
       
-      // Make API call to make users admins
-      const response = await axios.post(
-        `${API_BASE}/api/user/make-admins`,
+      // Make API call to convert selected users/instructors to admin
+      const response = await axios.put(
+        `${API_BASE}/api/user/convert-to-admin`,
         { user_ids: selectedUsers },
         getAuthConfig()
       );
@@ -1184,6 +1309,56 @@ const ManageUsers = () => {
     setShowUserDetailsModal(true);
   };
 
+  // Handle opening notes modal
+  const handleNotesClick = (user) => {
+    setCurrentNoteUser(user);
+    setCurrentNote(userNotes[user.id] || "");
+    setShowNotesModal(true);
+  };
+
+  // Handle saving note
+  const handleSaveNote = async () => {
+    if (!currentNoteUser) return;
+    
+    const success = await saveUserNote(currentNoteUser.id, currentNote);
+    
+    if (success) {
+      setShowNotesModal(false);
+      setCurrentNoteUser(null);
+      setCurrentNote("");
+      // Show success message
+      setSuccessMessage('Note saved successfully!');
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 2000);
+    }
+  };
+
+  // Handle clearing note
+  const handleClearNote = async () => {
+    if (!currentNoteUser) return;
+    
+    const success = await saveUserNote(currentNoteUser.id, "");
+    
+    if (success) {
+      setShowNotesModal(false);
+      setCurrentNoteUser(null);
+      setCurrentNote("");
+      // Show success message
+      setSuccessMessage('Note cleared successfully!');
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 2000);
+    }
+  };
+
+  // Handle closing notes modal
+  const handleCloseNotesModal = () => {
+    setShowNotesModal(false);
+    setCurrentNoteUser(null);
+    setCurrentNote("");
+  };
+
   const handleAddToMoreCourses = () => {
     // Close the success modal
     setShowSuccessModal(false);
@@ -1425,7 +1600,8 @@ const ManageUsers = () => {
               <option value="alpha_asc">Alphabetical (A → Z)</option>
               <option value="alpha_desc">Alphabetical (Z → A)</option>
               <option value="never_visited">Never Visited (Top)</option>
-              <option value="just_added">Just Added (Newest)</option>
+              <option value="just_added">Just Visited (Newest)</option>
+              <option value="enrolled_this_month">Enrolled This Month</option>
             </select>
           </div>
         </div>
@@ -1451,47 +1627,49 @@ const ManageUsers = () => {
             <div className="flex gap-2">
               {/* Role Management Buttons */}
               {filterRole === "user" && (
-                <button
-                  onClick={handleMakeInstructor}
-                  disabled={updatingRole}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Promote to Instructor (replaces all existing roles)"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  {updatingRole 
-                    ? enrollmentProgress.total > 0 
-                      ? `Updating & Enrolling... (${enrollmentProgress.current}/${enrollmentProgress.total})`
-                      : 'Updating & Enrolling...'
-                    : 'Make Instructor'
-                  }
-                </button>
-              )}
-              {filterRole === "instructor" && (
                 <div className="flex gap-2">
-                  {/* <button
-                    onClick={handleMakeAdmin}
+                  <button
+                    onClick={handleMakeInstructor}
                     disabled={updatingRole}
-                    className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Promote to Admin (replaces all existing roles)"
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Promote to Instructor (replaces all existing roles)"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {updatingRole 
+                      ? enrollmentProgress.total > 0 
+                        ? `Updating & Enrolling... (${enrollmentProgress.current}/${enrollmentProgress.total})`
+                        : 'Updating & Enrolling...'
+                      : 'Make Instructor'
+                    }
+                  </button>
+                  <button
+                    onClick={handleMakeAdmin}
+                    disabled={updatingRole || !hasRole('admin')}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={hasRole('admin') ? "Promote to Admin (replaces all existing roles)" : "Admin only - You don't have permission"}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     {updatingRole ? 'Updating...' : 'Make Admin'}
                   </button>
+                </div>
+              )}
+              {filterRole === "instructor" && (
+                <div className="flex gap-2">
                   <button
-                    onClick={handleMakeUser}
-                    disabled={updatingRole}
-                    className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Demote to User (replaces all existing roles)"
+                    onClick={handleMakeAdmin}
+                    disabled={updatingRole || !hasRole('admin')}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={hasRole('admin') ? "Promote to Admin (replaces all existing roles)" : "Admin only - You don't have permission"}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    {updatingRole ? 'Updating...' : 'Make User'}
-                  </button> */}
+                    {updatingRole ? 'Updating...' : 'Make Admin'}
+                  </button>
                 </div>
               )}
               {/* {filterRole === "admin" && (
@@ -2025,6 +2203,9 @@ const ManageUsers = () => {
                   Last Visited
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Notes
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {hasRole('admin') ? 'Actions' : 'Actions (Admin Only)'}
                 </th>
               </tr>
@@ -2071,11 +2252,34 @@ const ManageUsers = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {getLastVisited(user) || 'Never'}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => handleNotesClick(user)}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        userNotes[user.id] 
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100' 
+                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                      title={userNotes[user.id] ? "View/Edit Note" : "Add Note"}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                      {userNotes[user.id] ? (
+                        <>
+                          <span>View Note</span>
+                          <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                        </>
+                      ) : (
+                        <span>Add Note</span>
+                      )}
+                    </button>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {hasRole('admin') && (
                       <button
                         onClick={() => handleDeleteClick(user)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 transition-colors"
                         title={`Delete ${getUserRole(user)}`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2178,6 +2382,81 @@ const ManageUsers = () => {
               >
                 {deletingUser ? 'Deleting...' : 'Delete User'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Internal Notes Modal */}
+      {showNotesModal && currentNoteUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Internal Notes
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Notes for: <span className="font-semibold text-gray-800">{currentNoteUser.first_name} {currentNoteUser.last_name}</span>
+                </p>
+              </div>
+              <button
+                onClick={handleCloseNotesModal}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Internal Notes
+              </label>
+              <textarea
+                value={currentNote}
+                onChange={(e) => setCurrentNote(e.target.value)}
+                placeholder="Write your internal notes about this user here... (visible to all instructors and admins)"
+                className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 These notes are visible to all instructors and admins
+              </p>
+            </div>
+            
+            <div className="flex justify-between items-center gap-3">
+              <div>
+                {userNotes[currentNoteUser?.id] && (
+                  <button
+                    onClick={handleClearNote}
+                    className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 border border-red-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear Note
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseNotesModal}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveNote}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Note
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -118,11 +118,19 @@ import CommunitiesPage from './pages/Platform/CommunitiesPage';
 import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
 import MembershipsPage from './pages/Platform/MembershipsPage';
 import CoachingPage from './pages/Platform/CoachingPage';
-
+import Emailautomation from './pages/Platform/Emailautomation';
+import Analyticspage from './pages/Platform/Analyticspage';
+import Brandpage from './pages/Platform/Brandpage';
+import Sellingpage from './pages/Platform/Sellingpage';
+import PrivacyAthena from './pages/PrivacyAthena';
+import TermAthena from './pages/TermAthena';
+import Cookies from './pages/Cookies';
+import Sitemap from './pages/Sitemap';
 
 function App() {
   return (
     <ThemeProvider>
+      <ScrollToTop />
       <AuthProvider>
         <UserProvider>
           <CreditsProvider>
@@ -163,7 +171,14 @@ function App() {
           <Route path="/platform/digital-downloads" element={<DigitalDownloadsPage/>}/>
           <Route path="/platform/memberships" element={<MembershipsPage/>}/>
           <Route path="/platform/coaching" element={<CoachingPage/>}/>
-          
+          <Route path="/platform/email-automation" element={<Emailautomation/>}/>
+          <Route path="/platform/analytics" element={<Analyticspage/>}/>
+          <Route path="/platform/brand" element={<Brandpage/>}/>
+          <Route path="/platform/selling" element={<Sellingpage/>}/>
+          <Route path="/privacy-athena" element={<PrivacyAthena/>}/>
+          <Route path="/term-athena" element={<TermAthena/>}/>
+          <Route path="/cookies" element={<Cookies/>}/>
+          <Route path="/sitemap" element={<Sitemap/>}/>
           <Route
             path="/instructor"
             element={
@@ -396,6 +411,18 @@ function CourseTimerProviderWrapper() {
       </SubRoutes>
     </CourseTimerProvider>
   );
+}
+
+// Always scroll to top on route change (prevents landing mid-page after navigation)
+function ScrollToTop() {
+  const location = useLocation();
+  React.useEffect(() => {
+    // If navigating to a hash, let the browser handle it; otherwise scroll to top
+    if (!location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [location.pathname, location.search]);
+  return null;
 }
 
 export default App;

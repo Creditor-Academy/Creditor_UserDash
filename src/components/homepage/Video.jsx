@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
 import CreditorImage from '../../assets/creditor.png';
 
 const Video = () => {
@@ -54,55 +55,42 @@ const Video = () => {
           </p>
         </motion.div>
 
-        {/* Video Container */}
+        {/* Contact Button */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           viewport={{ once: true }}
-          className="relative"
+          className="flex justify-center"
         >
-          {/* Video Wrapper with Shadow */}
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            {/* Video Iframe */}
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-              {/* Add your video source link in the src attribute below */}
-              {/* Example: src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview" */}
-              <iframe
-                src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview"
-                className="absolute top-0 left-0 w-full h-full"
-                title="Athena LMS Product Overview"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          </div>
+          <style>
+            {`
+              .contact-btn-primary {
+                background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                color: #000;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                font-family: 'Arial', sans-serif;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+              }
 
-          {/* Decorative Elements */}
-          <motion.div
-            className="absolute -top-4 -left-4 w-24 h-24 bg-sky-400/20 rounded-full blur-2xl"
-            animate={{
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div
-            className="absolute -bottom-4 -right-4 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl"
-            animate={{
-              scale: [1.3, 1, 1.3],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.5
-            }}
-          />
+              .contact-btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+              }
+            `}
+          </style>
+          <a href="/contact" className="contact-btn-primary">
+            Get Started
+            <ArrowUpRight size={16} strokeWidth={2} />
+          </a>
         </motion.div>
 
         {/* Success Stories Section

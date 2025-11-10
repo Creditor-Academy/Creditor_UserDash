@@ -17,11 +17,11 @@ const InstructionalDesign = () => {
       <Navbar />
       <HeroSection />
       <QuickValue />
+      <OurClients />
       <ServicesOverview />
       <WhyChooseAthena />
       <FounderQuote />
       <Approach />
-      <OurClients />
       <Technology />
       <CTA />
       <Footer />

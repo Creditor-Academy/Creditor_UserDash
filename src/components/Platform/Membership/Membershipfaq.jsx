@@ -5,7 +5,7 @@ import { Plus, X } from 'lucide-react';
 const faqs = [
   {
     id: 1,
-    q: 'What is a membership on Athena LMS',
+    q: 'What is a membership on Athena LMS?',
     a: `A membership lets you offer ongoing access to multiple learning products like courses, communities, digital downloads, and live sessions — all in one bundled subscription.`,
   },
   {

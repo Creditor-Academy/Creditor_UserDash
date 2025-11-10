@@ -31,7 +31,7 @@ export default function ExpertScale() {
 
             {/* Description */}
             <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">
-            Book a demo or start a free trial to discover how coaching and webinars can help you scale your business with Athena LM.
+            Book a demo or start a free trial to discover how coaching and webinars can help you scale your business with Athena LMS.
             </p>
 
            

@@ -218,11 +218,10 @@ const Buildfeature = () => {
               })}
             </div>
           </div>
+          </div>
 
-        </div>
-
-        {/* Mobile Dropdown Layout */}
-        <div className="lg:hidden max-w-7xl mx-auto relative z-10">
+          {/* Mobile Dropdown Layout */}
+          <div className="lg:hidden">
           <div className="space-y-4">
             {features.map((feature, index) => (
               <div key={feature.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -325,9 +324,9 @@ const Buildfeature = () => {
               </div>
             ))}
           </div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
     {/* Stats Section */}
     <section className="relative py-16" style={{
