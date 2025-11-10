@@ -11,6 +11,11 @@ export default defineConfig({
     css: true,
     testTimeout: 10000,
     hookTimeout: 10000,
+    server: {
+      deps: {
+        external: ['node:inspector/promises', 'inspector'],
+      },
+    },
   },
   resolve: {
     alias: {
@@ -19,8 +24,6 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': '"test"',
-  },
-  optimizeDeps: {
-    exclude: ['@testing-library/jest-dom'],
+    global: 'globalThis',
   },
 });

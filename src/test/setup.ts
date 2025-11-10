@@ -4,7 +4,14 @@ import { vi } from 'vitest';
 vi.mock('node:inspector/promises', () => ({}));
 vi.mock('inspector', () => ({}));
 
-// Import jest-dom with error handling
+// Mock the problematic modules before importing jest-dom
+vi.mock('node:inspector', () => ({}));
+vi.mock('node:util', () => ({
+  inspect: vi.fn(),
+  format: vi.fn(),
+}));
+
+// Import jest-dom after setting up mocks
 import '@testing-library/jest-dom';
 
 // Make Jest globals available for compatibility
