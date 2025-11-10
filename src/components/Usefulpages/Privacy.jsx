@@ -119,8 +119,8 @@ const Privacy = () => {
                 <p className="text-slate-700">
                   Athena LMS is an online learning platform that helps organizations and experts create and
                   analyze learning experiences. For questions, contact us at{" "}
-                  <a href="mailto:counselor@lmsathena.com" className="text-sky-700 underline">
-                    counselor@lmsathena.com
+                  <a href="mailto:admin@lmsathena.com" className="text-sky-700 underline">
+                    admin@lmsathena.com
                   </a>.
                 </p>
               </section>
@@ -220,15 +220,15 @@ const Privacy = () => {
                 <h2 className="font-semibold text-slate-800">Contact us</h2>
                 <p className="text-slate-700">
                   For any privacy-related questions, contact us at{" "}
-                  <a href="mailto:counselor@lmsathena.com" className="underline text-sky-700">
-                    counselor@lmsathena.com
+                  <a href="mailto:admin@lmsathena.com" className="underline text-sky-700">
+                    admin@lmsathena.com
                   </a>{" "}
                   or write to:
                 </p>
                 <address className="not-italic text-slate-700 mt-3">
                   LMSAthena<br />
                   Kirkland, Washington, USA<br />
-                  GF-41, Omaxe Square, Jasola District Centre, New Delhi - 110025
+                  GF-20, Omaxe Square, Jasola District Centre, New Delhi - 110025
                 </address>
 
                 <div className="mt-6 flex gap-3 items-center no-print">
@@ -239,7 +239,7 @@ const Privacy = () => {
                     {copied ? "Link copied!" : "Copy contact link"}
                   </button>
                   <a
-                    href="mailto:counselor@lmsathena.com"
+                    href="mailto:admin@lmsathena.com"
                     className="text-sm underline text-sky-600"
                   >
                     Email support
