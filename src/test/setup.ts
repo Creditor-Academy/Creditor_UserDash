@@ -1,10 +1,10 @@
 import { vi } from 'vitest';
 
-// Mock Node.js inspector module to prevent compatibility issues
+// Mock Node.js inspector modules to prevent compatibility issues
 vi.mock('node:inspector/promises', () => ({}));
 vi.mock('inspector', () => ({}));
 
-// Import jest-dom after mocking Node.js modules
+// Import jest-dom with error handling
 import '@testing-library/jest-dom';
 
 // Make Jest globals available for compatibility
