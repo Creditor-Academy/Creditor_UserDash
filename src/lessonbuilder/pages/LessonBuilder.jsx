@@ -35,6 +35,8 @@ import {
   Youtube,
   CheckCircle,
   X,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react';
 import AIEnhancementPanel from '@lessonbuilder/components/ai/AILessonContentGenerator';
 import { toast } from 'react-hot-toast';
@@ -297,6 +299,19 @@ function LessonBuilder() {
     draggedBlockId,
     setDraggedBlockId,
   });
+
+  const scormUrl =
+    lessonContent?.data?.scorm_url ||
+    lessonContent?.data?.scormUrl ||
+    lessonContent?.data?.lesson?.scorm_url ||
+    lessonContent?.data?.lesson?.scormUrl ||
+    lessonData?.scorm_url ||
+    lessonData?.scormUrl ||
+    lessonData?.lesson?.scorm_url ||
+    lessonData?.lesson?.scormUrl ||
+    null;
+  const hasScormRestriction =
+    typeof scormUrl === 'string' && scormUrl.trim() !== '';
 
   // Warn user before leaving page with unsaved changes
   React.useEffect(() => {
@@ -673,6 +688,55 @@ function LessonBuilder() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!loading && hasScormRestriction) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center bg-[#f6f8fb] px-4">
+        <Card className="w-full max-w-xl border border-amber-200 shadow-lg">
+          <CardContent className="flex flex-col items-center gap-6 py-10 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+              <AlertTriangle className="h-8 w-8 text-amber-600" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                SCORM Lesson Detected
+              </h1>
+              <p className="text-sm text-gray-600 max-w-md">
+                You can&apos;t add lesson builder content to this lesson because
+                it is linked to a SCORM package. Manage this SCORM lesson from
+                the appropriate SCORM tools.
+              </p>
+            </div>
+            {scormUrl && (
+              <div className="w-full rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700 break-all border border-amber-200">
+                <span className="font-medium">SCORM URL:</span>{' '}
+                <span>{scormUrl}</span>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+              <Button
+                variant="outline"
+                onClick={() => navigate(-1)}
+                className="flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Go Back
+              </Button>
+              <Button
+                onClick={() =>
+                  window.open(scormUrl, '_blank', 'noopener,noreferrer')
+                }
+                className="flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open SCORM Package
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

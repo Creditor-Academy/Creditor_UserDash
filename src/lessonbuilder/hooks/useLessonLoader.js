@@ -54,6 +54,11 @@ const useLessonLoader = ({
             const responseData = await response.json();
             console.log('Fetched lesson content:', responseData);
 
+            const scormUrl =
+              responseData.data?.scorm_url ||
+              responseData.data?.scormUrl ||
+              null;
+
             const contentData = {
               success: true,
               data: {
@@ -62,6 +67,8 @@ const useLessonLoader = ({
                 html_css: responseData.data?.html_css || '',
                 css: responseData.data?.css || '',
                 script: responseData.data?.script || '',
+                scorm_url: scormUrl,
+                scormUrl,
               },
               message: 'Lesson content fetched successfully',
             };
@@ -483,6 +490,11 @@ const useLessonLoader = ({
               const contentResponseData = await contentResponse.json();
               console.log('Fetched lesson content:', contentResponseData);
 
+              const scormUrl =
+                contentResponseData.data?.scorm_url ||
+                contentResponseData.data?.scormUrl ||
+                null;
+
               const contentData = {
                 success: true,
                 data: {
@@ -491,6 +503,8 @@ const useLessonLoader = ({
                   html_css: contentResponseData.data?.html_css || '',
                   css: contentResponseData.data?.css || '',
                   script: contentResponseData.data?.script || '',
+                  scorm_url: scormUrl,
+                  scormUrl,
                 },
                 message: 'Lesson content fetched successfully',
               };

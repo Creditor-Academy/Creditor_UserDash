@@ -165,28 +165,44 @@ const Footer = () => (
             Office
           </div>
           <address style={styles.address}>
-            LMS Athena
+            Athena LMS
             <br />
             Kirkland, Washington, USA
             <br />
             <br />
-            GF-41, Omaxe Square, Jasola District Centre,Opposite Apollo Hospital
-            <br />
-            New Delhi - 110025
+            GF-20, Omaxe Square, Jasola District
+            <br /> Centre, New Delhi - 110025
           </address>
 
-          <div style={{ marginTop: 10, fontWeight: 600 }}>
-            <a href="mailto:counselor@lmsathena.com" style={styles.link}>
-              counselor@lmsathena.com
+          <div
+            style={{ marginTop: 10, fontWeight: 600, pointerEvents: 'auto' }}
+          >
+            <a
+              href="mailto:admin@lmsathena.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#225e95',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+              }}
+            >
+              admin@lmsathena.com
             </a>
           </div>
 
-          <div style={{ marginTop: 6 }}>
+          <div style={{ marginTop: 6, pointerEvents: 'auto' }}>
             <a
-              href="tel:+919818238969"
-              style={{ ...styles.link, color: '#225e95' }}
+              href="tel:+919811773207"
+              style={{
+                color: '#225e95',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+              }}
             >
-              +91 98182 38969
+              +91 9811773207
             </a>
           </div>
         </div>
@@ -296,7 +312,7 @@ const Footer = () => (
           <div style={styles.socialRow} aria-label="social links">
             <a
               className="social-anchor"
-              href="https://www.linkedin.com"
+              href="https://www.linkedin.com/company/lmsathena/ "
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"

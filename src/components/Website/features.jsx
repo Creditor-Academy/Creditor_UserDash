@@ -128,9 +128,9 @@ export function CardsCarouselSection() {
   ));
 
   return (
-    <section className="relative w-full py-20 sm:py-24 bg-gray-50 dark:bg-neutral-900 overflow-hidden">
+    <section className="relative w-full py-20 sm:py-24 bg-gray-50 overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35] dark:opacity-[0.15]"
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
         aria-hidden="true"
       >
         <div className="absolute top-[-20%] right-[-10%] h-80 w-80 rounded-full bg-gradient-to-bl from-pink-300 via-fuchsia-300 to-indigo-300 blur-3xl" />
@@ -138,11 +138,11 @@ export function CardsCarouselSection() {
 
       <div className="relative max-w-7xl mx-auto px-4">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
-          <span className="bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-900 dark:from-white dark:via-neutral-200 dark:to-white bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-neutral-900 via-neutral-700 to-neutral-900 bg-clip-text text-transparent">
             Explore Our Features
           </span>
         </h2>
-        <p className="mt-3 sm:mt-4 text-neutral-700 dark:text-neutral-300 text-base sm:text-lg md:text-xl max-w-3xl">
+        <p className="mt-3 sm:mt-4 text-neutral-700 text-base sm:text-lg md:text-xl max-w-3xl">
           Discover how our tools help you build, optimize, and grow faster with
           delightful UX.
         </p>
