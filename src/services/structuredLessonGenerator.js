@@ -231,6 +231,10 @@ Requirements:
       temperature: 0.8,
     });
 
+    // Remove surrounding quotes if present
+    let cleanedContent = content.trim();
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+
     const randomGradient =
       this.gradients[Math.floor(Math.random() * this.gradients.length)];
 
@@ -238,7 +242,7 @@ Requirements:
       id: `master-heading-${Date.now()}`,
       type: 'text',
       textType: 'master_heading',
-      content: content.trim(),
+      content: cleanedContent,
       gradient: `gradient${Math.floor(Math.random() * 6) + 1}`,
       order: 0,
       isAIGenerated: true,
@@ -269,11 +273,15 @@ Requirements:
       temperature: 0.7,
     });
 
+    // Remove surrounding quotes if present
+    let cleanedContent = content.trim();
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+
     return {
       id: `paragraph-${Date.now()}`,
       type: 'text',
       textType: 'paragraph',
-      content: content.trim(),
+      content: cleanedContent,
       order: 1,
       isAIGenerated: true,
       metadata: {
@@ -301,11 +309,15 @@ Requirements:
       temperature: 0.8,
     });
 
+    // Remove surrounding quotes if present
+    let cleanedContent = content.trim();
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+
     return {
       id: `statement-${Date.now()}`,
       type: 'statement',
       variant: 'statement-b',
-      content: content.trim(),
+      content: cleanedContent,
       order: 2,
       isAIGenerated: true,
       metadata: {

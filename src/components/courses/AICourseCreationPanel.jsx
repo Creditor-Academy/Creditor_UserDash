@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -20,6 +21,7 @@ import {
 } from '../../services/aiCourseService';
 import { generateComprehensiveCourse as generateShowcaseCourse } from '../../services/comprehensiveCourseGenerator';
 import {
+  createAICourse,
   createModule,
   createLesson,
   updateLessonContent,
@@ -34,22 +36,27 @@ import {
 } from '@/services/aiUploadService';
 import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
+import AIStreamingGeneration from './AIStreamingGeneration';
 import '@lessonbuilder/styles/AITextEditor.css';
 
 const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('outline');
   const [isMinimized, setIsMinimized] = useState(false);
   const [courseData, setCourseData] = useState({
-    title: '',
-    subject: '',
-    description: '',
+    courseName: '',
+    learningOutcomes: '',
     targetAudience: '',
+    priorKnowledge: 'no',
+    priorKnowledgeDetails: '',
+    description: '',
     duration: '',
     difficulty: 'beginner',
-    objectives: '',
     thumbnail: null,
-    subjectDomain: '',
-    learningObjectives: '',
+    // Keep legacy fields for backwards compatibility
+    title: '',
+    subject: '',
+    objectives: '',
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiOutline, setAiOutline] = useState(null);
@@ -73,7 +80,17 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [textEditorType, setTextEditorType] = useState('paragraph');
   const [generatedTextBlocks, setGeneratedTextBlocks] = useState([]);
   const [generationMode, setGenerationMode] = useState('STANDARD');
+  const [showStreamingModal, setShowStreamingModal] = useState(false);
+  const [isStreamingGeneration, setIsStreamingGeneration] = useState(false);
+  const [streamingMessages, setStreamingMessages] = useState([]);
+  const [streamingProgress, setStreamingProgress] = useState(0);
+  const [currentBlock, setCurrentBlock] = useState(null);
+  const [createdCourseId, setCreatedCourseId] = useState(null);
+  const [createdModuleId, setCreatedModuleId] = useState(null);
+  const [createdLessonId, setCreatedLessonId] = useState(null);
+  const [generateThumbnails, setGenerateThumbnails] = useState('yes');
   const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   // Handle text editor save
   const handleTextEditorSave = textData => {
@@ -90,6 +107,80 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   };
 
   const tabs = [{ id: 'outline', label: 'Course Outline', icon: BookOpen }];
+
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [streamingMessages]);
+
+  // Add streaming message
+  const addStreamingMessage = (text, type = 'ai') => {
+    setStreamingMessages(prev => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        text,
+        type,
+        timestamp: new Date(),
+      },
+    ]);
+  };
+
+  // Start inline streaming generation
+  const startInlineGeneration = async () => {
+    setIsStreamingGeneration(true);
+    setStreamingMessages([]);
+    setStreamingProgress(0);
+
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    try {
+      // Step 1: Welcome
+      addStreamingMessage(
+        `🎓 Welcome! Creating "${courseData.courseName || courseData.title}"...`,
+        'ai'
+      );
+      await delay(800);
+      setStreamingProgress(10);
+
+      // Step 2: Understanding
+      addStreamingMessage(
+        `📋 Understanding your requirements...\n\n` +
+          `👥 Audience: ${courseData.targetAudience}\n` +
+          `🎯 Outcome: ${courseData.learningOutcomes}\n` +
+          `📚 Prerequisites: ${courseData.priorKnowledge === 'yes' ? courseData.priorKnowledgeDetails : 'None'}`,
+        'ai'
+      );
+      await delay(1200);
+      setStreamingProgress(30);
+
+      // Step 3: Start generation
+      addStreamingMessage('🏗️ Building course structure...', 'ai');
+      await delay(1000);
+
+      // Trigger actual generation
+      await generateCourseOutline();
+
+      setStreamingProgress(100);
+      addStreamingMessage(
+        '✅ Course generated successfully! Review below and click "Create Course" when ready.',
+        'success'
+      );
+
+      // Reset after a delay
+      setTimeout(() => {
+        setIsStreamingGeneration(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Generation error:', error);
+      addStreamingMessage('❌ Generation failed. Please try again.', 'error');
+      setIsStreamingGeneration(false);
+    }
+  };
 
   // Handle drag and drop events
   const handleDragEnter = e => {
@@ -203,9 +294,11 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         targetAudience: courseData.targetAudience || 'professionals',
         moduleCount: 1, // ONE MODULE ONLY
         lessonsPerModule: 1, // ONE LESSON ONLY
+        generateThumbnails: generateThumbnails === 'yes', // Pass thumbnail setting
       };
 
       console.log('📋 Comprehensive course data:', comprehensiveCourseData);
+      console.log('🎨 Thumbnail generation:', generateThumbnails);
 
       // Generate comprehensive course with showcase lesson
       const result = await generateShowcaseCourse(comprehensiveCourseData);
@@ -387,135 +480,303 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     }
   };
 
-  // Save the AI-generated course
+  // Save the AI-generated course with real-time progress
   const handleSaveCourse = async () => {
     // Validate required fields before saving
-    if (!courseData.title?.trim()) {
-      console.log('⚠️ Course title is required');
+    const courseTitle =
+      courseData.courseName?.trim() || courseData.title?.trim();
+    const courseDesc =
+      courseData.learningOutcomes?.trim() || courseData.description?.trim();
+
+    if (!courseTitle) {
+      toast.error('Course name is required');
       return;
     }
 
-    if (!courseData.description?.trim()) {
-      console.log('⚠️ Course description is required');
+    if (!courseDesc) {
+      toast.error('Learning outcomes are required');
       return;
     }
 
     setIsCreatingCourse(true);
-    setCreationProgress('Initializing course creation...');
+    setIsStreamingGeneration(true);
+    setStreamingMessages([]);
+    setStreamingProgress(0);
+    setCurrentBlock(null);
+    setCreatedCourseId(null);
+    setCreatedModuleId(null);
+    setCreatedLessonId(null);
 
     try {
-      console.log('Creating complete AI course with deployed backend APIs...');
+      console.log('🚀 Creating AI course with real-time progress...');
+      console.log('📋 Course data:', {
+        courseTitle,
+        courseDesc,
+        generateThumbnails,
+      });
 
-      setCreationProgress('Preparing course data...');
+      // Step 1: Create Course (10% progress)
+      addStreamingMessage('🎓 Creating course...', 'ai');
+      setStreamingProgress(10);
 
-      // Prepare course data for the new backend-integrated service
-      const completeAICourseData = {
-        title: courseData.title.trim(),
-        description: courseData.description.trim(),
-        subject: courseData.subject?.trim() || courseData.title.trim(),
-        targetAudience: courseData.targetAudience?.trim() || 'General learners',
+      // Build course payload - only include thumbnail if it exists
+      const coursePayload = {
+        title: courseTitle,
+        description: courseDesc,
         difficulty: courseData.difficulty || 'beginner',
         duration: courseData.duration?.trim() || '4 weeks',
-        learningObjectives:
-          courseData.objectives?.trim() || 'Learn new skills and concepts',
         max_students: 100,
-        price: '0',
-        thumbnail: courseData.thumbnail || null,
-        generationMode: generationMode, // Pass generation mode for content generation
-        // Include comprehensive course structure with thumbnails if available
-        comprehensiveCourseStructure: aiOutline || null,
+        price: 0,
       };
 
-      console.log('Creating AI course with payload:', completeAICourseData);
+      // Only add thumbnail if it has a valid value
+      if (courseData.thumbnail && courseData.thumbnail.trim() !== '') {
+        coursePayload.thumbnail = courseData.thumbnail;
+      }
 
-      if (aiOutline) {
-        console.log(
-          '🎨 Using comprehensive course structure with thumbnails:',
-          {
-            moduleCount: aiOutline.modules?.length || 0,
-            moduleThumbnail:
-              aiOutline.modules?.[0]?.thumbnail || 'Not available',
-            lessonThumbnail:
-              aiOutline.modules?.[0]?.lessons?.[0]?.thumbnail ||
-              'Not available',
+      const courseResult = await createAICourse(coursePayload);
+
+      console.log('✅ Course API response:', courseResult);
+
+      if (!courseResult) {
+        throw new Error('No response from course creation API');
+      }
+
+      // Extract ID from nested data structure (backend returns {code, data, success, message})
+      const newCourseId = courseResult.data?.id || courseResult.id;
+
+      if (!newCourseId) {
+        console.error('❌ Course result missing ID:', courseResult);
+        throw new Error('Failed to create course - no ID returned');
+      }
+      setCreatedCourseId(newCourseId);
+      addStreamingMessage(`✅ Course created: "${courseTitle}"`, 'success');
+      setStreamingProgress(20);
+
+      // Step 2: Create Module (30% progress)
+      if (generateThumbnails === 'yes') {
+        addStreamingMessage('📚 Creating module with AI thumbnail...', 'ai');
+      } else {
+        addStreamingMessage('📚 Creating module (without thumbnail)...', 'ai');
+      }
+      setStreamingProgress(30);
+
+      const moduleTitle = aiOutline?.modules?.[0]?.title || 'Module 1';
+      const moduleDescription =
+        aiOutline?.modules?.[0]?.description || 'Course module content';
+
+      // Build module payload - only include thumbnail if it exists
+      const modulePayload = {
+        title: moduleTitle,
+        description: moduleDescription,
+        order: 1,
+        price: 0,
+        module_status: 'PUBLISHED',
+      };
+
+      // Only add thumbnail if generateThumbnails is 'yes' AND a valid thumbnail exists
+      const moduleThumbnail = aiOutline?.modules?.[0]?.thumbnail;
+      if (generateThumbnails === 'yes' && moduleThumbnail) {
+        modulePayload.thumbnail = moduleThumbnail;
+      }
+
+      const moduleResult = await createModule(newCourseId, modulePayload);
+
+      console.log('✅ Module API response:', moduleResult);
+
+      // Extract ID from nested data structure
+      const newModuleId = moduleResult?.data?.id || moduleResult?.id;
+
+      if (!newModuleId) {
+        console.error('❌ Module result missing ID:', moduleResult);
+        throw new Error('Failed to create module - no ID returned');
+      }
+      setCreatedModuleId(newModuleId);
+      addStreamingMessage(`✅ Module created: "${moduleTitle}"`, 'success');
+      setStreamingProgress(40);
+
+      // Step 3: Create Lesson (50% progress)
+      if (generateThumbnails === 'yes') {
+        addStreamingMessage('📖 Creating lesson with AI thumbnail...', 'ai');
+      } else {
+        addStreamingMessage('📖 Creating lesson (without thumbnail)...', 'ai');
+      }
+      setStreamingProgress(50);
+
+      const lessonTitle =
+        aiOutline?.modules?.[0]?.lessons?.[0]?.title || 'Lesson 1';
+      const lessonDescription =
+        aiOutline?.modules?.[0]?.lessons?.[0]?.description || 'Lesson content';
+
+      // Build lesson payload - only include thumbnail if it exists
+      const lessonPayload = {
+        title: lessonTitle,
+        description: lessonDescription,
+        order: 1,
+        status: 'PUBLISHED',
+        duration: '15 min',
+      };
+
+      // Only add thumbnail if generateThumbnails is 'yes' AND a valid thumbnail exists
+      const lessonThumbnail = aiOutline?.modules?.[0]?.lessons?.[0]?.thumbnail;
+      if (generateThumbnails === 'yes' && lessonThumbnail) {
+        lessonPayload.thumbnail = lessonThumbnail;
+      }
+
+      const lessonResult = await createLesson(
+        newCourseId,
+        newModuleId,
+        lessonPayload
+      );
+
+      console.log('✅ Lesson API response:', lessonResult);
+
+      // Extract ID from nested data structure
+      const newLessonId = lessonResult?.data?.id || lessonResult?.id;
+
+      if (!newLessonId) {
+        console.error('❌ Lesson result missing ID:', lessonResult);
+        throw new Error('Failed to create lesson - no ID returned');
+      }
+      setCreatedLessonId(newLessonId);
+      addStreamingMessage(`✅ Lesson created: "${lessonTitle}"`, 'success');
+      setStreamingProgress(60);
+
+      // Step 4: Generate Lesson Content (60-95% progress)
+      addStreamingMessage('✨ Generating lesson content blocks...', 'ai');
+      setStreamingProgress(65);
+
+      // Import content library service
+      const contentLibraryAIService = (
+        await import('@/services/contentLibraryAIService')
+      ).default;
+
+      const progressStep = 30 / 30; // 30% progress over 30 blocks (10 sections x 3 blocks)
+      let currentProgress = 65;
+
+      const lessonBlocks =
+        await contentLibraryAIService.generateSimpleLessonContent(
+          lessonTitle,
+          moduleTitle,
+          courseData.title,
+          blockInfo => {
+            // Update current block display
+            setCurrentBlock(blockInfo);
+
+            // Add message for each section completion
+            if (blockInfo.blockType === 'Continue Button') {
+              addStreamingMessage(
+                `📝 Section ${blockInfo.section}/10 completed`,
+                'ai'
+              );
+            }
+
+            // Update progress
+            currentProgress += progressStep;
+            setStreamingProgress(Math.min(95, Math.round(currentProgress)));
           }
         );
-      } else {
-        console.log(
-          '⚠️ No comprehensive course structure available - will generate basic outline'
-        );
-      }
 
-      setCreationProgress('Creating course structure...');
+      // Step 5: Save Lesson Content (95-100%)
+      addStreamingMessage('💾 Saving lesson content...', 'ai');
+      setStreamingProgress(95);
 
-      // Add a small delay to show the progress
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // ✅ Use html_css from content library (already properly formatted)
+      const formattedBlocks = lessonBlocks.map((block, index) => {
+        // ✅ Use the html_css that content library already generated
+        // Content library creates proper gradient styles, divider buttons, etc.
+        const html_css = block.html_css || block.content || '';
 
-      setCreationProgress('Generating AI content...');
+        // ✅ Also include subtype for dividers (continue, numbered_divider, etc.)
+        const subtype = block.subtype || block.details?.subtype || null;
 
-      // Use the new backend-integrated service to create complete course
-      const result = await createCompleteAICourse(completeAICourseData);
+        return {
+          type: block.type,
+          block_id: block.id || `block_${index + 1}`,
+          html_css: html_css, // ✅ Preserve original html_css from content library
+          order: block.order !== undefined ? block.order : index + 1,
+          ...(subtype && { subtype: subtype }), // ✅ Include subtype for dividers
+          details: {
+            ...(block.textType && { text_type: block.textType }),
+            ...(block.gradient && { gradient: block.gradient }),
+            ...(block.subtype && { subtype: block.subtype }),
+            ...(block.metadata && { ...block.metadata }),
+          },
+        };
+      });
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create complete AI course');
-      }
+      console.log('📦 Formatted blocks for backend:', formattedBlocks);
 
-      setCreationProgress('Finalizing course creation...');
+      // Fix: updateLessonContent only takes (lessonId, contentData)
+      await updateLessonContent(newLessonId, {
+        content: formattedBlocks,
+        blocks: formattedBlocks,
+        metadata: {
+          aiGenerated: true,
+          generatedAt: new Date().toISOString(),
+          blockCount: formattedBlocks.length,
+        },
+      });
 
-      // Add another small delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
+      addStreamingMessage('✅ Lesson content saved successfully!', 'success');
+      setStreamingProgress(100);
+      setCurrentBlock(null);
 
-      console.log('Complete AI course created successfully:', result.data);
-
-      // Log thumbnail information for debugging
-      if (result.data && result.data.modules) {
-        console.log('🎨 Final course creation result - Thumbnail check:', {
-          courseId: result.data.courseId,
-          moduleCount: result.data.modules?.length || 0,
-          moduleThumbnails:
-            result.data.modules?.map(m => ({
-              moduleId: m.id,
-              title: m.title,
-              thumbnail: m.thumbnail || 'No thumbnail',
-            })) || [],
-          lessonThumbnails:
-            result.data.lessons?.map(l => ({
-              lessonId: l.id,
-              title: l.title,
-              thumbnail: l.thumbnail || 'No thumbnail',
-            })) || [],
-        });
-      }
-
-      setCreationProgress('Course created successfully!');
+      // Success message
+      addStreamingMessage(
+        `🎉 Course "${courseTitle}" created successfully!\n\n` +
+          `📊 Summary:\n` +
+          `• 1 Module created\n` +
+          `• 1 Lesson with ${lessonBlocks.length} content blocks\n` +
+          `• Ready to view in lesson editor`,
+        'success'
+      );
 
       // Notify parent component
       if (onCourseCreated) {
-        const courseObj = result.data.course?.data || result.data.course;
-        onCourseCreated(courseObj);
+        onCourseCreated(courseResult);
       }
 
-      // Show detailed success message
-      console.log(
-        `✅ Course "${courseData.title}" created successfully! Modules: ${result.data.totalModules}, Lessons: ${result.data.totalLessons}`
-      );
-
-      // Close the panel
-      onClose();
-    } catch (error) {
-      console.error('Failed to save AI course:', error);
-      setCreationProgress('');
-      console.error('❌ Failed to save course:', error.message);
-      // Log detailed error for debugging
-      console.error('AI course save error details:', {
-        message: error.message,
-        stack: error.stack,
-        courseData: courseData,
-        aiOutline: aiOutline,
+      console.log('✅ Course creation complete:', {
+        courseId: newCourseId,
+        moduleId: newModuleId,
+        lessonId: newLessonId,
+        blockCount: lessonBlocks.length,
       });
+
+      // Auto-navigate to lesson editor after 2 seconds
+      setTimeout(() => {
+        const lessonEditorUrl = `/dashboard/courses/${newCourseId}/module/${newModuleId}/lesson/${newLessonId}/builder`;
+        console.log('🔀 Navigating to lesson editor:', lessonEditorUrl);
+
+        // Use React Router navigate with lesson data state
+        navigate(lessonEditorUrl, {
+          state: {
+            lessonData: {
+              id: newLessonId,
+              title: lessonTitle,
+              contentBlocks: formattedBlocks,
+            },
+          },
+        });
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Failed to create AI course:', error);
+      addStreamingMessage(
+        `❌ Error: ${error.message}\n\nPlease try again or contact support.`,
+        'error'
+      );
+      setStreamingProgress(0);
+      setCurrentBlock(null);
+
+      // Reset back to form after 3 seconds
+      setTimeout(() => {
+        setIsStreamingGeneration(false);
+        setStreamingMessages([]);
+        setStreamingProgress(0);
+      }, 3000);
     } finally {
       setIsCreatingCourse(false);
-      setCreationProgress('');
     }
   };
 
@@ -570,6 +831,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
             description: `Generated module containing ${moduleLessons.length} lessons`,
             order: createdModules.length + 1,
             price: 0, // Required field
+            module_status: 'PUBLISHED',
             thumbnail:
               moduleLessons[0]?.moduleThumbnail ||
               moduleLessons[0]?.module_thumbnail_url ||
@@ -1011,515 +1273,817 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                         );
                       })}
                     </div>
-
-                    {/* Content Area */}
                     <div className="flex-1 overflow-y-auto p-6">
                       {activeTab === 'outline' && (
                         <div className="space-y-6">
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Course Title *
-                              </label>
-                              <input
-                                type="text"
-                                value={courseData.title}
-                                onChange={e =>
-                                  setCourseData(prev => ({
-                                    ...prev,
-                                    title: e.target.value,
-                                  }))
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="e.g., Introduction to React"
-                              />
-                            </div>
+                          {/* Inline Streaming Generation UI */}
+                          {isStreamingGeneration && (
+                            <div className="space-y-4">
+                              {/* Progress Bar */}
+                              <div className="bg-white rounded-lg border border-indigo-200 p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm font-semibold text-gray-700">
+                                    Generating Course...
+                                  </span>
+                                  <span className="text-sm font-bold text-indigo-600">
+                                    {streamingProgress}%
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                  <motion.div
+                                    className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${streamingProgress}%` }}
+                                    transition={{ duration: 0.5 }}
+                                  />
+                                </div>
+                              </div>
 
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Subject Domain
-                              </label>
-                              <input
-                                type="text"
-                                value={courseData.subject}
-                                onChange={e =>
-                                  setCourseData(prev => ({
-                                    ...prev,
-                                    subject: e.target.value,
-                                  }))
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="e.g., Web Development"
-                              />
-                            </div>
+                              {/* Current Block Display */}
+                              {currentBlock && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 shadow-sm"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0">
+                                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                        {currentBlock.section}
+                                      </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs font-bold text-purple-600 uppercase tracking-wide">
+                                          {currentBlock.blockType}
+                                        </span>
+                                        {currentBlock.gradient && (
+                                          <span className="text-xs text-pink-600 font-medium">
+                                            • {currentBlock.gradient}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-gray-800 font-medium truncate">
+                                        {currentBlock.content}
+                                      </p>
+                                      <div className="mt-2 text-xs text-gray-500">
+                                        Section {currentBlock.section} of{' '}
+                                        {currentBlock.totalSections}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
 
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Course Description
-                              </label>
-                              <textarea
-                                value={courseData.description}
-                                onChange={e =>
-                                  setCourseData(prev => ({
-                                    ...prev,
-                                    description: e.target.value,
-                                  }))
-                                }
-                                rows="3"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="Briefly describe what this course covers..."
-                              />
-                            </div>
+                              {/* Streaming Messages */}
+                              <div className="space-y-3">
+                                <AnimatePresence>
+                                  {streamingMessages.map((message, index) => (
+                                    <motion.div
+                                      key={message.id}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className={`p-4 rounded-lg border ${
+                                        message.type === 'success'
+                                          ? 'bg-green-50 border-green-200'
+                                          : message.type === 'error'
+                                            ? 'bg-red-50 border-red-200'
+                                            : 'bg-indigo-50 border-indigo-200'
+                                      }`}
+                                    >
+                                      <p className="text-sm text-gray-800 whitespace-pre-line">
+                                        {message.text}
+                                      </p>
+                                    </motion.div>
+                                  ))}
+                                </AnimatePresence>
+                                <div ref={messagesEndRef} />
+                              </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Duration
+                              {/* Open in Lesson Editor Button */}
+                              {streamingProgress === 100 &&
+                                createdCourseId &&
+                                createdModuleId &&
+                                createdLessonId && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="pt-4"
+                                  >
+                                    <Button
+                                      onClick={() => {
+                                        // Navigate to lesson editor
+                                        window.location.href = `/courses/${createdCourseId}/modules/${createdModuleId}/lessons/${createdLessonId}/builder`;
+                                      }}
+                                      className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                                    >
+                                      <Book className="w-5 h-5" />
+                                      <span>Open in Lesson Editor</span>
+                                    </Button>
+                                  </motion.div>
+                                )}
+                            </div>
+                          )}
+
+                          {/* Form - Hidden during generation */}
+                          {!isStreamingGeneration && (
+                            <div className="space-y-6">
+                              {/* 1. Course Name */}
+                              <div className="group">
+                                <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">
+                                    1
+                                  </span>
+                                  Course Name *
                                 </label>
                                 <input
                                   type="text"
-                                  value={courseData.duration}
-                                  onChange={e =>
+                                  value={courseData.courseName}
+                                  onChange={e => {
+                                    const value = e.target.value;
                                     setCourseData(prev => ({
                                       ...prev,
-                                      duration: e.target.value,
-                                    }))
-                                  }
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                  placeholder="e.g., 4 weeks"
+                                      courseName: value,
+                                      title: value, // Sync legacy field
+                                    }));
+                                  }}
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all group-hover:border-gray-300"
+                                  placeholder="e.g., Introduction to React Development"
                                 />
                               </div>
 
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Difficulty
+                              {/* 2. Learning Outcomes */}
+                              <div className="group">
+                                <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">
+                                    2
+                                  </span>
+                                  What will learners be able to do after the
+                                  course? *
                                 </label>
-                                <select
-                                  value={courseData.difficulty}
+                                <textarea
+                                  value={courseData.learningOutcomes}
+                                  onChange={e => {
+                                    const value = e.target.value;
+                                    setCourseData(prev => ({
+                                      ...prev,
+                                      learningOutcomes: value,
+                                      objectives: value, // Sync legacy field
+                                    }));
+                                  }}
+                                  rows="3"
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all group-hover:border-gray-300"
+                                  placeholder="e.g., Build responsive web applications, understand React hooks, create reusable components..."
+                                />
+                              </div>
+
+                              {/* 3. Target Audience */}
+                              <div className="group">
+                                <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-pink-100 text-pink-600 text-xs font-bold">
+                                    3
+                                  </span>
+                                  Who is this course for? (one job/role) *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={courseData.targetAudience}
+                                  onChange={e => {
+                                    const value = e.target.value;
+                                    setCourseData(prev => ({
+                                      ...prev,
+                                      targetAudience: value,
+                                      subject: value, // Sync legacy field
+                                    }));
+                                  }}
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all group-hover:border-gray-300"
+                                  placeholder="e.g., Junior Frontend Developer, Marketing Manager, Data Analyst..."
+                                />
+                              </div>
+
+                              {/* 4. Prior Knowledge */}
+                              <div className="group">
+                                <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 text-xs font-bold">
+                                    4
+                                  </span>
+                                  Do learners need any prior knowledge? *
+                                </label>
+
+                                <div className="flex gap-4 mb-3">
+                                  <label
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                      courseData.priorKnowledge === 'no'
+                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="priorKnowledge"
+                                      value="no"
+                                      checked={
+                                        courseData.priorKnowledge === 'no'
+                                      }
+                                      onChange={e =>
+                                        setCourseData(prev => ({
+                                          ...prev,
+                                          priorKnowledge: e.target.value,
+                                          priorKnowledgeDetails: '',
+                                        }))
+                                      }
+                                      className="w-4 h-4 text-emerald-600"
+                                    />
+                                    <span className="font-medium">No</span>
+                                  </label>
+
+                                  <label
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                      courseData.priorKnowledge === 'yes'
+                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="priorKnowledge"
+                                      value="yes"
+                                      checked={
+                                        courseData.priorKnowledge === 'yes'
+                                      }
+                                      onChange={e =>
+                                        setCourseData(prev => ({
+                                          ...prev,
+                                          priorKnowledge: e.target.value,
+                                        }))
+                                      }
+                                      className="w-4 h-4 text-emerald-600"
+                                    />
+                                    <span className="font-medium">Yes</span>
+                                  </label>
+                                </div>
+
+                                {courseData.priorKnowledge === 'yes' && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="mt-3"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={courseData.priorKnowledgeDetails}
+                                      onChange={e =>
+                                        setCourseData(prev => ({
+                                          ...prev,
+                                          priorKnowledgeDetails: e.target.value,
+                                        }))
+                                      }
+                                      className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50/50"
+                                      placeholder="Write the required prior knowledge..."
+                                    />
+                                  </motion.div>
+                                )}
+                              </div>
+
+                              {/* 5. Generate Thumbnails */}
+                              <div className="group">
+                                <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-xs font-bold">
+                                    5
+                                  </span>
+                                  Generate AI Thumbnails for Module & Lesson? *
+                                </label>
+
+                                <div className="flex gap-4">
+                                  <label
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                      generateThumbnails === 'yes'
+                                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="generateThumbnails"
+                                      value="yes"
+                                      checked={generateThumbnails === 'yes'}
+                                      onChange={e =>
+                                        setGenerateThumbnails(e.target.value)
+                                      }
+                                      className="w-4 h-4 text-orange-600"
+                                    />
+                                    <span className="font-medium">Yes</span>
+                                  </label>
+
+                                  <label
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                      generateThumbnails === 'no'
+                                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="generateThumbnails"
+                                      value="no"
+                                      checked={generateThumbnails === 'no'}
+                                      onChange={e =>
+                                        setGenerateThumbnails(e.target.value)
+                                      }
+                                      className="w-4 h-4 text-orange-600"
+                                    />
+                                    <span className="font-medium">No</span>
+                                  </label>
+                                </div>
+
+                                <p className="mt-2 text-xs text-gray-500">
+                                  AI-generated thumbnails will be created using
+                                  DALL-E 3 for visual appeal
+                                </p>
+                              </div>
+
+                              {/* 6. Course Description (Optional) */}
+                              <div className="group">
+                                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                  <BookOpen className="w-4 h-4 text-gray-500" />
+                                  Additional Description (Optional)
+                                </label>
+                                <textarea
+                                  value={courseData.description}
                                   onChange={e =>
                                     setCourseData(prev => ({
                                       ...prev,
-                                      difficulty: e.target.value,
+                                      description: e.target.value,
                                     }))
                                   }
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                >
-                                  <option value="beginner">Beginner</option>
-                                  <option value="intermediate">
-                                    Intermediate
-                                  </option>
-                                  <option value="advanced">Advanced</option>
-                                </select>
+                                  rows="2"
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all group-hover:border-gray-300"
+                                  placeholder="Any additional context or specific topics to cover..."
+                                />
                               </div>
-                            </div>
 
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Learning Objectives
-                              </label>
-                              <textarea
-                                value={courseData.objectives}
-                                onChange={e =>
-                                  setCourseData(prev => ({
-                                    ...prev,
-                                    objectives: e.target.value,
-                                    learningObjectives: e.target.value, // Sync with learningObjectives
-                                  }))
-                                }
-                                rows="2"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="What will students learn?"
-                              />
-                            </div>
+                              {/* Difficulty Level */}
+                              <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Difficulty
+                                  </label>
+                                  <select
+                                    value={courseData.difficulty}
+                                    onChange={e =>
+                                      setCourseData(prev => ({
+                                        ...prev,
+                                        difficulty: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                  >
+                                    <option value="beginner">
+                                      🌱 Beginner
+                                    </option>
+                                    <option value="intermediate">
+                                      ⚡ Intermediate
+                                    </option>
+                                    <option value="advanced">
+                                      🚀 Advanced
+                                    </option>
+                                  </select>
+                                </div>
 
-                            {/* Generation Mode Selector */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Content Generation Mode
-                              </label>
-                              <div className="grid grid-cols-2 gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => setGenerationMode('QUICK')}
-                                  className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                    generationMode === 'QUICK'
-                                      ? 'border-purple-500 bg-purple-50'
-                                      : 'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                >
-                                  <div className="font-semibold text-sm text-gray-900">
-                                    ⚡ Quick
-                                  </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Fast, minimal content
-                                  </div>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setGenerationMode('STANDARD')}
-                                  className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                    generationMode === 'STANDARD'
-                                      ? 'border-purple-500 bg-purple-50'
-                                      : 'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                >
-                                  <div className="font-semibold text-sm text-gray-900">
-                                    ⭐ Standard
-                                  </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Balanced quality
-                                  </div>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setGenerationMode('COMPLETE')}
-                                  className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                    generationMode === 'COMPLETE'
-                                      ? 'border-purple-500 bg-purple-50'
-                                      : 'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                >
-                                  <div className="font-semibold text-sm text-gray-900">
-                                    💎 Complete
-                                  </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Rich multimedia
-                                  </div>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setGenerationMode('PREMIUM')}
-                                  className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                    generationMode === 'PREMIUM'
-                                      ? 'border-purple-500 bg-purple-50'
-                                      : 'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                >
-                                  <div className="font-semibold text-sm text-gray-900">
-                                    👑 Premium
-                                  </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Highest quality
-                                  </div>
-                                </button>
+                                <div className="col-span-2">
+                                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                                    Duration (Optional)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={courseData.duration}
+                                    onChange={e =>
+                                      setCourseData(prev => ({
+                                        ...prev,
+                                        duration: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                    placeholder="e.g., 2 weeks"
+                                  />
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Source Content Section */}
-                            <div className="space-y-3">
-                              <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-800">
-                                  What source content should I reference?
-                                  (Adding content will improve our results.)
+                              {/* Generation Mode Selector */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Content Generation Mode
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => setGenerationMode('QUICK')}
+                                    className={`p-3 border-2 rounded-lg text-left transition-all ${
+                                      generationMode === 'QUICK'
+                                        ? 'border-purple-500 bg-purple-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="font-semibold text-sm text-gray-900">
+                                      ⚡ Quick
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Fast, minimal content
+                                    </div>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setGenerationMode('STANDARD')
+                                    }
+                                    className={`p-3 border-2 rounded-lg text-left transition-all ${
+                                      generationMode === 'STANDARD'
+                                        ? 'border-purple-500 bg-purple-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="font-semibold text-sm text-gray-900">
+                                      ⭐ Standard
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Balanced quality
+                                    </div>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setGenerationMode('COMPLETE')
+                                    }
+                                    className={`p-3 border-2 rounded-lg text-left transition-all ${
+                                      generationMode === 'COMPLETE'
+                                        ? 'border-purple-500 bg-purple-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="font-semibold text-sm text-gray-900">
+                                      💎 Complete
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Rich multimedia
+                                    </div>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setGenerationMode('PREMIUM')}
+                                    className={`p-3 border-2 rounded-lg text-left transition-all ${
+                                      generationMode === 'PREMIUM'
+                                        ? 'border-purple-500 bg-purple-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="font-semibold text-sm text-gray-900">
+                                      👑 Premium
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Highest quality
+                                    </div>
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Source Content Section */}
+                              <div className="space-y-3">
+                                <div className="space-y-2">
+                                  <label className="text-sm font-semibold text-gray-800">
+                                    What source content should I reference?
+                                    (Adding content will improve our results.)
+                                  </label>
+
+                                  {/* Tab Navigation */}
+                                  <div className="flex border-b border-gray-200">
+                                    <button
+                                      type="button"
+                                      className={`py-2 px-4 text-sm font-medium ${
+                                        activeContentTab === 'file'
+                                          ? 'text-purple-600 border-b-2 border-purple-600'
+                                          : 'text-gray-500 hover:text-gray-700'
+                                      }`}
+                                      onClick={() =>
+                                        setActiveContentTab('file')
+                                      }
+                                    >
+                                      Upload Files
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`py-2 px-4 text-sm font-medium ${
+                                        activeContentTab === 'url'
+                                          ? 'text-purple-600 border-b-2 border-purple-600'
+                                          : 'text-gray-500 hover:text-gray-700'
+                                      }`}
+                                      onClick={() => setActiveContentTab('url')}
+                                    >
+                                      Paste URLs
+                                    </button>
+                                  </div>
+
+                                  {/* Tab Content */}
+                                  <div className="pt-3">
+                                    {activeContentTab === 'file' ? (
+                                      <div className="space-y-3">
+                                        {/* File Upload Area */}
+                                        <input
+                                          type="file"
+                                          multiple
+                                          onChange={handleSourceFileUpload}
+                                          className="hidden"
+                                          id="source-file-upload"
+                                          accept=".doc,.docx,.m4a,.mp3,.mp4,.ogg,.pdf,.ppt,.pptx,.sbv,.srt,.story,.sub,.text,.txt,.vtt,.wav,.webm"
+                                        />
+                                        <label
+                                          htmlFor="source-file-upload"
+                                          className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors bg-gray-50 cursor-pointer"
+                                        >
+                                          <div className="flex flex-col items-center">
+                                            <Upload className="w-8 h-8 text-gray-400 mb-3" />
+                                            <p className="text-sm text-gray-600 mb-1">
+                                              Drag & drop any source materials
+                                              or{' '}
+                                              <span className="text-purple-600 font-medium">
+                                                choose file
+                                              </span>
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                              Supported file types and sizes
+                                            </p>
+                                          </div>
+                                        </label>
+
+                                        {/* File Types and Sizes Info */}
+                                        <div className="text-xs text-gray-500 space-y-1">
+                                          <p>
+                                            Supported file types: .doc, .docx,
+                                            .m4a, .mp3, .mp4, .ogg, .pdf, .ppt,
+                                            .pptx, .sbv, .srt, .story, .sub,
+                                            .text, .txt, .vtt, .wav, or .webm
+                                          </p>
+                                          <p>
+                                            Maximum size: 1 GB, 200K characters
+                                            or less per file.
+                                          </p>
+                                        </div>
+
+                                        {/* Uploaded Files */}
+                                        {uploadedFiles.length > 0 && (
+                                          <div className="space-y-2">
+                                            <p className="text-sm font-medium text-gray-700">
+                                              Uploaded Files:
+                                            </p>
+                                            {uploadedFiles.map(
+                                              (file, index) => (
+                                                <div
+                                                  key={`${file.name}-${index}`}
+                                                  className="flex items-center justify-between bg-purple-50 p-3 rounded-lg"
+                                                >
+                                                  <span className="text-gray-700 truncate flex items-center gap-2">
+                                                    <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                                                    <span className="text-sm">
+                                                      {file.name}
+                                                    </span>
+                                                  </span>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      removeFile(index)
+                                                    }
+                                                    className="text-gray-500 hover:text-gray-700 h-6 w-6 p-0"
+                                                  >
+                                                    <X className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-3">
+                                        <textarea
+                                          value={sourceContent}
+                                          onChange={e =>
+                                            setSourceContent(e.target.value)
+                                          }
+                                          placeholder="Paste text or URLs you want me to reference"
+                                          rows="4"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                          You can paste URLs, text content, or
+                                          any reference material here
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Thumbnail Section with Tabs */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Course Thumbnail
                                 </label>
 
                                 {/* Tab Navigation */}
-                                <div className="flex border-b border-gray-200">
+                                <div className="flex border-b border-gray-200 mb-3">
                                   <button
                                     type="button"
                                     className={`py-2 px-4 text-sm font-medium ${
-                                      activeContentTab === 'file'
+                                      activeThumbnailTab === 'upload'
                                         ? 'text-purple-600 border-b-2 border-purple-600'
                                         : 'text-gray-500 hover:text-gray-700'
                                     }`}
-                                    onClick={() => setActiveContentTab('file')}
+                                    onClick={() =>
+                                      setActiveThumbnailTab('upload')
+                                    }
                                   >
-                                    Upload Files
+                                    Upload Image
                                   </button>
                                   <button
                                     type="button"
                                     className={`py-2 px-4 text-sm font-medium ${
-                                      activeContentTab === 'url'
+                                      activeThumbnailTab === 'ai'
                                         ? 'text-purple-600 border-b-2 border-purple-600'
                                         : 'text-gray-500 hover:text-gray-700'
                                     }`}
-                                    onClick={() => setActiveContentTab('url')}
+                                    onClick={() => setActiveThumbnailTab('ai')}
                                   >
-                                    Paste URLs
+                                    Generate with AI
                                   </button>
                                 </div>
 
                                 {/* Tab Content */}
-                                <div className="pt-3">
-                                  {activeContentTab === 'file' ? (
-                                    <div className="space-y-3">
-                                      {/* File Upload Area */}
-                                      <input
-                                        type="file"
-                                        multiple
-                                        onChange={handleSourceFileUpload}
-                                        className="hidden"
-                                        id="source-file-upload"
-                                        accept=".doc,.docx,.m4a,.mp3,.mp4,.ogg,.pdf,.ppt,.pptx,.sbv,.srt,.story,.sub,.text,.txt,.vtt,.wav,.webm"
-                                      />
-                                      <label
-                                        htmlFor="source-file-upload"
-                                        className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors bg-gray-50 cursor-pointer"
-                                      >
-                                        <div className="flex flex-col items-center">
-                                          <Upload className="w-8 h-8 text-gray-400 mb-3" />
-                                          <p className="text-sm text-gray-600 mb-1">
-                                            Drag & drop any source materials or{' '}
-                                            <span className="text-purple-600 font-medium">
-                                              choose file
-                                            </span>
-                                          </p>
-                                          <p className="text-xs text-gray-500 mt-2">
-                                            Supported file types and sizes
-                                          </p>
-                                        </div>
-                                      </label>
-
-                                      {/* File Types and Sizes Info */}
-                                      <div className="text-xs text-gray-500 space-y-1">
-                                        <p>
-                                          Supported file types: .doc, .docx,
-                                          .m4a, .mp3, .mp4, .ogg, .pdf, .ppt,
-                                          .pptx, .sbv, .srt, .story, .sub,
-                                          .text, .txt, .vtt, .wav, or .webm
-                                        </p>
-                                        <p>
-                                          Maximum size: 1 GB, 200K characters or
-                                          less per file.
-                                        </p>
-                                      </div>
-
-                                      {/* Uploaded Files */}
-                                      {uploadedFiles.length > 0 && (
-                                        <div className="space-y-2">
-                                          <p className="text-sm font-medium text-gray-700">
-                                            Uploaded Files:
-                                          </p>
-                                          {uploadedFiles.map((file, index) => (
-                                            <div
-                                              key={`${file.name}-${index}`}
-                                              className="flex items-center justify-between bg-purple-50 p-3 rounded-lg"
-                                            >
-                                              <span className="text-gray-700 truncate flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-purple-500 flex-shrink-0" />
-                                                <span className="text-sm">
-                                                  {file.name}
-                                                </span>
-                                              </span>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                  removeFile(index)
-                                                }
-                                                className="text-gray-500 hover:text-gray-700 h-6 w-6 p-0"
-                                              >
-                                                <X className="w-4 h-4" />
-                                              </Button>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-3">
-                                      <textarea
-                                        value={sourceContent}
-                                        onChange={e =>
-                                          setSourceContent(e.target.value)
-                                        }
-                                        placeholder="Paste text or URLs you want me to reference"
-                                        rows="4"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                      />
-                                      <p className="text-xs text-gray-500">
-                                        You can paste URLs, text content, or any
-                                        reference material here
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Thumbnail Section with Tabs */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Course Thumbnail
-                              </label>
-
-                              {/* Tab Navigation */}
-                              <div className="flex border-b border-gray-200 mb-3">
-                                <button
-                                  type="button"
-                                  className={`py-2 px-4 text-sm font-medium ${
-                                    activeThumbnailTab === 'upload'
-                                      ? 'text-purple-600 border-b-2 border-purple-600'
-                                      : 'text-gray-500 hover:text-gray-700'
-                                  }`}
-                                  onClick={() =>
-                                    setActiveThumbnailTab('upload')
-                                  }
-                                >
-                                  Upload Image
-                                </button>
-                                <button
-                                  type="button"
-                                  className={`py-2 px-4 text-sm font-medium ${
-                                    activeThumbnailTab === 'ai'
-                                      ? 'text-purple-600 border-b-2 border-purple-600'
-                                      : 'text-gray-500 hover:text-gray-700'
-                                  }`}
-                                  onClick={() => setActiveThumbnailTab('ai')}
-                                >
-                                  Generate with AI
-                                </button>
-                              </div>
-
-                              {/* Tab Content */}
-                              {activeThumbnailTab === 'upload' ? (
-                                <div
-                                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging ? 'border-purple-500 bg-purple-50' : 'border-gray-300 hover:border-gray-400'}`}
-                                  onDragEnter={handleDragEnter}
-                                  onDragOver={handleDragOver}
-                                  onDragLeave={handleDragLeave}
-                                  onDrop={handleDrop}
-                                  onClick={() => fileInputRef.current?.click()}
-                                >
-                                  <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    onChange={handleFileInput}
-                                    accept="image/*"
-                                  />
-                                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                  <p className="text-sm text-gray-600 mb-1">
-                                    {courseData.thumbnail
-                                      ? courseData.thumbnail
-                                      : 'Drag & drop an image or click to browse'}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    PNG, JPG up to 5MB
-                                  </p>
-                                </div>
-                              ) : (
-                                <div className="space-y-4">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      AI Image Prompt
-                                    </label>
-                                    <textarea
-                                      value={aiImagePrompt}
-                                      onChange={e =>
-                                        setAiImagePrompt(e.target.value)
-                                      }
-                                      placeholder={`Describe the image you want to generate for "${courseData.title || 'your course'}"`}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                      rows={3}
-                                    />
-                                    {!aiImagePrompt && courseData.title && (
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        Using course title as prompt:
-                                        "Professional course thumbnail for "
-                                        {courseData.title}" - educational,
-                                        modern, clean design"
-                                      </p>
-                                    )}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={generateAiThumbnail}
-                                    disabled={aiImageGenerating}
-                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                                {activeThumbnailTab === 'upload' ? (
+                                  <div
+                                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging ? 'border-purple-500 bg-purple-50' : 'border-gray-300 hover:border-gray-400'}`}
+                                    onDragEnter={handleDragEnter}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    onClick={() =>
+                                      fileInputRef.current?.click()
+                                    }
                                   >
-                                    {aiImageGenerating ? (
-                                      <>
-                                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
-                                        Generating...
-                                      </>
-                                    ) : (
-                                      'Generate AI Thumbnail'
-                                    )}
-                                  </button>
-                                  {aiImageError && (
-                                    <div className="text-sm text-red-600">
-                                      {aiImageError}
-                                    </div>
-                                  )}
-
-                                  <div className="text-xs text-gray-500">
-                                    <p>
-                                      Tip: Include details like subject matter,
-                                      style, and mood for better results.
+                                    <input
+                                      type="file"
+                                      ref={fileInputRef}
+                                      className="hidden"
+                                      onChange={handleFileInput}
+                                      accept="image/*"
+                                    />
+                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-600 mb-1">
+                                      {courseData.thumbnail
+                                        ? courseData.thumbnail
+                                        : 'Drag & drop an image or click to browse'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      PNG, JPG up to 5MB
                                     </p>
                                   </div>
-                                </div>
+                                ) : (
+                                  <div className="space-y-4">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        AI Image Prompt
+                                      </label>
+                                      <textarea
+                                        value={aiImagePrompt}
+                                        onChange={e =>
+                                          setAiImagePrompt(e.target.value)
+                                        }
+                                        placeholder={`Describe the image you want to generate for "${courseData.title || 'your course'}"`}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                        rows={3}
+                                      />
+                                      {!aiImagePrompt && courseData.title && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Using course title as prompt:
+                                          "Professional course thumbnail for "
+                                          {courseData.title}" - educational,
+                                          modern, clean design"
+                                        </p>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={generateAiThumbnail}
+                                      disabled={aiImageGenerating}
+                                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                                    >
+                                      {aiImageGenerating ? (
+                                        <>
+                                          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                                          Generating...
+                                        </>
+                                      ) : (
+                                        'Generate AI Thumbnail'
+                                      )}
+                                    </button>
+                                    {aiImageError && (
+                                      <div className="text-sm text-red-600">
+                                        {aiImageError}
+                                      </div>
+                                    )}
+
+                                    <div className="text-xs text-gray-500">
+                                      <p>
+                                        Tip: Include details like subject
+                                        matter, style, and mood for better
+                                        results.
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Generate Course Button - Opens Streaming Modal */}
+                              {!aiOutline && (
+                                <Button
+                                  onClick={() => {
+                                    // Validate required fields
+                                    if (!courseData.courseName.trim()) {
+                                      toast.error('Please enter a course name');
+                                      return;
+                                    }
+                                    if (!courseData.learningOutcomes.trim()) {
+                                      toast.error(
+                                        'Please describe what learners will be able to do'
+                                      );
+                                      return;
+                                    }
+                                    if (!courseData.targetAudience.trim()) {
+                                      toast.error(
+                                        'Please specify who this course is for'
+                                      );
+                                      return;
+                                    }
+                                    // Start inline generation
+                                    startInlineGeneration();
+                                  }}
+                                  disabled={isGenerating}
+                                  className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold shadow-lg hover:shadow-xl transition-all text-base sm:text-lg flex items-center justify-center gap-2"
+                                >
+                                  <Sparkles className="w-5 h-5 flex-shrink-0" />
+                                  <span className="whitespace-normal text-center leading-tight">
+                                    🎯 Generate Comprehensive Course
+                                  </span>
+                                </Button>
+                              )}
+
+                              {/* Show Course Editor button when outline exists */}
+                              {aiOutline && (
+                                <>
+                                  <Button
+                                    onClick={() => setShowLessonCreator(true)}
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 mt-3"
+                                  >
+                                    <Book className="w-4 h-4" />
+                                    Course Editor
+                                  </Button>
+                                  <Button
+                                    onClick={handleSaveCourse}
+                                    disabled={isCreatingCourse}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mt-3"
+                                  >
+                                    {isCreatingCourse ? (
+                                      <>
+                                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                                        Creating Course...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="w-4 h-4" />
+                                        Create Course
+                                      </>
+                                    )}
+                                  </Button>
+
+                                  {/* Progress indicator */}
+                                  {isCreatingCourse && creationProgress && (
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                        <span className="text-sm text-blue-700 font-medium">
+                                          {creationProgress}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
-                          </div>
-
-                          {/* Generate Comprehensive Showcase Course */}
-                          {!aiOutline && (
-                            <Button
-                              onClick={generateCourseOutline}
-                              disabled={
-                                isGenerating || !courseData.title.trim()
-                              }
-                              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                            >
-                              {isGenerating ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                  Generating Comprehensive Showcase Course...
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  🎯 Generate Comprehensive Showcase Course
-                                </>
-                              )}
-                            </Button>
-                          )}
-
-                          {/* Show Course Editor button when outline exists */}
-                          {aiOutline && (
-                            <>
-                              <Button
-                                onClick={() => setShowLessonCreator(true)}
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 mt-3"
-                              >
-                                <Book className="w-4 h-4" />
-                                Course Editor
-                              </Button>
-                              <Button
-                                onClick={handleSaveCourse}
-                                disabled={isCreatingCourse}
-                                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mt-3"
-                              >
-                                {isCreatingCourse ? (
-                                  <>
-                                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
-                                    Creating Course...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check className="w-4 h-4" />
-                                    Create Course
-                                  </>
-                                )}
-                              </Button>
-
-                              {/* Progress indicator */}
-                              {isCreatingCourse && creationProgress && (
-                                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                    <span className="text-sm text-blue-700 font-medium">
-                                      {creationProgress}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </>
                           )}
                         </div>
                       )}
@@ -1553,6 +2117,19 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
               title="AI Course Content Editor"
             />
           )}
+
+          {/* AI Streaming Generation Modal */}
+          <AIStreamingGeneration
+            isOpen={showStreamingModal}
+            onClose={() => setShowStreamingModal(false)}
+            courseData={courseData}
+            onComplete={generatedData => {
+              console.log('Course generation complete:', generatedData);
+              setShowStreamingModal(false);
+              // Trigger the actual course generation
+              generateCourseOutline();
+            }}
+          />
         </>
       )}
     </AnimatePresence>

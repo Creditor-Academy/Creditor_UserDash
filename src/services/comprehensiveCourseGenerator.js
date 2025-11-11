@@ -98,12 +98,14 @@ export async function generateComprehensiveCourse(courseData) {
       targetAudience = 'professionals',
       moduleCount = 1, // ONE MODULE ONLY
       lessonsPerModule = 1, // ONE LESSON ONLY
+      generateThumbnails = true, // Default to true for backward compatibility
     } = courseData;
 
     console.log(
       '🎯 Generating ONE comprehensive showcase lesson:',
       courseTitle
     );
+    console.log('🎨 Thumbnail generation enabled:', generateThumbnails);
 
     // Generate single module with one comprehensive lesson
     const courseStructure = await generateShowcaseCourseStructure({
@@ -114,13 +116,36 @@ export async function generateComprehensiveCourse(courseData) {
     });
 
     // Generate ALL content library variants in the single lesson
-    const enhancedCourse = await enhanceWithAllVariants(courseStructure);
+    const enhancedCourse = await enhanceWithAllVariants(
+      courseStructure,
+      generateThumbnails
+    );
 
     console.log('✅ Comprehensive showcase lesson generated with ALL variants');
     return enhancedCourse;
   } catch (error) {
     console.error('❌ Course generation failed:', error);
-    return generateFallbackShowcaseCourse(courseData);
+    // Return basic fallback structure (thumbnails omitted to avoid empty string issues)
+    return {
+      course_title: courseData.courseTitle || 'Untitled Course',
+      course_description: courseData.description || 'Course description',
+      difficulty_level: courseData.difficulty || 'beginner',
+      modules: [
+        {
+          module_title: 'Module 1',
+          module_overview: 'Course module content',
+          module_order: 1,
+          lessons: [
+            {
+              lesson_title: 'Lesson 1',
+              lesson_summary: 'Lesson content',
+              lesson_order: 1,
+              content_blocks: [],
+            },
+          ],
+        },
+      ],
+    };
   }
 }
 
@@ -238,96 +263,107 @@ function generateFallbackShowcaseStructure(config) {
 /**
  * Enhance course with ALL content library variants in ONE lesson + Thumbnails
  */
-async function enhanceWithAllVariants(courseStructure) {
+async function enhanceWithAllVariants(
+  courseStructure,
+  generateThumbnails = true
+) {
   const module = courseStructure.modules[0];
   const lesson = module.lessons[0];
 
-  // Detect topic context for thumbnail generation
-  const topicContext = detectTopicContext(courseStructure.course_title);
+  // Generate actual thumbnail images using DALL-E only if enabled
+  let moduleThumbnailUrl = '';
+  let lessonThumbnailUrl = '';
+  let moduleThumbnailPrompt = '';
+  let lessonThumbnailPrompt = '';
 
-  // Generate module thumbnail prompt
-  const moduleThumbnailPrompt = await generateModuleThumbnailPrompt(
-    module.module_title,
-    module.module_overview,
-    topicContext
-  );
+  if (generateThumbnails) {
+    console.log('🎨 Generating thumbnails for module and lesson...');
 
-  // Generate lesson thumbnail prompt
-  const lessonThumbnailPrompt = await generateLessonThumbnailPrompt(
-    lesson.lesson_title,
-    lesson.lesson_summary,
-    topicContext
-  );
+    // Detect topic context for thumbnail generation
+    const topicContext = detectTopicContext(courseStructure.course_title);
 
-  // Generate actual thumbnail images using DALL-E
-  let moduleThumbnailUrl = `module_${module.module_order}_thumbnail.jpg`;
-  let lessonThumbnailUrl = `lesson_${lesson.lesson_order}_thumbnail.jpg`;
-
-  try {
-    // Generate module thumbnail image
-    console.log('🎨 Generating module thumbnail image...');
-    const moduleImageResult = await openAIService.generateImage(
-      moduleThumbnailPrompt,
-      {
-        size: '1024x1024',
-        quality: 'standard',
-      }
+    // Generate module thumbnail prompt
+    moduleThumbnailPrompt = await generateModuleThumbnailPrompt(
+      module.module_title,
+      module.module_overview,
+      topicContext
     );
 
-    if (moduleImageResult.success && moduleImageResult.url) {
-      console.log('✅ Module thumbnail generated:', moduleImageResult.url);
-      console.log(
-        '🎨 Module thumbnail URL length:',
-        moduleImageResult.url.length
-      );
-
-      // Upload DALL-E image to S3
-      const moduleFileName = `module_${module.module_order}_${Date.now()}.png`;
-      moduleThumbnailUrl = await uploadDalleImageToS3(
-        moduleImageResult.url,
-        moduleFileName
-      );
-      console.log('🎨 Final module thumbnail URL (S3):', moduleThumbnailUrl);
-    } else {
-      console.error(
-        '❌ Module thumbnail generation failed:',
-        moduleImageResult
-      );
-    }
-
-    // Generate lesson thumbnail image
-    console.log('🎨 Generating lesson thumbnail image...');
-    const lessonImageResult = await openAIService.generateImage(
-      lessonThumbnailPrompt,
-      {
-        size: '1024x1024',
-        quality: 'standard',
-      }
+    // Generate lesson thumbnail prompt
+    lessonThumbnailPrompt = await generateLessonThumbnailPrompt(
+      lesson.lesson_title,
+      lesson.lesson_summary,
+      topicContext
     );
 
-    if (lessonImageResult.success && lessonImageResult.url) {
-      console.log('✅ Lesson thumbnail generated:', lessonImageResult.url);
-      console.log(
-        '🎨 Lesson thumbnail URL length:',
-        lessonImageResult.url.length
+    try {
+      // Generate module thumbnail image
+      console.log('🎨 Generating module thumbnail image...');
+      const moduleImageResult = await openAIService.generateImage(
+        moduleThumbnailPrompt,
+        {
+          size: '1024x1024',
+          quality: 'standard',
+        }
       );
 
-      // Upload DALL-E image to S3
-      const lessonFileName = `lesson_${lesson.lesson_order}_${Date.now()}.png`;
-      lessonThumbnailUrl = await uploadDalleImageToS3(
-        lessonImageResult.url,
-        lessonFileName
+      if (moduleImageResult.success && moduleImageResult.url) {
+        console.log('✅ Module thumbnail generated:', moduleImageResult.url);
+        console.log(
+          '🎨 Module thumbnail URL length:',
+          moduleImageResult.url.length
+        );
+
+        // Upload DALL-E image to S3
+        const moduleFileName = `module_${module.module_order}_${Date.now()}.png`;
+        moduleThumbnailUrl = await uploadDalleImageToS3(
+          moduleImageResult.url,
+          moduleFileName
+        );
+        console.log('🎨 Final module thumbnail URL (S3):', moduleThumbnailUrl);
+      } else {
+        console.error(
+          '❌ Module thumbnail generation failed:',
+          moduleImageResult
+        );
+      }
+
+      // Generate lesson thumbnail image
+      console.log('🎨 Generating lesson thumbnail image...');
+      const lessonImageResult = await openAIService.generateImage(
+        lessonThumbnailPrompt,
+        {
+          size: '1024x1024',
+          quality: 'standard',
+        }
       );
-      console.log('🎨 Final lesson thumbnail URL (S3):', lessonThumbnailUrl);
-    } else {
-      console.error(
-        '❌ Lesson thumbnail generation failed:',
-        lessonImageResult
-      );
+
+      if (lessonImageResult.success && lessonImageResult.url) {
+        console.log('✅ Lesson thumbnail generated:', lessonImageResult.url);
+        console.log(
+          '🎨 Lesson thumbnail URL length:',
+          lessonImageResult.url.length
+        );
+
+        // Upload DALL-E image to S3
+        const lessonFileName = `lesson_${lesson.lesson_order}_${Date.now()}.png`;
+        lessonThumbnailUrl = await uploadDalleImageToS3(
+          lessonImageResult.url,
+          lessonFileName
+        );
+        console.log('🎨 Final lesson thumbnail URL (S3):', lessonThumbnailUrl);
+      } else {
+        console.error(
+          '❌ Lesson thumbnail generation failed:',
+          lessonImageResult
+        );
+      }
+    } catch (error) {
+      console.error('❌ Thumbnail generation failed:', error);
+      // Continue with empty URLs
     }
-  } catch (error) {
-    console.error('❌ Thumbnail generation failed:', error);
-    // Continue with fallback URLs
+  } else {
+    console.log('⏭️ Skipping thumbnail generation (disabled by user)');
   }
 
   // Generate comprehensive lesson with ALL variants

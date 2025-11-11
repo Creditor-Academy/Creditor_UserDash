@@ -254,53 +254,37 @@ export async function createLesson(courseId, moduleId, lessonData) {
 // Update lesson content using PUT method with lesson ID
 export async function updateLessonContent(lessonId, contentData) {
   try {
-    // Add timeout and retry logic
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    console.log('Updating lesson content for lesson:', lessonId);
+    console.log('Content data:', contentData);
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
+    // Use the enhanced API client instead of raw fetch to avoid CORS issues
+    const response = await api.put(
+      `/api/lessoncontent/update/${lessonId}`,
+      contentData,
       {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        credentials: 'include',
-        body: JSON.stringify(contentData),
-        signal: controller.signal,
+        timeout: 30000, // 30 second timeout
       }
     );
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('Backend response:', response.status, errorText);
-
-      // Try to parse as JSON, fallback to text
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { message: errorText || `HTTP ${response.status}` };
-      }
-
-      throw new Error(
-        errorData.message ||
-          `Failed to update lesson content (${response.status})`
-      );
-    }
-
-    const data = await response.json();
-    return data.data || data;
+    console.log('updateLessonContent success response:', response.data);
+    return response.data.data || response.data;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('Lesson content update timed out');
-      throw new Error('Request timed out - content may be too large');
-    }
-    console.error('Error updating lesson content:', error);
-    throw error;
+    console.error('updateLessonContent error response:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.message;
+
+    throw new Error(
+      backendMessage ||
+        `Failed to update lesson content (${error.response?.status || 'Unknown'})`
+    );
   }
 }
 
@@ -351,10 +335,15 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         order: i + 1,
         estimated_duration: 60,
         module_status: 'PUBLISHED',
-        thumbnail:
-          moduleData.thumbnail || moduleData.module_thumbnail_url || '',
         price: '0',
       };
+
+      // Only include thumbnail if it has a valid value
+      const thumbnailUrl =
+        moduleData.thumbnail || moduleData.module_thumbnail_url;
+      if (thumbnailUrl && thumbnailUrl.trim() !== '') {
+        modulePayload.thumbnail = thumbnailUrl;
+      }
 
       console.log('Module payload being sent:', modulePayload);
 
@@ -547,9 +536,14 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             description: cleanDescription,
             order: lessonData.order || j + 1,
             status: 'PUBLISHED',
-            thumbnail:
-              lessonData.thumbnail || lessonData.lesson_thumbnail_url || '',
           };
+
+          // Only include thumbnail if it has a valid value
+          const lessonThumbnailUrl =
+            lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+          if (lessonThumbnailUrl && lessonThumbnailUrl.trim() !== '') {
+            lessonPayload.thumbnail = lessonThumbnailUrl;
+          }
 
           console.log('Lesson payload being sent:', lessonPayload);
 

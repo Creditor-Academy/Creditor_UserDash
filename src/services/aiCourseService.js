@@ -391,9 +391,13 @@ export async function createCompleteAICourse(courseData) {
           order: i + 1,
           estimated_duration: 60,
           module_status: 'PUBLISHED',
-          thumbnail: validatedThumbnail,
           price: 0, // Backend expects number, matching manual creation
         };
+
+        // Only include thumbnail if it has a valid value
+        if (validatedThumbnail && validatedThumbnail.trim() !== '') {
+          modulePayload.thumbnail = validatedThumbnail;
+        }
 
         console.log(
           '📋 Module payload being sent:',
@@ -508,8 +512,15 @@ export async function createCompleteAICourse(courseData) {
               status: 'PUBLISHED',
               content: lessonData.content || '',
               duration: lessonData.duration || '15 min',
-              thumbnail: validatedLessonThumbnail,
             };
+
+            // Only include thumbnail if it has a valid value
+            if (
+              validatedLessonThumbnail &&
+              validatedLessonThumbnail.trim() !== ''
+            ) {
+              lessonPayload.thumbnail = validatedLessonThumbnail;
+            }
 
             // Use enhanced API client instead of fetch for better error handling
             const response = await fetch(
@@ -1917,9 +1928,9 @@ Format as JSON:
       order: 1,
       estimated_duration: 60,
       module_status: 'PUBLISHED',
-      thumbnail: 'AI generated module thumbnail',
       price: 0,
     };
+    // Note: Thumbnail omitted - will be added separately if needed
 
     const module = await createModule(courseId, moduleData);
     const moduleId = module.data?.id || module.id;
