@@ -96,7 +96,8 @@ module.exports = {
           "100%": { transform: "translateX(0)" }
         },
         "shimmer": {
-          "100%": { transform: "translateX(100%)" }
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" }
         },
         "spotlight": {
           "0%": { opacity: "0", transform: "translate(-72%, -62%) scale(0.5)" },

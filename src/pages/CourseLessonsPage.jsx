@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { currentUserId } from '@/data/currentUser';
 import { createModule, fetchAllCourses } from '@/services/courseService';
@@ -41,6 +41,7 @@ const CourseLessonsPage = () => {
   const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const exportInProgressRef = useRef(false);
   const navigate = useNavigate();
 
   const isAllowed = true;
@@ -267,8 +268,13 @@ const CourseLessonsPage = () => {
   };
 
   const handleExportScorm = async () => {
+    if (exportInProgressRef.current) {
+      return;
+    }
+
     try {
       setIsExporting(true);
+      exportInProgressRef.current = true;
       const response = await api.get('/api/export/modules-scorm', {
         responseType: 'blob',
       });
@@ -301,6 +307,7 @@ const CourseLessonsPage = () => {
       alert('Failed to export SCORM package. Please try again.');
     } finally {
       setIsExporting(false);
+      exportInProgressRef.current = false;
     }
   };
 

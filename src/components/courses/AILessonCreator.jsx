@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -38,7 +38,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { saveAILessons } from '../../services/aiCourseService';
-import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+import { contentBlockTypes } from '@lessonbuilder/constants/blockTypes';
 
 const AILessonCreator = ({
   isOpen,

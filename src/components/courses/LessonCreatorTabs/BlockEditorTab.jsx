@@ -42,7 +42,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+import { contentBlockTypes } from '@lessonbuilder/constants/blockTypes';
 
 // Icon mapping helper
 const getIconComponent = iconName => {

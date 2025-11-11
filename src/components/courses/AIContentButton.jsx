@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2 } from 'lucide-react';
-import AILessonContentGenerator from './AILessonContentGenerator';
+import AILessonContentGenerator from '@lessonbuilder/components/ai/AILessonContentGenerator';
 
 const AIContentButton = ({
   lessonData,

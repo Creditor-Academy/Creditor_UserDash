@@ -39,10 +39,10 @@ const Sitemap = () => {
       title: 'Get in Touch',
       links: [
         {
-          label: 'Email: counselor@lmsathena.com',
-          href: 'mailto:counselor@lmsathena.com',
+          label: 'Email: admin@lmsathena.com',
+          href: 'mailto:admin@lmsathena.com',
         },
-        { label: 'Phone: +91 98182 38969', href: 'tel:+919818238969' },
+        { label: 'Phone: +91 9811773207', href: 'tel:+91 9811773207' },
       ],
     },
   ];

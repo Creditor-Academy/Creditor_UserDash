@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -16,7 +16,7 @@ import {
   saveAILessons,
   updateEnhancedLessonContent,
 } from '../../services/aiCourseService';
-import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+import { contentBlockTypes } from '@lessonbuilder/constants/blockTypes';
 import OutlineTab from './LessonCreatorTabs/OutlineTab';
 
 const EnhancedAILessonCreator = ({

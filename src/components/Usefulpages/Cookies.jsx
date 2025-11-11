@@ -237,10 +237,10 @@ const Cookies = () => {
                 <p className="text-slate-700">
                   If you have questions about our cookies practices, email us at{' '}
                   <a
-                    href="mailto:counselor@lmsathena.com"
+                    href="mailto:admin@lmsathena.com"
                     className="underline text-sky-700"
                   >
-                    counselor@lmsathena.com
+                    admin@lmsathena.com
                   </a>
                   .
                 </p>
@@ -250,7 +250,7 @@ const Cookies = () => {
                   <br />
                   Kirkland, Washington, USA
                   <br />
-                  GF-41, Omaxe Square, Jasola District Centre, New Delhi -
+                  GF-20, Omaxe Square, Jasola District Centre, New Delhi -
                   110025
                 </address>
 

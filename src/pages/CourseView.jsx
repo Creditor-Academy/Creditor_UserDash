@@ -721,18 +721,156 @@ export function CourseView() {
     checkStreetModulesForLessons();
   }, [streetModules, courseDetails?.title]);
 
+  // Shimmer skeleton components for loading state
+  const ModuleCardSkeleton = () => (
+    <Card className="overflow-hidden h-full flex flex-col">
+      <div className="aspect-video relative overflow-hidden bg-gray-200">
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+      </div>
+
+      <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
+        <div className="pb-2 px-0 pt-0">
+          <div className="h-6 bg-gray-200 rounded-md mb-2 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-5 bg-gray-200 rounded-md w-3/4 mb-2 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-4 bg-gray-200 rounded-md w-full mb-1 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-4 bg-gray-200 rounded-md w-5/6 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+        </div>
+        <div className="space-y-3 px-0 pt-0 pb-0">
+          <div className="flex items-center justify-between">
+            <div className="h-4 bg-gray-200 rounded-md w-20 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded-md w-16 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-auto px-6 pb-4">
+        <div className="p-0 flex flex-col gap-2">
+          <div className="h-10 bg-gray-200 rounded-md w-full overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
         <main className="flex-1">
-          <div className="container py-6 max-w-7xl">
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-muted-foreground">
-                  Loading course modules...
-                </p>
+          <div className="container py-8 max-w-7xl">
+            {/* Breadcrumb Skeleton */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="h-8 bg-gray-200 rounded-md w-32 overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
               </div>
+              <div className="h-4 w-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded-md w-48 overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+              </div>
+            </div>
+
+            {/* Course Details Card Skeleton */}
+            <div className="mb-8">
+              <Card className="overflow-hidden shadow-xl border-0">
+                <div className="p-6">
+                  <div className="max-w-4xl">
+                    {/* Title Skeleton */}
+                    <div className="h-9 bg-gray-200 rounded-md mb-4 w-3/4 overflow-hidden relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                    </div>
+
+                    {/* Description Skeleton */}
+                    <div className="space-y-2 mb-4">
+                      <div className="h-4 bg-gray-200 rounded-md w-full overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                      </div>
+                      <div className="h-4 bg-gray-200 rounded-md w-full overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                      </div>
+                      <div className="h-4 bg-gray-200 rounded-md w-5/6 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                      </div>
+                      <div className="h-4 bg-gray-200 rounded-md w-4/6 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                      </div>
+                    </div>
+
+                    {/* Stats Skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
+                        <div className="p-2 bg-gray-200 rounded-lg w-9 h-9"></div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-gray-200 rounded w-24 mb-2 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                          </div>
+                          <div className="h-6 bg-gray-200 rounded w-12 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+                        <div className="p-2 bg-gray-200 rounded-lg w-9 h-9"></div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-gray-200 rounded w-20 mb-2 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                          </div>
+                          <div className="h-6 bg-gray-200 rounded w-16 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-100">
+                        <div className="p-2 bg-gray-200 rounded-lg w-9 h-9"></div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-gray-200 rounded w-20 mb-2 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                          </div>
+                          <div className="h-5 bg-gray-200 rounded w-24 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Search and Stats Bar Skeleton */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 bg-gray-200 rounded"></div>
+                <div className="h-5 bg-gray-200 rounded-md w-32 overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                </div>
+                <div className="h-6 bg-gray-200 rounded-md w-8 overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="h-10 bg-gray-200 rounded-md w-[250px] overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Module Cards Grid Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <ModuleCardSkeleton key={index} />
+              ))}
             </div>
           </div>
         </main>
