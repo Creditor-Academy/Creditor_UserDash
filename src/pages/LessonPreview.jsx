@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -24,6 +24,85 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 
+const getImageCaptionHtml = block => {
+  const captionHtml = (
+    block.captionHtml ||
+    block.details?.caption_html ||
+    block.text ||
+    ''
+  ).toString();
+  const captionPlain = (
+    block.caption ||
+    block.imageDescription ||
+    block.details?.caption ||
+    ''
+  ).toString();
+  return captionHtml.trim() ? captionHtml : captionPlain;
+};
+
+const generateImageHtml = block => {
+  const imageUrl = block.imageUrl || block.image_url || '';
+  if (!imageUrl) return '';
+
+  const layout = block.layout || 'centered';
+  const alignment = block.alignment || 'left';
+  const caption =
+    (block.captionHtml && block.captionHtml.trim()) ||
+    (block.caption && block.caption.toString()) ||
+    getImageCaptionHtml(block);
+
+  const captionBlock = caption
+    ? `<div class="text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>`
+    : '';
+
+  if (layout === 'side-by-side') {
+    const imageFirst = alignment === 'left';
+    const imageOrder = imageFirst ? 'order-1' : 'order-2';
+    const textOrder = imageFirst ? 'order-2' : 'order-1';
+
+    return `
+      <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+        <div class="${imageOrder}">
+          <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+        </div>
+        <div class="${textOrder}">
+          ${captionBlock}
+        </div>
+      </div>
+    `;
+  }
+
+  if (layout === 'overlay') {
+    return `
+      <div class="relative rounded-xl overflow-hidden">
+        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+        ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div></div>` : ''}
+      </div>
+    `;
+  }
+
+  if (layout === 'full-width') {
+    return `
+      <div class="space-y-3">
+        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
+        ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
+      </div>
+    `;
+  }
+
+  // centered/default
+  let alignmentClass = 'text-center';
+  if (alignment === 'left') alignmentClass = 'text-left';
+  else if (alignment === 'right') alignmentClass = 'text-right';
+
+  return `
+    <div class="${alignmentClass}">
+      <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
+      ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
+    </div>
+  `;
+};
+
 const LessonPreview = () => {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
@@ -38,6 +117,38 @@ const LessonPreview = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const videoRef = useRef(null);
+  const [isVideoOutOfView, setIsVideoOutOfView] = useState(false);
+
+  useEffect(() => {
+    let styleEl = document.getElementById('lesson-preview-image-list-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'lesson-preview-image-list-style';
+      styleEl.textContent = `
+        .image-block-preview ol {
+          list-style-type: decimal;
+          margin-left: 1.5rem;
+          padding-left: 0.25rem;
+        }
+        .image-block-preview ul {
+          list-style-type: disc;
+          margin-left: 1.5rem;
+          padding-left: 0.25rem;
+        }
+        .image-block-preview li {
+          margin-bottom: 0.35rem;
+        }
+      `;
+      document.head.appendChild(styleEl);
+    }
+
+    return () => {
+      if (styleEl && styleEl.parentNode) {
+        styleEl.parentNode.removeChild(styleEl);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     fetchLessonContent();
@@ -526,28 +637,44 @@ const LessonPreview = () => {
           htmlCss: block.html_css || '',
         });
       } else if (block.type === 'image') {
-        allContent.push({
-          ...blockData,
-          type: 'image',
-          imageTitle:
-            block.imageTitle ||
-            block.image_title ||
-            block.details?.imageTitle ||
-            '',
-          imageDescription:
-            block.imageDescription ||
-            block.image_description ||
-            block.details?.imageDescription ||
-            '',
+        const normalizedBlock = {
+          ...block,
           imageUrl:
             block.imageUrl ||
             block.image_url ||
-            block.details?.imageUrl ||
+            block.details?.image_url ||
             block.url ||
             '',
+          imageTitle:
+            block.imageTitle ||
+            block.image_title ||
+            block.details?.alt_text ||
+            '',
           layout: block.layout || block.details?.layout || 'centered',
-          alignment: block.alignment || block.details?.alignment || 'left', // Extract alignment from details
-          htmlCss: block.html_css || '',
+          alignment: block.alignment || block.details?.alignment || 'left',
+          captionHtml:
+            block.details?.caption_html ||
+            block.captionHtml ||
+            block.text ||
+            '',
+          caption:
+            block.imageDescription ||
+            block.image_description ||
+            block.details?.caption ||
+            '',
+        };
+
+        const htmlContent =
+          (block.html_css && block.html_css.trim()) ||
+          generateImageHtml(normalizedBlock);
+
+        allContent.push({
+          ...blockData,
+          ...normalizedBlock,
+          type: 'image',
+          imageDescription: normalizedBlock.caption,
+          text: normalizedBlock.captionHtml,
+          htmlCss: htmlContent,
         });
       } else if (block.type === 'video') {
         allContent.push({
@@ -1521,36 +1648,14 @@ const LessonPreview = () => {
 
                         {/* Image Content - Use HTML/CSS from API */}
                         {block.type === 'image' && (
-                          <>
-                            {block.htmlCss ? (
-                              <div
-                                dangerouslySetInnerHTML={{
-                                  __html: block.htmlCss,
-                                }}
-                              />
-                            ) : (
-                              // Fallback rendering when html_css is not available
-                              block.imageUrl && (
-                                <div className="text-center">
-                                  <img
-                                    src={block.imageUrl}
-                                    alt={block.imageTitle || 'Lesson Image'}
-                                    className="max-w-full h-auto rounded-lg shadow-md mx-auto"
-                                  />
-                                  {block.imageTitle && (
-                                    <h3 className="text-lg font-semibold mt-4 text-gray-800">
-                                      {block.imageTitle}
-                                    </h3>
-                                  )}
-                                  {block.imageDescription && (
-                                    <p className="text-gray-600 mt-2">
-                                      {block.imageDescription}
-                                    </p>
-                                  )}
-                                </div>
-                              )
-                            )}
-                          </>
+                          <div
+                            className="image-block-preview"
+                            dangerouslySetInnerHTML={{
+                              __html:
+                                (block.htmlCss && block.htmlCss.trim()) ||
+                                generateImageHtml(block),
+                            }}
+                          />
                         )}
 
                         {/* Video Content */}

@@ -218,15 +218,179 @@ const Navbar = () => {
             ✕
           </button>
         </div>
-        
-        <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>  
-        <div style={drawerLinkStyle}>Solutions</div>
-        <div style={drawerLinkStyle}>Platform</div>
-        <Link to="/website" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Website</Link>
-        <Link to="/pricing" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Pricing</Link>
-        <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
-        
-        <a 
+
+        <Link
+          to="/about"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          About Us
+        </Link>
+        {/* Solutions accordion */}
+        <button
+          aria-expanded={solutionsOpen}
+          onClick={() => setSolutionsOpen(v => !v)}
+          style={{
+            ...drawerLinkStyle,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>Solutions</span>
+          <span style={{ opacity: 0.9 }}>{solutionsOpen ? '−' : '+'}</span>
+        </button>
+        {solutionsOpen && (
+          <div style={{ paddingLeft: 8, marginTop: 2, marginBottom: 4 }}>
+            <Link
+              to="/revenue_generation"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Revenue generation
+            </Link>
+            <Link
+              to="/lead_generation"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Lead generation
+            </Link>
+            <Link
+              to="/customer_training"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Customer training
+            </Link>
+            <Link
+              to="/expert_athena"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Experts
+            </Link>
+            <Link
+              to="/academic_athena"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Academies
+            </Link>
+            <Link
+              to="/company_athena"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Companies
+            </Link>
+          </div>
+        )}
+
+        {/* Platform accordion */}
+        <button
+          aria-expanded={platformOpen}
+          onClick={() => setPlatformOpen(v => !v)}
+          style={{
+            ...drawerLinkStyle,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>Platform</span>
+          <span style={{ opacity: 0.9 }}>{platformOpen ? '−' : '+'}</span>
+        </button>
+        {platformOpen && (
+          <div style={{ paddingLeft: 8, marginTop: 2, marginBottom: 4 }}>
+            <Link
+              to="/platform/courses"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Courses
+            </Link>
+            <Link
+              to="/platform/memberships"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Memberships
+            </Link>
+            <Link
+              to="/platform/communities"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Communities
+            </Link>
+            <Link
+              to="/platform/digital-downloads"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Digital downloads
+            </Link>
+            <Link
+              to="/platform/coaching"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Coaching
+            </Link>
+            <Link
+              to="/platform/email-automation"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Email automation
+            </Link>
+            <Link
+              to="/platform/analytics"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Analytics
+            </Link>
+            <Link
+              to="/platform/brand"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Brand
+            </Link>
+            <Link
+              to="/platform/selling"
+              style={drawerSublinkStyle}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Selling
+            </Link>
+          </div>
+        )}
+        <Link
+          to="/website"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          Website
+        </Link>
+        <Link
+          to="/pricing"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          Pricing
+        </Link>
+        <Link
+          to="/contact"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          Contact Us
+        </Link>
+
+        <a
           href="#"
           onClick={e => {
             e.preventDefault();
@@ -416,12 +580,12 @@ const drawerLinkStyle = {
 };
 
 const drawerSublinkStyle = {
-  color: "#fff",
-  textDecoration: "none",
-  display: "block",
-  padding: "8px 8px",
+  color: '#fff',
+  textDecoration: 'none',
+  display: 'block',
+  padding: '8px 8px',
   borderRadius: 6,
-  fontSize: "0.92rem",
+  fontSize: '0.92rem',
   opacity: 0.95,
 };
 

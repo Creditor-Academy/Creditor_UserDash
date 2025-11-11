@@ -297,6 +297,8 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       const response = await openAIService.generateCourseImage(prompt, {
         style: 'vivid',
         size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
       });
 
       if (response.success && response.data?.url) {
@@ -311,12 +313,17 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
           });
 
           if (uploadResult?.success && uploadResult.imageUrl) {
-            // Use the S3 URL instead of the temporary generated URL
+            console.log('✅ S3 upload successful!');
+            console.log(`S3 URL: ${uploadResult.imageUrl}`);
+            console.log(
+              `S3 URL length: ${uploadResult.imageUrl.length} characters`
+            );
+
+            // Use the S3 URL (permanent storage)
             setCourseData(prev => ({
               ...prev,
               thumbnail: uploadResult.imageUrl,
             }));
-            setAiImageError('');
 
             // Show success message with S3 upload details
             const successMsg =

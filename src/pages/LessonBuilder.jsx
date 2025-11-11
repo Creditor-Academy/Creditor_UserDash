@@ -46,6 +46,12 @@ import axios from 'axios';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
+import {
+  generateLessonContent,
+  generateImage,
+  enhanceLessonContent,
+  generateQuizQuestions,
+} from '@/services/openAIService';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
@@ -969,40 +975,20 @@ function LessonBuilder() {
         }));
       }
 
-      // Save to server
-      console.log('Saving checkbox state to server...');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/lessons/${lessonId}/blocks/${blockId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({
-            html_css: updatedHtml,
-            content: updatedContent,
-            type: targetBlock.type,
-            listType:
-              targetBlock.listType ||
-              targetBlock.details?.listType ||
-              'checkbox',
-            details: {
-              ...targetBlock.details,
-              listType: 'checkbox',
-              list_type: 'checkbox',
-            },
-          }),
-        }
-      );
-
-      if (response.ok) {
-        console.log('Checkbox state saved successfully');
-        toast.success('Checkbox state saved');
-      } else {
-        console.error('Failed to save checkbox state:', response.status);
-        toast.error('Failed to save checkbox state');
-      }
+      // Mock save to server (API call removed)
+      console.log('Mock: Saving checkbox state to server...');
+      console.log('Mock: Checkbox state saved successfully:', {
+        blockId,
+        html_css: updatedHtml,
+        content: updatedContent,
+        type: targetBlock.type,
+        listType:
+          targetBlock.listType ||
+          targetBlock.details?.listType ||
+          targetBlock.details?.list_type ||
+          'unordered',
+      });
+      toast.success('Checkbox state saved');
     } catch (error) {
       console.error('Error in handleCheckboxToggle:', error);
       toast.error('Error updating checkbox');
@@ -1600,7 +1586,65 @@ function LessonBuilder() {
 
     if (!block) return;
 
+    // IMPORTANT: Check for interactive blocks FIRST (before quote detection)
+    // This prevents process-carousel from being detected as quote-carousel
+    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
+    const isInteractiveBlock =
+      block.type === 'interactive' ||
+      // Check subtype for all interactive types
+      (block.subtype &&
+        (block.subtype === 'accordion' ||
+          block.subtype === 'tabs' ||
+          block.subtype === 'labeled-graphic' ||
+          block.subtype === 'timeline' ||
+          block.subtype === 'process')) ||
+      // Check if content has interactive structure (JSON with template)
+      (() => {
+        try {
+          const content = JSON.parse(block.content || '{}');
+          return (
+            content.template &&
+            (content.tabsData ||
+              content.accordionData ||
+              content.labeledGraphicData ||
+              content.timelineData ||
+              content.processData)
+          );
+        } catch {
+          return false;
+        }
+      })() ||
+      // Check HTML patterns for interactive blocks
+      (block.html_css &&
+        (block.html_css.includes('interactive-tabs') ||
+          block.html_css.includes('interactive-accordion') ||
+          block.html_css.includes('accordion-content') ||
+          block.html_css.includes('tab-button') ||
+          block.html_css.includes('accordion-header') ||
+          block.html_css.includes('data-template="tabs"') ||
+          block.html_css.includes('data-template="accordion"') ||
+          block.html_css.includes('data-template="labeled-graphic"') ||
+          block.html_css.includes('data-template="timeline"') ||
+          block.html_css.includes('data-template="process"') ||
+          block.html_css.includes('labeled-graphic-container') ||
+          block.html_css.includes('timeline-container') ||
+          block.html_css.includes('process-carousel')));
+
+    if (isInteractiveBlock) {
+      // Handle interactive block editing
+      console.log('Interactive block detected for editing:', block);
+
+      // Override block type to ensure it's treated as interactive
+      block = { ...block, type: 'interactive' };
+
+      // Set the editing interactive block and show the interactive edit dialog
+      setEditingInteractiveBlock(block);
+      setShowInteractiveEditDialog(true);
+      return;
+    }
+
     // Enhanced quote block detection - check content structure and HTML patterns
+    // NOTE: This must come AFTER interactive block detection to avoid conflicts with process-carousel
     const isQuoteBlock =
       block.type === 'quote' ||
       (block.textType && block.textType.startsWith('quote_')) ||
@@ -1614,10 +1658,12 @@ function LessonBuilder() {
           return false;
         }
       })() ||
-      // Check HTML patterns for quote blocks
+      // Check HTML patterns for quote blocks (but NOT process-carousel!)
       (block.html_css &&
+        !block.html_css.includes('process-carousel') && // Exclude process blocks
         (block.html_css.includes('quote-carousel') ||
-          block.html_css.includes('carousel-dot') ||
+          (block.html_css.includes('carousel-dot') &&
+            block.html_css.includes('blockquote')) || // Must have both
           block.html_css.includes('blockquote') ||
           block.html_css.includes('<cite') ||
           (block.html_css.includes('background-image:') &&
@@ -2047,53 +2093,6 @@ function LessonBuilder() {
       return;
     }
 
-    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
-    const isInteractiveBlock =
-      block.type === 'interactive' ||
-      // Check subtype for accordion or tabs
-      (block.subtype &&
-        (block.subtype === 'accordion' ||
-          block.subtype === 'tabs' ||
-          block.subtype === 'labeled-graphic')) ||
-      // Check if content has interactive structure (JSON with template)
-      (() => {
-        try {
-          const content = JSON.parse(block.content || '{}');
-          return (
-            content.template &&
-            (content.tabsData ||
-              content.accordionData ||
-              content.labeledGraphicData)
-          );
-        } catch {
-          return false;
-        }
-      })() ||
-      // Check HTML patterns for interactive blocks
-      (block.html_css &&
-        (block.html_css.includes('interactive-tabs') ||
-          block.html_css.includes('interactive-accordion') ||
-          block.html_css.includes('accordion-content') ||
-          block.html_css.includes('tab-button') ||
-          block.html_css.includes('accordion-header') ||
-          block.html_css.includes('data-template="tabs"') ||
-          block.html_css.includes('data-template="accordion"') ||
-          block.html_css.includes('data-template="labeled-graphic"') ||
-          block.html_css.includes('labeled-graphic-container')));
-
-    if (isInteractiveBlock) {
-      // Handle interactive block editing
-      console.log('Interactive block detected for editing:', block);
-
-      // Override block type to ensure it's treated as interactive
-      block = { ...block, type: 'interactive' };
-
-      // Set the editing interactive block and show the interactive edit dialog
-      setEditingInteractiveBlock(block);
-      setShowInteractiveEditDialog(true);
-      return;
-    }
-
     if (block.type === 'text') {
       // Handle text block editing - delegate to TextBlockComponent
       setCurrentTextBlockId(blockId);
@@ -2394,12 +2393,17 @@ function LessonBuilder() {
           // Fallback: reconstruct based on layout from block or details
           const imageUrl = block.imageUrl || block.details?.image_url || '';
           const layout = block.layout || block.details?.layout || 'centered';
-          const caption = (
+          const captionHtml = (
             block.text ||
+            block.details?.caption_html ||
+            ''
+          ).toString();
+          const captionPlain = (
             block.imageDescription ||
             block.details?.caption ||
             ''
           ).toString();
+          const caption = captionHtml.trim() ? captionHtml : captionPlain;
           const title = block.imageTitle || block.details?.alt_text || 'Image';
           if (layout === 'side-by-side') {
             const alignment = block.alignment || 'left';
@@ -2413,8 +2417,8 @@ function LessonBuilder() {
                   <div class="${imageOrder}">
                     <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                   </div>
-                  <div class="${textOrder}">
-                    ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
+                  <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3">
+                    ${caption ? `<div>${caption}</div>` : ''}
                   </div>
                 </div>
               </div>`;
@@ -2423,7 +2427,7 @@ function LessonBuilder() {
               <div class="lesson-image overlay">
                 <div class="relative rounded-xl overflow-hidden">
                   <img src="${imageUrl}" alt="${title}" class="w-full h-96 object-cover" />
-                  ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${caption}</span></div></div>` : ''}
+                  ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3"><div>${caption}</div></div></div>` : ''}
                 </div>
               </div>`;
           } else if (layout === 'full-width') {
@@ -2431,7 +2435,7 @@ function LessonBuilder() {
               <div class="lesson-image full-width">
                 <div class="space-y-3">
                   <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded" />
-                  ${caption ? `<p class="text-sm text-gray-600">${caption}</p>` : ''}
+                  ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2">${caption}</div>` : ''}
                 </div>
               </div>`;
           } else {
@@ -2439,7 +2443,7 @@ function LessonBuilder() {
               <div class="lesson-image centered">
                 <div class="text-center">
                   <img src="${imageUrl}" alt="${title}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
-                  ${caption ? `<span class="text-gray-600 mt-4 italic text-lg">${caption}</span>` : ''}
+                  ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2">${caption}</div>` : ''}
                 </div>
               </div>`;
           }
@@ -3080,14 +3084,21 @@ function LessonBuilder() {
             // Preserve layout-specific HTML so sizes/styles remain consistent after reload
             {
               const layout = block.layout || 'centered';
-              const textContent = (
+              const textHtml = (
                 block.text ||
-                block.imageDescription ||
+                block.details?.caption_html ||
                 ''
               ).toString();
+              const textPlain = (
+                block.imageDescription ||
+                block.details?.caption ||
+                ''
+              ).toString();
+              const textContent = textHtml.trim() ? textHtml : textPlain;
               details = {
                 image_url: block.imageUrl,
-                caption: textContent,
+                caption: textPlain,
+                caption_html: textHtml,
                 alt_text: block.imageTitle || '',
                 layout: layout,
                 template: block.templateType || block.template || undefined,
@@ -3105,8 +3116,8 @@ function LessonBuilder() {
                     <div class="${imageOrder}">
                       <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                     </div>
-                    <div class="${textOrder}">
-                      ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+                    <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3">
+                      ${textContent ? `<div>${textContent}</div>` : ''}
                     </div>
                   </div>
                 `;
@@ -3114,14 +3125,14 @@ function LessonBuilder() {
                 htmlContent = `
                   <div class="relative rounded-xl overflow-hidden">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-                    ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+                    ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3"><div>${textContent}</div></div></div>` : ''}
                   </div>
                 `;
               } else if (layout === 'full-width') {
                 htmlContent = `
                   <div class="space-y-3">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
-                    ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+                    ${textContent ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2">${textContent}</div>` : ''}
                   </div>
                 `;
               } else {
@@ -3138,7 +3149,7 @@ function LessonBuilder() {
                 htmlContent = `
                   <div class="${alignmentClass}">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
-                    ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+                    ${textContent ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2">${textContent}</div>` : ''}
                   </div>
                 `;
               }
@@ -3459,53 +3470,40 @@ function LessonBuilder() {
         );
       }
 
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
-        lessonDataToUpdate,
+      // Real API call to update lesson content
+      console.log('Updating lesson content...');
+      console.log('Lesson data to update:', {
+        lessonId,
+        payloadSize: payloadSizeMB + 'MB',
+        blocksCount: lessonDataToUpdate.content?.length || 0,
+      });
+
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(
+        `${baseUrl}/api/lessoncontent/update/${lessonId}`,
         {
+          method: 'PUT',
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
+          body: JSON.stringify(lessonDataToUpdate),
         }
       );
 
-      // Log the full response for debugging
-      console.log('Full response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
+      console.log('API Response status:', response.status);
 
-      // Check if response is HTML (error page) instead of JSON
-      const isHtmlError =
-        typeof response.data === 'string' &&
-        response.data.trim().startsWith('<!DOCTYPE html>');
+      const responseData = await response.json();
+      console.log('API Response data:', responseData);
 
-      if (isHtmlError) {
-        // Parse HTML error message
-        if (
-          response.data.includes('PayloadTooLargeError') ||
-          response.data.includes('request entity too large')
-        ) {
-          throw new Error('PAYLOAD_TOO_LARGE');
-        }
-        throw new Error('Server returned an error page. Please try again.');
-      }
-
-      // Check for any error indicators in the response
-      const hasError =
-        response.status < 200 ||
-        response.status >= 300 ||
-        !response.data ||
-        response.data.error ||
-        response.data.errorMessage ||
-        response.data.message?.toLowerCase().includes('error') ||
-        response.data.message?.toLowerCase().includes('failed') ||
-        response.data.message?.toLowerCase().includes('too large') ||
-        response.data.message?.toLowerCase().includes('413') ||
-        response.data.success === false ||
-        (response.data.success === undefined && response.data.error);
+      const hasError = !response.ok;
 
       if (hasError) {
         let errorMessage = 'Failed to update lesson content';
@@ -3527,12 +3525,12 @@ function LessonBuilder() {
           errorMessage = `HTTP ${response.status}: ${response.statusText || 'Request failed'}`;
         }
         // Check response body for error messages
-        else if (response.data?.errorMessage) {
-          errorMessage = response.data.errorMessage;
-        } else if (response.data?.message) {
-          errorMessage = response.data.message;
-        } else if (response.data?.error) {
-          errorMessage = response.data.error;
+        else if (responseData?.errorMessage) {
+          errorMessage = responseData.errorMessage;
+        } else if (responseData?.message) {
+          errorMessage = responseData.message;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
         }
 
         console.error('Auto-save failed with error:', errorMessage);
@@ -3816,8 +3814,9 @@ function LessonBuilder() {
           block.id === currentBlock.id
             ? {
                 ...newBlock,
-                text: getPlainText(newBlock.text || ''),
-                imageDescription: getPlainText(newBlock.imageDescription || ''),
+                imageDescription: getPlainText(
+                  newBlock.text || newBlock.imageDescription || ''
+                ),
               }
             : block
         )
@@ -3838,9 +3837,9 @@ function LessonBuilder() {
                     imageUrl: newBlock.imageUrl,
                     imageTitle: newBlock.imageTitle,
                     imageDescription: getPlainText(
-                      newBlock.imageDescription || ''
+                      newBlock.text || newBlock.imageDescription || ''
                     ),
-                    text: getPlainText(newBlock.text || ''),
+                    text: newBlock.text,
                     layout: newBlock.layout,
                     templateType: newBlock.templateType,
                   }
@@ -4078,29 +4077,41 @@ function LessonBuilder() {
             const lessonId = location.state.lessonData.id;
             console.log('Fetching lesson content for:', lessonId);
 
-            // Get the token
-            const token = localStorage.getItem('token');
-            if (!token) {
-              throw new Error('No authentication token found');
-            }
-
-            // Make the API call
-            const contentResponse = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/${lessonId}`,
+            // Real API call to fetch lesson content
+            const baseUrl =
+              import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+            const response = await fetch(
+              `${baseUrl}/api/lessoncontent/${lessonId}`,
               {
                 method: 'GET',
                 headers: {
-                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
               }
             );
 
-            if (!contentResponse.ok) {
-              throw new Error(`HTTP error! status: ${contentResponse.status}`);
+            if (!response.ok) {
+              throw new Error(
+                `Failed to fetch lesson content: ${response.status}`
+              );
             }
 
-            const contentData = await contentResponse.json();
+            const responseData = await response.json();
+            console.log('Fetched lesson content:', responseData);
+
+            // Transform response to match expected format
+            const contentData = {
+              success: true,
+              data: {
+                content: responseData.data?.content || [],
+                lesson_id: lessonId,
+                html_css: responseData.data?.html_css || '',
+                css: responseData.data?.css || '',
+                script: responseData.data?.script || '',
+              },
+              message: 'Lesson content fetched successfully',
+            };
             console.log('Content response:', contentData);
 
             if (contentData) {
@@ -4124,9 +4135,11 @@ function LessonBuilder() {
                     timestamp: new Date().toISOString(),
                   };
                   if (b.type === 'image') {
-                    return {
+                    const captionHtml = b.details?.caption_html || '';
+                    const captionPlain = b.details?.caption || '';
+                    const mappedBlock = {
                       ...base,
-                      title: 'Image',
+                      title: b.details?.alt_text || b.title || 'Image',
                       layout: b.details?.layout || 'centered',
                       templateType: b.details?.template || undefined,
                       alignment: b.details?.alignment || 'left', // Extract alignment from details
@@ -4135,6 +4148,16 @@ function LessonBuilder() {
                       imageDescription: b.details?.caption || '',
                       text: b.details?.caption || '',
                     };
+                    console.log('📦 Mapped image block from backend:', {
+                      blockId: mappedBlock.id,
+                      title: mappedBlock.title,
+                      imageUrl: mappedBlock.imageUrl,
+                      alignment: mappedBlock.alignment,
+                      layout: mappedBlock.layout,
+                      hasImageUrl: !!mappedBlock.imageUrl,
+                      originalDetails: b.details,
+                    });
+                    return mappedBlock;
                   }
 
                   if (b.type === 'pdf') {
@@ -4491,24 +4514,142 @@ function LessonBuilder() {
             throw new Error('Authentication token not found');
           }
 
-          const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
+          // Real API call to fetch lesson data
+          console.log('Fetching lesson data for:', {
+            courseId,
+            moduleId,
+            lessonId,
+          });
+
+          const baseUrl =
+            import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+          const lessonResponse = await fetch(
+            `${baseUrl}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
             {
+              method: 'GET',
               headers: {
-                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
               },
             }
           );
 
-          if (!response.ok) {
-            throw new Error('Failed to fetch lesson data');
+          if (!lessonResponse.ok) {
+            throw new Error(
+              `Failed to fetch lesson data: ${lessonResponse.status}`
+            );
           }
 
-          const lessonData = await response.json();
+          const lessonResponseData = await lessonResponse.json();
+          console.log('Fetched lesson data:', lessonResponseData);
+
+          const lessonData = lessonResponseData.data || lessonResponseData;
+
           setLessonData(lessonData);
           setLessonTitle(lessonData.title || 'Untitled Lesson');
           setContentBlocks(lessonData.contentBlocks || []);
+
+          // Also fetch lesson content for this lesson
+          try {
+            console.log('Fetching lesson content for lessonId:', lessonId);
+
+            const contentResponse = await fetch(
+              `${baseUrl}/api/lessoncontent/${lessonId}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (contentResponse.ok) {
+              const contentResponseData = await contentResponse.json();
+              console.log('Fetched lesson content:', contentResponseData);
+
+              const contentData = {
+                success: true,
+                data: {
+                  content: contentResponseData.data?.content || [],
+                  lesson_id: lessonId,
+                  html_css: contentResponseData.data?.html_css || '',
+                  css: contentResponseData.data?.css || '',
+                  script: contentResponseData.data?.script || '',
+                },
+                message: 'Lesson content fetched successfully',
+              };
+
+              setLessonContent(contentData);
+
+              // Mirror fetched content into edit-mode blocks
+              const fetchedBlocks = Array.isArray(contentData?.data?.content)
+                ? contentData.data.content
+                : [];
+
+              if (fetchedBlocks.length > 0) {
+                const mappedEditBlocks = fetchedBlocks.map((b, i) => {
+                  const base = {
+                    id: b.block_id || `block_${i + 1}`,
+                    block_id: b.block_id || `block_${i + 1}`,
+                    type: b.type,
+                    order: i + 1,
+                    html_css: b.html_css || '',
+                    details: b.details || {},
+                    isEditing: false,
+                    timestamp: new Date().toISOString(),
+                  };
+
+                  // Handle different block types
+                  if (b.type === 'image') {
+                    return {
+                      ...base,
+                      title: 'Image',
+                      layout: b.details?.layout || 'centered',
+                      templateType: b.details?.template || undefined,
+                      alignment: b.details?.alignment || 'left',
+                      imageUrl: b.details?.image_url || '',
+                      imageTitle: b.details?.alt_text || 'Image',
+                      imageDescription: b.details?.caption || '',
+                      text: b.details?.caption || '',
+                    };
+                  }
+
+                  if (b.type === 'text') {
+                    return {
+                      ...base,
+                      title: b.details?.title || 'Text Block',
+                      content: b.details?.content || '',
+                      textType: b.details?.textType || 'paragraph',
+                    };
+                  }
+
+                  if (b.type === 'list') {
+                    return {
+                      ...base,
+                      title: 'List',
+                      listType: b.details?.listType || 'bullet',
+                      content: b.details?.content || '',
+                    };
+                  }
+
+                  return base;
+                });
+
+                console.log(
+                  'Setting content blocks from fetched data:',
+                  mappedEditBlocks
+                );
+                setContentBlocks(mappedEditBlocks);
+              }
+            } else {
+              console.log(
+                'No content found for this lesson or content fetch failed'
+              );
+            }
+          } catch (contentError) {
+            console.error('Error fetching lesson content:', contentError);
+          }
         } else {
           setLessonTitle('New Lesson');
           setLessonData({
@@ -5785,8 +5926,23 @@ function LessonBuilder() {
                               )}
 
                               {block.type === 'image' &&
-                                (block.imageUrl ||
-                                  block.defaultContent?.imageUrl) && (
+                                (() => {
+                                  // Debug logging for image blocks
+                                  console.log('🖼️ Image block detected:', {
+                                    id: block.id || block.block_id,
+                                    hasImageUrl: !!block.imageUrl,
+                                    imageUrl: block.imageUrl,
+                                    hasDefaultContent:
+                                      !!block.defaultContent?.imageUrl,
+                                    title: block.title,
+                                    alignment: block.alignment,
+                                    layout: block.layout,
+                                  });
+                                  return (
+                                    block.imageUrl ||
+                                    block.defaultContent?.imageUrl
+                                  );
+                                })() && (
                                   <>
                                     <div className="flex items-center gap-2 mb-3">
                                       <h3 className="text-lg font-semibold text-gray-900">
@@ -5904,7 +6060,16 @@ function LessonBuilder() {
                                                 value
                                               )
                                             }
-                                            modules={getToolbarModules('full')}
+                                            modules={getToolbarModules('image')}
+                                            formats={[
+                                              'font',
+                                              'size',
+                                              'bold',
+                                              'italic',
+                                              'underline',
+                                              'color',
+                                              'list',
+                                            ]}
                                             style={{ minHeight: '100px' }}
                                           />
                                         </div>
@@ -5994,101 +6159,131 @@ function LessonBuilder() {
                                         </div>
                                       </div>
                                     ) : (
-                                      /* Display Mode - smaller preview for edit mode */
-                                      <div>
-                                        {block.layout === 'side-by-side' && (
-                                          <div className="flex gap-3 items-start">
-                                            {block.alignment === 'right' ? (
-                                              // Image Right, Text Left
-                                              <>
-                                                <div className="w-1/2">
-                                                  <p className="text-sm text-gray-600 line-clamp-4">
-                                                    {getPlainText(
-                                                      block.text || ''
-                                                    ).substring(0, 60)}
-                                                    ...
-                                                  </p>
-                                                </div>
-                                                <div className="w-1/2">
-                                                  <img
-                                                    src={block.imageUrl}
-                                                    alt="Image"
-                                                    className="w-full h-20 object-cover rounded"
-                                                  />
-                                                </div>
-                                              </>
-                                            ) : (
-                                              // Image Left, Text Right (default)
-                                              <>
-                                                <div className="w-1/2">
-                                                  <img
-                                                    src={block.imageUrl}
-                                                    alt="Image"
-                                                    className="w-full h-20 object-cover rounded"
-                                                  />
-                                                </div>
-                                                <div className="w-1/2">
-                                                  <p className="text-sm text-gray-600 line-clamp-4">
-                                                    {getPlainText(
-                                                      block.text || ''
-                                                    ).substring(0, 60)}
-                                                    ...
-                                                  </p>
-                                                </div>
-                                              </>
-                                            )}
-                                          </div>
-                                        )}
-                                        {block.layout === 'overlay' && (
-                                          <div className="relative">
-                                            <img
-                                              src={block.imageUrl}
-                                              alt="Image"
-                                              className="w-full h-24 object-cover rounded"
-                                            />
-                                            <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
-                                              <p className="text-white text-sm text-center line-clamp-3">
-                                                {getPlainText(
-                                                  block.text || ''
-                                                ).substring(0, 50)}
-                                                ...
-                                              </p>
-                                            </div>
-                                          </div>
-                                        )}
-                                        {block.layout === 'centered' && (
+                                      /* Display Mode */
+                                      (() => {
+                                        const rawCaptionHtml =
+                                          (block.text &&
+                                            block.text.toString()) ||
+                                          (block.details?.caption_html &&
+                                            block.details.caption_html.toString()) ||
+                                          '';
+                                        const fallbackCaption =
+                                          (block.imageDescription &&
+                                            block.imageDescription.toString()) ||
+                                          (block.details?.caption &&
+                                            block.details.caption.toString()) ||
+                                          '';
+                                        const captionMarkup =
+                                          rawCaptionHtml &&
+                                          rawCaptionHtml.trim()
+                                            ? rawCaptionHtml
+                                            : fallbackCaption;
+
+                                        const captionElement = (
                                           <div
-                                            className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}
-                                          >
-                                            <img
-                                              src={block.imageUrl}
-                                              alt="Image"
-                                              className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
-                                            />
-                                            <p className="text-sm text-gray-600 italic line-clamp-2">
-                                              {getPlainText(
-                                                block.text || ''
-                                              ).substring(0, 40)}
-                                              ...
-                                            </p>
-                                          </div>
-                                        )}
-                                        {block.layout === 'full-width' && (
+                                            className="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                            dangerouslySetInnerHTML={{
+                                              __html: captionMarkup,
+                                            }}
+                                          />
+                                        );
+
+                                        if (block.layout === 'side-by-side') {
+                                          return (
+                                            <div className="flex gap-3 items-start">
+                                              {block.alignment === 'right' ? (
+                                                <>
+                                                  <div className="w-1/2">
+                                                    {captionElement}
+                                                  </div>
+                                                  <div className="w-1/2">
+                                                    <img
+                                                      src={block.imageUrl}
+                                                      alt="Image"
+                                                      className="w-full h-20 object-cover rounded"
+                                                    />
+                                                  </div>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <div className="w-1/2">
+                                                    <img
+                                                      src={block.imageUrl}
+                                                      alt="Image"
+                                                      className="w-full h-20 object-cover rounded"
+                                                    />
+                                                  </div>
+                                                  <div className="w-1/2">
+                                                    {captionElement}
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
+                                        if (block.layout === 'overlay') {
+                                          return (
+                                            <div className="relative">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-24 object-cover rounded"
+                                              />
+                                              {captionMarkup && (
+                                                <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2 text-white text-sm text-center">
+                                                  <div
+                                                    className="space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                                    dangerouslySetInnerHTML={{
+                                                      __html: captionMarkup,
+                                                    }}
+                                                  />
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
+                                        if (block.layout === 'centered') {
+                                          return (
+                                            <div
+                                              className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}
+                                            >
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
+                                              />
+                                              {captionMarkup && (
+                                                <div
+                                                  className="text-sm text-gray-600 italic leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                                  dangerouslySetInnerHTML={{
+                                                    __html: captionMarkup,
+                                                  }}
+                                                />
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
+                                        return (
                                           <div className="space-y-3">
                                             <img
                                               src={block.imageUrl}
                                               alt="Image"
                                               className="w-full h-24 object-cover rounded"
                                             />
-                                            <p className="text-sm text-gray-600 line-clamp-3">
-                                              {getPlainText(
-                                                block.text || ''
-                                              ).substring(0, 60)}
-                                              ...
-                                            </p>
+                                            {captionMarkup && (
+                                              <div
+                                                className="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                                dangerouslySetInnerHTML={{
+                                                  __html: captionMarkup,
+                                                }}
+                                              />
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
+                                        );
+                                      })()
                                     )}
                                   </>
                                 )}

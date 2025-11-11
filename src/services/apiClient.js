@@ -215,16 +215,18 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    console.warn('[API] Request failed:', {
-      url,
-      requestId,
-      status,
-      retryCount,
-      error: error.message,
-      backendError:
-        error.response?.data?.message || error.response?.data?.error,
-      responseData: status >= 500 ? error.response?.data : undefined,
-    });
+    // Only log on first attempt to reduce console noise
+    if (retryCount === 0) {
+      console.warn('[API] Request failed:', {
+        url,
+        requestId,
+        status,
+        error: error.message,
+        backendError:
+          error.response?.data?.message || error.response?.data?.error,
+        responseData: status >= 500 ? error.response?.data : undefined,
+      });
+    }
 
     // Handle network errors
     if (isNetworkError(error)) {
@@ -281,7 +283,6 @@ api.interceptors.response.use(
       await new Promise(resolve => setTimeout(resolve, delay));
 
       // Properly increment retry count
-      originalRequest.metadata = originalRequest.metadata || {};
       originalRequest.metadata.retryCount = retryCount + 1;
       originalRequest.metadata.startTime = Date.now();
 
@@ -291,6 +292,26 @@ api.interceptors.response.use(
         `[API] Server error (${status}) - max retries (${3}) exceeded for:`,
         url
       );
+
+      // Check if this is a critical authentication endpoint failing repeatedly
+      if (url && url.includes('/user/getUserProfile')) {
+        console.error(
+          '[Auth] Critical endpoint getUserProfile failed - treating as authentication failure'
+        );
+        console.error('[Auth] Backend error:', error.response?.data);
+        console.error('[Auth] Clearing tokens and redirecting to login...');
+
+        clearAccessToken();
+
+        // Broadcast logout event
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('userLoggedOut'));
+          // Navigate to login page
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 500);
+        }
+      }
     }
 
     // Handle authentication errors

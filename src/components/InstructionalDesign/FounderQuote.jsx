@@ -29,7 +29,7 @@ const CoFounderQuote = () => {
   useEffect(() => {
     // Autoplay slider
     intervalRef.current = setInterval(() => {
-      setActive((prev) => (prev + 1) % slides.length);
+      setActive(prev => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(intervalRef.current);
   }, [slides.length]);
@@ -76,11 +76,7 @@ const CoFounderQuote = () => {
         className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/4 opacity-10 pointer-events-none"
         style={{ width: '700px', height: '700px' }}
       >
-        <img 
-          src={Logo} 
-          alt="" 
-          className="w-full h-full object-contain"
-        />
+        <img src={logo} alt="" className="w-full h-full object-contain" />
       </div>
 
       {/* Keyframe Animation */}
@@ -94,41 +90,60 @@ const CoFounderQuote = () => {
           }
         }
       `}</style>
-      
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Quote Section */}
-          <div className="space-y-6">
-            {/* Quote */}
-            <blockquote className="text-2xl md:text-3xl font-normal text-white leading-relaxed" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-              "We don't just create courses—we architect learning experiences that inspire, engage, and transform. Every interaction is an opportunity to unlock human potential and drive meaningful change."
-            </blockquote>
-            
-            {/* Attribution */}
-            <div className="space-y-1">
-              <p className="text-lg font-semibold text-white" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                PaulMichael Rowland
-              </p>
-              <p className="text-base text-gray-300" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Founder
-              </p>
-            </div>
-          </div>
 
-          {/* Profile Image */}
-          <div className="flex justify-center md:justify-end">
-            <div className="relative">
-              <div className="w-64 h-64">
-                <img 
-                  src={PaulImage} 
-                  alt="PaulMichael Rowland - Founder"
-                  className="w-full h-full object-cover rounded-full"
-                />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Slider wrapper */}
+        <div className="overflow-hidden">
+          <div
+            className="flex transition-transform duration-700 ease-in-out"
+            style={{ transform: `translateX(-${active * 100}%)` }}
+          >
+            {slides.map((s, idx) => (
+              <div key={idx} className="min-w-full">
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  {/* Text Section */}
+                  <div className="space-y-6">
+                    <blockquote
+                      className="text-2xl md:text-3xl font-normal text-white leading-relaxed"
+                      style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                    >
+                      {s.quote}
+                    </blockquote>
+                    <div className="space-y-1">
+                      <p
+                        className="text-lg font-semibold text-white"
+                        style={{
+                          fontFamily: 'Georgia, Times New Roman, serif',
+                        }}
+                      >
+                        {s.name}
+                      </p>
+                      <p
+                        className="text-base text-gray-200"
+                        style={{ fontFamily: 'Arial, sans-serif' }}
+                      >
+                        {s.role}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Profile Image */}
+                  <div className="flex justify-center md:justify-end">
+                    <div className="relative">
+                      <div className="w-52 h-52">
+                        <img
+                          src={s.image}
+                          alt={`${s.name} - ${s.role}`}
+                          className={`w-full h-full ${s.image === logo ? 'object-contain p-6 bg-white/5 rounded-full' : 'object-cover'} rounded-full`}
+                        />
+                      </div>
+                      <div className="absolute -top-4 -right-4 w-8 h-8 bg-blue-500 rounded-full opacity-20"></div>
+                      <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-indigo-400 rounded-full opacity-30"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              {/* Decorative elements */}
-              <div className="absolute -top-4 -right-4 w-8 h-8 bg-blue-500 rounded-full opacity-20"></div>
-              <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-indigo-400 rounded-full opacity-30"></div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -137,5 +152,3 @@ const CoFounderQuote = () => {
 };
 
 export default CoFounderQuote;
-
-

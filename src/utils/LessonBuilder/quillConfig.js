@@ -157,6 +157,19 @@ export const getToolbarModules = (type = 'full') => {
     };
   }
 
+  // Restricted toolbar for image block text content
+  if (type === 'image') {
+    return {
+      toolbar: [
+        [{ font: Font.whitelist }],
+        [{ size: Size.whitelist }],
+        ['bold', 'italic', 'underline'],
+        [{ color: [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+      ],
+    };
+  }
+
   return {
     toolbar: [...baseToolbar, ['clean']],
   };

@@ -178,11 +178,6 @@ const VideoComponent = ({
   };
 
   const validateForm = () => {
-    if (!videoTitle.trim()) {
-      toast.error('Please enter a video title');
-      return false;
-    }
-
     if (videoUploadMethod === 'file' && !videoFile && !editingVideoBlock) {
       toast.error('Please select a video file');
       return false;
@@ -419,7 +414,7 @@ const VideoComponent = ({
           {/* Video Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Video Title <span className="text-red-500">*</span>
+              Video Title (Optional)
             </label>
             <input
               type="text"
@@ -427,7 +422,6 @@ const VideoComponent = ({
               onChange={e => setVideoTitle(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter video title"
-              required
             />
           </div>
 
@@ -604,7 +598,6 @@ const VideoComponent = ({
           <Button
             onClick={handleSaveVideo}
             disabled={
-              !videoTitle ||
               (videoUploadMethod === 'file' &&
                 !videoFile &&
                 !editingVideoBlock) ||

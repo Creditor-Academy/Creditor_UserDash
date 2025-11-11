@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     hmr: {
       overlay: false,
-      port: 8081
+      port: 8081,
     },
     watch: {
       usePolling: false,
@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   preview: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
     port: 8080,
     allowedHosts: [
       'www.lmsathena.com',

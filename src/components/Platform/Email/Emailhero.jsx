@@ -23,9 +23,13 @@ const Emailhero = () => {
           >
             {/* Breadcrumb */}
             <div className="flex items-center gap-3 text-sm text-gray-600 mb-8">
-              <span className="font-medium hover:text-gray-900 cursor-pointer transition">Features</span>
+              <span className="font-medium hover:text-gray-900 cursor-pointer transition">
+                Features
+              </span>
               <span className="text-gray-400">|</span>
-              <span className="font-semibold text-gray-900">Email Automation</span>
+              <span className="font-semibold text-gray-900">
+                Email Automation
+              </span>
             </div>
 
             {/* Heading */}
@@ -37,8 +41,9 @@ const Emailhero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-2xl mb-8">
-              Convert prospects into paying customers by capturing and nurturing leads directly in Athena LMS
-              with targeted email tools that keep your content top‑of‑mind.
+              Convert prospects into paying customers by capturing and nurturing
+              leads directly in Athena LMS with targeted email tools that keep
+              your content top‑of‑mind.
             </p>
 
             {/* CTAs */}
@@ -70,7 +75,7 @@ const Emailhero = () => {
                   className="absolute inset-0 opacity-60"
                   style={{
                     backgroundImage:
-                      'repeating-conic-gradient(from 0deg, rgba(255,255,255,0.15) 0deg 1deg, transparent 1deg 6deg)'
+                      'repeating-conic-gradient(from 0deg, rgba(255,255,255,0.15) 0deg 1deg, transparent 1deg 6deg)',
                   }}
                 />
 
@@ -78,21 +83,31 @@ const Emailhero = () => {
                 <div className="relative z-10 h-full w-full flex items-center justify-center p-6">
                   <div className="w-full max-w-[480px] bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="text-lg font-semibold text-gray-800">You are now enrolled!</div>
-                      <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">Inbox</div>
+                      <div className="text-lg font-semibold text-gray-800">
+                        You are now enrolled!
+                      </div>
+                      <div className="px-3 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                        Inbox
+                      </div>
                     </div>
                     <div className="h-3 w-24 bg-gray-200 rounded mb-3" />
                     <div className="h-3 w-40 bg-gray-200 rounded mb-6" />
-                    <div className="text-gray-800 font-semibold mb-2">Career Wayfinder</div>
+                    <div className="text-gray-800 font-semibold mb-2">
+                      Career Wayfinder
+                    </div>
                     <div className="bg-gray-100 rounded-lg p-4 border border-gray-200">
-                      <div className="text-gray-900 font-medium mb-2">Welcome Alice!</div>
+                      <div className="text-gray-900 font-medium mb-2">
+                        Welcome Alice!
+                      </div>
                       <div className="space-y-2 mb-4">
                         <div className="h-2 bg-gray-300 rounded w-5/6" />
                         <div className="h-2 bg-gray-300 rounded w-4/6" />
                         <div className="h-2 bg-gray-300 rounded w-3/5" />
                       </div>
                       <div className="text-xs text-gray-600">Sincerely,</div>
-                      <div className="text-sm text-gray-700 font-medium">Sara Doole</div>
+                      <div className="text-sm text-gray-700 font-medium">
+                        Sara Doole
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -106,5 +121,3 @@ const Emailhero = () => {
 };
 
 export default Emailhero;
-
-

@@ -21,9 +21,10 @@ import {
   Library,
   GraduationCap,
   CreditCard,
-  XCircle,
   Calendar,
+  XCircle,
 } from 'lucide-react';
+import { MembershipActionModal } from '@/components/membership/MembershipActionModal';
 import {
   getUserAvatarUrl,
   getUserAvatarUrlSync,
@@ -40,7 +41,6 @@ import {
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import MembershipActionModal from '@/components/membership/MembershipActionModal';
 
 export function ProfileDropdown() {
   const [userAvatar, setUserAvatar] = useState(getUserAvatarUrlSync());
@@ -128,6 +128,11 @@ export function ProfileDropdown() {
       console.error('Error uploading profile picture:', error);
       toast.error('Error uploading profile picture.');
     }
+  };
+
+  const handleMembershipAction = actionType => {
+    setMembershipActionType(actionType);
+    setMembershipModalOpen(true);
   };
 
   return (

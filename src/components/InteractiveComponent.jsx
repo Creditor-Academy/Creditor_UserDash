@@ -36,6 +36,50 @@ import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import ImageEditor from './ImageEditor';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+const accordionQuillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['clean'],
+  ],
+};
+
+const accordionQuillFormats = ['bold', 'italic', 'underline', 'list', 'bullet'];
+
+const stripHtmlTags = value =>
+  (value || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+const enhanceListMarkup = html => {
+  if (!html) return html;
+
+  // Ensure this runs only in a browser environment
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return html;
+  }
+
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  const addClasses = (elements, classes) => {
+    elements.forEach(element => {
+      const existing = element.getAttribute('class') || '';
+      const merged = `${existing} ${classes}`.trim();
+      element.setAttribute('class', merged);
+    });
+  };
+
+  addClasses(tempDiv.querySelectorAll('ul'), 'list-disc pl-6 space-y-1');
+  addClasses(tempDiv.querySelectorAll('ol'), 'list-decimal pl-6 space-y-1');
+  addClasses(tempDiv.querySelectorAll('li'), 'leading-relaxed');
+
+  return tempDiv.innerHTML;
+};
 
 const InteractiveComponent = forwardRef(
   (
@@ -267,13 +311,8 @@ const InteractiveComponent = forwardRef(
           );
           let content = '';
           if (contentDiv) {
-            // Get text content while preserving line breaks
-            content = contentDiv.innerHTML
-              .replace(/<\/p>/g, '\n')
-              .replace(/<\/li>/g, '\n')
-              .replace(/<br\s*\/?>/g, '\n')
-              .replace(/<[^>]+>/g, '')
-              .trim();
+            // Preserve original HTML so list formatting and other rich text survives
+            content = contentDiv.innerHTML.trim();
           }
 
           // Extract image if present
@@ -283,7 +322,7 @@ const InteractiveComponent = forwardRef(
             image = {
               src: imageElement.src,
               name: imageElement.alt || 'Accordion image',
-              size: 0,
+              size: 0, // Size not available from HTML
             };
           }
 
@@ -531,6 +570,72 @@ const InteractiveComponent = forwardRef(
         });
       } catch (error) {
         console.error('Error extracting timeline data from HTML:', error);
+      }
+
+      return extractedData;
+    };
+
+    // Helper function to extract process data from HTML
+    const extractProcessFromHTML = htmlContent => {
+      const extractedData = [];
+
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+
+        // Find all process steps
+        const processSteps = tempDiv.querySelectorAll('.process-step');
+
+        processSteps.forEach((step, index) => {
+          // Extract title from h2
+          const titleElement = step.querySelector('h2');
+          const title = titleElement
+            ? titleElement.textContent.trim()
+            : `Step ${index + 1}`;
+
+          // Extract description - get all text content before image/audio
+          const descElement = step.querySelector('.text-gray-700');
+          const description = descElement ? descElement.textContent.trim() : '';
+
+          // Extract image if present
+          let image = null;
+          const imageElement = step.querySelector('img');
+          if (imageElement) {
+            image = {
+              src: imageElement.src,
+              name: imageElement.alt || 'Process step image',
+              size: 0,
+            };
+          }
+
+          // Extract audio if present
+          let audio = null;
+          const audioElement = step.querySelector('audio source');
+          if (audioElement) {
+            const audioSrc = audioElement.getAttribute('src');
+            const audioType = audioElement.getAttribute('type');
+            if (audioSrc) {
+              audio = {
+                src: audioSrc,
+                type: audioType || 'audio/mpeg',
+                name: 'Process audio',
+                size: 0,
+              };
+            }
+          }
+
+          extractedData.push({
+            id: (index + 1).toString(),
+            title,
+            description,
+            image,
+            audio,
+          });
+        });
+
+        console.log('Extracted process data from HTML:', extractedData);
+      } catch (error) {
+        console.error('Error extracting process data from HTML:', error);
       }
 
       return extractedData;
@@ -890,6 +995,20 @@ const InteractiveComponent = forwardRef(
                     extractedData
                   );
                   setTimelineData(extractedData);
+                }
+              } else if (
+                template === 'process' &&
+                editingInteractiveBlock.html_css
+              ) {
+                const extractedData = extractProcessFromHTML(
+                  editingInteractiveBlock.html_css
+                );
+                if (extractedData.length > 0) {
+                  console.log(
+                    'Extracted process data from HTML:',
+                    extractedData
+                  );
+                  setProcessData(extractedData);
                 }
               }
             }
@@ -1878,6 +1997,13 @@ const InteractiveComponent = forwardRef(
     const formatContent = content => {
       if (!content) return '';
 
+      const trimmedContent = content.trim();
+
+      // If content already contains HTML tags, ensure list markup is styled and return
+      if (/(<\s*(ul|ol|li|p|div|br|span)[^>]*>)/i.test(trimmedContent)) {
+        return enhanceListMarkup(trimmedContent);
+      }
+
       // Split content by lines
       const lines = content.split('\n');
       let formattedHTML = '';
@@ -1923,7 +2049,11 @@ const InteractiveComponent = forwardRef(
         formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
       }
 
-      return formattedHTML || content;
+      if (formattedHTML) {
+        return enhanceListMarkup(formattedHTML);
+      }
+
+      return content;
     };
 
     const generateInteractiveHTML = (template, data) => {
@@ -2029,8 +2159,9 @@ const InteractiveComponent = forwardRef(
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
-                <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'max-h-96 pb-4' : 'max-h-0'}" 
-                     data-content="${index}">
+                <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'pb-4' : ''}" 
+                     data-content="${index}"
+                     style="max-height: ${index === 0 ? '2000px' : '0'}; overflow-y: auto;">
                   <div class="pl-4">
                     <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${formatContent(item.content)}</div>
                     ${
@@ -2038,7 +2169,7 @@ const InteractiveComponent = forwardRef(
                         ? `
                       <div class="flex justify-center ${item.audio ? '' : 'mb-4'}">
                         <div class="relative max-w-full">
-                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; height: auto; width: auto; object-fit: contain;" />
                           ${
                             item.audio
                               ? `
@@ -2256,10 +2387,13 @@ const InteractiveComponent = forwardRef(
                         ${
                           item.image
                             ? `
-                          <div class="mb-3">
-                            <img src="${item.image.src}" 
-                                 alt="${item.image.name || 'Timeline image'}" 
-                                 class="w-full h-48 object-cover rounded-lg shadow-sm" />
+                          <div class="mb-3 flex justify-center">
+                            <div class="relative max-w-full">
+                              <img src="${item.image.src}" 
+                                   alt="${item.image.name || 'Timeline image'}" 
+                                   class="rounded-lg shadow-sm" 
+                                   style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                            </div>
                           </div>
                         `
                             : ''
@@ -2306,17 +2440,13 @@ const InteractiveComponent = forwardRef(
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="process-carousel" data-template="process" id="${processId}" data-current="0" tabindex="0">
             <div class="relative">
-              <!-- Alternative Navigation Buttons -->
-              <div class="flex justify-between items-center mb-4">
+              <!-- Navigation Buttons -->
+              <div class="flex justify-between items-center mb-0">
                 <button onclick="window.processCarouselPrev && window.processCarouselPrev(this)" class="process-carousel-prev group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
                   <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                   </svg>
                 </button>
-                
-                <div class="text-sm text-gray-500">
-                  Use arrow keys or click progress dots below to navigate
-                </div>
                 
                 <button onclick="window.processCarouselNext && window.processCarouselNext(this)" class="process-carousel-next group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
                   <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2331,13 +2461,6 @@ const InteractiveComponent = forwardRef(
                   .map(
                     (step, index) => `
                   <div class="process-step ${index === 0 ? 'block' : 'hidden'}" data-step="${index}">
-                    <!-- Step indicator -->
-                    <div class="text-center mb-6">
-                      <div class="bg-white text-gray-800 px-4 py-2 rounded-full text-sm font-medium inline-block">
-                        Step ${index + 1}
-                      </div>
-                    </div>
-                    
                     <!-- Step title -->
                     <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">${step.title}</h2>
                     
@@ -2612,7 +2735,7 @@ const InteractiveComponent = forwardRef(
         dataKey = 'accordionData';
         // Validate that all items have content
         const hasEmptyItems = data.some(
-          item => !item.title.trim() || !item.content.trim()
+          item => !item.title.trim() || stripHtmlTags(item.content).length === 0
         );
         if (hasEmptyItems) {
           toast.error('Please fill in all titles and content');
@@ -2837,8 +2960,18 @@ const InteractiveComponent = forwardRef(
             )}
             <DialogHeader>
               <DialogTitle>
-                {editingInteractiveBlock ? 'Edit' : 'Create'} Interactive
-                Content
+                {editingInteractiveBlock ? 'Edit' : 'Create'}{' '}
+                {selectedTemplate === 'tabs'
+                  ? 'Tabs'
+                  : selectedTemplate === 'accordion'
+                    ? 'Accordion'
+                    : selectedTemplate === 'labeled-graphic'
+                      ? 'Labeled Graphic'
+                      : selectedTemplate === 'timeline'
+                        ? 'Timeline'
+                        : selectedTemplate === 'process'
+                          ? 'Process'
+                          : 'Interactive Content'}
               </DialogTitle>
             </DialogHeader>
 
@@ -3090,19 +3223,18 @@ const InteractiveComponent = forwardRef(
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Section Content
                             </label>
-                            <textarea
-                              value={item.content}
-                              onChange={e =>
-                                updateAccordionItem(
-                                  index,
-                                  'content',
-                                  e.target.value
-                                )
-                              }
-                              rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Enter section content"
-                            />
+                            <div className="border border-gray-300 rounded-md overflow-hidden">
+                              <ReactQuill
+                                theme="snow"
+                                value={item.content}
+                                onChange={value =>
+                                  updateAccordionItem(index, 'content', value)
+                                }
+                                modules={accordionQuillModules}
+                                formats={accordionQuillFormats}
+                                placeholder="Enter section content"
+                              />
+                            </div>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">

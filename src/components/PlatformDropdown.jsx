@@ -129,17 +129,38 @@ const PlatformDropdown = () => {
                     Use AI to quickly build a high-converting landing page
                   </p>
                 </a>
-                <a href="/contact" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Email Automation</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Drive and recapture sales with automated emails</p>
+                <a
+                  href="/platform/email-automation"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Email Automation
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Drive and recapture sales with automated emails
+                  </p>
                 </a>
-                <a href="/dashboard/progress" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Analytics</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Get actionable data to optimize products for profitability</p>
+                <a
+                  href="/platform/analytics"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Analytics
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Get actionable data to optimize products for profitability
+                  </p>
                 </a>
-                <a href="/dashboard" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Branded Mobile</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Get a custom, on-brand mobile app for your business</p>
+                <a
+                  href="/platform/brand"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Branded Mobile
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Get a custom, on-brand mobile app for your business
+                  </p>
                 </a>
               </div>
             </div>
@@ -162,9 +183,17 @@ const PlatformDropdown = () => {
                     Payments
                   </p>
                 </a>
-                <a href="/merchant-processing" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Selling Tools</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Boost sales, conversions, and order value with advanced sales tools</p>
+                <a
+                  href="/platform/selling"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Selling Tools
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Boost sales, conversions, and order value with advanced
+                    sales tools
+                  </p>
                 </a>
                 <a
                   href="/instructionaldesign"

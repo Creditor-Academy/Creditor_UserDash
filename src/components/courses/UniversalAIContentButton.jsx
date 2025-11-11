@@ -76,6 +76,12 @@ const UniversalAIContentButton = ({
           toast.success(
             `Generated and saved ${generatedBlocks.length} content blocks to lesson!`
           );
+
+          // IMPORTANT: Always pass to parent component even after successful save
+          // This ensures the frontend state is updated immediately
+          if (onContentGenerated) {
+            onContentGenerated(generatedBlocks);
+          }
         } catch (saveError) {
           console.warn(
             'Could not save directly to lesson, passing to parent:',

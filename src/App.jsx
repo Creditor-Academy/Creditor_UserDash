@@ -167,6 +167,14 @@ function App() {
               <Route path="/company_athena" element={<CompanyAthena />} />
               <Route path="/expert_athena" element={<ExpertAthena />} />
               <Route
+                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview"
+                element={
+                  <ProtectedRoute>
+                    <LessonPreview />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/revenue_generation"
                 element={<RevenueGeneration />}
               />
@@ -192,7 +200,17 @@ function App() {
                 element={<MembershipsPage />}
               />
               <Route path="/platform/coaching" element={<CoachingPage />} />
-
+              <Route
+                path="/platform/email-automation"
+                element={<Emailautomation />}
+              />
+              <Route path="/platform/analytics" element={<Analyticspage />} />
+              <Route path="/platform/brand" element={<Brandpage />} />
+              <Route path="/platform/selling" element={<Sellingpage />} />
+              <Route path="/privacy-athena" element={<PrivacyAthena />} />
+              <Route path="/term-athena" element={<TermAthena />} />
+              <Route path="/cookies" element={<Cookies />} />
+              <Route path="/sitemap" element={<Sitemap />} />
               <Route
                 path="/instructor"
                 element={
@@ -200,19 +218,87 @@ function App() {
                     <Instructorpage />
                   </ProtectedRoute>
                 }
-              >
-                <Route index element={<Instructorpage />} />
-                <Route path="course-management" element={<Instructorpage />} />
-                <Route path="user-management" element={<Instructorpage />} />
-                <Route path="course-catalog" element={<Instructorpage />} />
-                <Route path="create-quiz" element={<Instructorpage />} />
-                <Route path="course-lessons" element={<Instructorpage />} />
-                <Route path="group-management" element={<Instructorpage />} />
-                <Route path="event-management" element={<Instructorpage />} />
-                <Route path="support-tickets" element={<Instructorpage />} />
-                <Route path="assets" element={<Instructorpage />} />
-                <Route path="payments" element={<Instructorpage />} />
-              </Route>
+              />
+              <Route
+                path="/instructor/course-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/user-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/course-catalog"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/create-quiz"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/course-lessons"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/group-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/event-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/support-tickets"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/assets"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/payments"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/instructor/courses/:courseId/modules"
                 element={
@@ -220,22 +306,6 @@ function App() {
                     <InstructorCourseModulesPage />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/builder"
-                element={
-                  <DashboardLayout>
-                    <LessonBuilder />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview"
-                element={<LessonPreview />}
-              />
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons"
-                element={<LessonView />}
               />
               <Route
                 path="/instructor/add-users"
@@ -302,14 +372,13 @@ function App() {
                       }
                     />
                     <Route path="modules" element={<ModulesList />} />
-                    {/* <Route path="modules/:moduleId/view" element={<ModuleView />} /> */}
-                    <Route
-                      path="modules/:moduleId/lessons"
-                      element={<LessonView />}
-                    />
                     <Route
                       path="modules/:moduleId/assessments"
                       element={<ModuleAssessmentsView />}
+                    />
+                    <Route
+                      path="modules/:moduleId/lessons"
+                      element={<LessonView />}
                     />
                     <Route path="module/:moduleId">
                       <Route index element={<ModuleDetail />} />
@@ -320,9 +389,9 @@ function App() {
                       />
                       <Route path="lesson/:lessonId">
                         <Route index element={<LessonView />} />
-                        <Route path="view" element={<LessonBuilder />} />
                         <Route path="detail" element={<LessonDetail />} />
                         <Route path="builder" element={<LessonBuilder />} />
+                        <Route path="preview" element={<LessonPreview />} />
                       </Route>
                     </Route>
                   </Route>

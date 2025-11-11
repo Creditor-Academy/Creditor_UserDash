@@ -18,7 +18,10 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import enhancedAIService from '@/services/enhancedAIService';
+import {
+  generateLessonContent,
+  enhanceLessonContent,
+} from '@/services/openAIService';
 
 const AILessonContentGenerator = ({
   isOpen,
@@ -84,16 +87,17 @@ const AILessonContentGenerator = ({
       console.log('📝 Generating introduction...');
       const introPrompt = `Create an engaging introduction for the lesson "${lessonTitle}" in the module "${moduleTitle}" of the course "${courseTitle}". The introduction should hook the reader and set clear expectations for what they will learn.`;
 
-      const introContent = await enhancedAIService.generateText(introPrompt, {
-        maxTokens: 300,
-        temperature: 0.7,
+      const introContent = await generateLessonContent({
+        topic: introPrompt,
+        level: 'intermediate',
+        duration: 5,
       });
 
       blocks.push({
         id: `ai-intro-${Date.now()}`,
         type: 'text',
         content:
-          introContent ||
+          introContent?.data?.content?.[0]?.content ||
           `Welcome to ${lessonTitle}! In this lesson, you'll explore key concepts and gain practical knowledge that will enhance your understanding of ${moduleTitle}.`,
         order: blockOrder++,
         isAIGenerated: true,
@@ -103,16 +107,14 @@ const AILessonContentGenerator = ({
       console.log('🎯 Generating learning objectives...');
       const objectivesPrompt = `Create 4-6 clear, specific learning objectives for the lesson "${lessonTitle}". Each objective should start with an action verb and be measurable.`;
 
-      const objectivesContent = await enhancedAIService.generateText(
-        objectivesPrompt,
-        {
-          maxTokens: 200,
-          temperature: 0.6,
-        }
-      );
+      const objectivesContent = await generateLessonContent({
+        topic: objectivesPrompt,
+        level: 'intermediate',
+        duration: 5,
+      });
 
-      const objectives = objectivesContent
-        ? objectivesContent
+      const objectives = objectivesContent?.data?.content?.[0]?.content
+        ? objectivesContent.data.content[0].content
             .split('\n')
             .filter(line => line.trim())
             .map(obj => obj.replace(/^\d+\.?\s*/, '').replace(/^[-•]\s*/, ''))
@@ -139,13 +141,11 @@ const AILessonContentGenerator = ({
         // Section 1: Key Concepts
         const conceptsPrompt = `Explain the key concepts and fundamental principles of "${lessonTitle}". Provide clear definitions and explanations that are easy to understand.`;
 
-        const conceptsContent = await enhancedAIService.generateText(
-          conceptsPrompt,
-          {
-            maxTokens: 400,
-            temperature: 0.7,
-          }
-        );
+        const conceptsContent = await generateLessonContent({
+          topic: conceptsPrompt,
+          level: 'intermediate',
+          duration: 10,
+        });
 
         blocks.push({
           id: `ai-concepts-${Date.now()}`,
@@ -160,7 +160,7 @@ const AILessonContentGenerator = ({
           id: `ai-concepts-text-${Date.now()}`,
           type: 'text',
           content:
-            conceptsContent ||
+            conceptsContent?.data?.content?.[0]?.content ||
             `This section covers the fundamental concepts of ${lessonTitle}. Understanding these principles is essential for mastering the subject matter and applying it effectively in real-world scenarios.`,
           order: blockOrder++,
           isAIGenerated: true,
@@ -172,13 +172,11 @@ const AILessonContentGenerator = ({
 
           const examplesPrompt = `Provide 3-4 practical examples or real-world applications of "${lessonTitle}". Make them relevant and easy to understand.`;
 
-          const examplesContent = await enhancedAIService.generateText(
-            examplesPrompt,
-            {
-              maxTokens: 350,
-              temperature: 0.8,
-            }
-          );
+          const examplesContent = await generateLessonContent({
+            topic: examplesPrompt,
+            level: 'intermediate',
+            duration: 8,
+          });
 
           blocks.push({
             id: `ai-examples-heading-${Date.now()}`,
@@ -193,7 +191,7 @@ const AILessonContentGenerator = ({
             id: `ai-examples-${Date.now()}`,
             type: 'text',
             content:
-              examplesContent ||
+              examplesContent?.data?.content?.[0]?.content ||
               `Here are some practical applications of ${lessonTitle} that demonstrate its real-world relevance and importance in various contexts.`,
             order: blockOrder++,
             isAIGenerated: true,
@@ -205,16 +203,14 @@ const AILessonContentGenerator = ({
 
         const practicesPrompt = `List 5-7 best practices or important tips related to "${lessonTitle}". Format as a clear, actionable list.`;
 
-        const practicesContent = await enhancedAIService.generateText(
-          practicesPrompt,
-          {
-            maxTokens: 300,
-            temperature: 0.6,
-          }
-        );
+        const practicesContent = await generateLessonContent({
+          topic: practicesPrompt,
+          level: 'intermediate',
+          duration: 7,
+        });
 
-        const practices = practicesContent
-          ? practicesContent
+        const practices = practicesContent?.data?.content?.[0]?.content
+          ? practicesContent.data.content[0].content
               .split('\n')
               .filter(line => line.trim())
               .map(practice =>
@@ -253,16 +249,14 @@ const AILessonContentGenerator = ({
 
         const questionsPrompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking.`;
 
-        const questionsContent = await enhancedAIService.generateText(
-          questionsPrompt,
-          {
-            maxTokens: 250,
-            temperature: 0.7,
-          }
-        );
+        const questionsContent = await generateLessonContent({
+          topic: questionsPrompt,
+          level: 'intermediate',
+          duration: 6,
+        });
 
-        const questions = questionsContent
-          ? questionsContent
+        const questions = questionsContent?.data?.content?.[0]?.content
+          ? questionsContent.data.content[0].content
               .split('\n')
               .filter(line => line.trim() && line.includes('?'))
               .map(q => q.replace(/^\d+\.?\s*/, ''))
@@ -297,13 +291,11 @@ const AILessonContentGenerator = ({
 
       const summaryPrompt = `Create a concise summary of the key takeaways from the lesson "${lessonTitle}". Include the most important points students should remember.`;
 
-      const summaryContent = await enhancedAIService.generateText(
-        summaryPrompt,
-        {
-          maxTokens: 200,
-          temperature: 0.6,
-        }
-      );
+      const summaryContent = await generateLessonContent({
+        topic: summaryPrompt,
+        level: 'intermediate',
+        duration: 5,
+      });
 
       blocks.push({
         id: `ai-summary-heading-${Date.now()}`,
@@ -318,7 +310,7 @@ const AILessonContentGenerator = ({
         id: `ai-summary-${Date.now()}`,
         type: 'text',
         content:
-          summaryContent ||
+          summaryContent?.data?.content?.[0]?.content ||
           `In this lesson on ${lessonTitle}, we've covered the essential concepts, practical applications, and best practices. Remember to apply these insights in your own work and continue exploring the subject further.`,
         order: blockOrder++,
         isAIGenerated: true,

@@ -1,4 +1,5 @@
 import openAIService from './openAIService.js';
+import structuredLessonGenerator from './structuredLessonGenerator.js';
 import {
   generateComprehensiveShowcaseLesson,
   detectTopicContext,

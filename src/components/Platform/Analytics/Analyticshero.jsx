@@ -23,7 +23,9 @@ const Analyticshero = () => {
           >
             {/* Breadcrumb */}
             <div className="flex items-center gap-3 text-xs text-gray-600 mb-4">
-              <span className="font-medium hover:text-gray-900 cursor-pointer transition">Features</span>
+              <span className="font-medium hover:text-gray-900 cursor-pointer transition">
+                Features
+              </span>
               <span className="text-gray-400">|</span>
               <span className="font-semibold text-gray-900">Analytics</span>
             </div>
@@ -37,7 +39,10 @@ const Analyticshero = () => {
 
             {/* Description */}
             <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-xl mb-6">
-              Get actionable data to help you understand your audience, optimize your courses, and drive lasting growth. Equipped with powerful analytics, you have what you need to transform your growing online learning business.
+              Get actionable data to help you understand your audience, optimize
+              your courses, and drive lasting growth. Equipped with powerful
+              analytics, you have what you need to transform your growing online
+              learning business.
             </p>
 
             {/* CTAs */}
@@ -67,7 +72,7 @@ const Analyticshero = () => {
                   className="absolute inset-0 opacity-40"
                   style={{
                     backgroundImage:
-                      'repeating-conic-gradient(from 0deg, rgba(255,255,255,0.12) 0deg 1deg, transparent 1deg 8deg)'
+                      'repeating-conic-gradient(from 0deg, rgba(255,255,255,0.12) 0deg 1deg, transparent 1deg 8deg)',
                   }}
                 />
 
@@ -78,7 +83,9 @@ const Analyticshero = () => {
                   transition={{ duration: 0.6, delay: 0.4 }}
                   className="absolute top-6 left-6 w-[320px] bg-white rounded-lg shadow-2xl p-4 z-20"
                 >
-                  <h3 className="text-xs font-bold text-gray-900 mb-3">Customer Engagement</h3>
+                  <h3 className="text-xs font-bold text-gray-900 mb-3">
+                    Customer Engagement
+                  </h3>
                   <div className="space-y-1.5 text-[10px]">
                     <div className="grid grid-cols-4 gap-1.5 font-semibold text-gray-700 pb-1.5 border-b text-[9px]">
                       <div>NAME</div>
@@ -88,23 +95,37 @@ const Analyticshero = () => {
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 items-center">
                       <div className="text-gray-600">14</div>
-                      <div className="text-gray-600 text-[9px]">How To Win at Online...</div>
+                      <div className="text-gray-600 text-[9px]">
+                        How To Win at Online...
+                      </div>
                       <div>
                         <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div className="bg-gray-600 h-1 rounded-full" style={{ width: '65%' }} />
+                          <div
+                            className="bg-gray-600 h-1 rounded-full"
+                            style={{ width: '65%' }}
+                          />
                         </div>
                       </div>
-                      <div className="text-gray-900 font-semibold text-[9px]">$8,443.81</div>
+                      <div className="text-gray-900 font-semibold text-[9px]">
+                        $8,443.81
+                      </div>
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 items-center">
                       <div className="text-gray-600">31.65</div>
-                      <div className="text-gray-600 text-[9px]">Course Title</div>
+                      <div className="text-gray-600 text-[9px]">
+                        Course Title
+                      </div>
                       <div>
                         <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div className="bg-gray-600 h-1 rounded-full" style={{ width: '45%' }} />
+                          <div
+                            className="bg-gray-600 h-1 rounded-full"
+                            style={{ width: '45%' }}
+                          />
                         </div>
                       </div>
-                      <div className="text-gray-900 font-semibold text-[9px]">$109</div>
+                      <div className="text-gray-900 font-semibold text-[9px]">
+                        $109
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -116,7 +137,9 @@ const Analyticshero = () => {
                   transition={{ duration: 0.6, delay: 0.6 }}
                   className="absolute bottom-6 right-6 w-[360px] bg-white rounded-lg shadow-2xl p-4 z-10"
                 >
-                  <h3 className="text-xs font-bold text-gray-900 mb-3">New vs Churned MRR</h3>
+                  <h3 className="text-xs font-bold text-gray-900 mb-3">
+                    New vs Churned MRR
+                  </h3>
                   {/* Chart container with Y-axis */}
                   <div className="relative h-[160px] mb-2">
                     {/* Y-axis labels */}
@@ -141,13 +164,25 @@ const Analyticshero = () => {
                           { new: 65, churned: 40 },
                           { new: 75, churned: 15 },
                         ].map((bar, i) => (
-                          <div key={i} className="flex-1 h-full relative flex flex-col justify-center">
+                          <div
+                            key={i}
+                            className="flex-1 h-full relative flex flex-col justify-center"
+                          >
                             {/* Stacked bar from zero line */}
-                            <div className="absolute left-0 right-0 top-1/2 flex flex-col" style={{ transform: 'translateY(-50%)' }}>
+                            <div
+                              className="absolute left-0 right-0 top-1/2 flex flex-col"
+                              style={{ transform: 'translateY(-50%)' }}
+                            >
                               {/* Positive (New MRR) - above zero */}
-                              <div className="w-full bg-orange-500 rounded-t-sm mb-0.5" style={{ height: `${bar.new}px` }} />
+                              <div
+                                className="w-full bg-orange-500 rounded-t-sm mb-0.5"
+                                style={{ height: `${bar.new}px` }}
+                              />
                               {/* Negative (Churned MRR) - below zero */}
-                              <div className="w-full bg-gray-200 rounded-b-sm" style={{ height: `${bar.churned}px` }} />
+                              <div
+                                className="w-full bg-gray-200 rounded-b-sm"
+                                style={{ height: `${bar.churned}px` }}
+                              />
                             </div>
                           </div>
                         ))}
@@ -185,4 +220,3 @@ const Analyticshero = () => {
 };
 
 export default Analyticshero;
-

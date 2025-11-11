@@ -254,81 +254,90 @@ const Buildfeature = () => {
               ))}
             </div>
 
-          {/* Right Side - Sticky Image Panel */}
-          <div className="lg:sticky lg:top-32 hidden lg:block">
-            <div className="relative w-full aspect-[16/10] rounded-lg shadow-2xl overflow-hidden">
-              {/* Image Container with Smooth Transitions */}
-              {features.map((feature, index) => {
-                // Different background shades for each image
-                const backgroundShades = [
-                  "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
-                  "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
-                  "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100" // Analytics section - violet theme
-                ];
-                
-                return (
-                  <motion.div
-                    key={feature.id}
-                    initial={false}
-                    animate={{
-                      opacity: activeSection === index ? 1 : 0,
-                      zIndex: activeSection === index ? 10 : 1,
-                    }}
-                    transition={{ 
-                      duration: 0.5, 
-                      ease: "easeInOut"
-                    }}
-                    className="absolute inset-0 w-full h-full"
-                  >
-                    {feature.image ? (
-                      <div className={`w-full h-full flex items-center justify-center p-4 ${backgroundShades[index]}`}>
-                        <img
-                          src={feature.image}
-                          alt={feature.title}
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      </div>
-                    ) : (
-                      <div className={`w-full h-full flex items-center justify-center ${backgroundShades[index]}`}>
-                        <div className="text-center p-6">
-                          <div className="text-gray-400 text-lg font-semibold mb-2">
-                            {feature.title.split(':')[0]}
-                          </div>
-                          <p className="text-gray-500 text-sm">
-                            Add screenshot image here
-                          </p>
+            {/* Right Side - Sticky Image Panel */}
+            <div className="lg:sticky lg:top-32 hidden lg:block">
+              <div className="relative w-full aspect-[16/10] rounded-lg shadow-2xl overflow-hidden">
+                {/* Image Container with Smooth Transitions */}
+                {features.map((feature, index) => {
+                  // Different background shades for each image
+                  const backgroundShades = [
+                    'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
+                    'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
+                    'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                  ];
+
+                  return (
+                    <motion.div
+                      key={feature.id}
+                      initial={false}
+                      animate={{
+                        opacity: activeSection === index ? 1 : 0,
+                        zIndex: activeSection === index ? 10 : 1,
+                      }}
+                      transition={{
+                        duration: 0.5,
+                        ease: 'easeInOut',
+                      }}
+                      className="absolute inset-0 w-full h-full"
+                    >
+                      {feature.image ? (
+                        <div
+                          className={`w-full h-full flex items-center justify-center p-4 ${backgroundShades[index]}`}
+                        >
+                          <img
+                            src={feature.image}
+                            alt={feature.title}
+                            className="max-w-full max-h-full object-contain"
+                          />
                         </div>
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
+                      ) : (
+                        <div
+                          className={`w-full h-full flex items-center justify-center ${backgroundShades[index]}`}
+                        >
+                          <div className="text-center p-6">
+                            <div className="text-gray-400 text-lg font-semibold mb-2">
+                              {feature.title.split(':')[0]}
+                            </div>
+                            <p className="text-gray-500 text-sm">
+                              Add screenshot image here
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-        </div>
-
-        {/* Mobile Dropdown Layout */}
-        <div className="lg:hidden max-w-7xl mx-auto relative z-10">
-          <div className="space-y-4">
-            {features.map((feature, index) => (
-              <div key={feature.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-                {/* Dropdown Header */}
-                <button
-                  onClick={() => toggleMobileSection(index)}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left transition-colors duration-200 hover:bg-gray-50"
+          {/* Mobile Dropdown Layout */}
+          <div className="lg:hidden">
+            <div className="space-y-4">
+              {features.map((feature, index) => (
+                <div
+                  key={feature.id}
+                  className="bg-white rounded-lg shadow-lg overflow-hidden"
                 >
-                  <h3 className="text-lg font-normal text-gray-900 leading-tight pr-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                    {feature.title}
-                  </h3>
-                  <div className="flex-shrink-0">
-                    {expandedMobile === index ? (
-                      <ChevronUp className="w-5 h-5 text-gray-600" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-gray-600" />
-                    )}
-                  </div>
-                </button>
+                  {/* Dropdown Header */}
+                  <button
+                    onClick={() => toggleMobileSection(index)}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left transition-colors duration-200 hover:bg-gray-50"
+                  >
+                    <h3
+                      className="text-lg font-normal text-gray-900 leading-tight pr-4"
+                      style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                    >
+                      {feature.title}
+                    </h3>
+                    <div className="flex-shrink-0">
+                      {expandedMobile === index ? (
+                        <ChevronUp className="w-5 h-5 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-600" />
+                      )}
+                    </div>
+                  </button>
 
                   {/* Dropdown Content */}
                   <AnimatePresence>
@@ -378,49 +387,57 @@ const Buildfeature = () => {
                             })}
                           </div>
 
-                        {/* Image Section */}
-                        <div className="mt-6">
-                          <div className="relative w-full aspect-[16/10] rounded-lg shadow-lg overflow-hidden">
-                            {feature.image ? (
-                              <div className={`w-full h-full flex items-center justify-center p-4 ${[
-                                "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
-                                "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
-                                "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100" // Analytics section - violet theme
-                              ][feature.id]}`}>
-                                <img
-                                  src={feature.image}
-                                  alt={feature.title}
-                                  className="max-w-full max-h-full object-contain"
-                                />
-                              </div>
-                            ) : (
-                              <div className={`w-full h-full flex items-center justify-center ${[
-                                "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
-                                "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
-                                "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100" // Analytics section - violet theme
-                              ][feature.id]}`}>
-                                <div className="text-center p-6">
-                                  <div className="text-gray-400 text-lg font-semibold mb-2">
-                                    {feature.title.split(':')[0]}
-                                  </div>
-                                  <p className="text-gray-500 text-sm">
-                                    Add screenshot image here
-                                  </p>
+                          {/* Image Section */}
+                          <div className="mt-6">
+                            <div className="relative w-full aspect-[16/10] rounded-lg shadow-lg overflow-hidden">
+                              {feature.image ? (
+                                <div
+                                  className={`w-full h-full flex items-center justify-center p-4 ${
+                                    [
+                                      'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
+                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
+                                      'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                                    ][feature.id]
+                                  }`}
+                                >
+                                  <img
+                                    src={feature.image}
+                                    alt={feature.title}
+                                    className="max-w-full max-h-full object-contain"
+                                  />
                                 </div>
-                              </div>
-                            )}
+                              ) : (
+                                <div
+                                  className={`w-full h-full flex items-center justify-center ${
+                                    [
+                                      'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
+                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
+                                      'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                                    ][feature.id]
+                                  }`}
+                                >
+                                  <div className="text-center p-6">
+                                    <div className="text-gray-400 text-lg font-semibold mb-2">
+                                      {feature.title.split(':')[0]}
+                                    </div>
+                                    <p className="text-gray-500 text-sm">
+                                      Add screenshot image here
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
       {/* Stats Section */}
       <section
