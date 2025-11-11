@@ -97,6 +97,12 @@ const ModuleLessonsView = () => {
   const [currentLesson, setCurrentLesson] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // SCORM addition state
+  const [showAddScormDialog, setShowAddScormDialog] = useState(false);
+  const [scormLesson, setScormLesson] = useState(null);
+  const [scormUrl, setScormUrl] = useState('');
+  const [isAddingScorm, setIsAddingScorm] = useState(false);
+
   // Lesson content state
   const [lessonContent, setLessonContent] = useState(null);
   const [loadingContent, setLoadingContent] = useState(false);
@@ -482,6 +488,82 @@ const ModuleLessonsView = () => {
     setShowCreateDialog(true);
   };
 
+  const handleOpenScormDialog = lesson => {
+    setScormLesson(lesson);
+    setScormUrl(lesson?.scormUrl || '');
+    setShowAddScormDialog(true);
+  };
+
+  const handleAddScorm = async () => {
+    if (!scormLesson || !scormUrl.trim()) {
+      toast({
+        title: 'SCORM URL Required',
+        description: 'Please enter a SCORM package URL before proceeding.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsAddingScorm(true);
+
+      const payload = {
+        lesson_id: scormLesson.id,
+        scorm_url: scormUrl.trim(),
+      };
+
+      // TODO: Replace `/path-to-add-scorm` with the actual API path once available.
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      await axios.post(
+        `${apiBaseUrl}/api/lessoncontent/add-scorm-url/${scormLesson.id}`,
+        payload,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      setLessons(prev =>
+        prev.map(lesson =>
+          lesson.id === scormLesson.id
+            ? { ...lesson, scormUrl: payload.scorm_url }
+            : lesson
+        )
+      );
+
+      toast({
+        title: 'Success',
+        description: 'SCORM package added successfully.',
+      });
+
+      setShowAddScormDialog(false);
+      setScormLesson(null);
+      setScormUrl('');
+    } catch (error) {
+      console.error('Error adding SCORM package:', error);
+      let errorMessage = 'Failed to add SCORM package. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAddingScorm(false);
+    }
+  };
+
   const handleDeleteLesson = async () => {
     if (!lessonToDelete) return;
 
@@ -738,6 +820,18 @@ const ModuleLessonsView = () => {
                   >
                     <Trash2 className="h-4 w-4" />
                     <span className="sr-only">Delete</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 text-green-600 hover:bg-green-50 border-green-200"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleOpenScormDialog(lesson);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="sr-only">Add SCORM</span>
                   </Button>
                 </div>
               </CardFooter>
@@ -1198,6 +1292,63 @@ const ModuleLessonsView = () => {
                 </>
               ) : (
                 'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add SCORM Dialog */}
+      <Dialog open={showAddScormDialog} onOpenChange={setShowAddScormDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {scormLesson
+                ? `Add SCORM Package to "${scormLesson.title || 'Lesson'}"`
+                : 'Add SCORM Package'}
+            </DialogTitle>
+            <DialogDescription>
+              Provide the SCORM package URL to attach it to this lesson.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="scorm-url">SCORM URL *</Label>
+              <Input
+                id="scorm-url"
+                type="url"
+                placeholder="https://example.com/path/to/scorm-package"
+                value={scormUrl}
+                onChange={e => setScormUrl(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddScormDialog(false);
+                setScormLesson(null);
+                setScormUrl('');
+              }}
+              disabled={isAddingScorm}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddScorm}
+              disabled={!scormUrl.trim() || isAddingScorm}
+            >
+              {isAddingScorm ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding SCORM...
+                </>
+              ) : (
+                'Add SCORM'
               )}
             </Button>
           </DialogFooter>
