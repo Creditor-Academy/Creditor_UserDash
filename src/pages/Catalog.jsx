@@ -209,7 +209,7 @@ export function CatalogPage() {
     }
     
     // Default price for all other catalogs
-    return 2800;
+    return 28000;
   };
 
   // Handle buy catalog click
