@@ -16,7 +16,8 @@ export function calculateActivityScore(course) {
   } = course;
 
   // Avoid division by zero
-  const activeUserPercentage = enrollments > 0 ? (activeUsers / enrollments) * 100 : 0;
+  const activeUserPercentage =
+    enrollments > 0 ? (activeUsers / enrollments) * 100 : 0;
 
   // Weighted formula for activity score
   const score =
@@ -45,20 +46,20 @@ export function determineCourseActivity(course) {
  */
 export function formatDuration(minutes) {
   if (!minutes || minutes === 0) return '0m';
-  
+
   if (minutes < 60) {
     return `${Math.round(minutes)}m`;
   }
-  
+
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
-  
+
   if (hours >= 24) {
     const days = Math.floor(hours / 24);
     const remainingHours = hours % 24;
     return `${days}d ${remainingHours}h`;
   }
-  
+
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
@@ -80,8 +81,18 @@ export function calculateCompletionPercentage(completed, total) {
  */
 export function getMonthName(month) {
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return months[month - 1] || '';
 }
@@ -93,8 +104,18 @@ export function getMonthName(month) {
  */
 export function getShortMonthName(month) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return months[month - 1] || '';
 }
@@ -145,9 +166,9 @@ export function calculateTrend(current, previous) {
   if (!previous || previous === 0) {
     return { direction: 'neutral', percentage: 0 };
   }
-  
+
   const change = ((current - previous) / previous) * 100;
-  
+
   return {
     direction: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral',
     percentage: Math.abs(Math.round(change * 10) / 10),
@@ -175,7 +196,10 @@ export function formatLargeNumber(num) {
  * @param {Object} thresholds - Object with good, warning, danger thresholds
  * @returns {string} Color class name
  */
-export function getMetricColorClass(value, thresholds = { good: 70, warning: 40 }) {
+export function getMetricColorClass(
+  value,
+  thresholds = { good: 70, warning: 40 }
+) {
   if (value >= thresholds.good) return 'text-green-600';
   if (value >= thresholds.warning) return 'text-yellow-600';
   return 'text-red-600';
@@ -187,7 +211,10 @@ export function getMetricColorClass(value, thresholds = { good: 70, warning: 40 
  * @param {Object} thresholds - Object with good, warning thresholds
  * @returns {string} Badge variant
  */
-export function getMetricBadgeVariant(value, thresholds = { good: 70, warning: 40 }) {
+export function getMetricBadgeVariant(
+  value,
+  thresholds = { good: 70, warning: 40 }
+) {
   if (value >= thresholds.good) return 'default';
   if (value >= thresholds.warning) return 'secondary';
   return 'destructive';
@@ -202,7 +229,7 @@ export function getMetricBadgeVariant(value, thresholds = { good: 70, warning: 4
 export function getMonthDateRange(year, month) {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-  
+
   return { startDate, endDate };
 }
 
@@ -214,7 +241,7 @@ export function getMonthDateRange(year, month) {
 export function getLastNMonths(count = 6) {
   const months = [];
   const now = new Date();
-  
+
   for (let i = 0; i < count; i++) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({
@@ -223,7 +250,7 @@ export function getLastNMonths(count = 6) {
       label: `${getShortMonthName(date.getMonth() + 1)} ${date.getFullYear()}`,
     });
   }
-  
+
   return months;
 }
 
@@ -268,7 +295,7 @@ export function calculateAverageMetrics(courses) {
       avgTimeSpent: 0,
     };
   }
-  
+
   const totals = courses.reduce(
     (acc, course) => ({
       enrollments: acc.enrollments + (course.enrollments || 0),
@@ -278,11 +305,12 @@ export function calculateAverageMetrics(courses) {
     }),
     { enrollments: 0, activeUsers: 0, completionRate: 0, timeSpent: 0 }
   );
-  
+
   return {
     avgEnrollments: Math.round(totals.enrollments / courses.length),
     avgActiveUsers: Math.round(totals.activeUsers / courses.length),
-    avgCompletionRate: Math.round((totals.completionRate / courses.length) * 10) / 10,
+    avgCompletionRate:
+      Math.round((totals.completionRate / courses.length) * 10) / 10,
     avgTimeSpent: Math.round(totals.timeSpent / courses.length),
   };
 }
@@ -294,9 +322,9 @@ export function calculateAverageMetrics(courses) {
  * @returns {Array} Filtered courses
  */
 export function filterCoursesByActivityLevel(courses, level) {
-  return courses.filter((course) => {
+  return courses.filter(course => {
     const score = calculateActivityScore(course);
-    
+
     switch (level) {
       case 'high':
         return score >= 70;
@@ -325,8 +353,8 @@ export function exportToCSV(courses) {
     'Avg Time Spent (min)',
     'Activity Score',
   ];
-  
-  const rows = courses.map((course) => [
+
+  const rows = courses.map(course => [
     course.id,
     `"${course.title}"`,
     course.enrollments || 0,
@@ -335,12 +363,9 @@ export function exportToCSV(courses) {
     course.avgTimeSpent || 0,
     calculateActivityScore(course),
   ]);
-  
-  const csv = [
-    headers.join(','),
-    ...rows.map((row) => row.join(',')),
-  ].join('\n');
-  
+
+  const csv = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+
   return csv;
 }
 
@@ -353,15 +378,14 @@ export function downloadCSV(csvContent, filename = 'course-analytics.csv') {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   URL.revokeObjectURL(url);
 }
-

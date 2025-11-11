@@ -1,11 +1,11 @@
-import React from 'react'
+import React from 'react';
 import Navbar from '../../components/navbar';
 import Footer from '../../components/Footer';
 import Brandhero from '../../components/Platform/Brand/Brandhero';
 import BrandVideo from '../../components/Platform/Brand/BrandVideo';
 import BrandContent from '../../components/Platform/Brand/BrandContent';
-import Brandfaq from "../../components/Platform/Brand/Brandfaq";
-import BrandCta from "../../components/Platform/Brand/Brandcta";
+import Brandfaq from '../../components/Platform/Brand/Brandfaq';
+import BrandCta from '../../components/Platform/Brand/Brandcta';
 
 export default function Brandpage() {
   return (
@@ -14,9 +14,9 @@ export default function Brandpage() {
       <Brandhero />
       <BrandVideo />
       <BrandContent />
-      <Brandfaq/>
-      <BrandCta/>
-    <Footer />                            
+      <Brandfaq />
+      <BrandCta />
+      <Footer />
     </div>
-  )
-}   
+  );
+}

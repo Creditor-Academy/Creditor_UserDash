@@ -1,55 +1,58 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, BookOpen } from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, BookOpen } from 'lucide-react';
 
 const caseStudies = [
   {
     id: 1,
     icon: BookOpen,
-    title: "TechCorp reduced support tickets by 40% with customer training",
+    title: 'TechCorp reduced support tickets by 40% with customer training',
     quote:
       "Our customer satisfaction scores increased by 35% after implementing Athena's training platform.",
-    author: "Sarah Johnson, Customer Success Manager at TechCorp",
-    bgColor: "bg-blue-400",
-    hoverColor: "hover:bg-blue-500",
+    author: 'Sarah Johnson, Customer Success Manager at TechCorp',
+    bgColor: 'bg-blue-400',
+    hoverColor: 'hover:bg-blue-500',
     hasImage: true,
-    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop&crop=faces",
+    image:
+      'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop&crop=faces',
   },
   {
     id: 2,
     icon: BookOpen,
-    title: "SaaSFlow increased customer retention by 25%",
+    title: 'SaaSFlow increased customer retention by 25%',
     quote:
-      "The training programs helped our customers get more value from our platform, leading to higher retention rates.",
-    author: "Mike Chen, VP of Customer Success, SaaSFlow",
-    bgColor: "bg-blue-600",
-    hoverColor: "hover:bg-blue-700",
+      'The training programs helped our customers get more value from our platform, leading to higher retention rates.',
+    author: 'Mike Chen, VP of Customer Success, SaaSFlow',
+    bgColor: 'bg-blue-600',
+    hoverColor: 'hover:bg-blue-700',
     hasImage: true,
-    image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=300&fit=crop&crop=faces",
+    image:
+      'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&h=300&fit=crop&crop=faces',
   },
   {
     id: 3,
     icon: BookOpen,
-    title: "DataSoft achieved 90% customer onboarding completion",
+    title: 'DataSoft achieved 90% customer onboarding completion',
     quote:
-      "Our customers now complete onboarding 3x faster and have much better product adoption rates.",
-    author: "Lisa Rodriguez, Head of Customer Experience, DataSoft",
-    bgColor: "bg-purple-600",
-    hoverColor: "hover:bg-purple-700",
+      'Our customers now complete onboarding 3x faster and have much better product adoption rates.',
+    author: 'Lisa Rodriguez, Head of Customer Experience, DataSoft',
+    bgColor: 'bg-purple-600',
+    hoverColor: 'hover:bg-purple-700',
     hasImage: true,
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop&crop=faces",
+    image:
+      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop&crop=faces',
   },
 ];
 
 const bottomCaseStudy = {
   id: 4,
   icon: BookOpen,
-  title: "How CloudTech transformed customer success with Athena",
+  title: 'How CloudTech transformed customer success with Athena',
   quote:
     "We've seen a 50% reduction in churn and our customers are more engaged than ever with our platform.",
-  author: "David Kim, Chief Customer Officer, CloudTech",
-  bgColor: "bg-gray-100",
-  textColor: "text-gray-900",
+  author: 'David Kim, Chief Customer Officer, CloudTech',
+  bgColor: 'bg-gray-100',
+  textColor: 'text-gray-900',
 };
 
 const containerVariants = {
@@ -87,10 +90,13 @@ export default function CustomerSucceed() {
           className="mb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start"
         >
           <div>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 mb-8 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+            <h2
+              className="text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 mb-8 leading-tight"
+              style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+            >
               Customer training case studies
             </h2>
-            
+
             <button className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5">
               See all case studies
               <ArrowRight className="w-4 h-4" />
@@ -98,8 +104,12 @@ export default function CustomerSucceed() {
           </div>
 
           <div className="lg:pt-2">
-            <p className="text-base text-gray-700 leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Explore how leading companies use Athena's customer training platform to boost satisfaction and reduce churn.
+            <p
+              className="text-base text-gray-700 leading-relaxed font-normal"
+              style={{ fontFamily: 'Arial, sans-serif' }}
+            >
+              Explore how leading companies use Athena's customer training
+              platform to boost satisfaction and reduce churn.
             </p>
           </div>
         </motion.div>
@@ -112,7 +122,7 @@ export default function CustomerSucceed() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"
         >
-          {caseStudies.map((study) => {
+          {caseStudies.map(study => {
             const Icon = study.icon;
             return (
               <motion.div
@@ -126,7 +136,10 @@ export default function CustomerSucceed() {
                   <div className="p-8 flex flex-col flex-grow">
                     {/* Icon */}
                     <div className="mb-6">
-                      <Icon className="w-10 h-10 text-white" strokeWidth={1.5} />
+                      <Icon
+                        className="w-10 h-10 text-white"
+                        strokeWidth={1.5}
+                      />
                     </div>
 
                     {/* Title */}
@@ -156,7 +169,7 @@ export default function CustomerSucceed() {
                   {/* Image at bottom (only for third card) */}
                   {study.hasImage && study.image && (
                     <div className="w-full h-64 overflow-hidden">
-                      <img 
+                      <img
                         src={study.image}
                         alt={study.title}
                         className="w-full h-full object-cover"

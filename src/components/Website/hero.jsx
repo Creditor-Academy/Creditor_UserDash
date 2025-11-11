@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 import coverImage from '../../assets/Cover-2.webp';
 import websiteDevelopment from '../../assets/Webhero.webp';
 
@@ -29,25 +29,28 @@ export function HeroSectionOne() {
 
       {/* Content container */}
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-center px-4">
-        <h1 className="text-center text-white max-w-5xl" style={{
-          fontFamily: "'Georgia', 'Times New Roman', serif",
-          fontSize: 'clamp(1.8rem, 5vw, 3.5rem)',
-          fontWeight: 400,
-          lineHeight: 1.1,
-          letterSpacing: '-1px',
-          textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
-        }}>
-          {"Launch Your Private Dream Website Today"
-            .split(" ")
+        <h1
+          className="text-center text-white max-w-5xl"
+          style={{
+            fontFamily: "'Georgia', 'Times New Roman', serif",
+            fontSize: 'clamp(1.8rem, 5vw, 3.5rem)',
+            fontWeight: 400,
+            lineHeight: 1.1,
+            letterSpacing: '-1px',
+            textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          {'Launch Your Private Dream Website Today'
+            .split(' ')
             .map((word, index) => (
               <motion.span
                 key={index}
-                initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
-                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                initial={{ opacity: 0, filter: 'blur(4px)', y: 10 }}
+                animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
                 transition={{
                   duration: 0.3,
                   delay: index * 0.1,
-                  ease: "easeInOut",
+                  ease: 'easeInOut',
                 }}
                 className="mr-2 inline-block"
               >
@@ -64,10 +67,11 @@ export function HeroSectionOne() {
           style={{
             fontFamily: "'Arial', sans-serif",
             fontSize: '1.1rem',
-            lineHeight: 1.6
+            lineHeight: 1.6,
           }}
         >
-          Elevate your brand with a stunning, high-performance website designed for success.
+          Elevate your brand with a stunning, high-performance website designed
+          for success.
         </motion.p>
 
         {/* <motion.div
@@ -104,4 +108,3 @@ export function HeroSectionOne() {
     </div>
   );
 }
-

@@ -1,6 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Mic, Image as ImageIcon, Presentation, Type, Sparkles, Settings } from 'lucide-react';
+import {
+  Upload,
+  FileText,
+  Mic,
+  Image as ImageIcon,
+  Presentation,
+  Type,
+  Sparkles,
+  Settings,
+} from 'lucide-react';
 
 const sections = [
   {
@@ -54,7 +63,9 @@ export default function Digitalrevenue() {
             Say hello to a new source of revenue
           </h2>
           <p className="text-sm sm:text-base text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Sell digital downloads as standalone products or as add-ons to your existing offerings to diversify your income streams and earn more — with less effort.
+            Sell digital downloads as standalone products or as add-ons to your
+            existing offerings to diversify your income streams and earn more —
+            with less effort.
           </p>
         </motion.div>
 
@@ -72,7 +83,9 @@ export default function Digitalrevenue() {
               }`}
             >
               {/* Content Side */}
-              <div className={`${item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'} flex flex-col justify-center`}>
+              <div
+                className={`${item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'} flex flex-col justify-center`}
+              >
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-normal text-gray-50 lg:text-gray-900 mb-4 leading-tight lg:leading-tight">
                   {item.title}
                 </h3>
@@ -82,7 +95,9 @@ export default function Digitalrevenue() {
               </div>
 
               {/* Visual Side */}
-              <div className={`${item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
+              <div
+                className={`${item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'}`}
+              >
                 <motion.div
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.3 }}
@@ -92,24 +107,36 @@ export default function Digitalrevenue() {
                     <div className="relative z-10 bg-white rounded-md shadow-lg p-3 w-[320px]">
                       <div className="grid grid-cols-3 gap-2">
                         <div className="border rounded p-2 text-center">
-                          <span className="text-[10px] font-semibold">Template</span>
+                          <span className="text-[10px] font-semibold">
+                            Template
+                          </span>
                         </div>
                         <div className="border rounded p-2 text-center">
-                          <span className="text-[10px] font-semibold">Guides</span>
+                          <span className="text-[10px] font-semibold">
+                            Guides
+                          </span>
                         </div>
                         <div className="border rounded p-2 text-center">
-                          <span className="text-[10px] font-semibold">How-to docs</span>
+                          <span className="text-[10px] font-semibold">
+                            How-to docs
+                          </span>
                         </div>
                         <div className="border rounded p-2 text-center flex items-center justify-center gap-1">
                           <Mic className="w-3 h-3" />
-                          <span className="text-[10px] font-semibold">Audio</span>
+                          <span className="text-[10px] font-semibold">
+                            Audio
+                          </span>
                         </div>
                         <div className="border rounded p-2 text-center flex items-center justify-center gap-1">
                           <ImageIcon className="w-3 h-3" />
-                          <span className="text-[10px] font-semibold">Imagery</span>
+                          <span className="text-[10px] font-semibold">
+                            Imagery
+                          </span>
                         </div>
                         <div className="border rounded p-2 text-center">
-                          <span className="text-[10px] font-semibold">Spreadsheets</span>
+                          <span className="text-[10px] font-semibold">
+                            Spreadsheets
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -117,7 +144,9 @@ export default function Digitalrevenue() {
 
                   {item.type === 'uploader' && (
                     <div className="relative z-10 bg-white/90 rounded-md p-4 shadow-xl w-[340px]">
-                      <div className="text-[11px] text-gray-800 mb-2 font-medium">Digital Download file</div>
+                      <div className="text-[11px] text-gray-800 mb-2 font-medium">
+                        Digital Download file
+                      </div>
                       <div className="bg-gray-200 h-1.5 w-3/4 rounded mb-2"></div>
                       <div className="bg-gray-200 h-1.5 w-1/2 rounded mb-4"></div>
                       <div className="border-2 border-dashed border-gray-400 rounded p-6 text-center">
@@ -132,14 +161,18 @@ export default function Digitalrevenue() {
                   {item.type === 'landing' && (
                     <div className="relative z-10 bg-white rounded-md p-4 shadow-xl w-[360px]">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-[11px] font-semibold text-gray-900">Generating page</div>
+                        <div className="text-[11px] font-semibold text-gray-900">
+                          Generating page
+                        </div>
                         <div className="bg-blue-200 rounded-full p-2">
                           <Sparkles className="w-3 h-3 text-gray-800" />
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mb-3">
                         <Settings className="w-4 h-4 text-gray-600" />
-                        <span className="text-[11px] text-gray-700">Creating hero section...</span>
+                        <span className="text-[11px] text-gray-700">
+                          Creating hero section...
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
                         <div className="bg-gray-400 h-1.5 rounded-full w-2/3"></div>

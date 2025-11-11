@@ -1,20 +1,17 @@
-// Quiz Service for handling quiz-related API calls
-import { getAuthHeader } from './authHeader';
+// Quiz Service - Placeholder functions (API calls removed)
+// All functions now return mock data instead of making API calls
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  // Backend handles authentication via cookies
-  return {
-    'Content-Type': 'application/json',
-    ...getAuthHeader(),
-  };
+// Helper function to generate mock response
+const createMockResponse = data => {
+  return Promise.resolve({
+    success: true,
+    data: data,
+    message: 'Mock response - API calls have been removed',
+  });
 };
 
 // Get current user ID from localStorage or context
 const getCurrentUserId = () => {
-  // You can replace this with your actual user context
   return localStorage.getItem('userId') || 'userId-1';
 };
 
@@ -24,24 +21,13 @@ const getCurrentUserId = () => {
  * @returns {Promise<Object>} Quiz session data
  */
 export async function startQuiz(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}/start`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to start quiz: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error starting quiz:', error);
-    throw error;
-  }
+  console.log('Mock: Starting quiz', quizId);
+  return createMockResponse({
+    quizId: quizId,
+    sessionId: 'mock-session-' + Date.now(),
+    startedAt: new Date().toISOString(),
+    status: 'started',
+  });
 }
 
 /**
@@ -51,25 +37,14 @@ export async function startQuiz(quizId) {
  * @returns {Promise<Object>} Quiz results and score
  */
 export async function submitQuiz(quizId, answers = {}) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}/submit`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(answers)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to submit quiz: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error submitting quiz:', error);
-    throw error;
-  }
+  console.log('Mock: Submitting quiz', quizId, answers);
+  return createMockResponse({
+    quizId: quizId,
+    score: Math.floor(Math.random() * 100),
+    totalQuestions: Object.keys(answers).length,
+    correctAnswers: Math.floor(Object.keys(answers).length * 0.7),
+    submittedAt: new Date().toISOString(),
+  });
 }
 
 /**
@@ -78,31 +53,16 @@ export async function submitQuiz(quizId, answers = {}) {
  * @returns {Promise<Array>} Array of quiz objects
  */
 export async function getModuleQuizzes(moduleId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/modules/${moduleId}/quizzes`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch module quizzes: ${response.status}`);
-    }
-
-    const data = await response.json();
-    // Support both { data: [...] } and direct array
-    if (data && data.data && Array.isArray(data.data)) {
-      return data.data;
-    } else if (Array.isArray(data)) {
-      return data;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    console.error('Error fetching module quizzes:', error);
-    throw error;
-  }
+  console.log('Mock: Getting module quizzes for', moduleId);
+  return createMockResponse([
+    {
+      id: 'quiz-1',
+      title: 'Sample Quiz 1',
+      description: 'Mock quiz data',
+      moduleId: moduleId,
+      questionCount: 5,
+    },
+  ]);
 }
 
 /**
@@ -111,51 +71,30 @@ export async function getModuleQuizzes(moduleId) {
  * @returns {Promise<Object>} Quiz details
  */
 export async function getQuizById(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    throw error;
-  }
+  console.log('Mock: Getting quiz by ID', quizId);
+  return createMockResponse({
+    id: quizId,
+    title: 'Sample Quiz',
+    description: 'Mock quiz data',
+    questionCount: 5,
+    maxAttempts: 3,
+  });
 }
 
 /**
- * Get quiz meta/overview by quizId (custom endpoint)
- * Example path: api/quiz/quiz-2/getQuizById
- * @param {string} quizId - e.g., "quiz-2"
- * @returns {Promise<Object>} Quiz overview data (maxAttempts, questionCount, totalScore, min_score, etc.)
+ * Get quiz meta/overview by quizId
+ * @param {string} quizId - The quiz ID
+ * @returns {Promise<Object>} Quiz overview data
  */
 export async function getQuizMetaById(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/${quizId}/getQuizById`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz meta: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching quiz meta by id:', error);
-    throw error;
-  }
+  console.log('Mock: Getting quiz meta by ID', quizId);
+  return createMockResponse({
+    quizId: quizId,
+    maxAttempts: 3,
+    questionCount: 5,
+    totalScore: 100,
+    minScore: 60,
+  });
 }
 
 /**
@@ -164,24 +103,15 @@ export async function getQuizMetaById(quizId) {
  * @returns {Promise<Array>} Array of quiz questions
  */
 export async function getQuizQuestions(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}/questions`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz questions: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching quiz questions:', error);
-    throw error;
-  }
+  console.log('Mock: Getting quiz questions for', quizId);
+  return createMockResponse([
+    {
+      id: 'q1',
+      question: 'Sample question?',
+      options: ['A', 'B', 'C', 'D'],
+      type: 'multiple-choice',
+    },
+  ]);
 }
 
 /**
@@ -190,24 +120,13 @@ export async function getQuizQuestions(quizId) {
  * @returns {Promise<Object>} Quiz results and analytics
  */
 export async function getQuizResults(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}/results`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz results: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching quiz results:', error);
-    throw error;
-  }
+  console.log('Mock: Getting quiz results for', quizId);
+  return createMockResponse({
+    quizId: quizId,
+    averageScore: 75,
+    totalAttempts: 10,
+    passRate: 80,
+  });
 }
 
 /**
@@ -216,24 +135,14 @@ export async function getQuizResults(quizId) {
  * @returns {Promise<Object>} Quiz progress and attempt history
  */
 export async function getQuizProgress(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}/progress`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz progress: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching quiz progress:', error);
-    throw error;
-  }
+  console.log('Mock: Getting quiz progress for', quizId);
+  return createMockResponse({
+    quizId: quizId,
+    attempts: 1,
+    maxAttempts: 3,
+    lastScore: 85,
+    status: 'completed',
+  });
 }
 
 /**
@@ -244,25 +153,13 @@ export async function getQuizProgress(quizId) {
  * @returns {Promise<Object>} Response indicating success
  */
 export async function saveAnswer(quizId, questionId, answer) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/quizzes/${quizId}/answers`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      body: JSON.stringify({ questionId, answer })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to save answer: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error saving answer:', error);
-    throw error;
-  }
+  console.log('Mock: Saving answer for', quizId, questionId, answer);
+  return createMockResponse({
+    saved: true,
+    quizId: quizId,
+    questionId: questionId,
+    answer: answer,
+  });
 }
 
 /**
@@ -272,22 +169,15 @@ export async function saveAnswer(quizId, questionId, answer) {
  * @returns {Promise<Array>} Array of quiz questions
  */
 export async function getModuleQuizQuestions(moduleId, quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/modules/${moduleId}/quizzes/${quizId}/questions`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz questions: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching module quiz questions:', error);
-    throw error;
-  }
+  console.log('Mock: Getting module quiz questions for', moduleId, quizId);
+  return createMockResponse([
+    {
+      id: 'q1',
+      question: 'Sample module question?',
+      options: ['A', 'B', 'C', 'D'],
+      type: 'multiple-choice',
+    },
+  ]);
 }
 
 /**
@@ -297,89 +187,42 @@ export async function getModuleQuizQuestions(moduleId, quizId) {
  * @returns {Promise<Object>} Quiz details
  */
 export async function getModuleQuizById(moduleId, quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/modules/${moduleId}/quizzes/${quizId}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch quiz: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching module quiz:', error);
-    throw error;
-  }
+  console.log('Mock: Getting module quiz by ID', moduleId, quizId);
+  return createMockResponse({
+    id: quizId,
+    moduleId: moduleId,
+    title: 'Sample Module Quiz',
+    description: 'Mock module quiz data',
+  });
 }
 
-// Check remaining attempts for a specific quiz
-export const getQuizRemainingAttempts = async (quizId) => {
-  try {
-    // The API expects the quiz ID in the format "quiz-{id}" or just the ID
-    const url = `${API_BASE}/api/quiz/user/quizzes/${quizId}/remaining-attempts`;
-    console.log('Calling remaining attempts API:', url);
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('Remaining attempts API response:', data);
-    
-    // Extract the data from the response structure
-    if (data.success && data.data) {
-      const result = {
-        quizId: data.data.quizId,
-        maxAttempts: data.data.maxAttempts,
-        attempted: Number(data.data.attempted) > 0, // Keep boolean flag for convenience
-        attemptedCount: Number(data.data.attempted ?? 0), // New: exact attempts used
-        remainingAttempts: data.data.remainingAttempts
-      };
-      console.log('Processed result:', result);
-      return result;
-    }
-    
-    console.log('Returning raw data:', data);
-    return data;
-  } catch (error) {
-    console.error('Error fetching quiz remaining attempts:', error);
-    throw error;
-  }
+/**
+ * Check remaining attempts for a specific quiz
+ * @param {string} quizId - The quiz ID
+ * @returns {Promise<Object>} Remaining attempts data
+ */
+export const getQuizRemainingAttempts = async quizId => {
+  console.log('Mock: Getting remaining attempts for', quizId);
+  return createMockResponse({
+    quizId: quizId,
+    maxAttempts: 3,
+    attempted: false,
+    attemptedCount: 0,
+    remainingAttempts: 3,
+  });
 };
 
 /**
- * Get the user's latest attempt for a quiz (including score)
- * @param {string} quizId - The quiz ID (e.g., "quiz-2" or raw ID)
+ * Get the user's latest attempt for a quiz
+ * @param {string} quizId - The quiz ID
  * @returns {Promise<Object>} Latest attempt details
  */
 export async function getUserLatestQuizAttempt(quizId) {
-  try {
-    const response = await fetch(`${API_BASE}/api/quiz/user/quiz/${quizId}/latest-attempt`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch latest attempt: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching user latest quiz attempt:', error);
-    throw error;
-  }
+  console.log('Mock: Getting latest quiz attempt for', quizId);
+  return createMockResponse({
+    quizId: quizId,
+    score: 85,
+    completedAt: new Date().toISOString(),
+    attempt: 1,
+  });
 }

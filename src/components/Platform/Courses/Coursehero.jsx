@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 import courseImage from '../../../assets/Platformcourse.png';
 
 const Coursehero = () => {
@@ -28,9 +28,7 @@ const Coursehero = () => {
                 Features
               </span>
               <span className="text-gray-400">|</span>
-              <span className="font-semibold text-gray-900">
-                Courses
-              </span>
+              <span className="font-semibold text-gray-900">Courses</span>
             </div>
 
             {/* Main Heading */}
@@ -40,7 +38,9 @@ const Coursehero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Athena LMS's proven platform gives you the easy-to-use and customizable tools you need to increase your impact and revenue through online courses.
+              Athena LMS's proven platform gives you the easy-to-use and
+              customizable tools you need to increase your impact and revenue
+              through online courses.
             </p>
 
             {/* CTA Buttons */}
@@ -66,9 +66,9 @@ const Coursehero = () => {
             <div className="relative w-full flex items-center justify-center">
               {/* Course Platform Image */}
               <div className="relative w-full max-w-[650px]">
-                <img 
-                  src={courseImage} 
-                  alt="Athena LMS Course Platform" 
+                <img
+                  src={courseImage}
+                  alt="Athena LMS Course Platform"
                   className="w-full h-auto shadow-2xl"
                 />
               </div>
@@ -86,4 +86,3 @@ const Coursehero = () => {
 };
 
 export default Coursehero;
-

@@ -1,58 +1,52 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  BookOpen,
-  Users,
-  Globe,
-  FileCheck,
-  CheckCircle,
-} from "lucide-react";
-import Community from "../../../assets/Community.png";
-import Landing from "../../../assets/Landing.png";
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { BookOpen, Users, Globe, FileCheck, CheckCircle } from 'lucide-react';
+import Community from '../../../assets/Community.png';
+import Landing from '../../../assets/Landing.png';
 
 const features = [
   {
     id: 1,
-    title: "Courses",
+    title: 'Courses',
     description:
-      "From digital badges to clear learning paths, our courses have everything you need to create programs without obstacles and encourage learner engagement.",
+      'From digital badges to clear learning paths, our courses have everything you need to create programs without obstacles and encourage learner engagement.',
     icon: BookOpen,
-    mockupBg: "bg-gradient-to-br from-blue-100 to-blue-50",
-    accentColor: "blue",
-    bottomColor: "#3b82f6", // blue
+    mockupBg: 'bg-gradient-to-br from-blue-100 to-blue-50',
+    accentColor: 'blue',
+    bottomColor: '#3b82f6', // blue
     showCourseCreation: true,
   },
   {
     id: 2,
-    title: "Communities",
+    title: 'Communities',
     description:
-      "Athena Communities help you create interactive, shared learning spaces that drive retention, peer engagement, and long-term value for your business.",
+      'Athena Communities help you create interactive, shared learning spaces that drive retention, peer engagement, and long-term value for your business.',
     icon: Users,
-    mockupBg: "bg-gradient-to-br from-amber-100 to-orange-50",
-    accentColor: "yellow",
-    bottomColor: "#f59e0b", // yellow
+    mockupBg: 'bg-gradient-to-br from-amber-100 to-orange-50',
+    accentColor: 'yellow',
+    bottomColor: '#f59e0b', // yellow
     showCommunity: true,
   },
   {
     id: 3,
-    title: "Landing pages",
+    title: 'Landing pages',
     description:
-      "Create aesthetically-pleasing, high-converting landing pages in minutes, thanks to built-in AI optimization, and seamless integrations.",
+      'Create aesthetically-pleasing, high-converting landing pages in minutes, thanks to built-in AI optimization, and seamless integrations.',
     icon: Globe,
-    mockupBg: "bg-gradient-to-br from-orange-100 to-orange-50",
-    accentColor: "orange",
-    bottomColor: "#f97316", // orange
+    mockupBg: 'bg-gradient-to-br from-orange-100 to-orange-50',
+    accentColor: 'orange',
+    bottomColor: '#f97316', // orange
     showLandingPage: true,
   },
   {
     id: 4,
-    title: "SCORM compliance",
+    title: 'SCORM compliance',
     description:
-      "Athena is SCORM compliant, allowing for more interactive learning and gamification. For more, lean into advanced customizations with the Plus Expansion Pack.",
+      'Athena is SCORM compliant, allowing for more interactive learning and gamification. For more, lean into advanced customizations with the Plus Expansion Pack.',
     icon: FileCheck,
-    mockupBg: "bg-gradient-to-br from-gray-100 to-gray-50",
-    accentColor: "blue",
-    bottomColor: "#1e40af", // dark blue
+    mockupBg: 'bg-gradient-to-br from-gray-100 to-gray-50',
+    accentColor: 'blue',
+    bottomColor: '#1e40af', // dark blue
     showSCORM: true,
   },
 ];
@@ -103,7 +97,9 @@ export default function CompanyFeature() {
             Popular features for companies
           </h2>
           <p className="text-base sm:text-lg text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Build, sell, and scale your learning business with features and tools designed to save you time, engage your audience, and grow your revenue.
+            Build, sell, and scale your learning business with features and
+            tools designed to save you time, engage your audience, and grow your
+            revenue.
           </p>
         </motion.div>
 
@@ -115,7 +111,7 @@ export default function CompanyFeature() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          {features.map((feature) => {
+          {features.map(feature => {
             const Icon = feature.icon;
             return (
               <motion.div
@@ -123,24 +119,30 @@ export default function CompanyFeature() {
                 variants={itemVariants}
                 className="group"
               >
-                <div 
+                <div
                   className="relative h-full bg-white rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl border border-gray-200 transition-all duration-300 flex flex-col"
                   onMouseEnter={() => setHoveredIndex(feature.id - 1)}
                   onMouseLeave={() => setHoveredIndex(null)}
                 >
                   {/* Mockup Area */}
-                  <div className={`${feature.mockupBg} h-48 flex items-center justify-center p-0 relative flex-shrink-0 overflow-hidden`}>
+                  <div
+                    className={`${feature.mockupBg} h-48 flex items-center justify-center p-0 relative flex-shrink-0 overflow-hidden`}
+                  >
                     {/* Course Creation Mockup */}
                     {feature.showCourseCreation && (
                       <div className="w-full h-full flex items-center justify-center scale-110">
                         <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
                           <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-gray-900">Create your course</h3>
+                            <h3 className="text-sm font-semibold text-gray-900">
+                              Create your course
+                            </h3>
                             <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
                               <span className="text-white text-xs">✨</span>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-600 mb-3">Generating course outline...</p>
+                          <p className="text-xs text-gray-600 mb-3">
+                            Generating course outline...
+                          </p>
                           <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                             <div className="bg-blue-500 h-2 rounded-full w-3/4"></div>
                           </div>
@@ -153,18 +155,18 @@ export default function CompanyFeature() {
 
                     {/* Community Mockup */}
                     {feature.showCommunity && (
-                      <img 
-                        src={Community} 
-                        alt="Community Interface" 
+                      <img
+                        src={Community}
+                        alt="Community Interface"
                         className="w-full h-full object-cover object-left"
                       />
                     )}
 
                     {/* Landing Page Mockup */}
                     {feature.showLandingPage && (
-                      <img 
-                        src={Landing} 
-                        alt="Landing Page Interface" 
+                      <img
+                        src={Landing}
+                        alt="Landing Page Interface"
                         className="w-full h-full object-cover object-left"
                       />
                     )}
@@ -173,8 +175,12 @@ export default function CompanyFeature() {
                     {feature.showSCORM && (
                       <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
                         <div className="text-center mb-3">
-                          <h3 className="text-sm font-semibold text-gray-900">Uploading SCORM Course</h3>
-                          <div className="text-lg font-bold text-gray-900">84%</div>
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            Uploading SCORM Course
+                          </h3>
+                          <div className="text-lg font-bold text-gray-900">
+                            84%
+                          </div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                           <div className="bg-blue-500 h-2 rounded-full w-4/5"></div>
@@ -191,15 +197,18 @@ export default function CompanyFeature() {
                   {/* Content Area */}
                   <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
                     {/* Hover Fill Animation */}
-                    <div 
+                    <div
                       className="absolute inset-0 transition-all duration-500 ease-out"
                       style={{
                         backgroundColor: feature.bottomColor,
-                        transform: hoveredIndex === feature.id - 1 ? 'translateY(0)' : 'translateY(100%)',
-                        opacity: hoveredIndex === feature.id - 1 ? 0.2 : 0
+                        transform:
+                          hoveredIndex === feature.id - 1
+                            ? 'translateY(0)'
+                            : 'translateY(100%)',
+                        opacity: hoveredIndex === feature.id - 1 ? 0.2 : 0,
                       }}
                     />
-                    
+
                     {/* Content with higher z-index */}
                     <div className="relative z-10 flex flex-col flex-grow">
                       <h3 className="text-xl font-bold text-gray-900 mb-3">
@@ -213,10 +222,10 @@ export default function CompanyFeature() {
 
                   {/* Bottom Color Line - Static */}
                   <div className="absolute bottom-0 left-0 right-0 h-1">
-                    <div 
+                    <div
                       style={{
                         backgroundColor: feature.bottomColor,
-                        height: '100%'
+                        height: '100%',
                       }}
                     />
                   </div>

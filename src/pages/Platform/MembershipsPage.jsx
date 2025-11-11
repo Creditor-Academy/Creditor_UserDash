@@ -17,11 +17,10 @@ const MembershipsPage = () => {
       <Membershipready />
       <Membershipfaq />
       <Membershipscale />
-        {/* Add more membership-related components here */}
+      {/* Add more membership-related components here */}
       <Footer />
     </div>
   );
 };
 
 export default MembershipsPage;
-
