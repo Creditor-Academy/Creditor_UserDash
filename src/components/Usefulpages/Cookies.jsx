@@ -179,15 +179,15 @@ const Cookies = () => {
                 <h2 className="font-semibold text-slate-800">Contact</h2>
                 <p className="text-slate-700">
                   If you have questions about our cookies practices, email us at{" "}
-                  <a href="mailto:counselor@lmsathena.com" className="underline text-sky-700">
-                    counselor@lmsathena.com
+                  <a href="mailto:admin@lmsathena.com" className="underline text-sky-700">
+                    admin@lmsathena.com
                   </a>.
                 </p>
 
                 <address className="not-italic text-slate-700 mt-3">
                   LMSAthena<br />
                   Kirkland, Washington, USA<br />
-                  GF-41, Omaxe Square, Jasola District Centre, New Delhi - 110025
+                  GF-20, Omaxe Square, Jasola District Centre, New Delhi - 110025
                 </address>
 
                 <div className="mt-6 flex gap-3 items-center no-print">
