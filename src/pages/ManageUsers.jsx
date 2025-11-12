@@ -33,6 +33,7 @@ const ManageUsers = () => {
   const [successData, setSuccessData] = useState({
     courseTitle: '',
     addedUsers: [],
+    roleType: '',
   });
 
   // Password change modal state
@@ -1006,85 +1007,16 @@ const ManageUsers = () => {
         // Reset selection first
         setSelectedUsers([]);
 
-        // Automatically enroll new instructors in all courses
-        // console.log('🎓 Automatically enrolling new instructors in all courses...');
-        // console.log('📋 Available courses:', courses.map(c => ({ id: c.id, title: c.title })));
-        // console.log('👥 New instructors to enroll:', selectedUsers);
+        // Clear any previous enrollment progress indicators
+        setEnrollmentProgress({ current: 0, total: 0 });
 
-        try {
-          // Set initial enrollment progress
-          setEnrollmentProgress({ current: 0, total: courses.length });
-
-          // Enroll each new instructor in all courses
-          const enrollmentPromises = courses.map(async (course, index) => {
-            try {
-              // console.log(`🔄 Enrolling instructors in course: ${course.title} (${course.id})`);
-
-              const enrollmentResponse = await axios.post(
-                `${API_BASE}/api/course/addLearnerToCourse`,
-                {
-                  course_id: course.id,
-                  learnerIds: selectedUsers,
-                },
-                getAuthConfig()
-              );
-
-              return {
-                course,
-                success: true,
-                response: enrollmentResponse.data,
-              };
-            } catch (enrollmentError) {
-              // console.log(`⚠️ Failed to enroll instructors in course: ${course.title}`, enrollmentError.response?.data);
-              return {
-                course,
-                success: false,
-                error: enrollmentError.response?.data,
-              };
-            }
-          });
-
-          const enrollmentResults = await Promise.all(enrollmentPromises);
-          const successfulEnrollments = enrollmentResults.filter(
-            result => result.success
-          );
-          const failedEnrollments = enrollmentResults.filter(
-            result => !result.success
-          );
-
-          // Show success message with enrollment information
-          const enrollmentMessage =
-            successfulEnrollments.length > 0
-              ? ` and enrolled them in ${successfulEnrollments.length} course(s)`
-              : '';
-
-          setSuccessData({
-            courseTitle: 'Role Update',
-            addedUsers: updatedUsers,
-            enrollmentInfo: {
-              successful: successfulEnrollments.length,
-              total: courses.length,
-              message: enrollmentMessage,
-            },
-          });
-          setShowSuccessModal(true);
-        } catch (enrollmentError) {
-          console.error(
-            '❌ Error during automatic course enrollment:',
-            enrollmentError
-          );
-          // Still show success for role update, but log enrollment error
-          setSuccessData({
-            courseTitle: 'Role Update',
-            addedUsers: updatedUsers,
-            enrollmentInfo: {
-              successful: 0,
-              total: courses.length,
-              message: ' (course enrollment failed)',
-            },
-          });
-          setShowSuccessModal(true);
-        }
+        // Show success message immediately
+        setSuccessData({
+          courseTitle: 'Role Update',
+          addedUsers: updatedUsers,
+          roleType: 'instructor',
+        });
+        setShowSuccessModal(true);
 
         // Wait a moment for backend to process, then refresh
         // console.log('🔄 Waiting for backend to process role update...');
@@ -1145,20 +1077,16 @@ const ManageUsers = () => {
   const handleMakeAdmin = async () => {
     if (selectedUsers.length === 0) return;
 
+    const selectedUserIds = [...selectedUsers];
+
     try {
       setUpdatingRole(true);
       setError('');
 
-      // console.log('🔄 Making admin API call:', {
-      //   url: `${API_BASE}/api/user/make-admins`,
-      //   payload: { user_ids: selectedUsers },
-      //   selectedUsers
-      // });
-
       // Make API call to convert selected users/instructors to admin
       const response = await axios.put(
         `${API_BASE}/api/user/convert-to-admin`,
-        { user_ids: selectedUsers },
+        { user_ids: selectedUserIds },
         getAuthConfig()
       );
 
@@ -1166,13 +1094,13 @@ const ManageUsers = () => {
       if (response.status >= 200 && response.status < 300) {
         // Get the selected users data
         const updatedUsers = users.filter(user =>
-          selectedUsers.includes(user.id)
+          selectedUserIds.includes(user.id)
         );
 
         // Manually update the local state to reflect the role change
         setUsers(prevUsers => {
           const newUsers = prevUsers.map(user => {
-            if (selectedUsers.includes(user.id)) {
+            if (selectedUserIds.includes(user.id)) {
               // Check if user already has admin role
               const hasAdminRole = user.user_roles?.some(
                 role => role.role === 'admin'
@@ -1180,19 +1108,10 @@ const ManageUsers = () => {
 
               if (!hasAdminRole) {
                 // Replace all roles with admin role (single role system)
-                const updatedUser = {
+                return {
                   ...user,
                   user_roles: [{ role: 'admin' }],
                 };
-
-                return updatedUser;
-              } else {
-                // console.log('ℹ️ User already has admin role:', {
-                //   id: user.id,
-                //   name: `${user.first_name} ${user.last_name}`,
-                //   roles: user.user_roles
-                // });
-                return user;
               }
             }
             return user;
@@ -1204,20 +1123,82 @@ const ManageUsers = () => {
         // Reset selection first
         setSelectedUsers([]);
 
-        // Show success message immediately
+        // Identify published courses that the new admins should access
+        const publishedCoursesWithIds = courses
+          .filter(
+            course =>
+              (course.course_status || course.status || '').toUpperCase() ===
+              'PUBLISHED'
+          )
+          .map(course => ({
+            ...course,
+            resolvedId: course.id || course.course_id || course._id,
+          }))
+          .filter(course => course.resolvedId);
+
+        const totalEnrollments = publishedCoursesWithIds.length;
+        const enrollmentResults = [];
+
+        if (totalEnrollments > 0) {
+          setEnrollmentProgress({ current: 0, total: totalEnrollments });
+
+          for (const [index, course] of publishedCoursesWithIds.entries()) {
+            try {
+              await axios.post(
+                `${API_BASE}/api/course/addLearnerToCourse`,
+                {
+                  course_id: course.resolvedId,
+                  learnerIds: selectedUserIds,
+                },
+                getAuthConfig()
+              );
+              enrollmentResults.push({ course, success: true });
+            } catch (enrollmentError) {
+              console.error(
+                `❌ Failed to assign admin access for course ${course.title || course.resolvedId}:`,
+                enrollmentError.response?.data || enrollmentError.message
+              );
+              enrollmentResults.push({ course, success: false });
+            } finally {
+              setEnrollmentProgress(prev => ({
+                current: Math.min(prev.current + 1, totalEnrollments),
+                total: totalEnrollments,
+              }));
+            }
+          }
+        }
+
+        const successfulEnrollments = enrollmentResults.filter(
+          result => result.success
+        ).length;
+
         setSuccessData({
-          courseTitle: 'Admin Role Update',
+          courseTitle: 'Role Update',
           addedUsers: updatedUsers,
+          roleType: 'admin',
+          enrollmentInfo:
+            totalEnrollments > 0
+              ? {
+                  successful: successfulEnrollments,
+                  total: totalEnrollments,
+                  message:
+                    successfulEnrollments > 0
+                      ? ` and enrolled them in ${successfulEnrollments} published course(s)`
+                      : ' (failed to assign published courses)',
+                }
+              : {
+                  successful: 0,
+                  total: 0,
+                  message: ' (no published courses available to assign)',
+                },
         });
         setShowSuccessModal(true);
 
         // Wait a moment for backend to process, then refresh
         setTimeout(async () => {
-          // console.log('🔄 Refreshing users list to get updated admin roles...');
           await fetchUsers();
         }, 2000);
       } else {
-        // console.error('❌ API returned non-success status:', response.status);
         throw new Error(
           response.data?.message || `API returned status ${response.status}`
         );
@@ -1240,6 +1221,7 @@ const ManageUsers = () => {
         setError('Failed to update user roles. Please try again.');
       }
     } finally {
+      setEnrollmentProgress({ current: 0, total: 0 });
       setUpdatingRole(false);
     }
   };
