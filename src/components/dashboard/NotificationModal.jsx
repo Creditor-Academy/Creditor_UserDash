@@ -36,16 +36,28 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
   // Load API notifications when provided
   useEffect(() => {
     if (Array.isArray(notificationsFromApi)) {
-      const mapped = notificationsFromApi.map((n) => ({
-        id: String(n.id ?? n._id ?? Math.random()),
-        type: (n.type || 'info').toString().toLowerCase(),
-        title: n.title || 'Notification',
-        description: n.message || n.description || '',
-        time: new Date(n.created_at || n.createdAt || Date.now()).toLocaleString(),
-        color: n.read ? 'bg-gray-50' : 'bg-blue-50',
-        dotColor: n.read ? 'bg-gray-300' : 'bg-blue-500',
-        read: !!n.read,
-      }));
+      const mapped = notificationsFromApi.map((n) => {
+        // Handle different field name variations for event notifications
+        const notificationType = (n.type || n.related_type || n.notification_type || 'info').toString().toLowerCase();
+        const notificationTitle = n.title || n.subject || 'Notification';
+        const notificationMessage = n.message || n.description || n.body || n.content || '';
+        const notificationId = String(n.id ?? n._id ?? `notif-${Date.now()}-${Math.random()}`);
+        const createdAt = n.created_at || n.createdAt || n.timestamp || n.date || new Date().toISOString();
+        const isRead = n.read !== undefined ? !!n.read : false;
+        
+        return {
+          id: notificationId,
+          type: notificationType,
+          title: notificationTitle,
+          description: notificationMessage,
+          time: new Date(createdAt).toLocaleString(),
+          color: isRead ? 'bg-gray-50' : 'bg-blue-50',
+          dotColor: isRead ? 'bg-gray-300' : 'bg-blue-500',
+          read: isRead,
+          // Preserve original notification data for reference
+          original: n,
+        };
+      });
       console.log('All notifications from API:', notificationsFromApi);
       console.log('Mapped notifications:', mapped);
       console.log('Read notifications count:', mapped.filter(n => n.read).length);
