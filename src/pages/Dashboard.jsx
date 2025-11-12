@@ -814,10 +814,7 @@ export function Dashboard() {
               </div> */}
 
               {/* Your Progress */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-6">Your Progress Overview</h3>
-                <ProgressStats />
-              </div> */}
+              <ProgressStats />
 
               {/* Monthly Overview */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
