@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight, Lock, Play, FileText } from "lucide-react";
+import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight, Lock, Play, FileText, Folder, ArrowLeft } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
 import { getCourseTrialStatus } from '../utils/trialUtils';
@@ -33,6 +33,7 @@ export function Courses() {
   const [activeTab, setActiveTab] = useState('courses');
   const [myLessons, setMyLessons] = useState([]);
   const [loadingLessons, setLoadingLessons] = useState(false);
+  const [selectedFolderKey, setSelectedFolderKey] = useState(null);
   // Track modules currently being marked as complete
   const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
   // Cache for complete module data to avoid repeated API calls
@@ -255,6 +256,120 @@ export function Courses() {
     setFilteredCourses(results);
   }, [courses, searchTerm, progressFilter, categoryFilter]);
 
+  const folderSections = useMemo(() => {
+    const buckets = {
+      becomePrivate: [],
+      operatePrivate: [],
+      other: [],
+    };
+
+    filteredCourses.forEach((course) => {
+      const title = course.title?.toLowerCase() || "";
+      const category = course.category?.toLowerCase() || "";
+      const slug = course.slug?.toLowerCase() || "";
+
+      if (
+        title.includes("become private") ||
+        category.includes("become private") ||
+        slug.includes("become-private")
+      ) {
+        buckets.becomePrivate.push(course);
+      } else if (
+        title.includes("operate private") ||
+        category.includes("operate private") ||
+        slug.includes("operate-private")
+      ) {
+        buckets.operatePrivate.push(course);
+      } else {
+        buckets.other.push(course);
+      }
+    });
+
+    return {
+      meta: [
+        {
+          key: "becomePrivate",
+          title: "Become Private",
+          helper: "Start your private journey",
+          courses: buckets.becomePrivate,
+        },
+        {
+          key: "operatePrivate",
+          title: "Oprate Private",
+          helper: "Operate with confidence",
+          courses: buckets.operatePrivate,
+        },
+        {
+          key: "other",
+          title: "Other Courses",
+          helper: "Everything else you unlocked",
+          courses: buckets.other,
+        },
+      ],
+      data: buckets,
+    };
+  }, [filteredCourses]);
+
+  const renderCourseCard = (course) => (
+    <div key={course.id} className="course-card opacity-0">
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col border border-gray-200">
+        <div className="aspect-video relative overflow-hidden">
+          <img
+            src={course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"}
+            alt={course.title}
+            className="w-full h-full object-cover"
+          />
+          {/* Trial Badge Overlay */}
+          {course.trialStatus.isInTrial && (
+            <div className="absolute top-3 left-3">
+              <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
+            </div>
+          )}
+          {/* Lock Overlay for Expired Trials */}
+          {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="text-white text-center">
+                <Lock className="w-8 h-8 mx-auto mb-2" />
+                <p className="text-sm font-medium">Trial Expired</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <CardHeader className="pb-3 flex-shrink-0">
+          <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
+          <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-3 flex-1">
+          <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
+              <span>{course.modulesCount || 0} modules</span>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
+          <div className="flex gap-2 w-full">
+            <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+              <Button variant="default" className="w-full text-sm sm:text-base">
+                Continue Learning
+              </Button>
+            </Link>
+          </div>
+
+          {/* Trial Status Info */}
+          {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
+            <div className="text-xs text-center text-gray-600">
+              Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
+            </div>
+          )}
+        </CardFooter>
+      </Card>
+    </div>
+  );
+
 
 
   if (loading) {
@@ -453,95 +568,94 @@ export function Courses() {
           )} */}
 
           {activeTab === 'courses' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredCourses.length > 0 ? (
-              filteredCourses.map((course) => (
-              <div key={course.id} className="course-card opacity-0">
-                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-                  <div className="aspect-video relative overflow-hidden">
-                    <img 
-                      src={course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Trial Badge Overlay */}
-                    {course.trialStatus.isInTrial && (
-                      <div className="absolute top-3 left-3">
-                        <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
-                      </div>
-                    )}
-                    {/* Lock Overlay for Expired Trials */}
-                    {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div className="text-white text-center">
-                          <Lock className="w-8 h-8 mx-auto mb-2" />
-                          <p className="text-sm font-medium">Trial Expired</p>
+            filteredCourses.length > 0 ? (
+              <div className="space-y-4">
+                {!selectedFolderKey ? (
+                  <>
+                    <div className="flex flex-col gap-4 lg:flex-row">
+                      {folderSections.meta.map((section) => (
+                        <button
+                          key={section.key}
+                          onClick={() => setSelectedFolderKey(section.key)}
+                          className="flex-1 min-w-0 group bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 text-left"
+                        >
+                          <div className="flex flex-col h-full">
+                            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 rounded-t-2xl bg-gradient-to-r from-blue-50/60 via-white to-transparent">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <Folder className="h-4 w-4 text-blue-600 group-hover:text-blue-700" />
+                                  <span className="text-sm font-semibold text-gray-800">{section.title}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">{section.helper}</p>
+                              </div>
+                              <Badge variant="secondary" className="text-xs">
+                                {section.courses.length} {section.courses.length === 1 ? "Course" : "Courses"}
+                              </Badge>
+                            </div>
+                            <div className="px-5 py-6 flex-1 flex items-center justify-center text-sm text-muted-foreground">
+                              <span className="group-hover:text-gray-700 transition-colors">
+                                Tap to open folder
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  (() => {
+                    const activeSection = folderSections.meta.find((item) => item.key === selectedFolderKey);
+                    if (!activeSection) {
+                      return null;
+                    }
+
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 rounded-t-2xl bg-gradient-to-r from-blue-50/60 via-white to-transparent">
+                          <div className="flex items-center gap-3">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => setSelectedFolderKey(null)}
+                            >
+                              <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Folder className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-semibold text-gray-800">{activeSection.title}</span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">{activeSection.helper}</p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {activeSection.courses.length} {activeSection.courses.length === 1 ? "Course" : "Courses"}
+                          </Badge>
+                        </div>
+                        <div className="p-5">
+                          {activeSection.courses.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                              {activeSection.courses.map((course) => renderCourseCard(course))}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center text-center text-muted-foreground text-sm py-10 border border-dashed border-gray-200 rounded-lg bg-gray-50/60">
+                              <span>No courses available in this folder</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                  
-                  <CardHeader className="pb-3 flex-shrink-0">
-                    <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
-                    <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-3 flex-1">
-                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                      {/* <div className="flex items-center gap-1">
-                        <Clock size={14} />
-                        <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
-                      </div> */}
-                      <div className="flex items-center gap-1">
-                        <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
-                        <span>{course.modulesCount || 0} modules</span>
-                      </div>
-                    </div>
-                    
-                    {/* <Progress value={course.progress || 0} className="h-2" /> */}
-                    {/*
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Time spent: {formatTime(courseTimes[course.id] || 0)}</span>
-                      <span>{course.category || "Uncategorized"}</span>
-                    </div>
-                    */}
-                  </CardContent>
-                  
-                  <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
-                    <div className="flex gap-2 w-full">
-                      <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
-                        <Button variant="default" className="w-full text-sm sm:text-base">
-                          Continue Learning
-                        </Button>
-                      </Link>
-                    </div>
-                    
-                    {/* Trial Status Info */}
-                    {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
-                      <div className="text-xs text-center text-gray-600">
-                        Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
-                      </div>
-                    )}
-                    
-                    {/* {course.progress === 100 && (
-                      <Link to={`/certificate/${course.id}`} className="w-full">
-                        <Button variant="outline" className="w-full">
-                          <Award size={16} className="mr-2" />
-                          View Certificate
-                        </Button>
-                      </Link>
-                    )} */}
-                  </CardFooter>
-                </Card>
+                    );
+                  })()
+                )}
               </div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-8 sm:py-12">
-              <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
-              <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
-            </div>
-          )}
-          </div>
+            ) : (
+              <div className="text-center py-8 sm:py-12">
+                <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
+                <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
+              </div>
+            )
           )}
 
           {activeTab === 'lessons' && (
