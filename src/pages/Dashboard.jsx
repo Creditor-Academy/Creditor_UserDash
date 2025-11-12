@@ -813,12 +813,6 @@ export function Dashboard() {
                 <DashboardCarousel />
               </div> */}
 
-              {/* Your Progress */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-6">Your Progress Overview</h3>
-                <ProgressStats />
-              </div> */}
-
               {/* Monthly Overview */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-6">Monthly Learning Analytics</h3>
@@ -850,6 +844,11 @@ export function Dashboard() {
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Upcoming Tasks</h3>
                 <DashboardTodo />
               </div> */}
+            </div>
+
+            {/* Your Progress - spans full width below top grid */}
+            <div className="xl:col-span-12">
+              <ProgressStats />
             </div>
           </div>
               {/* Catalog Banner Section */}
