@@ -1257,7 +1257,7 @@ export function CourseView() {
                                             return next;
                                           });
                                         } catch (err) {
-                                          console.error('Failed to mark module as complete', err);
+                                          console.error('Failed to mark module as completed', err);
                                         } finally {
                                           setMarkingCompleteIds(prev => {
                                             const next = new Set(prev);
