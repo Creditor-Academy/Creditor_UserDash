@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { BookOpen, Clock, Search, Award, Lock, Play, FileText, Folder, ArrowLeft, Layers, ShoppingBag, Sparkles } from "lucide-react";
+import { BookOpen, Clock, Search, Award, Lock, Play, FileText, Layers, ShoppingBag, Sparkles } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
 import { getCourseTrialStatus } from '../utils/trialUtils';
@@ -39,7 +39,6 @@ export function Courses() {
   const [catalogsLoaded, setCatalogsLoaded] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [catalogCoursesMap, setCatalogCoursesMap] = useState({});
-  const [selectedFolderKey, setSelectedFolderKey] = useState(null);
   // Track modules currently being marked as complete
   const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
   // Cache for complete module data to avoid repeated API calls
@@ -466,9 +465,6 @@ export function Courses() {
   const handleTabChange = useCallback(
     (tab) => {
       setActiveTab(tab);
-      if (tab !== 'courses') {
-        setSelectedFolderKey(null);
-      }
 
       if ((tab === 'lessons' || tab === 'modules') && userProfile?.id) {
         loadUnlockedModules();
@@ -613,60 +609,6 @@ export function Courses() {
 
     setFilteredCourses(results);
   }, [courses, searchTerm, progressFilter, categoryFilter]);
-
-  const folderSections = useMemo(() => {
-    const buckets = {
-      becomePrivate: [],
-      operatePrivate: [],
-      other: [],
-    };
-
-    filteredCourses.forEach((course) => {
-      const title = course.title?.toLowerCase() || "";
-      const category = course.category?.toLowerCase() || "";
-      const slug = course.slug?.toLowerCase() || "";
-
-      if (
-        title.includes("become private") ||
-        category.includes("become private") ||
-        slug.includes("become-private")
-      ) {
-        buckets.becomePrivate.push(course);
-      } else if (
-        title.includes("operate private") ||
-        category.includes("operate private") ||
-        slug.includes("operate-private")
-      ) {
-        buckets.operatePrivate.push(course);
-      } else {
-        buckets.other.push(course);
-      }
-    });
-
-    return {
-      meta: [
-        {
-          key: "becomePrivate",
-          title: "Become Private",
-          helper: "Start your private journey",
-          courses: buckets.becomePrivate,
-        },
-        {
-          key: "operatePrivate",
-          title: "Oprate Private",
-          helper: "Operate with confidence",
-          courses: buckets.operatePrivate,
-        },
-        {
-          key: "other",
-          title: "Other Courses",
-          helper: "Everything else you unlocked",
-          courses: buckets.other,
-        },
-      ],
-      data: buckets,
-    };
-  }, [filteredCourses]);
 
   const modulesByCourse = useMemo(() => {
     if (!Array.isArray(myLessons) || myLessons.length === 0) {
@@ -985,86 +927,8 @@ export function Courses() {
 
           {activeTab === 'courses' && (
             filteredCourses.length > 0 ? (
-              <div className="space-y-4">
-                {!selectedFolderKey ? (
-                  <>
-                    <div className="flex flex-col gap-4 lg:flex-row">
-                      {folderSections.meta.map((section) => (
-                        <button
-                          key={section.key}
-                          onClick={() => setSelectedFolderKey(section.key)}
-                          className="flex-1 min-w-0 group bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 text-left"
-                        >
-                          <div className="flex flex-col h-full">
-                            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 rounded-t-2xl bg-gradient-to-r from-blue-50/60 via-white to-transparent">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <Folder className="h-4 w-4 text-blue-600 group-hover:text-blue-700" />
-                                  <span className="text-sm font-semibold text-gray-800">{section.title}</span>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">{section.helper}</p>
-                              </div>
-                              <Badge variant="secondary" className="text-xs">
-                                {section.courses.length} {section.courses.length === 1 ? "Course" : "Courses"}
-                              </Badge>
-                            </div>
-                            <div className="px-5 py-6 flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                              <span className="group-hover:text-gray-700 transition-colors">
-                                Tap to open folder
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  (() => {
-                    const activeSection = folderSections.meta.find((item) => item.key === selectedFolderKey);
-                    if (!activeSection) {
-                      return null;
-                    }
-
-                    return (
-                      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 rounded-t-2xl bg-gradient-to-r from-blue-50/60 via-white to-transparent">
-                          <div className="flex items-center gap-3">
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="icon"
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => setSelectedFolderKey(null)}
-                            >
-                              <ArrowLeft className="h-4 w-4" />
-                            </Button>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Folder className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-semibold text-gray-800">{activeSection.title}</span>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">{activeSection.helper}</p>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {activeSection.courses.length} {activeSection.courses.length === 1 ? "Course" : "Courses"}
-                          </Badge>
-                        </div>
-                        <div className="p-5">
-                          {activeSection.courses.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                              {activeSection.courses.map((course) => renderCourseCard(course))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center text-center text-muted-foreground text-sm py-10 border border-dashed border-gray-200 rounded-lg bg-gray-50/60">
-                              <span>No courses available in this folder</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredCourses.map((course) => renderCourseCard(course))}
               </div>
             ) : (
               <div className="text-center py-8 sm:py-12">
