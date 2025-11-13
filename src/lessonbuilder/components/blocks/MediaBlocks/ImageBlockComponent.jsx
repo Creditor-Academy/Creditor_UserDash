@@ -34,6 +34,7 @@ const ImageBlockComponent = forwardRef(
       setImageUploading,
       contentBlocks,
       setContentBlocks,
+      onAICreation,
     },
     ref
   ) => {
@@ -691,6 +692,69 @@ const ImageBlockComponent = forwardRef(
               </div>
 
               <div className="p-6 space-y-4">
+                {/* AI Generation Option */}
+                <div
+                  onClick={() => {
+                    setShowImageTemplateSidebar(false);
+                    if (onAICreation) {
+                      onAICreation({ id: 'image', title: 'Image' });
+                    }
+                  }}
+                  className="p-5 border rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="text-purple-600 mt-1 group-hover:text-purple-700">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-purple-900 group-hover:text-purple-900 text-base flex items-center gap-2">
+                        Generate with AI
+                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                          Recommended
+                        </span>
+                      </h3>
+                      <p className="text-sm text-purple-700 mt-1">
+                        Describe what you want and let AI create professional
+                        images instantly
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mini Preview */}
+                  <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
+                    <div className="flex items-center gap-2 text-purple-600">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        AI-powered image generation
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {imageTemplates.map(template => (
                   <div
                     key={template.id}

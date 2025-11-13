@@ -38,7 +38,14 @@ import {
   AlertTriangle,
   ExternalLink,
 } from 'lucide-react';
-import AIEnhancementPanel from '@lessonbuilder/components/ai/AILessonContentGenerator';
+import AIContentGeneratorDialog from '@lessonbuilder/components/ai/AIContentGeneratorDialog';
+import { contentBlockAIService } from '@lessonbuilder/services/contentBlockAIService';
+import {
+  getTemplatesForBlockType,
+  supportsAIGeneration,
+  getCourseContext,
+  formatAIContentForBlock,
+} from '@lessonbuilder/utils/aiContentHelpers';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@lessonbuilder/components/blocks/QuoteBlock/QuoteComponent';
 import TableComponent from '@lessonbuilder/components/blocks/TableBlock/TableComponent';
@@ -179,6 +186,10 @@ function LessonBuilder() {
   // Inline block insertion state
   const [insertionPosition, setInsertionPosition] = useState(null);
 
+  // AI Generation state
+  const [showAIGeneratorDialog, setShowAIGeneratorDialog] = useState(false);
+  const [currentAIBlockType, setCurrentAIBlockType] = useState(null);
+
   const listComponentRef = React.useRef();
   const statementComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
@@ -186,27 +197,84 @@ function LessonBuilder() {
   const imageBlockComponentRef = React.useRef();
 
   const contentBlockTypes = [
-    { id: 'text', title: 'Text', icon: <FileTextIcon className="h-5 w-5" /> },
+    {
+      id: 'text',
+      title: 'Text',
+      icon: <FileTextIcon className="h-5 w-5" />,
+      supportsAI: true,
+    },
     {
       id: 'statement',
       title: 'Statement',
       icon: <MessageSquare className="h-5 w-5" />,
+      supportsAI: true,
     },
-    { id: 'quote', title: 'Quote', icon: <Quote className="h-5 w-5" /> },
-    { id: 'image', title: 'Image', icon: <Image className="h-5 w-5" /> },
-    { id: 'youtube', title: 'YouTube', icon: <Youtube className="h-5 w-5" /> },
-    { id: 'video', title: 'Video', icon: <Video className="h-5 w-5" /> },
-    { id: 'audio', title: 'Audio', icon: <Volume2 className="h-5 w-5" /> },
-    { id: 'link', title: 'Link', icon: <LinkIcon className="h-5 w-5" /> },
-    { id: 'pdf', title: 'PDF', icon: <FileTextIcon className="h-5 w-5" /> },
-    { id: 'list', title: 'List', icon: <List className="h-5 w-5" /> },
-    { id: 'tables', title: 'Tables', icon: <Table className="h-5 w-5" /> },
+    {
+      id: 'quote',
+      title: 'Quote',
+      icon: <Quote className="h-5 w-5" />,
+      supportsAI: true,
+    },
+    {
+      id: 'image',
+      title: 'Image',
+      icon: <Image className="h-5 w-5" />,
+      supportsAI: true,
+    },
+    {
+      id: 'youtube',
+      title: 'YouTube',
+      icon: <Youtube className="h-5 w-5" />,
+      supportsAI: false,
+    },
+    {
+      id: 'video',
+      title: 'Video',
+      icon: <Video className="h-5 w-5" />,
+      supportsAI: false,
+    },
+    {
+      id: 'audio',
+      title: 'Audio',
+      icon: <Volume2 className="h-5 w-5" />,
+      supportsAI: false,
+    },
+    {
+      id: 'link',
+      title: 'Link',
+      icon: <LinkIcon className="h-5 w-5" />,
+      supportsAI: false,
+    },
+    {
+      id: 'pdf',
+      title: 'PDF',
+      icon: <FileTextIcon className="h-5 w-5" />,
+      supportsAI: false,
+    },
+    {
+      id: 'list',
+      title: 'List',
+      icon: <List className="h-5 w-5" />,
+      supportsAI: true,
+    },
+    {
+      id: 'tables',
+      title: 'Tables',
+      icon: <Table className="h-5 w-5" />,
+      supportsAI: true,
+    },
     {
       id: 'interactive',
       title: 'Interactive',
       icon: <Layers className="h-5 w-5" />,
+      supportsAI: true,
     },
-    { id: 'divider', title: 'Divider', icon: <Minus className="h-5 w-5" /> },
+    {
+      id: 'divider',
+      title: 'Divider',
+      icon: <Minus className="h-5 w-5" />,
+      supportsAI: true,
+    },
   ];
 
   const {
@@ -333,6 +401,12 @@ function LessonBuilder() {
       setInsertionPosition(position);
     }
 
+    // Go directly to manual creation since we removed the dialog
+    handleManualCreation(blockType);
+  };
+
+  // Handle manual creation (existing logic)
+  const handleManualCreation = blockType => {
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
     } else if (blockType.id === 'statement') {
@@ -361,12 +435,61 @@ function LessonBuilder() {
       setShowDividerTemplateSidebar(true);
     } else {
       // For simple blocks that don't need dialogs, insert immediately
-      if (position !== null) {
-        insertContentBlockAt(blockType, position);
+      if (insertionPosition !== null) {
+        insertContentBlockAt(blockType, insertionPosition);
         setInsertionPosition(null);
       } else {
         addContentBlock(blockType);
       }
+    }
+  };
+
+  // Handle AI creation
+  const handleAICreation = blockType => {
+    setCurrentAIBlockType(blockType);
+    setShowAIGeneratorDialog(true);
+  };
+
+  // Handle AI content generation
+  const handleAIGenerate = async ({ userPrompt, instructions, templateId }) => {
+    try {
+      console.log('🎯 Generating AI content for', currentAIBlockType.id);
+
+      // Get course context
+      const courseContext = getCourseContext(lessonData, lessonContent);
+
+      // Generate content using AI service
+      const aiResponse = await contentBlockAIService.generateContentBlock({
+        blockType: currentAIBlockType.id,
+        templateId,
+        userPrompt,
+        instructions,
+        courseContext,
+      });
+
+      console.log('✅ AI generated:', aiResponse);
+
+      // Format the AI response to match block structure
+      const newBlock = formatAIContentForBlock(
+        aiResponse,
+        currentAIBlockType.id
+      );
+
+      // Add the block to content
+      if (insertionPosition !== null) {
+        const updatedBlocks = [...contentBlocks];
+        updatedBlocks.splice(insertionPosition, 0, newBlock);
+        setContentBlocks(updatedBlocks);
+        setInsertionPosition(null);
+      } else {
+        setContentBlocks(prev => [...prev, newBlock]);
+      }
+
+      setHasUnsavedChanges(true);
+      console.log('✅ Block added to lesson');
+    } catch (error) {
+      console.error('AI generation error:', error);
+      throw error; // Re-throw to be handled by dialog
     }
   };
 
@@ -2324,6 +2447,7 @@ function LessonBuilder() {
           editingBlock={editingTableBlock}
           isEditing={!!editingTableBlock}
           onTableUpdate={handleTableUpdate}
+          onAICreation={handleAICreation}
         />
       )}
 
@@ -2337,6 +2461,7 @@ function LessonBuilder() {
         onListTemplateSelect={handleListTemplateSelect}
         onListUpdate={handleListUpdate}
         editingListBlock={editingListBlock}
+        onAICreation={handleAICreation}
       />
 
       {/* Quote Component */}
@@ -2348,6 +2473,7 @@ function LessonBuilder() {
         onQuoteTemplateSelect={handleQuoteTemplateSelect}
         onQuoteUpdate={handleQuoteUpdate}
         editingQuoteBlock={editingQuoteBlock}
+        onAICreation={handleAICreation}
       />
 
       {/* Audio Component */}
@@ -2375,6 +2501,7 @@ function LessonBuilder() {
         onInteractiveTemplateSelect={handleInteractiveTemplateSelect}
         onInteractiveUpdate={handleInteractiveUpdate}
         editingInteractiveBlock={editingInteractiveBlock}
+        onAICreation={handleAICreation}
       />
 
       {/* Divider Component */}
@@ -2401,6 +2528,7 @@ function LessonBuilder() {
         setImageUploading={setImageUploading}
         contentBlocks={contentBlocks}
         setContentBlocks={setContentBlocks}
+        onAICreation={handleAICreation}
       />
 
       {/* Link Component */}
@@ -2428,6 +2556,11 @@ function LessonBuilder() {
         onStatementEdit={handleStatementEdit}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
+        contentBlocks={contentBlocks}
+        setContentBlocks={setContentBlocks}
+        insertionPosition={insertionPosition}
+        setInsertionPosition={setInsertionPosition}
+        onAICreation={handleAICreation}
       />
 
       {/* Text Block Component */}
@@ -2447,6 +2580,7 @@ function LessonBuilder() {
         insertionPosition={insertionPosition}
         setInsertionPosition={setInsertionPosition}
         setSidebarCollapsed={setSidebarCollapsed}
+        onAICreation={handleAICreation}
       />
 
       {/* Insert Block Dialog */}
@@ -2494,6 +2628,18 @@ function LessonBuilder() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Content Generator Dialog */}
+      <AIContentGeneratorDialog
+        show={showAIGeneratorDialog}
+        onClose={() => setShowAIGeneratorDialog(false)}
+        blockType={currentAIBlockType}
+        courseContext={getCourseContext(lessonData, lessonContent)}
+        onGenerate={handleAIGenerate}
+        availableTemplates={getTemplatesForBlockType(
+          currentAIBlockType?.id || ''
+        )}
+      />
     </>
   );
 }

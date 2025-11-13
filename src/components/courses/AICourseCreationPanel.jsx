@@ -12,6 +12,7 @@ import {
   Check,
   Upload,
   Book,
+  Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,12 +28,12 @@ import {
   updateLessonContent,
 } from '../../services/courseService';
 import openAIService from '../../services/openAIService';
+import secureAIService from '../../services/secureAIService';
 import { uploadImage } from '@/services/imageUploadService';
 import { toast } from 'react-hot-toast';
 import {
   uploadAICourseThumbnail,
   uploadAICourseReferences,
-  uploadAIGeneratedImage,
 } from '@/services/aiUploadService';
 import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
@@ -89,8 +90,48 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [createdModuleId, setCreatedModuleId] = useState(null);
   const [createdLessonId, setCreatedLessonId] = useState(null);
   const [generateThumbnails, setGenerateThumbnails] = useState('yes');
+  const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  // Handle AI image prompt enhancement
+  const handleEnhancePrompt = async () => {
+    if (!aiImagePrompt?.trim()) {
+      toast.error('Please enter an image prompt first');
+      return;
+    }
+
+    setIsEnhancingPrompt(true);
+    try {
+      // Use the backend AI service to enhance the image prompt
+      const enhancedPrompt = await secureAIService.generateText(
+        `Enhance this AI image prompt for better DALL-E 3 image generation: "${aiImagePrompt}"
+        
+        Course context:
+        - Title: ${courseData.courseName || 'Not specified'}
+        - Target Audience: ${courseData.targetAudience || 'General learners'}
+        - Subject: ${courseData.targetAudience || 'Educational content'}
+        
+        Make it more detailed, visually descriptive, and suitable for creating professional course thumbnails. Include style, mood, and visual elements that would appeal to the target audience.`,
+        {
+          model: 'gpt-3.5-turbo',
+          maxTokens: 200,
+          temperature: 0.7,
+          systemPrompt:
+            'You are an expert at creating detailed image prompts for AI image generation. Enhance prompts to be more visually descriptive and effective for DALL-E 3.',
+          enhancePrompt: false, // Don't auto-enhance the enhancement request
+        }
+      );
+
+      setAiImagePrompt(enhancedPrompt);
+      toast.success('Image prompt enhanced successfully!');
+    } catch (error) {
+      console.error('Image prompt enhancement error:', error);
+      toast.error('Failed to enhance image prompt: ' + error.message);
+    } finally {
+      setIsEnhancingPrompt(false);
+    }
+  };
 
   // Handle text editor save
   const handleTextEditorSave = textData => {
@@ -395,66 +436,25 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       });
 
       if (response.success && response.data?.url) {
-        console.log(
-          '🎨 AI image generated, now uploading to S3 via /api/ai...'
-        );
+        console.log('✅ AI image generated and uploaded to S3 by backend!');
 
-        try {
-          // Upload the AI-generated image URL directly to S3 using AI endpoint
-          const uploadResult = await uploadAIGeneratedImage(response.data.url, {
-            public: true,
-          });
+        // Use the S3 URL directly (already uploaded by backend)
+        setCourseData(prev => ({
+          ...prev,
+          thumbnail: response.data.url,
+        }));
 
-          if (uploadResult?.success && uploadResult.imageUrl) {
-            console.log('✅ S3 upload successful!');
-            console.log(`S3 URL: ${uploadResult.imageUrl}`);
-            console.log(
-              `S3 URL length: ${uploadResult.imageUrl.length} characters`
-            );
+        // Show success message
+        const successMsg =
+          `✅ AI thumbnail generated and uploaded successfully!\n\n` +
+          `🎨 Generated with: DALL-E 3\n` +
+          `📏 Size: 1024x1024\n` +
+          `☁️ Uploaded to S3 automatically\n` +
+          `📁 S3 URL: ${response.data.url.substring(0, 50)}...`;
 
-            // Use the S3 URL (permanent storage)
-            setCourseData(prev => ({
-              ...prev,
-              thumbnail: uploadResult.imageUrl,
-            }));
-
-            // Show success message with S3 upload details
-            const successMsg =
-              `✅ AI thumbnail generated and uploaded successfully!\n\n` +
-              `🎨 Generated with: ${response.data.provider || 'Enhanced AI Service'}\n` +
-              `🤖 Model: ${response.data.model || 'Multi-Provider'}\n` +
-              `📏 Size: ${response.data.size || '1024x1024'}\n` +
-              `☁️ Uploaded via: /api/ai endpoint\n` +
-              `📁 S3 URL: ${uploadResult.imageUrl.substring(0, 50)}...`;
-
-            console.log(
-              '✅ AI thumbnail generated and uploaded via /api/ai successfully'
-            );
-
-            console.log('✅ AI thumbnail uploaded to S3 via /api/ai:', {
-              originalUrl: response.data.url,
-              s3Url: uploadResult.imageUrl,
-              uploadedToS3: uploadResult.uploadedToS3,
-              source: uploadResult.source,
-            });
-          } else {
-            // Upload failed, use the generated URL as fallback
-            setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
-            setAiImageError(
-              `⚠️ Image generated but S3 upload failed. Using temporary URL: ${uploadResult?.message || 'Upload error'}`
-            );
-            console.warn(
-              'S3 upload via /api/ai failed, using generated URL as fallback'
-            );
-          }
-        } catch (uploadError) {
-          // Upload failed, use the generated URL as fallback
-          setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
-          setAiImageError(
-            `⚠️ Image generated but S3 upload failed: ${uploadError.message}. Using temporary URL.`
-          );
-          console.error('S3 upload error via /api/ai:', uploadError);
-        }
+        console.log('✅ AI thumbnail generated and uploaded successfully');
+        setAiImageError('');
+        toast.success('AI thumbnail generated successfully!');
       } else {
         // Even if generation "failed", we might have a fallback image
         if (response.data?.url) {
@@ -1955,9 +1955,29 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                                 ) : (
                                   <div className="space-y-4">
                                     <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        AI Image Prompt
-                                      </label>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                          AI Image Prompt
+                                        </label>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={handleEnhancePrompt}
+                                          disabled={
+                                            isEnhancingPrompt ||
+                                            !aiImagePrompt?.trim()
+                                          }
+                                          className="h-7 text-xs flex items-center gap-1 hover:bg-purple-50 hover:border-purple-300"
+                                        >
+                                          {isEnhancingPrompt ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                          ) : (
+                                            <Wand2 className="w-3 h-3" />
+                                          )}
+                                          Enhance
+                                        </Button>
+                                      </div>
                                       <textarea
                                         value={aiImagePrompt}
                                         onChange={e =>

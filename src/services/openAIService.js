@@ -1,6 +1,6 @@
 // OpenAI Service - Backend Proxy
 // All AI operations now go through backend API (secure, tracked, billed)
-import backendAIService from './backendAIService';
+import secureAIService from './secureAIService';
 
 /**
  * OpenAI Service - Backend Proxy Wrapper
@@ -11,8 +11,8 @@ import backendAIService from './backendAIService';
  */
 class OpenAIService {
   constructor() {
-    this.backend = backendAIService;
-    console.log('✅ OpenAI service initialized (using backend proxy)');
+    this.backend = secureAIService;
+    console.log('✅ OpenAI service initialized (using secure backend proxy)');
   }
 
   /**

@@ -23,6 +23,7 @@ const TableComponent = ({
   onTableUpdate,
   editingBlock = null,
   isEditing = false,
+  onAICreation,
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [tableData, setTableData] = useState(null);
@@ -666,6 +667,77 @@ const TableComponent = ({
   const renderTemplateSelection = () => (
     <div className="space-y-6">
       <div className="grid gap-6">
+        {/* AI Generation Option */}
+        <div
+          onClick={() => {
+            onClose();
+            if (onAICreation) {
+              onAICreation({ id: 'tables', title: 'Table' });
+            }
+          }}
+          className="group relative p-6 border-2 border-purple-200 rounded-2xl cursor-pointer hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 hover:border-purple-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-pink-50"
+        >
+          {/* Gradient accent */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-2xl opacity-100 transition-opacity duration-300"></div>
+
+          <div className="flex items-start gap-5 mb-6">
+            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center text-purple-600 group-hover:from-purple-200 group-hover:to-pink-200 group-hover:text-purple-700 transition-all duration-300">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-lg text-purple-900 group-hover:text-purple-900 transition-colors duration-300 mb-2 flex items-center gap-2">
+                Generate with AI
+                <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                  Recommended
+                </span>
+              </h3>
+              <p className="text-purple-700 group-hover:text-purple-800 transition-colors duration-300 leading-relaxed">
+                Describe what you want and let AI create professional table
+                content instantly
+              </p>
+            </div>
+            <div className="flex-shrink-0 opacity-100 transition-opacity duration-300">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <Plus className="h-4 w-4 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Preview */}
+          <div className="bg-white/70 rounded-xl border border-purple-200 p-4 group-hover:border-purple-300 transition-colors duration-300">
+            <div className="flex items-center gap-2 text-purple-600">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <span className="text-sm font-medium">
+                AI-powered table generation
+              </span>
+            </div>
+          </div>
+        </div>
+
         {tableTemplates.map((template, index) => (
           <div
             key={template.id}

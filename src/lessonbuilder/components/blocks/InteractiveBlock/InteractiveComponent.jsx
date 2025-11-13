@@ -91,6 +91,7 @@ const InteractiveComponent = forwardRef(
       onInteractiveTemplateSelect,
       onInteractiveUpdate,
       editingInteractiveBlock,
+      onAICreation,
     },
     ref
   ) => {
@@ -2893,6 +2894,69 @@ const InteractiveComponent = forwardRef(
               </div>
 
               <div className="p-6 space-y-4">
+                {/* AI Generation Option */}
+                <div
+                  onClick={() => {
+                    setShowInteractiveTemplateSidebar(false);
+                    if (onAICreation) {
+                      onAICreation({ id: 'interactive', title: 'Interactive' });
+                    }
+                  }}
+                  className="border border-purple-200 rounded-lg p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 bg-gradient-to-br from-purple-50 to-pink-50"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-purple-800 flex items-center gap-2">
+                        Generate with AI
+                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                          Recommended
+                        </span>
+                      </h3>
+                      <p className="text-sm text-purple-600">
+                        Describe what you want and let AI create professional
+                        interactive content instantly
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mini Preview */}
+                  <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
+                    <div className="flex items-center gap-2 text-purple-600">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        AI-powered interactive generation
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {interactiveTemplates.map(template => (
                   <div
                     key={template.id}

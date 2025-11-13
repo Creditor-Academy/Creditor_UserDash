@@ -1,23 +1,33 @@
-// Backend AI Service - Proxy all AI requests through backend
-// Replaces direct OpenAI calls with backend API calls
-// DEPRECATED: Use secureAIService.js instead for new implementations
-import secureAIService from './secureAIService';
+/**
+ * Secure AI Service - Backend-Only Implementation
+ * Replaces all direct OpenAI calls with secure backend API calls
+ *
+ * This service ensures:
+ * - No API keys exposed in frontend
+ * - All AI operations go through backend
+ * - Proper authentication and rate limiting
+ * - Cost tracking and usage monitoring
+ * - Enhanced security and scalability
+ */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 
-/**
- * Backend AI Service - All AI operations go through your backend
- * Benefits: Secure API key, token tracking, billing, rate limiting
- */
-class BackendAIService {
+class SecureAIService {
   constructor() {
     this.apiBase = API_BASE;
+    this.endpoints = {
+      generateText: '/api/ai-proxy/generate-text',
+      generateStructured: '/api/ai-proxy/generate-structured',
+      generateImage: '/api/ai-proxy/generate-image',
+      generateCourseOutline: '/api/ai-proxy/generate-course-outline',
+      status: '/api/ai-proxy/status',
+    };
   }
 
   /**
-   * Get auth headers with token
+   * Get authentication headers
    */
-  getHeaders() {
+  getAuthHeaders() {
     const token = localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
@@ -26,7 +36,7 @@ class BackendAIService {
   }
 
   /**
-   * Handle API errors
+   * Handle API errors with user-friendly messages
    */
   handleError(error, operation) {
     console.error(`❌ ${operation} failed:`, error);
@@ -34,32 +44,39 @@ class BackendAIService {
     if (error.response) {
       const { status, data } = error.response;
 
-      if (status === 401) {
-        throw new Error('Authentication required. Please login.');
+      switch (status) {
+        case 401:
+          throw new Error(
+            'Authentication required. Please login to use AI features.'
+          );
+        case 429:
+          throw new Error(
+            'Rate limit exceeded. Please wait before making more AI requests.'
+          );
+        case 402:
+          throw new Error(
+            'Usage limit exceeded. Please upgrade your plan or wait for reset.'
+          );
+        case 500:
+          throw new Error(
+            'AI service temporarily unavailable. Please try again later.'
+          );
+        default:
+          throw new Error(
+            data?.message || `Request failed with status ${status}`
+          );
       }
-
-      if (status === 429) {
-        throw new Error(
-          data.message || 'Token limit exceeded. Please upgrade your plan.'
-        );
-      }
-
-      if (status === 500) {
-        throw new Error(
-          data.message || 'AI generation failed. Please try again.'
-        );
-      }
-
-      throw new Error(data.message || `Request failed with status ${status}`);
     }
 
-    throw new Error(
-      error.message || 'Network error. Please check your connection.'
-    );
+    if (error.code === 'NETWORK_ERROR') {
+      throw new Error('Network error. Please check your internet connection.');
+    }
+
+    throw new Error(error.message || 'An unexpected error occurred.');
   }
 
   /**
-   * Generate text using backend API
+   * Generate text using backend AI service
    * @param {string} prompt - Text generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<string>} Generated text
@@ -71,21 +88,23 @@ class BackendAIService {
         maxTokens = 1000,
         temperature = 0.7,
         systemPrompt = 'You are a helpful AI assistant for educational content creation.',
+        enhancePrompt = false,
       } = options;
 
-      console.log(`🤖 Generating text via backend (${model})...`);
+      console.log(`🤖 Generating text via secure backend (${model})...`);
 
       const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-text`,
+        `${this.apiBase}${this.endpoints.generateText}`,
         {
           method: 'POST',
-          headers: this.getHeaders(),
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({
             prompt,
             model,
             maxTokens,
             temperature,
             systemPrompt,
+            enhancePrompt,
           }),
         }
       );
@@ -97,7 +116,7 @@ class BackendAIService {
       }
 
       console.log(
-        `✅ Text generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
+        `✅ Text generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return result.data.text;
@@ -121,13 +140,15 @@ class BackendAIService {
         temperature = 0.7,
       } = options;
 
-      console.log(`🤖 Generating structured JSON via backend (${model})...`);
+      console.log(
+        `🤖 Generating structured JSON via secure backend (${model})...`
+      );
 
       const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-structured`,
+        `${this.apiBase}${this.endpoints.generateStructured}`,
         {
           method: 'POST',
-          headers: this.getHeaders(),
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({
             systemPrompt,
             userPrompt,
@@ -145,33 +166,20 @@ class BackendAIService {
       }
 
       console.log(
-        `✅ Structured JSON generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
+        `✅ Structured JSON generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return result.data.jsonData;
     } catch (error) {
-      console.warn('⚠️ Backend unavailable, falling back to direct OpenAI...');
-      try {
-        return await directOpenAIService.generateStructured(
-          systemPrompt,
-          userPrompt,
-          options
-        );
-      } catch (fallbackError) {
-        console.error(
-          '❌ Both backend and direct OpenAI failed:',
-          fallbackError
-        );
-        throw new Error(`AI generation failed: ${fallbackError.message}`);
-      }
+      this.handleError(error, 'Structured generation');
     }
   }
 
   /**
-   * Generate image using DALL-E via backend
+   * Generate image using DALL-E via backend (with automatic S3 upload)
    * @param {string} prompt - Image generation prompt
    * @param {Object} options - Generation options
-   * @returns {Promise<Object>} Generated image data
+   * @returns {Promise<Object>} Generated image data with S3 URL
    */
   async generateImage(prompt, options = {}) {
     try {
@@ -180,21 +188,25 @@ class BackendAIService {
         size = '1024x1024',
         quality = 'standard',
         style = 'vivid',
+        enhancePrompt = false,
+        uploadToS3 = true,
       } = options;
 
-      console.log(`🎨 Generating image via backend (${model})...`);
+      console.log(`🎨 Generating image via secure backend (${model})...`);
 
       const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-image`,
+        `${this.apiBase}${this.endpoints.generateImage}`,
         {
           method: 'POST',
-          headers: this.getHeaders(),
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({
             prompt,
             model,
             size,
             quality,
             style,
+            enhancePrompt,
+            uploadToS3,
           }),
         }
       );
@@ -205,30 +217,25 @@ class BackendAIService {
         throw new Error(result.message || 'Image generation failed');
       }
 
-      console.log(`✅ Image generated ($${result.data.cost?.finalCost || 0})`);
+      console.log(
+        `✅ Image generated and uploaded to S3 ($${result.data.cost?.finalCost?.toFixed(4) || 0})`
+      );
 
       return {
         success: true,
-        url: result.data.imageUrl,
+        url: result.data.imageUrl, // S3 URL (permanent)
+        originalUrl: result.data.originalUrl, // OpenAI URL (temporary)
         model: result.data.model,
         size: result.data.size,
         quality: result.data.quality,
+        style: result.data.style,
+        uploadedToS3: result.data.uploadedToS3,
         provider: 'backend',
         cost: result.data.cost,
+        createdAt: result.data.createdAt,
       };
     } catch (error) {
-      console.warn(
-        '⚠️ Backend unavailable, falling back to direct OpenAI for image generation...'
-      );
-      try {
-        return await directOpenAIService.generateImage(prompt, options);
-      } catch (fallbackError) {
-        console.error(
-          '❌ Both backend and direct OpenAI failed for image generation:',
-          fallbackError
-        );
-        throw new Error(`Image generation failed: ${fallbackError.message}`);
-      }
+      this.handleError(error, 'Image generation');
     }
   }
 
@@ -239,15 +246,22 @@ class BackendAIService {
    */
   async generateCourseOutline(courseData) {
     try {
-      console.log(`🤖 Generating course outline via backend...`);
+      console.log(`📋 Generating course outline via secure backend...`);
 
       const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-course-outline`,
+        `${this.apiBase}${this.endpoints.generateCourseOutline}`,
         {
           method: 'POST',
-          headers: this.getHeaders(),
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({
-            courseData,
+            courseTitle: courseData.title || courseData.courseTitle,
+            subjectDomain: courseData.subject || courseData.subjectDomain,
+            courseDescription:
+              courseData.description || courseData.courseDescription,
+            duration: courseData.duration,
+            difficulty: courseData.difficulty || 'intermediate',
+            learningObjectives:
+              courseData.objectives || courseData.learningObjectives,
             generateType: 'outline',
           }),
         }
@@ -260,7 +274,7 @@ class BackendAIService {
       }
 
       console.log(
-        `✅ Course outline generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
+        `✅ Course outline generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return {
@@ -282,20 +296,22 @@ class BackendAIService {
    */
   async generateComprehensiveCourse(courseData) {
     try {
-      console.log(`🤖 Generating comprehensive course via backend...`);
+      console.log(`📚 Generating comprehensive course via secure backend...`);
 
       const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-course-outline`,
+        `${this.apiBase}${this.endpoints.generateCourseOutline}`,
         {
           method: 'POST',
-          headers: this.getHeaders(),
+          headers: this.getAuthHeaders(),
           body: JSON.stringify({
-            courseTitle: courseData.courseTitle,
-            subjectDomain: courseData.subjectDomain,
-            courseDescription: courseData.courseDescription,
+            courseTitle: courseData.title || courseData.courseTitle,
+            subjectDomain: courseData.subject || courseData.subjectDomain,
+            courseDescription:
+              courseData.description || courseData.courseDescription,
             duration: courseData.duration,
-            difficulty: courseData.difficulty,
-            learningObjectives: courseData.learningObjectives,
+            difficulty: courseData.difficulty || 'intermediate',
+            learningObjectives:
+              courseData.objectives || courseData.learningObjectives,
             generateType: 'comprehensive',
           }),
         }
@@ -310,7 +326,7 @@ class BackendAIService {
       }
 
       console.log(
-        `✅ Comprehensive course generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
+        `✅ Comprehensive course generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return {
@@ -338,6 +354,8 @@ class BackendAIService {
         size: options.size || '1024x1024',
         quality: options.quality || 'standard',
         style: options.style || 'vivid',
+        enhancePrompt: false, // Manual enhancement only for course images
+        uploadToS3: true,
       });
 
       return {
@@ -391,6 +409,7 @@ Format the content in clear, structured paragraphs.`;
         temperature: 0.7,
         systemPrompt:
           'You are an expert educational content creator. Create clear, engaging, and informative lesson content.',
+        enhancePrompt: false, // Manual enhancement only for lesson content
       });
 
       return content;
@@ -433,6 +452,7 @@ Return the enhanced version maintaining the same general structure.`;
         temperature: 0.7,
         systemPrompt:
           'You are an expert educational content editor. Enhance content while maintaining its core message and structure.',
+        enhancePrompt: true,
       });
 
       return enhancedContent;
@@ -496,33 +516,49 @@ Return ONLY valid JSON.`;
   }
 
   /**
-   * Get usage statistics (if backend provides this endpoint)
-   * @returns {Promise<Object>} Usage statistics
+   * Get AI service status
+   * @returns {Promise<Object>} Service status
    */
-  async getUsageStats() {
+  async getStatus() {
     try {
-      const response = await fetch(`${this.apiBase}/api/usage/dashboard`, {
+      const response = await fetch(`${this.apiBase}${this.endpoints.status}`, {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers: this.getAuthHeaders(),
       });
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch usage stats');
+        throw new Error(result.message || 'Failed to get AI status');
       }
 
       return result.data;
     } catch (error) {
-      console.error('❌ Failed to fetch usage stats:', error);
-      return null;
+      console.error('❌ Failed to get AI status:', error);
+      return {
+        available: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Check if service is available
+   * @returns {Promise<boolean>}
+   */
+  async isAvailable() {
+    try {
+      const status = await this.getStatus();
+      return status.openai?.available || false;
+    } catch (error) {
+      return false;
     }
   }
 }
 
 // Create and export singleton instance
-const backendAIService = new BackendAIService();
-export default backendAIService;
+const secureAIService = new SecureAIService();
+export default secureAIService;
 
 // Named exports for convenience
 export const {
@@ -535,5 +571,6 @@ export const {
   generateLessonContent,
   enhanceLessonContent,
   generateQuizQuestions,
-  getUsageStats,
-} = backendAIService;
+  getStatus,
+  isAvailable,
+} = secureAIService;
