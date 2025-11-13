@@ -839,6 +839,9 @@ const AddEvent = () => {
           setAllEvents(allData);
         }
 
+        // Trigger notification refresh to show event notifications from backend
+        window.dispatchEvent(new Event('refresh-notifications'));
+
         alert('Event created successfully!');
       } catch (err) {
         alert('Failed to create event: ' + err.message);

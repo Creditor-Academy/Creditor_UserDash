@@ -19,6 +19,9 @@ router.post("/system", verifyToken, createSystemNotification);
 Currently only GET /api/notifications is enabled.
 */
 
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
+
 // Fetch notifications for current user
 export async function fetchNotifications() {
   const url = `${API_BASE}/api/notifications`;
