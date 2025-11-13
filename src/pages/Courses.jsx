@@ -1,18 +1,18 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight, Lock, Play, FileText, Folder, ArrowLeft } from "lucide-react";
+import { BookOpen, Clock, Search, Award, Lock, Play, FileText, Folder, ArrowLeft, Layers, ShoppingBag, Sparkles } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
 import { getCourseTrialStatus } from '../utils/trialUtils';
 import TrialBadge from '../components/ui/TrialBadge';
 import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
-import { useCredits } from '../contexts/CreditsContext';
 import { useUser } from '../contexts/UserContext';
 import { getUnlockedModulesByUser } from '../services/modulesService';
+import { fetchUserUnlockedCatalogs, fetchCatalogCourses } from '../services/catalogService';
 import api from '../services/apiClient';
 
 export function Courses() {
@@ -32,7 +32,13 @@ export function Courses() {
   const [showTrialDialog, setShowTrialDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('courses');
   const [myLessons, setMyLessons] = useState([]);
-  const [loadingLessons, setLoadingLessons] = useState(false);
+  const [loadingUnlockedContent, setLoadingUnlockedContent] = useState(false);
+  const [unlockedModulesLoaded, setUnlockedModulesLoaded] = useState(false);
+  const [userCatalogs, setUserCatalogs] = useState([]);
+  const [loadingCatalogs, setLoadingCatalogs] = useState(false);
+  const [catalogsLoaded, setCatalogsLoaded] = useState(false);
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogCoursesMap, setCatalogCoursesMap] = useState({});
   const [selectedFolderKey, setSelectedFolderKey] = useState(null);
   // Track modules currently being marked as complete
   const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
@@ -102,17 +108,6 @@ export function Courses() {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    const selector = activeTab === 'courses' ? '.course-card' : '.lesson-card';
-    const cards = document.querySelectorAll(selector);
-    cards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.add('animate-fade-in');
-        card.classList.remove('opacity-0');
-      }, 100 * index);
-    });
-  }, [filteredCourses, myLessons, activeTab]);
-
   // Recording course IDs to filter out from My Courses
   const RECORDING_COURSE_IDS = [
     "a188173c-23a6-4cb7-9653-6a1a809e9914", // Become Private Recordings
@@ -122,6 +117,369 @@ export function Courses() {
     "d5330607-9a45-4298-8ead-976dd8810283", // Sovereignty 101 Recordings
     "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now Recordings
   ];
+
+  const loadUnlockedModules = useCallback(async ({ force = false } = {}) => {
+    if (!userProfile?.id) return;
+    if (loadingUnlockedContent) return;
+    if (unlockedModulesLoaded && !force) return;
+
+    setLoadingUnlockedContent(true);
+    try {
+      console.log('[UI] Fetch unlocked modules for', userProfile.id);
+      const data = await getUnlockedModulesByUser(userProfile.id);
+      console.log('[UI] Unlocked modules count', Array.isArray(data) ? data.length : 'not-array');
+      setMyLessons(data);
+      setUnlockedModulesLoaded(true);
+
+      if (Array.isArray(data) && data.length > 0) {
+        const uniqueCourseIds = [
+          ...new Set(
+            data
+              .map((lesson) => lesson.module?.course_id || lesson.course?.id || lesson.course_id)
+              .filter(Boolean)
+          ),
+        ];
+
+        if (uniqueCourseIds.length > 0) {
+          console.log('[UI] Starting background pre-loading of module data for', uniqueCourseIds.length, 'courses');
+          Promise.all(
+            uniqueCourseIds.map(async (courseId) => {
+              try {
+                const modules = await fetchCourseModules(courseId);
+                return { courseId, modules };
+              } catch (error) {
+                console.warn(`Failed to pre-load modules for course ${courseId}:`, error);
+                return { courseId, modules: [] };
+              }
+            })
+          )
+            .then((courseModulesResults) => {
+              const newCache = {};
+              courseModulesResults.forEach(({ courseId, modules }) => {
+                (modules || []).forEach((module) => {
+                  const cacheKey = `${courseId}-${module.id}`;
+                  newCache[cacheKey] = module;
+                });
+              });
+
+              if (Object.keys(newCache).length > 0) {
+                setCompleteModulesCache((prev) => ({ ...prev, ...newCache }));
+                console.log('[UI] Background cached', Object.keys(newCache).length, 'modules');
+              }
+            })
+            .catch((error) => {
+              console.warn('[UI] Background pre-loading failed:', error);
+            });
+        }
+      }
+    } catch (error) {
+      console.error('[UI] Unlocked modules fetch error', error);
+      setMyLessons([]);
+    } finally {
+      setLoadingUnlockedContent(false);
+    }
+  }, [userProfile?.id, loadingUnlockedContent, unlockedModulesLoaded]);
+
+  const handleStartModule = useCallback(
+    async (moduleAccess) => {
+      const module = moduleAccess?.module;
+      const courseId =
+        module?.course_id ||
+        moduleAccess?.course?.id ||
+        moduleAccess?.course_id ||
+        moduleAccess?.courseId;
+      const moduleId = module?.id || moduleAccess?.module_id || moduleAccess?.id;
+
+      if (!moduleId || !courseId) {
+        console.warn('[UI] Missing course or module id for start module action', { moduleAccess });
+        return;
+      }
+
+      const idStr = String(moduleId);
+      if (loadingStartModuleIds.has(idStr)) return;
+
+      setLoadingStartModuleIds((prev) => {
+        const next = new Set(prev);
+        next.add(idStr);
+        return next;
+      });
+
+      try {
+        let completeModule = null;
+        const cacheKey = `${courseId}-${moduleId}`;
+
+        if (completeModulesCache[cacheKey]) {
+          completeModule = completeModulesCache[cacheKey];
+        } else {
+          const courseModules = await fetchCourseModules(courseId);
+          completeModule = (courseModules || []).find((m) => m.id === moduleId);
+
+          if (completeModule) {
+            setCompleteModulesCache((prev) => ({
+              ...prev,
+              [cacheKey]: completeModule,
+            }));
+          }
+        }
+
+        const primaryModule = completeModule || module;
+        let fullUrl = primaryModule?.resource_url || module?.resource_url;
+
+        if (fullUrl && !fullUrl.startsWith('http')) {
+          fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
+        }
+
+        if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
+          fullUrl = fullUrl.replace('http://', 'https://');
+        }
+
+        if (fullUrl) {
+          window.open(fullUrl, '_blank', 'noopener,noreferrer');
+        } else {
+          console.error('No resource URL found for module:', primaryModule || module);
+          alert('No content URL available for this lesson. Please contact support.');
+        }
+      } catch (error) {
+        console.error('Error fetching module data:', error);
+        alert('Failed to load lesson content. Please try again.');
+      } finally {
+        setLoadingStartModuleIds((prev) => {
+          const next = new Set(prev);
+          next.delete(idStr);
+          return next;
+        });
+      }
+    },
+    [completeModulesCache, fetchCourseModules, loadingStartModuleIds]
+  );
+
+  const handleMarkModuleComplete = useCallback(
+    async (moduleAccess) => {
+      const module = moduleAccess?.module;
+      const courseId =
+        module?.course_id ||
+        moduleAccess?.course?.id ||
+        moduleAccess?.course_id ||
+        moduleAccess?.courseId;
+      const moduleId = module?.id || moduleAccess?.module_id || moduleAccess?.id;
+
+      if (!moduleId || !courseId) return;
+
+      const idStr = String(moduleId);
+      if (markingCompleteIds.has(idStr)) return;
+
+      setMarkingCompleteIds((prev) => {
+        const next = new Set(prev);
+        next.add(idStr);
+        return next;
+      });
+
+      try {
+        console.log('Marking module as complete:', courseId, moduleId);
+        await api.post(`/api/course/${courseId}/modules/${moduleId}/mark-complete`);
+
+        setMyLessons((prev) =>
+          prev.map((lesson) => {
+            const lessonModuleId = lesson.module_id || lesson.module?.id;
+            if (lessonModuleId === moduleId) {
+              const existingProgress = Array.isArray(lesson?.module?.user_module_progress)
+                ? lesson.module.user_module_progress
+                : [];
+
+              const progressUpdated = existingProgress.some((entry) => entry?.completed)
+                ? existingProgress
+                : [...existingProgress, { completed: true, updated_at: new Date().toISOString() }];
+
+              return {
+                ...lesson,
+                completed: true,
+                module: {
+                  ...lesson.module,
+                  user_module_progress: progressUpdated,
+                },
+              };
+            }
+            return lesson;
+          })
+        );
+
+        console.log('Module marked as complete successfully');
+      } catch (error) {
+        console.error('Failed to mark module as complete', error);
+        alert('Failed to mark lesson as complete. Please try again.');
+      } finally {
+        setMarkingCompleteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(idStr);
+          return next;
+        });
+      }
+    },
+    [markingCompleteIds]
+  );
+
+  const loadUserCatalogs = useCallback(async () => {
+    if (!userProfile?.id) return;
+    if (loadingCatalogs || catalogsLoaded) return;
+
+    setLoadingCatalogs(true);
+    setCatalogError("");
+
+    try {
+      const data = await fetchUserUnlockedCatalogs(userProfile.id);
+      const normalizedCatalogs = (Array.isArray(data) ? data : []).map((entry) => {
+        const catalogPayload =
+          entry?.catalog ||
+          entry?.catalog_data ||
+          entry?.catalogDetails ||
+          entry?.catalog_detail ||
+          entry?.catalogInfo ||
+          entry;
+
+        if (!catalogPayload) return null;
+
+        const rawCourses =
+          catalogPayload.catalog_courses ||
+          catalogPayload.courses ||
+          entry?.catalog_courses ||
+          entry?.courses ||
+          [];
+
+        const normalizedCourses = Array.isArray(rawCourses)
+          ? rawCourses
+              .map((item) => {
+                const coursePayload = item?.course || item?.course_details || item?.courseData || item;
+                const courseId =
+                  coursePayload?.id ||
+                  coursePayload?._id ||
+                  coursePayload?.courseId ||
+                  coursePayload?.course_id ||
+                  item?.course_id ||
+                  item?.id;
+
+                if (!courseId) return null;
+
+                return {
+                  id: courseId,
+                  title: coursePayload?.title || item?.title || 'Course',
+                  description: coursePayload?.description || item?.description || '',
+                  thumbnail: coursePayload?.thumbnail || coursePayload?.image || item?.thumbnail || '',
+                };
+              })
+              .filter(Boolean)
+          : [];
+
+        const catalogId =
+          catalogPayload?.id ||
+          catalogPayload?._id ||
+          catalogPayload?.catalog_id ||
+          entry?.catalog_id ||
+          entry?.id;
+
+        if (!catalogId) return null;
+
+        return {
+          id: catalogId,
+          name: catalogPayload?.name || catalogPayload?.title || entry?.name || 'Catalog',
+          description: catalogPayload?.description || catalogPayload?.summary || entry?.description || '',
+          image: catalogPayload?.thumbnail || catalogPayload?.image || entry?.thumbnail || '',
+          tag: catalogPayload?.category || catalogPayload?.tag || '',
+          courseCount:
+            normalizedCourses.length ||
+            catalogPayload?.catalog_courseCount ||
+            catalogPayload?._count?.catalog_courses ||
+            entry?.catalog_courseCount ||
+            entry?.courseCount ||
+            0,
+          courses: normalizedCourses,
+        };
+      }).filter(Boolean);
+
+      setUserCatalogs(normalizedCatalogs);
+
+      const initialCoursesMap = {};
+      normalizedCatalogs.forEach((catalog) => {
+        if (catalog.courses?.length) {
+          initialCoursesMap[catalog.id] = catalog.courses;
+        }
+      });
+
+      if (Object.keys(initialCoursesMap).length > 0) {
+        setCatalogCoursesMap((prev) => ({ ...prev, ...initialCoursesMap }));
+      }
+
+      const catalogsMissingCourses = normalizedCatalogs.filter(
+        (catalog) => catalog.id && (!catalog.courses || catalog.courses.length === 0)
+      );
+
+      if (catalogsMissingCourses.length > 0) {
+        Promise.all(
+          catalogsMissingCourses.map(async (catalog) => {
+            try {
+              const courses = await fetchCatalogCourses(catalog.id);
+              return [catalog.id, courses];
+            } catch (error) {
+              console.warn(`[UI] Failed to fetch courses for catalog ${catalog.id}:`, error);
+              return [catalog.id, []];
+            }
+          })
+        )
+          .then((entries) => {
+            setCatalogCoursesMap((prev) => {
+              const next = { ...prev };
+              entries.forEach(([catalogId, courses]) => {
+                if (Array.isArray(courses) && courses.length > 0) {
+                  next[catalogId] = courses;
+                }
+              });
+              return next;
+            });
+
+            setUserCatalogs((prev) =>
+              prev.map((catalog) => {
+                const entry = entries.find(([catalogId]) => catalogId === catalog.id);
+                if (entry && Array.isArray(entry[1]) && entry[1].length > 0) {
+                  return {
+                    ...catalog,
+                    courseCount: entry[1].length,
+                    courses: entry[1],
+                  };
+                }
+                return catalog;
+              })
+            );
+          })
+          .catch((error) => {
+            console.warn('[UI] Background catalog course fetch failed:', error);
+          });
+      }
+    } catch (error) {
+      console.error('[UI] User catalogs fetch error', error);
+      setCatalogError('Failed to load your catalogs. Please try again later.');
+      setUserCatalogs([]);
+    } finally {
+      setLoadingCatalogs(false);
+      setCatalogsLoaded(true);
+    }
+  }, [userProfile?.id, loadingCatalogs, catalogsLoaded]);
+
+  const handleTabChange = useCallback(
+    (tab) => {
+      setActiveTab(tab);
+      if (tab !== 'courses') {
+        setSelectedFolderKey(null);
+      }
+
+      if ((tab === 'lessons' || tab === 'modules') && userProfile?.id) {
+        loadUnlockedModules();
+      }
+
+      if (tab === 'catalogs' && userProfile?.id) {
+        loadUserCatalogs();
+      }
+    },
+    [loadUnlockedModules, loadUserCatalogs, userProfile?.id]
+  );
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -310,6 +668,120 @@ export function Courses() {
     };
   }, [filteredCourses]);
 
+  const modulesByCourse = useMemo(() => {
+    if (!Array.isArray(myLessons) || myLessons.length === 0) {
+      return [];
+    }
+
+    const grouped = new Map();
+
+    myLessons.forEach((access) => {
+      const module = access?.module || {};
+      const course = access?.course || module?.course || {};
+      const courseId = course?.id || module?.course_id || access?.course_id;
+
+      if (!courseId) return;
+
+      if (!grouped.has(courseId)) {
+        grouped.set(courseId, {
+          courseId,
+          courseTitle: course?.title || 'Course',
+          courseDescription: course?.description || '',
+          courseThumbnail: course?.thumbnail || course?.image || module?.course_thumbnail || '',
+          modules: [],
+        });
+      }
+
+      grouped.get(courseId).modules.push(access);
+    });
+
+    return Array.from(grouped.values()).map((group) => {
+      const sortedModules = [...group.modules].sort((a, b) => {
+        const orderA = Number(a?.module?.order) || 0;
+        const orderB = Number(b?.module?.order) || 0;
+        return orderA - orderB;
+      });
+
+      const completedCount = sortedModules.filter((lesson) => {
+        const progress = lesson?.module?.user_module_progress;
+        if (Array.isArray(progress) && progress.length > 0) {
+          return progress.some((item) => item?.completed === true);
+        }
+        return lesson?.completed === true;
+      }).length;
+
+      return {
+        ...group,
+        modules: sortedModules,
+        completedCount,
+        totalCount: sortedModules.length,
+        progress: sortedModules.length > 0 ? Math.round((completedCount / sortedModules.length) * 100) : 0,
+      };
+    });
+  }, [myLessons]);
+
+  const totalModulesUnlocked = useMemo(
+    () => modulesByCourse.reduce((sum, group) => sum + (group.totalCount || 0), 0),
+    [modulesByCourse]
+  );
+
+  const tabsConfig = useMemo(
+    () => [
+      { id: 'courses', label: 'Courses', icon: BookOpen, isLoading: false },
+      {
+        id: 'lessons',
+        label: 'My Lessons',
+        icon: Award,
+        isLoading: loadingUnlockedContent && activeTab === 'lessons',
+      },
+      {
+        id: 'modules',
+        label: 'Modules',
+        icon: Layers,
+        isLoading: loadingUnlockedContent && activeTab === 'modules',
+      },
+      {
+        id: 'catalogs',
+        label: 'Catalogs',
+        icon: ShoppingBag,
+        isLoading: loadingCatalogs && activeTab === 'catalogs',
+      },
+    ],
+    [activeTab, loadingUnlockedContent, loadingCatalogs]
+  );
+
+  useEffect(() => {
+    let selector = '';
+
+    switch (activeTab) {
+      case 'courses':
+        selector = '.course-card';
+        break;
+      case 'lessons':
+        selector = '.lesson-card';
+        break;
+      case 'modules':
+        selector = '.module-group-card';
+        break;
+      case 'catalogs':
+        selector = '.catalog-card';
+        break;
+      default:
+        selector = '';
+    }
+
+    if (!selector) return;
+
+    const cards = document.querySelectorAll(selector);
+    cards.forEach((card, index) => {
+      card.classList.add('opacity-0');
+      setTimeout(() => {
+        card.classList.add('animate-fade-in');
+        card.classList.remove('opacity-0');
+      }, 80 * index);
+    });
+  }, [activeTab, filteredCourses, myLessons, modulesByCourse, userCatalogs]);
+
   const renderCourseCard = (course) => (
     <div key={course.id} className="course-card opacity-0">
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col border border-gray-200">
@@ -443,90 +915,34 @@ export function Courses() {
           </div>
 
           <div className="mb-6">
-            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+            <div className="inline-flex flex-wrap gap-2 rounded-2xl border border-gray-200 bg-white/80 p-1 shadow-sm backdrop-blur-sm">
+              {tabsConfig.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+
+                return (
               <button
-                className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  activeTab === 'courses' 
+                    key={tab.id}
+                    className={`relative flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-all duration-200 ${
+                      isActive
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
-                onClick={() => setActiveTab('courses')}
-              >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Courses
-                </div>
-                {activeTab === 'courses' && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                    onClick={() => handleTabChange(tab.id)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                    {tab.isLoading && (
+                      <span className="ml-1 inline-flex items-center justify-center">
+                        <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent"></span>
+                      </span>
+                    )}
+                    {isActive && (
+                      <div className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 transform rounded-full bg-white"></div>
                 )}
               </button>
-              <button
-                className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  activeTab === 'lessons' 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={async () => {
-                  setActiveTab('lessons');
-                  if (!userProfile?.id) return;
-                  setLoadingLessons(true);
-                  try {
-                    console.log('[UI] Fetch My Lessons for', userProfile.id);
-                    const data = await getUnlockedModulesByUser(userProfile.id);
-                    console.log('[UI] My Lessons count', Array.isArray(data) ? data.length : 'not-array');
-                    setMyLessons(data);
-                    
-                    // Pre-load module data in background (non-blocking)
-                    if (data && data.length > 0) {
-                      console.log('[UI] Starting background pre-loading of module data');
-                      const uniqueCourseIds = [...new Set(data.map(lesson => lesson.module?.course_id).filter(Boolean))];
-                      
-                      // Start pre-loading but don't wait for it
-                      Promise.all(uniqueCourseIds.map(async (courseId) => {
-                        try {
-                          const modules = await fetchCourseModules(courseId);
-                          return { courseId, modules };
-                        } catch (error) {
-                          console.warn(`Failed to pre-load modules for course ${courseId}:`, error);
-                          return { courseId, modules: [] };
-                        }
-                      })).then(courseModulesResults => {
-                        // Cache all module data
-                        const newCache = {};
-                        courseModulesResults.forEach(({ courseId, modules }) => {
-                          modules.forEach(module => {
-                            const cacheKey = `${courseId}-${module.id}`;
-                            newCache[cacheKey] = module;
-                          });
-                        });
-                        
-                        setCompleteModulesCache(prev => ({ ...prev, ...newCache }));
-                        console.log('[UI] Background pre-loaded and cached', Object.keys(newCache).length, 'modules');
-                      }).catch(error => {
-                        console.warn('[UI] Background pre-loading failed:', error);
-                        // Don't show error to user, just log it
-                      });
-                    }
-                    
-                  } catch (e) {
-                    console.error('[UI] My Lessons fetch error', e);
-                    setMyLessons([]);
-                  } finally {
-                    setLoadingLessons(false);
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4" />
-                  My Lessons
-                  {loadingLessons && (
-                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                  )}
-                </div>
-                {activeTab === 'lessons' && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
-                )}
-              </button>
+                );
+              })}
             </div>
           </div>
 
@@ -658,10 +1074,324 @@ export function Courses() {
             )
           )}
 
-          {activeTab === 'lessons' && (
+          {activeTab === 'catalogs' && (
+            <div className="space-y-6">
+              <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50/70 p-4 text-xs sm:text-sm text-amber-700">
+                <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Catalog collections you own</p>
+                  <p className="text-amber-600/90">
+                    {loadingCatalogs && !catalogsLoaded
+                      ? 'Fetching your catalog purchases...'
+                      : userCatalogs.length > 0
+                        ? `You have unlocked ${userCatalogs.length} catalog${userCatalogs.length === 1 ? '' : 's'}. Dive back into curated learning paths.`
+                        : 'Unlock curated collections to see them here.'}
+                  </p>
+                </div>
+              </div>
+
+              {loadingCatalogs && !catalogsLoaded ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-amber-200 bg-white py-16 text-sm text-gray-600">
+                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+                  Loading your catalogs...
+                </div>
+              ) : catalogError ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+                  {catalogError}
+                </div>
+              ) : userCatalogs.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {userCatalogs.map((catalog) => {
+                    const courses =
+                      catalogCoursesMap[catalog.id] && catalogCoursesMap[catalog.id].length > 0
+                        ? catalogCoursesMap[catalog.id]
+                        : catalog.courses || [];
+                    const visibleCourses = courses.slice(0, 3);
+                    const remainingCount = Math.max(courses.length - visibleCourses.length, 0);
+
+                    return (
+                      <div key={catalog.id} className="catalog-card opacity-0">
+                        <Card className="flex h-full flex-col justify-between overflow-hidden border border-gray-200 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                          <div className="flex flex-col gap-5 p-6">
+                            <div className="flex items-start gap-4">
+                              <div className="hidden h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 shadow-sm sm:block">
+                                {catalog.image ? (
+                                  <img
+                                    src={catalog.image}
+                                    alt={catalog.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-white">
+                                    <ShoppingBag size={18} />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <h3 className="text-base font-semibold text-gray-900 sm:text-lg">{catalog.name}</h3>
+                                <p className="mt-1 text-sm text-muted-foreground line-clamp-3">{catalog.description}</p>
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                                  <Badge variant="secondary" className="bg-amber-50 text-amber-700">
+                                    {catalog.courseCount} course{catalog.courseCount === 1 ? '' : 's'}
+                                  </Badge>
+                                  {catalog.tag && (
+                                    <Badge variant="outline" className="border-amber-200 text-amber-700">
+                                      {catalog.tag}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-dashed border-amber-100 bg-amber-50/60 p-4">
+                              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Included courses</p>
+                              {visibleCourses.length > 0 ? (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {visibleCourses.map((course) => (
+                                    <span
+                                      key={course.id || course.title}
+                                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-amber-700 shadow-sm"
+                                    >
+                                      {course.title || 'Course'}
+                                    </span>
+                                  ))}
+                                  {remainingCount > 0 && (
+                                    <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-amber-600 shadow-sm">
+                                      +{remainingCount} more
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="mt-2 text-xs text-amber-700/80">
+                                  Courses will appear once the catalog syncs with your account.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/70 px-6 py-4">
+                            <span className="text-xs font-medium text-gray-600">Purchased</span>
+                            {catalog.id ? (
+                              <Link to={`/dashboard/catalog/${catalog.id}`} className="inline-flex">
+                                <Button size="sm" variant="default">
+                                  View catalog
+                                </Button>
+                              </Link>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled>
+                                View catalog
+                              </Button>
+                            )}
+                          </div>
+                        </Card>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <h3 className="text-base sm:text-lg font-medium">No catalogs purchased yet</h3>
+                  <p className="text-muted-foreground text-sm sm:text-base">
+                    Explore curated collections in the catalog to unlock bundled learning experiences.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'modules' && (
+            <div className="space-y-6">
+              <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 text-xs sm:text-sm text-indigo-700">
+                <Layers className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Your unlocked modules</p>
+                  <p className="text-indigo-600/90">
+                    {loadingUnlockedContent && !unlockedModulesLoaded
+                      ? 'Checking your module library...'
+                      : totalModulesUnlocked > 0
+                        ? `Access ${totalModulesUnlocked} module${totalModulesUnlocked === 1 ? '' : 's'} across ${modulesByCourse.length} course${modulesByCourse.length === 1 ? '' : 's'}.`
+                        : 'Unlock modules individually or via catalogs to see them here.'}
+                  </p>
+                </div>
+              </div>
+
+              {loadingUnlockedContent && !unlockedModulesLoaded ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-indigo-200 bg-white py-16 text-sm text-gray-600">
+                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent"></div>
+                  Loading your modules...
+                </div>
+              ) : modulesByCourse.length > 0 ? (
+                <div className="space-y-6">
+                  {modulesByCourse.map((group) => (
+                    <div key={group.courseId} className="module-group-card opacity-0">
+                      <Card className="overflow-hidden border border-gray-200 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                        <div className="flex flex-col gap-6 p-6">
+                          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex flex-1 items-start gap-4">
+                              <div className="hidden h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-blue-500/80 to-indigo-500/80 shadow-sm sm:block">
+                                {group.courseThumbnail ? (
+                                  <img
+                                    src={group.courseThumbnail}
+                                    alt={group.courseTitle}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-white">
+                                    <BookOpen size={20} />
+                                  </div>
+                                )}
+                              </div>
             <div>
-              {loadingLessons ? (
-                <div className="text-center py-10 text-sm text-gray-600">Loading your lessons...</div>
+                                <h3 className="text-base font-semibold text-gray-900 sm:text-lg">{group.courseTitle}</h3>
+                                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{group.courseDescription}</p>
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                                    {group.totalCount} module{group.totalCount === 1 ? '' : 's'}
+                                  </Badge>
+                                  <Badge variant="outline" className="border-green-200 text-green-700">
+                                    {group.completedCount} completed
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="w-full max-w-[220px] rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 text-xs text-indigo-700">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold">Progress</span>
+                                <span className="font-semibold">{group.progress}%</span>
+                              </div>
+                              <Progress value={group.progress} className="mt-2 h-2 bg-white" />
+                              <p className="mt-2 text-[11px] text-indigo-600/80">
+                                Keep learning to unlock next modules and badges.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            {group.modules.map((moduleAccess) => {
+                              const module = moduleAccess.module;
+                              const moduleId = module?.id;
+                              const courseId = module?.course_id || group.courseId;
+                              const cacheKey = `${courseId}-${moduleId}`;
+                              const completeModule = completeModulesCache[cacheKey];
+                              const displayModule = completeModule || module;
+                              const progressEntries = displayModule?.user_module_progress;
+                              const isCompleted =
+                                Array.isArray(progressEntries) && progressEntries.some((entry) => entry?.completed);
+
+                              return (
+                                <div
+                                  key={`${group.courseId}-${moduleAccess.module_id}`}
+                                  className="group flex h-full flex-col justify-between rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm transition-all duration-300 hover:border-blue-500 hover:shadow-md"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-semibold text-gray-900">
+                                        {displayModule?.title || module?.title}
+                                      </p>
+                                      <p className="mt-1 text-xs text-muted-foreground line-clamp-3">
+                                        {displayModule?.description || module?.description}
+                                      </p>
+                                    </div>
+                                    <Badge
+                                      variant={isCompleted ? 'default' : 'outline'}
+                                      className={isCompleted ? '' : 'border-blue-200 text-blue-600'}
+                                    >
+                                      {isCompleted ? 'Completed' : 'Unlocked'}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Clock size={12} />
+                                      {module?.estimated_duration || 60} min
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <BookOpen size={12} />
+                                      Order {module?.order || '—'}
+                                    </span>
+                                  </div>
+
+                                  <div className="mt-4 flex flex-wrap gap-2">
+                                    <Button
+                                      size="sm"
+                                      className="min-w-[120px] flex-1 disabled:opacity-60"
+                                      disabled={loadingStartModuleIds.has(String(moduleId))}
+                                      onClick={() => handleStartModule(moduleAccess)}
+                                    >
+                                      {loadingStartModuleIds.has(String(moduleId)) ? (
+                                        <>
+                                          <Clock size={14} className="mr-2 animate-spin" />
+                                          Loading
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Play size={14} className="mr-2" />
+                                          Start
+                                        </>
+                                      )}
+                                    </Button>
+                                    <Link
+                                      to={`/dashboard/courses/${courseId}/modules/${moduleId}/assessments`}
+                                      className="min-w-[120px] flex-1"
+                                    >
+                                      <Button size="sm" variant="outline" className="w-full">
+                                        <FileText size={14} className="mr-2" />
+                                        Assessment
+                                      </Button>
+                                    </Link>
+                                    {!isCompleted && (
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="min-w-[120px] flex-1 disabled:opacity-60"
+                                        disabled={markingCompleteIds.has(String(moduleId))}
+                                        onClick={() => handleMarkModuleComplete(moduleAccess)}
+                                      >
+                                        {markingCompleteIds.has(String(moduleId)) ? 'Marking...' : 'Mark complete'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <h3 className="text-base sm:text-lg font-medium">No modules unlocked yet</h3>
+                  <p className="text-muted-foreground text-sm sm:text-base">
+                    Unlock modules from course pages or explore bundled options in the catalog.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'lessons' && (
+            <div className="space-y-6">
+              <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-xs sm:text-sm text-blue-700">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Unlocked Lessons</p>
+                  <p className="text-blue-600/90">
+                    {loadingUnlockedContent
+                      ? 'Fetching your available lessons...'
+                      : myLessons.length > 0
+                        ? `You have access to ${myLessons.length} lesson${myLessons.length === 1 ? '' : 's'}. Pick up where you left off.`
+                        : 'Purchase modules or catalogs to unlock lessons tailored to your journey.'}
+                  </p>
+                </div>
+              </div>
+
+              {loadingUnlockedContent ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-blue-200 bg-white py-16 text-sm text-gray-600">
+                  <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+                  Loading your lessons...
+                </div>
               ) : (
                 (() => {
                   const combined = myLessons;
@@ -674,53 +1404,55 @@ export function Courses() {
                     );
                   }
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
                       {combined.map((access) => {
                         const module = access.module;
-                        const courseId = access.module?.course_id;
-                        const isContentAvailable = !!module?.resource_url;
-                        // Check if user_module_progress has any completed entries
-                        const isCompleted = module?.user_module_progress && 
-                          Array.isArray(module.user_module_progress) && 
-                          module.user_module_progress.length > 0 &&
-                          module.user_module_progress.some(progress => progress.completed === true);
-                        
-                        // Get complete module data from cache for better thumbnail and resource_url
+                        const courseId =
+                          access.module?.course_id || access.course?.id || access.course_id;
                         const cacheKey = `${courseId}-${module?.id}`;
                         const completeModule = completeModulesCache[cacheKey];
-                        const displayModule = completeModule || module; // Use complete module if available, fallback to original
+                        const displayModule = completeModule || module;
+                        const progressEntries = displayModule?.user_module_progress;
+                        const isCompleted =
+                          Array.isArray(progressEntries) && progressEntries.some((entry) => entry?.completed);
                         
                         return (
-                          <div key={`${access.user_id}-${access.module_id}`} className="opacity-0 lesson-card h-full">
-                            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                            <div className="aspect-video relative overflow-hidden">
-                              <img
-                                  src={displayModule?.thumbnail || module?.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"}
+                          <div key={`${access.user_id}-${access.module_id}`} className="lesson-card h-full opacity-0">
+                            <Card className="flex h-full flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                              <div className="relative aspect-video overflow-hidden">
+                                <img
+                                  src={
+                                    displayModule?.thumbnail ||
+                                    module?.thumbnail ||
+                                    "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+                                  }
                                   alt={displayModule?.title || module?.title || 'Lesson'}
-                                className="w-full h-full object-cover"
+                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
                                 {isCompleted && (
-                                  <div className="absolute top-2 left-2">
-                                    <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                                  <div className="absolute left-2 top-2">
+                                    <div className="rounded-full bg-green-500 px-2 py-1 text-xs font-medium text-white shadow-sm">
                                       Completed
                                     </div>
                                   </div>
                                 )}
-                                {/* Course name tag */}
-                                <div className="absolute top-2 right-2">
-                                  <div className="bg-white/90 text-gray-800 px-2 py-1 rounded-md text-xs font-medium shadow-sm">
+                                <div className="absolute right-2 top-2">
+                                  <div className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-gray-800 shadow-sm">
                                     {access.course?.title || 'Course'}
                                   </div>
                                 </div>
                             </div>
                               
-                              {/* Fixed height for content area, flex-grow to fill space */}
-                              <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                                <CardHeader className="pb-2 px-0 pt-0">
-                                  <CardTitle className="text-lg line-clamp-2 min-h-[56px]">{displayModule?.title || module?.title}</CardTitle>
-                                  <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">{displayModule?.description || module?.description}</p>
+                              <div className="flex min-h-[170px] flex-grow flex-col px-6 pb-2 pt-4">
+                                <CardHeader className="px-0 pt-0 pb-2">
+                                  <CardTitle className="min-h-[56px] text-lg line-clamp-2">
+                                    {displayModule?.title || module?.title}
+                                  </CardTitle>
+                                  <CardDescription className="min-h-[60px] text-sm line-clamp-3">
+                                    {displayModule?.description || module?.description}
+                                  </CardDescription>
                             </CardHeader>
-                                <CardContent className="space-y-3 px-0 pt-0 pb-0">
+                                <CardContent className="space-y-3 px-0 pb-0 pt-0">
                                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                                     <div className="flex items-center gap-1">
                                       <BookOpen size={14} />
@@ -732,95 +1464,17 @@ export function Courses() {
                                     </div>
                                   </div>
                                   <div className="text-xs text-gray-500">
-                                <span>Course: {access.course?.title}</span>
+                                    <span>Course: {access.course?.title || 'Course'}</span>
                                   </div>
                                 </CardContent>
                               </div>
                               
-                              {/* Footer always at the bottom */}
                               <div className="mt-auto px-6 pb-4">
-                                <CardFooter className="p-0 flex flex-col gap-2">
-                                  {/* Since these are unlocked lessons, they should always have content available */}
+                                <CardFooter className="flex flex-col gap-2 p-0">
                               <Button 
                                     className="w-full disabled:opacity-60"
                                     disabled={loadingStartModuleIds.has(String(module?.id))}
-                                    onClick={async () => {
-                                      const idStr = String(module?.id);
-                                      
-                                      // Prevent multiple clicks
-                                      if (loadingStartModuleIds.has(idStr)) return;
-                                      
-                                      setLoadingStartModuleIds(prev => {
-                                        const next = new Set(prev);
-                                        next.add(idStr);
-                                        return next;
-                                      });
-                                      
-                                      try {
-                                        let completeModule = null;
-                                        
-                                        // Check cache first
-                                        const cacheKey = `${courseId}-${module?.id}`;
-                                        if (completeModulesCache[cacheKey]) {
-                                          console.log('Using cached module data');
-                                          completeModule = completeModulesCache[cacheKey];
-                                        } else {
-                                          console.log('Fetching complete module data for course:', courseId, 'module:', module?.id);
-                                          const courseModules = await fetchCourseModules(courseId);
-                                          completeModule = courseModules.find(m => m.id === module?.id);
-                                          
-                                          // Cache the result
-                                          if (completeModule) {
-                                            setCompleteModulesCache(prev => ({
-                                              ...prev,
-                                              [cacheKey]: completeModule
-                                            }));
-                                          }
-                                        }
-                                        
-                                        console.log('Complete module data:', completeModule);
-                                        
-                                        // Get resource_url from complete module data
-                                        let fullUrl = completeModule?.resource_url;
-                                        
-                                        // If still no resource_url, try from original module data as fallback
-                                        if (!fullUrl) {
-                                          fullUrl = module?.resource_url;
-                                          console.log('Using fallback resource_url from original module:', fullUrl);
-                                        }
-                                        
-                                        console.log('Final resource_url:', fullUrl);
-                                  
-                                  // If it's not already a full URL, prepend the API base URL
-                                  if (fullUrl && !fullUrl.startsWith('http')) {
-                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                  }
-                                  
-                                  // For S3 URLs, ensure they have the correct protocol
-                                  if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                    fullUrl = fullUrl.replace('http://', 'https://');
-                                  }
-                                        
-                                        console.log('Final URL to open:', fullUrl);
-                                  
-                                  // Open in new tab
-                                  if (fullUrl) {
-                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                  } else {
-                                          console.error('No resource URL found for module:', completeModule || module);
-                                          alert('No content URL available for this lesson. Please contact support.');
-                                        }
-                                      } catch (error) {
-                                        console.error('Error fetching module data:', error);
-                                        alert('Failed to load lesson content. Please try again.');
-                                      } finally {
-                                        setLoadingStartModuleIds(prev => {
-                                          const next = new Set(prev);
-                                          next.delete(idStr);
-                                          return next;
-                                        });
-                                      }
-                                    }}
+                                    onClick={() => handleStartModule(access)}
                                   >
                                     {loadingStartModuleIds.has(String(module?.id)) ? (
                                       <>
@@ -840,53 +1494,17 @@ export function Courses() {
                                   Start Assessment
                                 </Button>
                               </Link>
-                                  {/* Mark as Complete - only show when not completed */}
                                   {!isCompleted ? (
                                     <Button
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
                                       disabled={markingCompleteIds.has(String(module?.id))}
-                                      onClick={async () => {
-                                        const idStr = String(module?.id);
-                                        if (!courseId || !module?.id) return;
-                                        
-                                        // Prevent duplicate clicks
-                                        if (markingCompleteIds.has(idStr)) return;
-                                        
-                                        setMarkingCompleteIds(prev => {
-                                          const next = new Set(prev);
-                                          next.add(idStr);
-                                          return next;
-                                        });
-                                        
-                                        try {
-                                          console.log('Marking module as complete:', courseId, module?.id);
-                                          await api.post(`/api/course/${courseId}/modules/${module?.id}/mark-complete`);
-                                          
-                                          // Update the local state to reflect completion
-                                          setMyLessons(prev => prev.map(lesson => 
-                                            lesson.module_id === access.module_id 
-                                              ? { ...lesson, completed: true }
-                                              : lesson
-                                          ));
-                                          
-                                          console.log('Module marked as complete successfully');
-                                        } catch (err) {
-                                          console.error('Failed to mark module as complete', err);
-                                          alert('Failed to mark lesson as complete. Please try again.');
-                                        } finally {
-                                          setMarkingCompleteIds(prev => {
-                                            const next = new Set(prev);
-                                            next.delete(idStr);
-                                            return next;
-                                          });
-                                        }
-                                      }}
+                                      onClick={() => handleMarkModuleComplete(access)}
                                     >
                                       {markingCompleteIds.has(String(module?.id)) ? 'Marking...' : 'Mark as Complete'}
                                     </Button>
                                   ) : (
-                                    <div className="w-full flex items-center justify-center">
+                                    <div className="flex w-full items-center justify-center">
                                       <Badge className="px-3 py-1">Completed</Badge>
                                     </div>
                                   )}
