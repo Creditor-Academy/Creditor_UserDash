@@ -5,7 +5,6 @@ import {
   detectTopicContext,
 } from './comprehensiveShowcaseLesson.js';
 import { uploadImage } from './imageUploadService.js';
-import { uploadAIGeneratedImage } from './aiUploadService.js';
 
 /**
  * Comprehensive Course Generator Service
@@ -16,37 +15,22 @@ import { uploadAIGeneratedImage } from './aiUploadService.js';
 const generateBlockId = () =>
   `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-/**
- * Upload DALL-E image to S3 using the same logic as course thumbnails
- * @param {string} dalleUrl - DALL-E image URL
- * @param {string} fileName - File name for S3 upload
- * @returns {Promise<string>} S3 URL or original URL if upload fails
- */
-async function uploadDalleImageToS3(dalleUrl, fileName) {
-  try {
-    console.log(
-      `📤 Uploading DALL-E image to S3 via backend proxy: ${fileName}`
-    );
+const DEFAULT_IMAGE_OPTIONS = {
+  size: '1024x1024',
+  quality: 'standard',
+  uploadToS3: true,
+};
 
-    // Use the same S3 upload logic as course thumbnails
-    const uploadResult = await uploadAIGeneratedImage(dalleUrl, {
-      public: true,
-      folder: 'ai-thumbnails',
-    });
-
-    if (uploadResult.success && uploadResult.imageUrl) {
-      console.log(`✅ S3 upload successful: ${uploadResult.imageUrl}`);
-      return uploadResult.imageUrl;
-    } else {
-      console.warn(
-        `⚠️ S3 upload failed, using original URL: ${uploadResult?.message || 'Unknown error'}`
-      );
-      return dalleUrl; // Fallback to original URL
-    }
-  } catch (error) {
-    console.error(`❌ Error uploading ${fileName} to S3:`, error);
-    return dalleUrl; // Fallback to original URL
-  }
+function pickImageUrl(result) {
+  const data = result?.data || {};
+  const primary =
+    data.url || data.imageUrl || result?.url || result?.imageUrl || null;
+  const fallback = data.originalUrl || result?.originalUrl || null;
+  return {
+    url: primary || fallback,
+    originalUrl: fallback,
+    uploadedToS3: data.uploadedToS3 ?? result?.uploadedToS3 ?? false,
+  };
 }
 
 // Content block type mappings
@@ -302,25 +286,27 @@ async function enhanceWithAllVariants(
       const moduleImageResult = await openAIService.generateImage(
         moduleThumbnailPrompt,
         {
-          size: '1024x1024',
-          quality: 'standard',
+          ...DEFAULT_IMAGE_OPTIONS,
+          folder: 'ai-thumbnails/modules',
         }
       );
 
-      if (moduleImageResult.success && moduleImageResult.url) {
-        console.log('✅ Module thumbnail generated:', moduleImageResult.url);
-        console.log(
-          '🎨 Module thumbnail URL length:',
-          moduleImageResult.url.length
-        );
-
-        // Upload DALL-E image to S3
-        const moduleFileName = `module_${module.module_order}_${Date.now()}.png`;
-        moduleThumbnailUrl = await uploadDalleImageToS3(
-          moduleImageResult.url,
-          moduleFileName
-        );
-        console.log('🎨 Final module thumbnail URL (S3):', moduleThumbnailUrl);
+      if (moduleImageResult?.success) {
+        const { url, uploadedToS3 } = pickImageUrl(moduleImageResult);
+        if (url) {
+          moduleThumbnailUrl = url;
+          console.log('✅ Module thumbnail ready:', moduleThumbnailUrl);
+          if (!uploadedToS3) {
+            console.warn(
+              '⚠️ Module image not uploaded to S3, using fallback URL'
+            );
+          }
+        } else {
+          console.error(
+            '❌ Module thumbnail missing URL in response:',
+            moduleImageResult
+          );
+        }
       } else {
         console.error(
           '❌ Module thumbnail generation failed:',
@@ -333,25 +319,27 @@ async function enhanceWithAllVariants(
       const lessonImageResult = await openAIService.generateImage(
         lessonThumbnailPrompt,
         {
-          size: '1024x1024',
-          quality: 'standard',
+          ...DEFAULT_IMAGE_OPTIONS,
+          folder: 'ai-thumbnails/lessons',
         }
       );
 
-      if (lessonImageResult.success && lessonImageResult.url) {
-        console.log('✅ Lesson thumbnail generated:', lessonImageResult.url);
-        console.log(
-          '🎨 Lesson thumbnail URL length:',
-          lessonImageResult.url.length
-        );
-
-        // Upload DALL-E image to S3
-        const lessonFileName = `lesson_${lesson.lesson_order}_${Date.now()}.png`;
-        lessonThumbnailUrl = await uploadDalleImageToS3(
-          lessonImageResult.url,
-          lessonFileName
-        );
-        console.log('🎨 Final lesson thumbnail URL (S3):', lessonThumbnailUrl);
+      if (lessonImageResult?.success) {
+        const { url, uploadedToS3 } = pickImageUrl(lessonImageResult);
+        if (url) {
+          lessonThumbnailUrl = url;
+          console.log('✅ Lesson thumbnail ready:', lessonThumbnailUrl);
+          if (!uploadedToS3) {
+            console.warn(
+              '⚠️ Lesson image not uploaded to S3, using fallback URL'
+            );
+          }
+        } else {
+          console.error(
+            '❌ Lesson thumbnail missing URL in response:',
+            lessonImageResult
+          );
+        }
       } else {
         console.error(
           '❌ Lesson thumbnail generation failed:',

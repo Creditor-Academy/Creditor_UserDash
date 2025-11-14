@@ -425,13 +425,16 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         style: 'vivid',
       });
 
-      if (response.success && response.data?.url) {
+      // Check if we have a valid image URL (either from success or fallback)
+      const imageUrl = response.data?.url || response.url;
+
+      if (response.success && imageUrl) {
         console.log('✅ AI image generated and uploaded to S3 by backend!');
 
         // Use the S3 URL directly (already uploaded by backend)
         setCourseData(prev => ({
           ...prev,
-          thumbnail: response.data.url,
+          thumbnail: imageUrl,
         }));
 
         // Show success message
@@ -440,21 +443,27 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
           `🎨 Generated with: DALL-E 3\n` +
           `📏 Size: 1024x1024\n` +
           `☁️ Uploaded to S3 automatically\n` +
-          `📁 S3 URL: ${response.data.url.substring(0, 50)}...`;
+          `📁 S3 URL: ${imageUrl.substring(0, 50)}...`;
 
         console.log('✅ AI thumbnail generated and uploaded successfully');
         setAiImageError('');
         toast.success('AI thumbnail generated successfully!');
+      } else if (imageUrl) {
+        // Partial success - we have an image but there might be issues
+        console.log('⚠️ AI image generated with warnings');
+        setCourseData(prev => ({ ...prev, thumbnail: imageUrl }));
+        setAiImageError(
+          `Image generated with warnings: ${response.error || 'Check console for details'}`
+        );
+        toast.warning('AI thumbnail generated with warnings');
       } else {
-        // Even if generation "failed", we might have a fallback image
-        if (response.data?.url) {
-          setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
-          setAiImageError(
-            `Using fallback image: ${response.error || 'Generation partially failed'}`
-          );
-        } else {
-          setAiImageError(response.error || 'Failed to generate AI image');
-        }
+        // Complete failure - no image URL available
+        console.error('❌ AI image generation failed completely');
+        setAiImageError(
+          response.error ||
+            'Failed to generate AI image - no URL returned from backend'
+        );
+        toast.error('Failed to generate AI thumbnail');
       }
     } catch (error) {
       // Use improved error notification

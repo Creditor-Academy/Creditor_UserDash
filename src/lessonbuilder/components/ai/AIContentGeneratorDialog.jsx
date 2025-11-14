@@ -225,6 +225,8 @@ const AIContentGeneratorDialog = ({
         const imageResult = await openAIService.generateImage(userPrompt, {
           size: '1024x1024',
           quality: 'standard',
+          folder: 'lessonbuilder-content-images',
+          uploadToS3: true,
         });
 
         const imageUrl = imageResult?.data?.url || imageResult?.url;
@@ -232,6 +234,17 @@ const AIContentGeneratorDialog = ({
           imageResult?.data?.title ||
           imageResult?.imageTitle ||
           `AI Generated: ${userPrompt.substring(0, 50)}...`;
+
+        // Debug: Log image generation result details
+        devLogger.debug('🔍 Image generation result details:', {
+          success: imageResult?.success,
+          hasData: !!imageResult?.data,
+          imageUrl: imageUrl,
+          originalUrl:
+            imageResult?.data?.originalUrl || imageResult?.originalUrl,
+          uploadedToS3: imageResult?.data?.uploadedToS3,
+          provider: imageResult?.provider || imageResult?.data?.provider,
+        });
 
         if (imageResult?.success && imageUrl) {
           generatedContent = {
@@ -257,11 +270,43 @@ const AIContentGeneratorDialog = ({
           };
         } else {
           devLogger.error('Image generation failed:', imageResult);
-          const errorMessage =
-            imageResult?.error ||
-            imageResult?.message ||
-            'Failed to generate image';
-          throw new Error(errorMessage);
+          devLogger.error(
+            'AI generation error: Error: Failed to generate image'
+          );
+
+          // Fallback: Create a placeholder image content if backend succeeds but no URL
+          if (imageResult?.success && !imageUrl) {
+            devLogger.warn(
+              '⚠️ Backend returned success but no image URL - creating placeholder'
+            );
+            generatedContent = {
+              type: 'image',
+              template: selectedTemplate,
+              content: {
+                imageUrl:
+                  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzY2NzM4NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkFJIEltYWdlIEdlbmVyYXRpb24gRmFpbGVkPC90ZXh0Pjx0ZXh0IHg9IjUwJSIgeT0iNjUlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5CYWNrZW5kIHJldHVybmVkIHN1Y2Nlc3MgYnV0IG5vIFVSTDwvdGV4dD48L3N2Zz4=',
+                imageTitle: 'Image Generation Failed',
+                imageDescription:
+                  'Backend returned success but no image URL was provided',
+                captionText:
+                  'Please try again or check your backend configuration',
+              },
+            };
+            previewFormatSource = {
+              type: 'image',
+              templateId: selectedTemplate,
+              content: JSON.stringify({
+                ...generatedContent.content,
+                alignment: 'center',
+              }),
+            };
+          } else {
+            const errorMessage =
+              imageResult?.error ||
+              imageResult?.message ||
+              'Failed to generate image';
+            throw new Error(errorMessage);
+          }
         }
       } else {
         // Generate other content types using content block AI service

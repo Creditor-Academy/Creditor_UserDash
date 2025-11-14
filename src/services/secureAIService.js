@@ -11,6 +11,8 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+// Debug: Log the API base being used
+console.log('🔧 SecureAIService API_BASE:', API_BASE);
 const isDevelopment = !!import.meta.env.DEV;
 
 const clientLogger = {
@@ -442,6 +444,7 @@ class SecureAIService {
         style = 'vivid',
         enhancePrompt = false,
         uploadToS3 = true,
+        folder = 'ai-generated-images',
         skipStatusCheck = false,
       } = options;
 
@@ -473,11 +476,23 @@ class SecureAIService {
             style,
             enhancePrompt,
             uploadToS3,
+            folder,
           }),
         }
       );
 
       const result = await response.json();
+
+      // Debug: Log the full backend response
+      clientLogger.debug('🔍 Backend image generation response:', {
+        success: result.success,
+        hasData: !!result.data,
+        imageUrl: result.data?.imageUrl,
+        originalUrl: result.data?.originalUrl,
+        uploadedToS3: result.data?.uploadedToS3,
+        error: result.error,
+        message: result.message,
+      });
 
       if (!result.success) {
         throw new Error(result.message || 'Image generation failed');
@@ -497,12 +512,26 @@ class SecureAIService {
         uploadedToS3: result.data.uploadedToS3,
         provider: 'backend',
         createdAt: result.data.createdAt,
+        folder: result.data.folder || folder,
+        uploadSkippedReason: result.data.uploadSkippedReason,
       };
 
       // Fallback: if S3 URL missing, reuse original OpenAI URL
       if (!imageData.url && imageData.originalUrl) {
+        clientLogger.warn('⚠️ S3 URL missing, using original OpenAI URL');
         imageData.url = imageData.originalUrl;
         imageData.uploadedToS3 = false;
+      }
+
+      // Error: if both URLs are missing, throw error
+      if (!imageData.url) {
+        clientLogger.error(
+          '❌ Both S3 and OpenAI URLs are missing from backend response'
+        );
+        clientLogger.error('🔍 Full backend response for debugging:', result);
+        throw new Error(
+          'Image generation succeeded but no URL returned from backend'
+        );
       }
 
       return {
@@ -517,6 +546,8 @@ class SecureAIService {
         provider: imageData.provider,
         createdAt: imageData.createdAt,
         uploadedToS3: imageData.uploadedToS3,
+        folder: imageData.folder,
+        uploadSkippedReason: imageData.uploadSkippedReason,
         cost: result.data.cost,
       };
     } catch (error) {
@@ -669,6 +700,11 @@ class SecureAIService {
    */
   async generateCourseImage(prompt, options = {}) {
     try {
+      clientLogger.debug(
+        '🎨 Generating course image with prompt:',
+        prompt.substring(0, 100) + '...'
+      );
+
       const result = await this.generateImage(prompt, {
         model: 'dall-e-3',
         size: options.size || '1024x1024',
@@ -676,6 +712,7 @@ class SecureAIService {
         style: options.style || 'vivid',
         enhancePrompt: false, // Manual enhancement only for course images
         uploadToS3: true,
+        folder: options.folder || 'course-thumbnails',
       });
 
       const imageData = result.data || {
@@ -700,19 +737,64 @@ class SecureAIService {
           style: imageData.style,
           provider: imageData.provider || 'backend',
           uploadedToS3: imageData.uploadedToS3,
+          folder: imageData.folder || options.folder || 'course-thumbnails',
+          uploadSkippedReason: imageData.uploadSkippedReason,
         },
         url: imageData.url,
         originalUrl: imageData.originalUrl,
         uploadedToS3: imageData.uploadedToS3,
+        folder: imageData.folder || options.folder || 'course-thumbnails',
+        uploadSkippedReason: imageData.uploadSkippedReason,
         cost: result.cost,
       };
     } catch (error) {
-      const formattedError = this.handleError(
-        error,
-        'Course image generation',
-        error.response
+      clientLogger.error(
+        '❌ Course image generation failed, creating fallback response'
       );
-      throw formattedError;
+
+      // Create a placeholder SVG image as fallback
+      const placeholderSvg = `data:image/svg+xml;base64,${btoa(`
+        <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grad)"/>
+          <circle cx="512" cy="400" r="80" fill="white" opacity="0.9"/>
+          <path d="M480 380 L480 420 L544 420 L544 380 Z M488 388 L488 412 L536 412 L536 388 Z" fill="#6366F1"/>
+          <text x="512" y="580" font-family="Arial, sans-serif" font-size="48" fill="white" text-anchor="middle" font-weight="bold">Course Thumbnail</text>
+          <text x="512" y="640" font-family="Arial, sans-serif" font-size="32" fill="white" text-anchor="middle" opacity="0.8">AI Generation Failed</text>
+          <text x="512" y="700" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" opacity="0.6">${prompt.substring(0, 30)}...</text>
+        </svg>
+      `)}`;
+
+      // Return a fallback response with placeholder image
+      return {
+        success: false,
+        error: error.message || 'Course image generation failed',
+        data: {
+          url: placeholderSvg,
+          originalUrl: null,
+          model: 'dall-e-3',
+          size: options.size || '1024x1024',
+          quality: options.quality || 'standard',
+          style: options.style || 'vivid',
+          provider: 'fallback',
+          uploadedToS3: false,
+          folder: options.folder || 'course-thumbnails',
+          uploadSkippedReason:
+            'Generation failed - ' + (error.message || 'Unknown error'),
+        },
+        url: placeholderSvg,
+        originalUrl: null,
+        uploadedToS3: false,
+        folder: options.folder || 'course-thumbnails',
+        uploadSkippedReason:
+          'Generation failed - ' + (error.message || 'Unknown error'),
+        cost: { finalCost: 0 },
+      };
     }
   }
 
