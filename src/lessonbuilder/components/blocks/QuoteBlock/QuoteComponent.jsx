@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import ImageEditor from '../MediaBlocks/ImageEditor';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const QuoteComponent = forwardRef(
   (
@@ -114,7 +115,7 @@ const QuoteComponent = forwardRef(
           throw new Error('Upload failed - no image URL returned');
         }
       } catch (error) {
-        console.error('Error uploading edited image:', error);
+        devLogger.error('Error uploading edited image:', error);
         toast.error(
           error.message || 'Failed to upload edited image. Please try again.'
         );
@@ -369,7 +370,7 @@ const QuoteComponent = forwardRef(
             ]);
           }
         } catch (e) {
-          console.error('Error parsing quote content:', e);
+          devLogger.error('Error parsing quote content:', e);
           setQuoteText('');
           setQuoteAuthor('');
           setQuoteImage('');

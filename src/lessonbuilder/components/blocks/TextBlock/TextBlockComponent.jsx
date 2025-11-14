@@ -16,6 +16,7 @@ import {
   gradientOptions,
 } from '@lessonbuilder/constants/textTypesConfig';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const TextBlockComponent = ({
   showTextTypeSidebar,
@@ -846,7 +847,7 @@ const TextBlockComponent = ({
                 : block
             );
           } catch (error) {
-            console.error('Error updating contentBlocks:', error);
+            devLogger.error('Error updating contentBlocks:', error);
             toast.error('Failed to update content blocks');
             return blocks;
           }
@@ -1027,7 +1028,7 @@ const TextBlockComponent = ({
       // Show success message
       toast.success('Text block updated successfully');
     } catch (error) {
-      console.error('Error in handleTextEditorSave:', error);
+      devLogger.error('Error in handleTextEditorSave:', error);
       toast.error('Failed to save text block. Please try again.');
     }
   };

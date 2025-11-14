@@ -17,6 +17,10 @@ import {
 } from '@/components/ui/select';
 import { Sparkles, Loader2, Info, Wand2, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import contentBlockAIService from '../../services/contentBlockAIService';
+import openAIService from '../../../services/openAIService';
+import { formatAIContentForBlock } from '@lessonbuilder/utils/aiContentHelpers';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 /**
  * Universal AI Content Generator Dialog
@@ -48,6 +52,9 @@ const AIContentGeneratorDialog = ({
       setUserPrompt('');
       setIsGenerating(false);
       setIsEnhancing(false);
+      setGeneratedContent(null);
+      setPreviewBlock(null);
+      setShowPreview(false);
     }
   }, [show]);
 
@@ -59,14 +66,41 @@ const AIContentGeneratorDialog = ({
 
     setIsEnhancing(true);
     try {
-      // Enhance the prompt with AI
-      const enhancedPrompt = `Create detailed ${blockType?.title?.toLowerCase()} content about: ${userPrompt}. Include relevant examples, clear explanations, and professional formatting. Context: ${courseContext?.courseName} - ${courseContext?.moduleName} - ${courseContext?.lessonTitle}.`;
+      // Use the proper backend URL
+      const API_BASE =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+
+      const response = await fetch(`${API_BASE}/api/ai-proxy/generate-text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: userPrompt,
+          enhancePrompt: true,
+          title: courseContext?.lessonTitle,
+          subject: courseContext?.courseName,
+          difficulty: 'intermediate',
+          systemPrompt: `You are an expert prompt engineer. Enhance the following user prompt to be more specific, clear, and effective for generating ${blockType?.title?.toLowerCase()} content. Return ONLY the enhanced prompt without any additional text or explanations.`,
+          maxTokens: 200,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to enhance prompt: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+      const enhancedPrompt = result.data?.text?.trim() || userPrompt;
 
       setUserPrompt(enhancedPrompt);
       toast.success('Prompt enhanced successfully!');
     } catch (error) {
-      console.error('Prompt enhancement error:', error);
-      toast.error('Failed to enhance prompt');
+      devLogger.error('Prompt enhancement error:', error);
+      toast.error('Failed to enhance prompt. Using original.');
     } finally {
       setIsEnhancing(false);
     }
@@ -90,7 +124,7 @@ const AIContentGeneratorDialog = ({
       toast.success('Content generated successfully!');
       onClose();
     } catch (error) {
-      console.error('AI generation error:', error);
+      devLogger.error('AI generation error:', error);
       toast.error(
         error.message || 'Failed to generate content. Please try again.'
       );
@@ -169,6 +203,7 @@ const AIContentGeneratorDialog = ({
 
   // State for generated content preview
   const [generatedContent, setGeneratedContent] = useState(null);
+  const [previewBlock, setPreviewBlock] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
 
   const handleGeneratePreview = async () => {
@@ -181,21 +216,96 @@ const AIContentGeneratorDialog = ({
     setShowPreview(true);
 
     try {
-      // Simulate AI generation for preview
-      // TODO: Replace with actual AI generation
-      const mockContent = {
-        type: blockType?.id,
-        content: `Generated ${blockType?.title} content based on: "${userPrompt}"`,
-        template: selectedTemplate,
-      };
+      let generatedContent;
+      let previewFormatSource = null;
 
-      setGeneratedContent(mockContent);
+      // Handle image generation separately
+      if (blockType?.id === 'image') {
+        devLogger.debug('🎨 Generating AI image with DALL-E...');
+        const imageResult = await openAIService.generateImage(userPrompt, {
+          size: '1024x1024',
+          quality: 'standard',
+        });
+
+        const imageUrl = imageResult?.data?.url || imageResult?.url;
+        const imageTitle =
+          imageResult?.data?.title ||
+          imageResult?.imageTitle ||
+          `AI Generated: ${userPrompt.substring(0, 50)}...`;
+
+        if (imageResult.success && imageUrl) {
+          generatedContent = {
+            type: 'image',
+            template: selectedTemplate,
+            content: {
+              imageUrl,
+              imageTitle,
+              imageDescription: imageResult?.data?.description || userPrompt,
+              captionText:
+                imageResult?.data?.caption ||
+                imageResult?.captionText ||
+                `Generated with DALL-E 3`,
+            },
+          };
+          previewFormatSource = {
+            type: 'image',
+            templateId: selectedTemplate,
+            content: JSON.stringify({
+              ...generatedContent.content,
+              alignment: 'center',
+            }),
+          };
+        } else {
+          throw new Error('Failed to generate image');
+        }
+      } else {
+        // Generate other content types using content block AI service
+        devLogger.debug(`🤖 Generating ${blockType?.id} content...`);
+        const contentResult = await contentBlockAIService.generateContentBlock({
+          blockType: blockType?.id,
+          templateId: selectedTemplate,
+          userPrompt: userPrompt.trim(),
+          instructions: '',
+          courseContext: courseContext || {},
+        });
+
+        generatedContent = {
+          type: contentResult.type,
+          template: selectedTemplate,
+          content: contentResult.content,
+          rawData: contentResult, // Store full result for later use
+        };
+        previewFormatSource = {
+          ...contentResult,
+          templateId: contentResult.templateId || selectedTemplate,
+        };
+      }
+
+      setGeneratedContent(generatedContent);
+
+      if (previewFormatSource && blockType?.id) {
+        try {
+          const formatted = formatAIContentForBlock(
+            previewFormatSource,
+            blockType.id
+          );
+          setPreviewBlock(formatted);
+        } catch (formatError) {
+          devLogger.error('Preview formatting error:', formatError);
+          setPreviewBlock(null);
+        }
+      } else {
+        setPreviewBlock(null);
+      }
+
       toast.success('Content generated successfully!');
     } catch (error) {
-      console.error('AI generation error:', error);
+      devLogger.error('AI generation error:', error);
       toast.error(
         error.message || 'Failed to generate content. Please try again.'
       );
+      setShowPreview(false);
+      setPreviewBlock(null);
     } finally {
       setIsGenerating(false);
     }
@@ -203,17 +313,181 @@ const AIContentGeneratorDialog = ({
 
   const handleAddToLesson = async () => {
     try {
+      // Pass the generated content data to the parent component
       await onGenerate({
         userPrompt: userPrompt.trim(),
         instructions: '',
         templateId: selectedTemplate,
+        generatedContent: generatedContent?.rawData || generatedContent, // Pass the actual generated content
       });
 
       toast.success('Content added to lesson!');
       onClose();
     } catch (error) {
-      console.error('Add to lesson error:', error);
+      devLogger.error('Add to lesson error:', error);
       toast.error('Failed to add content to lesson');
+    }
+  };
+
+  // Render preview content based on block type
+  const renderPreviewContent = content => {
+    if (!content) return null;
+
+    if (previewBlock?.html_css) {
+      return (
+        <div dangerouslySetInnerHTML={{ __html: previewBlock.html_css }} />
+      );
+    }
+
+    switch (content.type) {
+      case 'image':
+        return (
+          <div className="space-y-3">
+            {content.content?.imageUrl && (
+              <img
+                src={content.content.imageUrl}
+                alt={content.content?.imageTitle || 'Generated image'}
+                className="w-full max-w-md mx-auto rounded-lg shadow-sm"
+              />
+            )}
+            {content.content?.imageTitle && (
+              <h4 className="font-semibold text-gray-800">
+                {content.content.imageTitle}
+              </h4>
+            )}
+            {content.content?.captionText && (
+              <p className="text-sm text-gray-600 italic">
+                {content.content.captionText}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'text':
+        return (
+          <div className="space-y-2">
+            <div
+              className="text-gray-800"
+              dangerouslySetInnerHTML={{ __html: content.content }}
+            />
+          </div>
+        );
+
+      case 'statement':
+        return (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-400 p-4 rounded">
+            <p className="text-gray-800 font-medium italic">
+              {content.content}
+            </p>
+          </div>
+        );
+
+      case 'quote':
+        try {
+          const quoteData = JSON.parse(content.content);
+          return (
+            <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700">
+              <p>"{quoteData.quote}"</p>
+              <footer className="text-sm text-gray-500 mt-2">
+                — {quoteData.author}
+              </footer>
+            </blockquote>
+          );
+        } catch (e) {
+          return <p className="text-gray-800">{content.content}</p>;
+        }
+
+      case 'list':
+        try {
+          const listData = JSON.parse(content.content);
+          return (
+            <ul className="list-disc list-inside space-y-2">
+              {listData.items?.map((item, index) => (
+                <li key={index} className="text-gray-800">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          );
+        } catch (e) {
+          return <p className="text-gray-800">{content.content}</p>;
+        }
+
+      case 'table':
+        try {
+          const tableData = JSON.parse(content.content);
+          return (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200 rounded-lg">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {tableData.headers?.map((header, index) => (
+                      <th
+                        key={index}
+                        className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.data?.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b">
+                      {row.map((cell, cellIndex) => (
+                        <td
+                          key={cellIndex}
+                          className="px-4 py-2 text-sm text-gray-600"
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        } catch (e) {
+          return <p className="text-gray-800">{content.content}</p>;
+        }
+
+      case 'interactive':
+        try {
+          const interactiveData = JSON.parse(content.content);
+          if (interactiveData.sections) {
+            return (
+              <div className="space-y-3">
+                {interactiveData.sections.map((section, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-lg p-3"
+                  >
+                    <h5 className="font-semibold text-gray-800 mb-2">
+                      {section.title}
+                    </h5>
+                    <p className="text-gray-600 text-sm">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          return <p className="text-gray-800">{content.content}</p>;
+        } catch (e) {
+          return <p className="text-gray-800">{content.content}</p>;
+        }
+
+      case 'divider':
+        return (
+          <div className="flex items-center justify-center py-4">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full text-sm font-semibold">
+              {content.content}
+            </div>
+          </div>
+        );
+
+      default:
+        return <p className="text-gray-800">{content.content}</p>;
     }
   };
 
@@ -428,9 +702,9 @@ const AIContentGeneratorDialog = ({
                     </span>
                   </div>
 
-                  {/* TODO: Render content based on blockType with proper styling */}
+                  {/* Render content based on blockType with proper styling */}
                   <div className="prose prose-sm max-w-none">
-                    <p>{generatedContent.content}</p>
+                    {renderPreviewContent(generatedContent)}
                   </div>
                 </div>
               </div>

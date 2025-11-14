@@ -1074,7 +1074,7 @@ ${content}`;
     let summary;
     try {
       summary = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 300,
         temperature: 0.3,
       });
@@ -1131,7 +1131,7 @@ Provide a clear, educational answer that would be helpful for a student learning
     let answer;
     try {
       answer = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 500,
         temperature: 0.5,
       });
@@ -1184,7 +1184,7 @@ Return valid JSON only in this format:
     let qa = [];
     try {
       const response = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 600,
         temperature: 0.5,
       });
@@ -1249,7 +1249,7 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
     } catch {
       const text = await openAIService.generateText(
         `${sysPrompt}\n\n${userPrompt}`,
-        { model: 'gpt-3.5-turbo', maxTokens: 800, temperature: 0.6 }
+        { model: 'gpt-4o-mini', maxTokens: 800, temperature: 0.6 }
       );
       const jsonMatch =
         typeof text === 'string' ? text.match(/\{[\s\S]*\}/) : null;
@@ -1302,7 +1302,7 @@ export async function generateAssessmentQuestions(
     let questions = [];
     try {
       const text = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 1000,
         temperature: 0.6,
       });

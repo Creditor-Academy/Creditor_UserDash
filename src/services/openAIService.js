@@ -9,10 +9,27 @@ import secureAIService from './secureAIService';
  * - Token tracking and cost calculation on backend
  * - Maintains same interface for backward compatibility
  */
+const isDevelopment = !!import.meta.env.DEV;
+
+const clientLogger = {
+  debug: (...args) => {
+    if (isDevelopment) {
+      console.debug(...args);
+    }
+  },
+  error: (...args) => {
+    if (isDevelopment) {
+      console.error(...args);
+    }
+  },
+};
+
 class OpenAIService {
   constructor() {
     this.backend = secureAIService;
-    console.log('✅ OpenAI service initialized (using secure backend proxy)');
+    clientLogger.debug(
+      '✅ OpenAI service initialized (using secure backend proxy)'
+    );
   }
 
   /**
@@ -67,7 +84,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseOutline(courseData);
     } catch (error) {
-      console.error('❌ Course outline generation failed:', error);
+      clientLogger.error('❌ Course outline generation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -85,7 +102,7 @@ class OpenAIService {
     try {
       return await this.backend.generateComprehensiveCourse(courseData);
     } catch (error) {
-      console.error('❌ Comprehensive course generation failed:', error);
+      clientLogger.error('❌ Comprehensive course generation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -104,7 +121,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseImage(prompt, options);
     } catch (error) {
-      console.error('❌ Course image generation failed:', error);
+      clientLogger.error('❌ Course image generation failed:', error);
       return {
         success: false,
         error: error.message,

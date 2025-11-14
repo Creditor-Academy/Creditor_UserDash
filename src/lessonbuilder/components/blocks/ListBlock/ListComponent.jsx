@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 // Separate component for contentEditable list item editor
 const ListItemEditor = ({
@@ -443,7 +444,7 @@ const ListComponent = forwardRef(
           setNumberingStyle(listContent.numberingStyle || 'decimal');
           setBulletStyle(listContent.bulletStyle || 'circle');
         } catch (e) {
-          console.error('Error parsing list content:', e);
+          devLogger.error('Error parsing list content:', e);
           setListItems(['']);
           setListType('bulleted');
           setCheckedItems({});
@@ -788,7 +789,7 @@ const ListComponent = forwardRef(
               }, 0);
             }
           } catch (e) {
-            console.error('Error applying bold formatting:', e);
+            devLogger.error('Error applying bold formatting:', e);
           }
         }, 10);
       } else {
@@ -815,7 +816,7 @@ const ListComponent = forwardRef(
                   const index = parseInt(node.id.split('-')[2]);
                   updateListItem(index, node.innerHTML);
                 } catch (e) {
-                  console.error('Error applying bold:', e);
+                  devLogger.error('Error applying bold:', e);
                 }
               }, 10);
               break;

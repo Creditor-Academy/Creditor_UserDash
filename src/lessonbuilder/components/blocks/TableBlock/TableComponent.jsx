@@ -16,6 +16,7 @@ import {
   Minus,
   MoreHorizontal,
 } from 'lucide-react';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const TableComponent = ({
   onTemplateSelect,
@@ -69,7 +70,7 @@ const TableComponent = ({
           setSelectedTemplate('two_columns');
         }
       } catch (e) {
-        console.error('Error parsing table data:', e);
+        devLogger.error('Error parsing table data:', e);
         setTableData(defaultData);
         setSelectedTemplate('two_columns');
       }
@@ -151,7 +152,7 @@ const TableComponent = ({
         setSelectedTemplate(parsedData.templateId);
         setIsEditMode(true);
       } catch (e) {
-        console.error('Error parsing table data:', e);
+        devLogger.error('Error parsing table data:', e);
       }
     }
   }, [isEditing, editingBlock]);

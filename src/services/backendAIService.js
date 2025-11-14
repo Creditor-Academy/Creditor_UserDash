@@ -67,7 +67,7 @@ class BackendAIService {
   async generateText(prompt, options = {}) {
     try {
       const {
-        model = 'gpt-3.5-turbo',
+        model = 'gpt-4o-mini',
         maxTokens = 1000,
         temperature = 0.7,
         systemPrompt = 'You are a helpful AI assistant for educational content creation.',
@@ -116,7 +116,7 @@ class BackendAIService {
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
       const {
-        model = 'gpt-3.5-turbo',
+        model = 'gpt-4o-mini',
         maxTokens = 2000,
         temperature = 0.7,
       } = options;
@@ -386,7 +386,7 @@ Generate comprehensive, engaging educational content that includes:
 Format the content in clear, structured paragraphs.`;
 
       const content = await this.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: options.maxTokens || 1500,
         temperature: 0.7,
         systemPrompt:
@@ -428,7 +428,7 @@ Please improve the content by:
 Return the enhanced version maintaining the same general structure.`;
 
       const enhancedContent = await this.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 2000,
         temperature: 0.7,
         systemPrompt:
@@ -479,7 +479,7 @@ Return ONLY valid JSON.`;
         'You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.',
         prompt,
         {
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           maxTokens: 1500,
           temperature: 0.7,
         }

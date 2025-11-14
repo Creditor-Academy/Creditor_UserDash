@@ -11,6 +11,25 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const isDevelopment = !!import.meta.env.DEV;
+
+const clientLogger = {
+  debug: (...args) => {
+    if (isDevelopment) {
+      console.debug(...args);
+    }
+  },
+  warn: (...args) => {
+    if (isDevelopment) {
+      console.warn(...args);
+    }
+  },
+  error: (...args) => {
+    if (isDevelopment) {
+      console.error(...args);
+    }
+  },
+};
 
 class SecureAIService {
   constructor() {
@@ -21,6 +40,11 @@ class SecureAIService {
       generateImage: '/api/ai-proxy/generate-image',
       generateCourseOutline: '/api/ai-proxy/generate-course-outline',
       status: '/api/ai-proxy/status',
+    };
+    this.statusCache = {
+      data: null,
+      timestamp: 0,
+      ttl: 60000, // Cache status for 1 minute
     };
   }
 
@@ -37,42 +61,207 @@ class SecureAIService {
 
   /**
    * Handle API errors with user-friendly messages
+   * @returns {Error} Formatted error with user-friendly message
    */
-  handleError(error, operation) {
-    console.error(`❌ ${operation} failed:`, error);
+  handleError(error, operation, response = null) {
+    clientLogger.error(`❌ ${operation} failed:`, {
+      error,
+      message: error.message,
+      response,
+      status: response?.status,
+      stack: error.stack,
+    });
 
-    if (error.response) {
-      const { status, data } = error.response;
+    // Handle fetch response errors
+    if (response && response.status) {
+      const status = response.status;
 
       switch (status) {
         case 401:
-          throw new Error(
+          return new Error(
             'Authentication required. Please login to use AI features.'
           );
+        case 403:
+          return new Error(
+            'Access forbidden. You may not have permission to use this AI feature.'
+          );
         case 429:
-          throw new Error(
+          return new Error(
             'Rate limit exceeded. Please wait before making more AI requests.'
           );
         case 402:
-          throw new Error(
+          return new Error(
             'Usage limit exceeded. Please upgrade your plan or wait for reset.'
           );
         case 500:
-          throw new Error(
+        case 502:
+        case 503:
+          return new Error(
             'AI service temporarily unavailable. Please try again later.'
           );
         default:
-          throw new Error(
-            data?.message || `Request failed with status ${status}`
+          return new Error(
+            `Request failed with status ${status}. ${error.message || ''}`
           );
       }
     }
 
-    if (error.code === 'NETWORK_ERROR') {
-      throw new Error('Network error. Please check your internet connection.');
+    // Check if error already has a response property
+    if (error.response && error.response.status) {
+      const status = error.response.status;
+      switch (status) {
+        case 401:
+          return new Error(
+            'Authentication required. Please login to use AI features.'
+          );
+        case 403:
+          return new Error(
+            'Access forbidden. You may not have permission to use this AI feature.'
+          );
+        case 429:
+          return new Error(
+            'Rate limit exceeded. Please wait before making more AI requests.'
+          );
+        case 402:
+          return new Error(
+            'Usage limit exceeded. Please upgrade your plan or wait for reset.'
+          );
+        case 500:
+        case 502:
+        case 503:
+          return new Error(
+            'AI service temporarily unavailable. Please try again later.'
+          );
+      }
     }
 
-    throw new Error(error.message || 'An unexpected error occurred.');
+    if (error.code === 'NETWORK_ERROR' || error.message?.includes('fetch')) {
+      return new Error('Network error. Please check your internet connection.');
+    }
+
+    // If error already has a good message, use it
+    if (error.message && !error.message.includes('fetch')) {
+      return error;
+    }
+
+    return new Error(error.message || 'An unexpected error occurred.');
+  }
+
+  /**
+   * Check backend status with caching
+   */
+  async checkBackendStatus(forceRefresh = false) {
+    const now = Date.now();
+
+    // Use cached status if still valid
+    if (
+      !forceRefresh &&
+      this.statusCache.data &&
+      now - this.statusCache.timestamp < this.statusCache.ttl
+    ) {
+      return this.statusCache.data;
+    }
+
+    try {
+      const status = await this.getStatus();
+      this.statusCache = {
+        data: status,
+        timestamp: now,
+        ttl: 60000, // 1 minute cache
+      };
+      return status;
+    } catch (error) {
+      clientLogger.warn('⚠️ Could not check backend status:', error.message);
+      return {
+        available: false,
+        openai: { available: false },
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Make API request with retry logic and exponential backoff
+   */
+  async makeRequestWithRetry(
+    endpoint,
+    options,
+    maxRetries = 3,
+    retryCount = 0
+  ) {
+    try {
+      const response = await fetch(`${this.apiBase}${endpoint}`, options);
+
+      // Handle HTTP errors
+      if (!response.ok) {
+        // Don't retry on client errors (4xx)
+        if (response.status >= 400 && response.status < 500) {
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch {
+            errorData = { message: `HTTP ${response.status}` };
+          }
+
+          const error = new Error(
+            errorData.message || `HTTP ${response.status}`
+          );
+          error.response = { status: response.status, data: errorData };
+          throw error;
+        }
+
+        // Retry on server errors (5xx) or network errors
+        if (
+          (response.status >= 500 || response.status === 0) &&
+          retryCount < maxRetries
+        ) {
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+          clientLogger.warn(
+            `⚠️ Request failed (${response.status}), retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequestWithRetry(
+            endpoint,
+            options,
+            maxRetries,
+            retryCount + 1
+          );
+        }
+
+        // Final failure
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}` };
+        }
+        const error = new Error(errorData.message || `HTTP ${response.status}`);
+        error.response = { status: response.status, data: errorData };
+        throw error;
+      }
+
+      return response;
+    } catch (error) {
+      // Network errors - retry
+      if (
+        (error.message?.includes('fetch') || error.code === 'NETWORK_ERROR') &&
+        retryCount < maxRetries
+      ) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        clientLogger.warn(
+          `⚠️ Network error, retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.makeRequestWithRetry(
+          endpoint,
+          options,
+          maxRetries,
+          retryCount + 1
+        );
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -84,17 +273,29 @@ class SecureAIService {
   async generateText(prompt, options = {}) {
     try {
       const {
-        model = 'gpt-3.5-turbo',
+        model = 'gpt-4o-mini',
         maxTokens = 1000,
         temperature = 0.7,
         systemPrompt = 'You are a helpful AI assistant for educational content creation.',
         enhancePrompt = false,
+        skipStatusCheck = false,
       } = options;
 
-      console.log(`🤖 Generating text via secure backend (${model})...`);
+      // Check backend availability before making request
+      if (!skipStatusCheck) {
+        const status = await this.checkBackendStatus();
+        if (!status.openai?.available) {
+          throw new Error(
+            status.error ||
+              'AI service is currently unavailable. Please try again later.'
+          );
+        }
+      }
 
-      const response = await fetch(
-        `${this.apiBase}${this.endpoints.generateText}`,
+      clientLogger.debug(`🤖 Generating text via secure backend (${model})...`);
+
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.generateText,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -115,13 +316,18 @@ class SecureAIService {
         throw new Error(result.message || 'Text generation failed');
       }
 
-      console.log(
-        `✅ Text generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
+      clientLogger.debug(
+        `✅ Text generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return result.data.text;
     } catch (error) {
-      this.handleError(error, 'Text generation');
+      const formattedError = this.handleError(
+        error,
+        'Text generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 
@@ -135,17 +341,29 @@ class SecureAIService {
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
       const {
-        model = 'gpt-3.5-turbo',
+        model = 'gpt-4o-mini',
         maxTokens = 2000,
         temperature = 0.7,
+        skipStatusCheck = false,
       } = options;
 
-      console.log(
+      // Check backend availability before making request
+      if (!skipStatusCheck) {
+        const status = await this.checkBackendStatus();
+        if (!status.openai?.available) {
+          throw new Error(
+            status.error ||
+              'AI service is currently unavailable. Please try again later.'
+          );
+        }
+      }
+
+      clientLogger.debug(
         `🤖 Generating structured JSON via secure backend (${model})...`
       );
 
-      const response = await fetch(
-        `${this.apiBase}${this.endpoints.generateStructured}`,
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.generateStructured,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -165,13 +383,18 @@ class SecureAIService {
         throw new Error(result.message || 'Structured generation failed');
       }
 
-      console.log(
-        `✅ Structured JSON generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
+      clientLogger.debug(
+        `✅ Structured JSON generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return result.data.jsonData;
     } catch (error) {
-      this.handleError(error, 'Structured generation');
+      const formattedError = this.handleError(
+        error,
+        'Structured generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 
@@ -190,12 +413,26 @@ class SecureAIService {
         style = 'vivid',
         enhancePrompt = false,
         uploadToS3 = true,
+        skipStatusCheck = false,
       } = options;
 
-      console.log(`🎨 Generating image via secure backend (${model})...`);
+      // Check backend availability before making request
+      if (!skipStatusCheck) {
+        const status = await this.checkBackendStatus();
+        if (!status.openai?.available) {
+          throw new Error(
+            status.error ||
+              'AI service is currently unavailable. Please try again later.'
+          );
+        }
+      }
 
-      const response = await fetch(
-        `${this.apiBase}${this.endpoints.generateImage}`,
+      clientLogger.debug(
+        `🎨 Generating image via secure backend (${model})...`
+      );
+
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.generateImage,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -217,8 +454,8 @@ class SecureAIService {
         throw new Error(result.message || 'Image generation failed');
       }
 
-      console.log(
-        `✅ Image generated and uploaded to S3 ($${result.data.cost?.finalCost?.toFixed(4) || 0})`
+      clientLogger.debug(
+        `✅ Image generated and uploaded to S3 ($${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return {
@@ -235,7 +472,12 @@ class SecureAIService {
         createdAt: result.data.createdAt,
       };
     } catch (error) {
-      this.handleError(error, 'Image generation');
+      const formattedError = this.handleError(
+        error,
+        'Image generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 
@@ -246,10 +488,19 @@ class SecureAIService {
    */
   async generateCourseOutline(courseData) {
     try {
-      console.log(`📋 Generating course outline via secure backend...`);
+      clientLogger.debug(`📋 Generating course outline via secure backend...`);
 
-      const response = await fetch(
-        `${this.apiBase}${this.endpoints.generateCourseOutline}`,
+      // Check backend availability
+      const status = await this.checkBackendStatus();
+      if (!status.openai?.available) {
+        throw new Error(
+          status.error ||
+            'AI service is currently unavailable. Please try again later.'
+        );
+      }
+
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.generateCourseOutline,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -273,19 +524,24 @@ class SecureAIService {
         throw new Error(result.message || 'Course outline generation failed');
       }
 
-      console.log(
-        `✅ Course outline generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
+      clientLogger.debug(
+        `✅ Course outline generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return {
         success: true,
         data: result.data.course,
         provider: 'backend',
-        tokensUsed: result.data.tokensUsed,
-        cost: result.data.cost,
+        tokensUsed: result.data?.tokensUsed || 0,
+        cost: result.data?.cost,
       };
     } catch (error) {
-      this.handleError(error, 'Course outline generation');
+      const formattedError = this.handleError(
+        error,
+        'Course outline generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 
@@ -296,10 +552,21 @@ class SecureAIService {
    */
   async generateComprehensiveCourse(courseData) {
     try {
-      console.log(`📚 Generating comprehensive course via secure backend...`);
+      clientLogger.debug(
+        `📚 Generating comprehensive course via secure backend...`
+      );
 
-      const response = await fetch(
-        `${this.apiBase}${this.endpoints.generateCourseOutline}`,
+      // Check backend availability
+      const status = await this.checkBackendStatus();
+      if (!status.openai?.available) {
+        throw new Error(
+          status.error ||
+            'AI service is currently unavailable. Please try again later.'
+        );
+      }
+
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.generateCourseOutline,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
@@ -325,19 +592,24 @@ class SecureAIService {
         );
       }
 
-      console.log(
-        `✅ Comprehensive course generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost?.toFixed(4) || 0})`
+      clientLogger.debug(
+        `✅ Comprehensive course generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return {
         success: true,
         data: result.data.course,
         provider: 'backend',
-        tokensUsed: result.data.tokensUsed,
-        cost: result.data.cost,
+        tokensUsed: result.data?.tokensUsed || 0,
+        cost: result.data?.cost,
       };
     } catch (error) {
-      this.handleError(error, 'Comprehensive course generation');
+      const formattedError = this.handleError(
+        error,
+        'Comprehensive course generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 
@@ -404,7 +676,7 @@ Generate comprehensive, engaging educational content that includes:
 Format the content in clear, structured paragraphs.`;
 
       const content = await this.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: options.maxTokens || 1500,
         temperature: 0.7,
         systemPrompt:
@@ -447,7 +719,7 @@ Please improve the content by:
 Return the enhanced version maintaining the same general structure.`;
 
       const enhancedContent = await this.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 2000,
         temperature: 0.7,
         systemPrompt:
@@ -499,7 +771,7 @@ Return ONLY valid JSON.`;
         'You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.',
         prompt,
         {
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           maxTokens: 1500,
           temperature: 0.7,
         }
@@ -508,7 +780,7 @@ Return ONLY valid JSON.`;
       // Ensure response is an array
       const questions = Array.isArray(response) ? response : [response];
 
-      console.log(`✅ Generated ${questions.length} quiz questions`);
+      clientLogger.debug(`✅ Generated ${questions.length} quiz questions`);
       return questions;
     } catch (error) {
       this.handleError(error, 'Quiz generation');
@@ -534,7 +806,7 @@ Return ONLY valid JSON.`;
 
       return result.data;
     } catch (error) {
-      console.error('❌ Failed to get AI status:', error);
+      clientLogger.error('❌ Failed to get AI status:', error);
       return {
         available: false,
         error: error.message,

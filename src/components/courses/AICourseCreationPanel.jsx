@@ -103,25 +103,15 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
 
     setIsEnhancingPrompt(true);
     try {
-      // Use the backend AI service to enhance the image prompt
-      const enhancedPrompt = await secureAIService.generateText(
-        `Enhance this AI image prompt for better DALL-E 3 image generation: "${aiImagePrompt}"
-        
-        Course context:
-        - Title: ${courseData.courseName || 'Not specified'}
-        - Target Audience: ${courseData.targetAudience || 'General learners'}
-        - Subject: ${courseData.targetAudience || 'Educational content'}
-        
-        Make it more detailed, visually descriptive, and suitable for creating professional course thumbnails. Include style, mood, and visual elements that would appeal to the target audience.`,
-        {
-          model: 'gpt-3.5-turbo',
-          maxTokens: 200,
-          temperature: 0.7,
-          systemPrompt:
-            'You are an expert at creating detailed image prompts for AI image generation. Enhance prompts to be more visually descriptive and effective for DALL-E 3.',
-          enhancePrompt: false, // Don't auto-enhance the enhancement request
-        }
-      );
+      // Call backend image prompt enhancement (already has proper system prompt)
+      const enhancedPrompt = await secureAIService.generateText(aiImagePrompt, {
+        model: 'gpt-4o-mini',
+        maxTokens: 100,
+        temperature: 0.5,
+        systemPrompt:
+          'You are a DALL-E prompt engineer. Output ONLY the prompt text. Maximum 300 characters. NO headings. Start directly with the description.',
+        enhancePrompt: true, // Use backend prompt enhancement
+      });
 
       setAiImagePrompt(enhancedPrompt);
       toast.success('Image prompt enhanced successfully!');
@@ -467,7 +457,14 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         }
       }
     } catch (error) {
-      setAiImageError('Failed to generate AI image: ' + error.message);
+      // Use improved error notification
+      const { showAIError } = await import('@/utils/aiErrorNotifications');
+      const errorInfo = showAIError(error, 'AI Image Generation', {
+        showToast: true,
+        logToConsole: true,
+        includeDetails: true,
+      });
+      setAiImageError(errorInfo.userMessage);
       console.error('AI thumbnail generation error details:', {
         message: error.message,
         stack: error.stack,

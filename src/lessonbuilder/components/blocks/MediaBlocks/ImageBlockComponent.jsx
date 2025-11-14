@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
+import devLogger from '@lessonbuilder/utils/devLogger';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import ImageEditor from './ImageEditor';
@@ -276,7 +277,7 @@ const ImageBlockComponent = forwardRef(
       setImageUploading(prev => ({ ...prev, [blockId]: true }));
 
       try {
-        console.log('Attempting to upload image to AWS S3:', {
+        devLogger.debug('Attempting to upload image to AWS S3:', {
           blockId,
           fileName: file.name,
           fileSize: file.size,
@@ -299,7 +300,7 @@ const ImageBlockComponent = forwardRef(
           // Clear any local URL flag
           handleImageBlockEdit(blockId, 'isUsingLocalUrl', false);
 
-          console.log('Image uploaded successfully to AWS S3:', {
+          devLogger.debug('Image uploaded successfully to AWS S3:', {
             blockId,
             awsUrl: uploadResult.imageUrl,
             uploadResult,
@@ -310,8 +311,8 @@ const ImageBlockComponent = forwardRef(
           throw new Error('Upload failed - no image URL returned');
         }
       } catch (error) {
-        console.error('Error uploading image to AWS S3:', error);
-        console.error('Upload error details:', {
+        devLogger.error('Error uploading image to AWS S3:', error);
+        devLogger.error('Upload error details:', {
           blockId,
           fileName: file.name,
           fileSize: file.size,
@@ -327,7 +328,7 @@ const ImageBlockComponent = forwardRef(
             error.message.includes('timeout') ||
             error.message.includes('fetch'))
         ) {
-          console.log(`Retrying upload (attempt ${retryCount + 1}/2)...`);
+          devLogger.debug(`Retrying upload (attempt ${retryCount + 1}/2)...`);
           setTimeout(
             () => {
               handleImageFileUpload(blockId, file, retryCount + 1);
@@ -347,7 +348,7 @@ const ImageBlockComponent = forwardRef(
         handleImageBlockEdit(blockId, 'imageFile', file);
         handleImageBlockEdit(blockId, 'isUsingLocalUrl', true);
 
-        console.warn('Using local blob URL as fallback:', localImageUrl);
+        devLogger.warn('Using local blob URL as fallback:', localImageUrl);
       } finally {
         // Clear loading state
         setImageUploading(prev => ({ ...prev, [blockId]: false }));
@@ -446,7 +447,7 @@ const ImageBlockComponent = forwardRef(
               block.uploadedImageData?.imageUrl
             ) {
               finalImageUrl = block.uploadedImageData.imageUrl;
-              console.log(
+              devLogger.debug(
                 'Using uploaded AWS URL instead of local blob URL:',
                 finalImageUrl
               );
@@ -473,7 +474,7 @@ const ImageBlockComponent = forwardRef(
             // Generate HTML content with the correct AWS URL
             const htmlContent = generateImageBlockHtml(updatedBlock);
 
-            console.log('Saving image block:', {
+            devLogger.debug('Saving image block:', {
               blockId,
               layout: block.layout,
               originalUrl: block.imageUrl,
@@ -485,7 +486,7 @@ const ImageBlockComponent = forwardRef(
 
             // Warn if still using local URL
             if (finalImageUrl.startsWith('blob:') || block.isUsingLocalUrl) {
-              console.warn(
+              devLogger.warn(
                 'WARNING: Image block is using local URL instead of AWS S3 URL'
               );
               toast.warning(
@@ -504,7 +505,7 @@ const ImageBlockComponent = forwardRef(
           return { ...block, isEditing: false };
         })
       );
-      console.log('Image template changes saved for block:', blockId);
+      devLogger.debug('Image template changes saved for block:', blockId);
     };
 
     const toggleImageBlockEditing = blockId => {
@@ -547,7 +548,7 @@ const ImageBlockComponent = forwardRef(
               throw new Error('Upload failed - no image URL returned');
             }
           } catch (error) {
-            console.error('Error uploading image:', error);
+            devLogger.error('Error uploading image:', error);
             toast.error(
               error.message || 'Failed to upload image. Please try again.'
             );

@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const PDFComponent = ({
   showPdfDialog,
@@ -146,7 +147,7 @@ const PDFComponent = ({
               throw new Error('Upload failed - no URL returned');
             }
           } catch (err) {
-            console.error('PDF upload error:', err);
+            devLogger.error('PDF upload error:', err);
             toast.error(
               err.message || 'Failed to upload PDF. Using local preview.'
             );
@@ -190,7 +191,7 @@ const PDFComponent = ({
       // Close dialog and reset
       handlePdfDialogClose();
     } catch (error) {
-      console.error('Error in handleAddPdf:', error);
+      devLogger.error('Error in handleAddPdf:', error);
       toast.error('Failed to add PDF. Please try again.');
     } finally {
       setMainPdfUploading(false);

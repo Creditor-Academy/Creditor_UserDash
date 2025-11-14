@@ -457,6 +457,9 @@ export async function createAIModulesAndLessons(courseId, outlines) {
               !lessonData.content &&
               !lessonData.summary
             ) {
+              console.log(
+                `📝 Generating lesson content from prompt for: "${lessonData.title}"`
+              );
               const { generateLessonFromPrompt } = await import(
                 './aiCourseService'
               );
@@ -471,13 +474,26 @@ export async function createAIModulesAndLessons(courseId, outlines) {
                   keyTakeaways: gen.data.keyTakeaways,
                   summary: gen.data.summary,
                 };
+                console.log(
+                  `✅ Lesson content generated successfully for: ${lessonData.title}`
+                );
+              } else {
+                console.warn(
+                  `⚠️ Lesson content generation returned no data for: ${lessonData.title}`,
+                  gen
+                );
               }
             }
           } catch (genErr) {
+            console.error('❌ Prompt-to-lesson generation failed:', {
+              lesson: lessonData.title,
+              error: genErr.message,
+              stack: genErr.stack,
+            });
             console.warn(
-              'Prompt-to-lesson generation skipped:',
-              genErr?.message || genErr
+              `⚠️ Skipping prompt-to-lesson generation for "${lessonData.title}": ${genErr.message}`
             );
+            // Continue without generated content - lesson creation can still succeed
           }
 
           // Generate AI-powered lesson description
@@ -509,26 +525,64 @@ export async function createAIModulesAndLessons(courseId, outlines) {
               lessonData.introduction || moduleData.title || ''
             );
             qaPairs = qaRes?.data?.qa || [];
+            if (qaPairs.length > 0) {
+              console.log(
+                `✅ Generated ${qaPairs.length} Q&A pairs for lesson: ${lessonData.title}`
+              );
+            }
           } catch (qaError) {
-            console.warn('QA generation skipped:', qaError?.message || qaError);
+            console.error('❌ QA generation failed:', {
+              lesson: lessonData.title,
+              error: qaError.message,
+              stack: qaError.stack,
+            });
+            console.warn(
+              `⚠️ Skipping Q&A generation for "${lessonData.title}": ${qaError.message}`
+            );
+            // Continue without Q&A pairs - lesson creation can still succeed
           }
 
           let illustrativeImage = null;
+          let imgPrompt = '';
           try {
             if (!lessonData.content?.multimedia?.image) {
               const { generateCourseImage } = await import('./aiCourseService');
-              const imgPrompt = `Educational illustration for lesson "${lessonData.title}"`;
+              imgPrompt = `Educational illustration for lesson "${lessonData.title}"`;
+              console.log(
+                `🎨 Generating image for lesson "${lessonData.title}" with prompt: "${imgPrompt}"`
+              );
               const imgRes = await generateCourseImage(imgPrompt, {
                 style: 'illustration',
                 size: '1024x1024',
               });
-              illustrativeImage = imgRes?.data?.url || null;
+              if (imgRes?.success && imgRes?.data?.url) {
+                illustrativeImage = imgRes.data.url;
+                console.log(
+                  `✅ Image generated successfully for lesson: ${lessonData.title}`
+                );
+              } else {
+                console.warn(
+                  `⚠️ Image generation returned no URL for lesson: ${lessonData.title}`,
+                  imgRes
+                );
+              }
+            } else {
+              illustrativeImage = lessonData.content.multimedia.image;
+              console.log(
+                `ℹ️ Using existing image for lesson: ${lessonData.title}`
+              );
             }
           } catch (imgError) {
+            console.error('❌ Image generation failed:', {
+              lesson: lessonData.title,
+              error: imgError.message,
+              stack: imgError.stack,
+              prompt: imgPrompt || 'N/A',
+            });
             console.warn(
-              'Image generation skipped:',
-              imgError?.message || imgError
+              `⚠️ Skipping image generation for "${lessonData.title}": ${imgError.message}`
             );
+            // Continue without image - lesson creation can still succeed
           }
 
           const lessonPayload = {

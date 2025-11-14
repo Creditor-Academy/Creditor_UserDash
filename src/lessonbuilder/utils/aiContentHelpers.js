@@ -3,7 +3,9 @@
  * Maps block types to their available templates and provides utility functions
  */
 
-import { textTypes } from '../constants/textTypesConfig';
+import { textTypes, gradientOptions } from '../constants/textTypesConfig';
+import { imageTemplates } from '../constants/imageTemplates';
+import devLogger from './devLogger';
 
 /**
  * Get available templates for a specific block type
@@ -233,14 +235,26 @@ export function formatAIContentForBlock(aiResponse, blockType) {
   };
 
   switch (blockType) {
-    case 'text':
+    case 'text': {
+      const textType =
+        aiResponse.textType ||
+        aiResponse.templateId ||
+        aiResponse.template ||
+        'paragraph';
+      const htmlContent = generateTextHTML(textType, aiResponse.content);
+
       return {
         ...baseBlock,
-        textType: aiResponse.textType,
+        textType,
         content: aiResponse.content,
         text: aiResponse.content,
-        html_css: `<p>${aiResponse.content}</p>`,
+        html_css: htmlContent,
+        metadata: {
+          ...(aiResponse.metadata || {}),
+          variant: textType,
+        },
       };
+    }
 
     case 'statement':
       return {
@@ -264,7 +278,7 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         ),
       };
 
-    case 'list':
+    case 'list': {
       const listContent = JSON.parse(aiResponse.content);
       return {
         ...baseBlock,
@@ -274,6 +288,7 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         items: listContent.items,
         html_css: generateListHTML(listContent),
       };
+    }
 
     case 'tables':
       return {
@@ -306,9 +321,205 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         ),
       };
 
+    case 'image': {
+      const templateId =
+        aiResponse.templateId || aiResponse.template || 'image-centered';
+      let imageContent = aiResponse.content;
+
+      if (typeof imageContent === 'string') {
+        try {
+          imageContent = JSON.parse(imageContent);
+        } catch (error) {
+          devLogger.warn('Failed to parse AI image content JSON:', error);
+          imageContent = {};
+        }
+      }
+
+      const {
+        imageUrl = imageContent?.imageUrl || imageContent?.url || '',
+        imageTitle = imageContent?.imageTitle || imageContent?.title || '',
+        imageDescription = imageContent?.imageDescription ||
+          imageContent?.description ||
+          imageContent?.caption ||
+          '',
+        captionText = imageContent?.captionText ||
+          imageContent?.caption ||
+          imageContent?.text ||
+          '',
+        alignment = imageContent?.alignment || 'center',
+      } = imageContent || {};
+
+      const template =
+        imageTemplates.find(t => t.id === templateId) ||
+        imageTemplates.find(t => t.id === 'image-centered');
+
+      const textHtml = captionText
+        ? `<p>${captionText}</p>`
+        : imageDescription
+          ? `<p>${imageDescription}</p>`
+          : '';
+
+      const block = {
+        ...baseBlock,
+        type: 'image',
+        title: imageTitle,
+        layout: template?.layout || 'centered',
+        templateType: templateId,
+        alignment,
+        imageUrl,
+        imageTitle,
+        imageDescription: imageDescription || captionText || '',
+        text: textHtml,
+        details: {
+          ...(aiResponse.details || {}),
+          image_url: imageUrl,
+          caption: captionText || imageDescription || '',
+          caption_html: textHtml,
+          alt_text: imageTitle,
+          layout: template?.layout || 'centered',
+          template: templateId,
+          alignment,
+        },
+      };
+
+      block.html_css = generateImageHTML(block);
+      return block;
+    }
+
     default:
       return baseBlock;
   }
+}
+
+function generateTextHTML(textType, content = '') {
+  const trimmed = typeof content === 'string' ? content.trim() : '';
+
+  switch (textType) {
+    case 'master_heading': {
+      const gradient =
+        gradientOptions?.[0]?.gradient ||
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+
+      return `<div class="rounded-xl p-6 text-white font-extrabold text-3xl leading-tight tracking-tight text-center" style="background:${gradient}">
+        ${trimmed}
+      </div>`;
+    }
+
+    case 'heading':
+      return `<h2 class="text-2xl font-bold text-gray-900 leading-tight">${trimmed}</h2>`;
+
+    case 'subheading':
+      return `<h3 class="text-xl font-semibold text-gray-800 leading-snug">${trimmed}</h3>`;
+
+    case 'heading_paragraph': {
+      const [headingLine, ...rest] = trimmed.split('\n').filter(Boolean);
+      const body = rest.join('\n').trim() || trimmed;
+
+      return `<div class="space-y-3">
+        <h2 class="text-2xl font-bold text-gray-900 leading-tight">${
+          headingLine || 'Heading'
+        }</h2>
+        <p class="text-base text-gray-700 leading-relaxed">${body}</p>
+      </div>`;
+    }
+
+    case 'subheading_paragraph': {
+      const [headingLine, ...rest] = trimmed.split('\n').filter(Boolean);
+      const body = rest.join('\n').trim() || trimmed;
+
+      return `<div class="space-y-3">
+        <h3 class="text-xl font-semibold text-gray-800 leading-snug">${
+          headingLine || 'Subheading'
+        }</h3>
+        <p class="text-base text-gray-700 leading-relaxed">${body}</p>
+      </div>`;
+    }
+
+    case 'paragraph':
+    default:
+      return `<p class="text-base text-gray-700 leading-relaxed">${trimmed}</p>`;
+  }
+}
+
+function generateImageHTML(block) {
+  const layout = block.layout || 'centered';
+  const textContent = (block.text || block.details?.caption_html || '').trim();
+  const fallbackText = block.imageDescription || block.details?.caption || '';
+  const renderedText =
+    textContent || (fallbackText ? `<p>${fallbackText}</p>` : '');
+  const imageUrl = block.imageUrl || block.details?.image_url || '';
+  const imageTitle = block.imageTitle || block.details?.alt_text || 'Image';
+  const alignment = block.alignment || block.details?.alignment || 'center';
+
+  if (!imageUrl) return '';
+
+  if (layout === 'side-by-side') {
+    const imageFirst = alignment !== 'right';
+    const imageOrder = imageFirst ? 'order-1' : 'order-2';
+    const textOrder = imageFirst ? 'order-2' : 'order-1';
+
+    return `
+      <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+        <div class="${imageOrder}">
+          <img src="${imageUrl}" alt="${imageTitle}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+        </div>
+        <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+          ${renderedText}
+        </div>
+      </div>
+    `;
+  }
+
+  if (layout === 'overlay') {
+    return `
+      <div class="relative rounded-xl overflow-hidden">
+        <img src="${imageUrl}" alt="${imageTitle}" class="w-full h-96 object-cover" />
+        ${
+          renderedText
+            ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end">
+                <div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+                  ${renderedText}
+                </div>
+              </div>`
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  if (layout === 'full-width') {
+    return `
+      <div class="space-y-3">
+        <img src="${imageUrl}" alt="${imageTitle}" class="w-full max-h-[28rem] object-contain rounded" />
+        ${
+          renderedText
+            ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+                ${renderedText}
+              </div>`
+            : ''
+        }
+      </div>
+    `;
+  }
+
+  let alignmentClass = 'text-center';
+  if (alignment === 'left') alignmentClass = 'text-left';
+  if (alignment === 'right') alignmentClass = 'text-right';
+
+  const mxAuto = alignment === 'center' ? 'mx-auto' : '';
+
+  return `
+    <div class="${alignmentClass}">
+      <img src="${imageUrl}" alt="${imageTitle}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${mxAuto}" />
+      ${
+        renderedText
+          ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+              ${renderedText}
+            </div>`
+          : ''
+      }
+    </div>
+  `;
 }
 
 /**

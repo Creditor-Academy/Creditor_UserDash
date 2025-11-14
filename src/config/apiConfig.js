@@ -28,7 +28,7 @@ const API_CONFIG = {
     baseURL: 'https://api.openai.com/v1',
     apiKey: '', // Not used - backend handles this
     models: {
-      text: 'gpt-3.5-turbo',
+      text: 'gpt-4o-mini',
       textAdvanced: 'gpt-4',
       image: 'dall-e-3',
     },

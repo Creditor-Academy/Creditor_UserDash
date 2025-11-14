@@ -82,6 +82,7 @@ import { getToolbarModules } from '@lessonbuilder/utils/quillConfig';
 import { textTypes } from '@lessonbuilder/constants/textTypesConfig';
 import { getPlainText } from '@lessonbuilder/utils/blockHelpers';
 import { buildLessonUpdatePayload } from '@lessonbuilder/utils/payloadUtils';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 // Initialize styles and global functions
 injectStyles();
@@ -451,23 +452,52 @@ function LessonBuilder() {
   };
 
   // Handle AI content generation
-  const handleAIGenerate = async ({ userPrompt, instructions, templateId }) => {
+  const handleAIGenerate = async ({
+    userPrompt,
+    instructions,
+    templateId,
+    generatedContent,
+  }) => {
     try {
-      console.log('🎯 Generating AI content for', currentAIBlockType.id);
+      devLogger.debug('🎯 Generating AI content for', currentAIBlockType.id);
 
       // Get course context
       const courseContext = getCourseContext(lessonData, lessonContent);
 
-      // Generate content using AI service
-      const aiResponse = await contentBlockAIService.generateContentBlock({
-        blockType: currentAIBlockType.id,
-        templateId,
-        userPrompt,
-        instructions,
-        courseContext,
-      });
+      let aiResponse = generatedContent?.rawData || generatedContent || null;
 
-      console.log('✅ AI generated:', aiResponse);
+      if (aiResponse && currentAIBlockType.id === 'image') {
+        const templateKey =
+          aiResponse.templateId || aiResponse.template || templateId;
+        const imageContent =
+          typeof aiResponse.content === 'string'
+            ? aiResponse.content
+            : JSON.stringify(aiResponse.content || {});
+        aiResponse = {
+          type: 'image',
+          templateId: templateKey,
+          content: imageContent,
+        };
+      }
+
+      if (!aiResponse) {
+        // Generate content using AI service if preview payload is not available
+        aiResponse = await contentBlockAIService.generateContentBlock({
+          blockType: currentAIBlockType.id,
+          templateId,
+          userPrompt,
+          instructions,
+          courseContext,
+        });
+      } else if (
+        templateId &&
+        !aiResponse.templateId &&
+        currentAIBlockType.id !== 'image'
+      ) {
+        aiResponse.templateId = templateId;
+      }
+
+      devLogger.debug('✅ AI generated:', aiResponse);
 
       // Format the AI response to match block structure
       const newBlock = formatAIContentForBlock(
@@ -486,9 +516,9 @@ function LessonBuilder() {
       }
 
       setHasUnsavedChanges(true);
-      console.log('✅ Block added to lesson');
+      devLogger.debug('✅ Block added to lesson');
     } catch (error) {
-      console.error('AI generation error:', error);
+      devLogger.error('AI generation error:', error);
       throw error; // Re-throw to be handled by dialog
     }
   };
@@ -524,7 +554,7 @@ function LessonBuilder() {
           { duration: 6000 }
         );
       } else if (payloadSize > 5 * 1024 * 1024) {
-        console.warn(
+        devLogger.warn(
           '⚠️ Large payload detected:',
           payloadSizeMB,
           'MB - May need higher backend limits'
@@ -555,7 +585,7 @@ function LessonBuilder() {
       try {
         responseData = await response.json();
       } catch (jsonError) {
-        console.warn('Response body was not JSON:', jsonError);
+        devLogger.warn('Response body was not JSON:', jsonError);
       }
 
       if (!response.ok) {
@@ -586,7 +616,7 @@ function LessonBuilder() {
         throw new Error(errorMessage);
       }
 
-      console.debug('Lesson content updated', {
+      devLogger.debug('Lesson content updated', {
         lessonId,
         payloadSizeMB,
         blocksCount,
@@ -605,8 +635,8 @@ function LessonBuilder() {
         setAutoSaveStatus('saved');
       }, 2000);
     } catch (error) {
-      console.error('Error updating lesson:', error);
-      console.error('Error details:', {
+      devLogger.error('Error updating lesson:', error);
+      devLogger.error('Error details:', {
         message: error.message,
         response: error.response,
         request: error.request,
@@ -618,12 +648,15 @@ function LessonBuilder() {
       if (error.message === 'PAYLOAD_TOO_LARGE') {
         errorMessage =
           '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit (typically in server configuration: app.use(express.json({ limit: "50mb" }))).';
-        console.error('PAYLOAD TOO LARGE - Backend configuration needed');
+        devLogger.error('PAYLOAD TOO LARGE - Backend configuration needed');
       } else if (error.response) {
         const status = error.response.status;
         const responseData = error.response.data;
 
-        console.log('Server error response:', { status, data: responseData });
+        devLogger.debug('Server error response:', {
+          status,
+          data: responseData,
+        });
 
         const isHtmlError =
           typeof responseData === 'string' &&
@@ -636,14 +669,14 @@ function LessonBuilder() {
           ) {
             errorMessage =
               '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit.';
-            console.error('413 Payload Too Large - HTML error page received');
+            devLogger.error('413 Payload Too Large - HTML error page received');
           } else {
             errorMessage = 'Server error. Please try again later.';
           }
         } else if (status === 413) {
           errorMessage =
             '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator.';
-          console.log('Setting 413 error message:', errorMessage);
+          devLogger.debug('Setting 413 error message:', errorMessage);
         } else if (status === 400) {
           errorMessage =
             'Invalid content format. Please check your content and try again.';
@@ -663,16 +696,16 @@ function LessonBuilder() {
           errorMessage = `HTTP ${status}: ${error.response.statusText || 'Request failed'}`;
         }
       } else if (error.request) {
-        console.log('Network error - no response received:', error.request);
+        devLogger.debug('Network error - no response received:', error.request);
         errorMessage =
           'Network error. Please check your connection and try again.';
       } else if (error.message) {
-        console.log('Other error:', error.message);
+        devLogger.debug('Other error:', error.message);
         errorMessage = error.message;
       }
 
-      console.error('Final error message:', errorMessage);
-      console.log('Setting auto-save status to error and showing toast');
+      devLogger.error('Final error message:', errorMessage);
+      devLogger.debug('Setting auto-save status to error and showing toast');
       toast.error(errorMessage);
       setAutoSaveStatus('error');
     } finally {
@@ -1169,7 +1202,7 @@ function LessonBuilder() {
                           ? lessonContent.data.content
                           : contentBlocks;
 
-                      console.log('Rendering blocks from single source:', {
+                      devLogger.debug('Rendering blocks from single source:', {
                         source:
                           lessonContent?.data?.content?.length > 0
                             ? 'lessonContent'
@@ -1424,14 +1457,17 @@ function LessonBuilder() {
                                       block.details?.description ||
                                       '';
 
-                                    console.log('Video block edit rendering:', {
-                                      blockId: block.id,
-                                      videoUrl,
-                                      videoTitle,
-                                      videoDescription,
-                                      blockDetails: block.details,
-                                      hasUrl: !!videoUrl,
-                                    });
+                                    devLogger.debug(
+                                      'Video block edit rendering:',
+                                      {
+                                        blockId: block.id,
+                                        videoUrl,
+                                        videoTitle,
+                                        videoDescription,
+                                        blockDetails: block.details,
+                                        hasUrl: !!videoUrl,
+                                      }
+                                    );
 
                                     // Check if we have a valid video URL
                                     if (videoUrl && videoUrl.trim()) {
@@ -1496,7 +1532,7 @@ function LessonBuilder() {
                                       );
                                     } else {
                                       // Fallback: Use html_css if video URL not found
-                                      console.log(
+                                      devLogger.debug(
                                         'No URL in video block, falling back to html_css'
                                       );
                                       if (
@@ -1548,7 +1584,7 @@ function LessonBuilder() {
                                       const audioContent = JSON.parse(
                                         block.content || '{}'
                                       );
-                                      console.log(
+                                      devLogger.debug(
                                         'Audio block edit rendering:',
                                         {
                                           blockId: block.id,
@@ -1618,7 +1654,7 @@ function LessonBuilder() {
                                         );
                                       } else {
                                         // Fallback: Use html_css if JSON doesn't have URL
-                                        console.log(
+                                        devLogger.debug(
                                           'No URL in audio content, falling back to html_css'
                                         );
                                         if (
@@ -1648,7 +1684,7 @@ function LessonBuilder() {
                                         }
                                       }
                                     } catch (e) {
-                                      console.error(
+                                      devLogger.error(
                                         'Error parsing audio content in edit mode:',
                                         e
                                       );
@@ -1701,7 +1737,7 @@ function LessonBuilder() {
                                       const youTubeContent = JSON.parse(
                                         block.content || '{}'
                                       );
-                                      console.log(
+                                      devLogger.debug(
                                         'YouTube block edit rendering:',
                                         {
                                           blockId: block.id,
@@ -1772,7 +1808,7 @@ function LessonBuilder() {
                                         );
                                       }
                                     } catch (e) {
-                                      console.error(
+                                      devLogger.error(
                                         'Error parsing YouTube content in edit mode:',
                                         e
                                       );
@@ -1915,7 +1951,7 @@ function LessonBuilder() {
                                           'checkbox-container'
                                         ));
 
-                                    console.log('List block debug:', {
+                                    devLogger.debug('List block debug:', {
                                       blockId: block.id,
                                       listType: block.listType,
                                       details: block.details,
@@ -1927,7 +1963,7 @@ function LessonBuilder() {
                                     });
 
                                     if (isCheckboxList && block.html_css) {
-                                      console.log(
+                                      devLogger.debug(
                                         'Using InteractiveListRenderer for block:',
                                         block.id
                                       );
@@ -2009,7 +2045,7 @@ function LessonBuilder() {
                               {block.type === 'image' &&
                                 (() => {
                                   // Debug logging for image blocks
-                                  console.log('🖼️ Image block detected:', {
+                                  devLogger.debug('🖼️ Image block detected:', {
                                     id: block.id || block.block_id,
                                     hasImageUrl: !!block.imageUrl,
                                     imageUrl: block.imageUrl,

@@ -18,10 +18,9 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import {
-  generateLessonContent,
-  enhanceLessonContent,
-} from '@/services/openAIService';
+import openAIService from '@/services/openAIService';
+import { showAIError, showAISuccess } from '@/utils/aiErrorNotifications';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const AILessonContentGenerator = ({
   isOpen,
@@ -42,7 +41,7 @@ const AILessonContentGenerator = ({
   const generateAIContent = async () => {
     setIsGenerating(true);
     try {
-      console.log('🎯 Starting AI lesson content generation...');
+      devLogger.debug('🎯 Starting AI lesson content generation...');
 
       const lessonTitle = lessonData?.title || 'Untitled Lesson';
       const moduleTitle = moduleData?.title || 'Module';
@@ -56,18 +55,23 @@ const AILessonContentGenerator = ({
         options: generationOptions,
       });
 
-      console.log('✅ Generated blocks:', generatedBlocks);
+      devLogger.debug('✅ Generated blocks:', generatedBlocks);
 
       // Pass generated content back to parent
       onContentGenerated(generatedBlocks);
 
-      toast.success(
-        `Generated ${generatedBlocks.length} content blocks successfully!`
+      showAISuccess(
+        `Generated ${generatedBlocks.length} content blocks successfully!`,
+        'AI Lesson Content Generation'
       );
       onClose();
     } catch (error) {
-      console.error('❌ AI generation failed:', error);
-      toast.error('Failed to generate AI content. Please try again.');
+      devLogger.error('❌ AI generation failed:', error);
+      showAIError(error, 'AI Lesson Content Generation', {
+        showToast: true,
+        logToConsole: true,
+        includeDetails: true,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -84,40 +88,59 @@ const AILessonContentGenerator = ({
 
     try {
       // 1. Generate Introduction
-      console.log('📝 Generating introduction...');
+      devLogger.debug('📝 Generating introduction...');
       const introPrompt = `Create an engaging introduction for the lesson "${lessonTitle}" in the module "${moduleTitle}" of the course "${courseTitle}". The introduction should hook the reader and set clear expectations for what they will learn.`;
 
-      const introContent = await generateLessonContent({
-        topic: introPrompt,
-        level: 'intermediate',
-        duration: 5,
+      // Use generateText instead of generateLessonContent for prompts
+      const introContent = await openAIService.generateText(introPrompt, {
+        maxTokens: 300,
+        temperature: 0.7,
+        systemPrompt:
+          'You are an expert educational content creator. Create clear, engaging, and informative lesson content.',
       });
 
       blocks.push({
         id: `ai-intro-${Date.now()}`,
         type: 'text',
         content:
-          introContent?.data?.content?.[0]?.content ||
+          (typeof introContent === 'string'
+            ? introContent
+            : introContent?.data?.content?.[0]?.content) ||
           `Welcome to ${lessonTitle}! In this lesson, you'll explore key concepts and gain practical knowledge that will enhance your understanding of ${moduleTitle}.`,
         order: blockOrder++,
         isAIGenerated: true,
       });
 
       // 2. Generate Learning Objectives
-      console.log('🎯 Generating learning objectives...');
-      const objectivesPrompt = `Create 4-6 clear, specific learning objectives for the lesson "${lessonTitle}". Each objective should start with an action verb and be measurable.`;
+      devLogger.debug('🎯 Generating learning objectives...');
+      const objectivesPrompt = `Create 4-6 clear, specific learning objectives for the lesson "${lessonTitle}". Each objective should start with an action verb and be measurable. Return only a bulleted list, one objective per line.`;
 
-      const objectivesContent = await generateLessonContent({
-        topic: objectivesPrompt,
-        level: 'intermediate',
-        duration: 5,
-      });
+      const objectivesContent = await openAIService.generateText(
+        objectivesPrompt,
+        {
+          maxTokens: 200,
+          temperature: 0.7,
+          systemPrompt:
+            'You are an expert educational content creator. Create clear, measurable learning objectives.',
+        }
+      );
 
-      const objectives = objectivesContent?.data?.content?.[0]?.content
-        ? objectivesContent.data.content[0].content
+      const objectivesText =
+        typeof objectivesContent === 'string'
+          ? objectivesContent
+          : objectivesContent?.data?.content?.[0]?.content || '';
+
+      const objectives = objectivesText
+        ? objectivesText
             .split('\n')
             .filter(line => line.trim())
-            .map(obj => obj.replace(/^\d+\.?\s*/, '').replace(/^[-•]\s*/, ''))
+            .map(obj =>
+              obj
+                .replace(/^\d+\.?\s*/, '')
+                .replace(/^[-•]\s*/, '')
+                .trim()
+            )
+            .filter(obj => obj.length > 0)
         : [
             `Understand the core concepts of ${lessonTitle}`,
             `Apply key principles in practical scenarios`,
@@ -136,16 +159,20 @@ const AILessonContentGenerator = ({
 
       // 3. Generate Main Content Sections
       if (options.contentType === 'comprehensive') {
-        console.log('📚 Generating main content sections...');
+        devLogger.debug('📚 Generating main content sections...');
 
         // Section 1: Key Concepts
         const conceptsPrompt = `Explain the key concepts and fundamental principles of "${lessonTitle}". Provide clear definitions and explanations that are easy to understand.`;
 
-        const conceptsContent = await generateLessonContent({
-          topic: conceptsPrompt,
-          level: 'intermediate',
-          duration: 10,
-        });
+        const conceptsContent = await openAIService.generateText(
+          conceptsPrompt,
+          {
+            maxTokens: 500,
+            temperature: 0.7,
+            systemPrompt:
+              'You are an expert educational content creator. Create clear, engaging, and informative lesson content.',
+          }
+        );
 
         blocks.push({
           id: `ai-concepts-${Date.now()}`,
@@ -160,7 +187,9 @@ const AILessonContentGenerator = ({
           id: `ai-concepts-text-${Date.now()}`,
           type: 'text',
           content:
-            conceptsContent?.data?.content?.[0]?.content ||
+            (typeof conceptsContent === 'string'
+              ? conceptsContent
+              : conceptsContent?.data?.content?.[0]?.content) ||
             `This section covers the fundamental concepts of ${lessonTitle}. Understanding these principles is essential for mastering the subject matter and applying it effectively in real-world scenarios.`,
           order: blockOrder++,
           isAIGenerated: true,
@@ -168,15 +197,19 @@ const AILessonContentGenerator = ({
 
         // Section 2: Practical Applications
         if (options.includeExamples) {
-          console.log('💡 Generating practical examples...');
+          devLogger.debug('💡 Generating practical examples...');
 
           const examplesPrompt = `Provide 3-4 practical examples or real-world applications of "${lessonTitle}". Make them relevant and easy to understand.`;
 
-          const examplesContent = await generateLessonContent({
-            topic: examplesPrompt,
-            level: 'intermediate',
-            duration: 8,
-          });
+          const examplesContent = await openAIService.generateText(
+            examplesPrompt,
+            {
+              maxTokens: 400,
+              temperature: 0.7,
+              systemPrompt:
+                'You are an expert educational content creator. Provide clear, practical examples.',
+            }
+          );
 
           blocks.push({
             id: `ai-examples-heading-${Date.now()}`,
@@ -191,7 +224,9 @@ const AILessonContentGenerator = ({
             id: `ai-examples-${Date.now()}`,
             type: 'text',
             content:
-              examplesContent?.data?.content?.[0]?.content ||
+              (typeof examplesContent === 'string'
+                ? examplesContent
+                : examplesContent?.data?.content?.[0]?.content) ||
               `Here are some practical applications of ${lessonTitle} that demonstrate its real-world relevance and importance in various contexts.`,
             order: blockOrder++,
             isAIGenerated: true,
@@ -199,23 +234,36 @@ const AILessonContentGenerator = ({
         }
 
         // Section 3: Best Practices
-        console.log('⭐ Generating best practices...');
+        devLogger.debug('⭐ Generating best practices...');
 
-        const practicesPrompt = `List 5-7 best practices or important tips related to "${lessonTitle}". Format as a clear, actionable list.`;
+        const practicesPrompt = `List 5-7 best practices or important tips related to "${lessonTitle}". Format as a clear, actionable list. Return only a bulleted list, one tip per line.`;
 
-        const practicesContent = await generateLessonContent({
-          topic: practicesPrompt,
-          level: 'intermediate',
-          duration: 7,
-        });
+        const practicesContent = await openAIService.generateText(
+          practicesPrompt,
+          {
+            maxTokens: 300,
+            temperature: 0.7,
+            systemPrompt:
+              'You are an expert educational content creator. Create clear, actionable best practices.',
+          }
+        );
 
-        const practices = practicesContent?.data?.content?.[0]?.content
-          ? practicesContent.data.content[0].content
+        const practicesText =
+          typeof practicesContent === 'string'
+            ? practicesContent
+            : practicesContent?.data?.content?.[0]?.content || '';
+
+        const practices = practicesText
+          ? practicesText
               .split('\n')
               .filter(line => line.trim())
               .map(practice =>
-                practice.replace(/^\d+\.?\s*/, '').replace(/^[-•]\s*/, '')
+                practice
+                  .replace(/^\d+\.?\s*/, '')
+                  .replace(/^[-•]\s*/, '')
+                  .trim()
               )
+              .filter(practice => practice.length > 0)
           : [
               `Always start with a clear understanding of the fundamentals`,
               `Practice regularly to reinforce your learning`,
@@ -245,21 +293,34 @@ const AILessonContentGenerator = ({
 
       // 4. Generate Assessment Questions
       if (options.includeAssessments) {
-        console.log('❓ Generating assessment questions...');
+        devLogger.debug('❓ Generating assessment questions...');
 
-        const questionsPrompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking.`;
+        const questionsPrompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking. Return only the questions, one per line.`;
 
-        const questionsContent = await generateLessonContent({
-          topic: questionsPrompt,
-          level: 'intermediate',
-          duration: 6,
-        });
+        const questionsContent = await openAIService.generateText(
+          questionsPrompt,
+          {
+            maxTokens: 300,
+            temperature: 0.7,
+            systemPrompt:
+              'You are an expert educational content creator. Create engaging, thought-provoking questions.',
+          }
+        );
 
-        const questions = questionsContent?.data?.content?.[0]?.content
-          ? questionsContent.data.content[0].content
+        const questionsText =
+          typeof questionsContent === 'string'
+            ? questionsContent
+            : questionsContent?.data?.content?.[0]?.content || '';
+
+        const questions = questionsText
+          ? questionsText
               .split('\n')
-              .filter(line => line.trim() && line.includes('?'))
-              .map(q => q.replace(/^\d+\.?\s*/, ''))
+              .filter(
+                line =>
+                  line.trim() && (line.includes('?') || line.trim().length > 10)
+              )
+              .map(q => q.replace(/^\d+\.?\s*/, '').trim())
+              .filter(q => q.length > 0)
           : [
               `What are the main benefits of applying ${lessonTitle} in practice?`,
               `How does ${lessonTitle} relate to other concepts in ${moduleTitle}?`,
@@ -287,14 +348,15 @@ const AILessonContentGenerator = ({
       }
 
       // 5. Generate Summary
-      console.log('📋 Generating summary...');
+      devLogger.debug('📋 Generating summary...');
 
       const summaryPrompt = `Create a concise summary of the key takeaways from the lesson "${lessonTitle}". Include the most important points students should remember.`;
 
-      const summaryContent = await generateLessonContent({
-        topic: summaryPrompt,
-        level: 'intermediate',
-        duration: 5,
+      const summaryContent = await openAIService.generateText(summaryPrompt, {
+        maxTokens: 250,
+        temperature: 0.7,
+        systemPrompt:
+          'You are an expert educational content creator. Create clear, concise summaries.',
       });
 
       blocks.push({
@@ -310,7 +372,9 @@ const AILessonContentGenerator = ({
         id: `ai-summary-${Date.now()}`,
         type: 'text',
         content:
-          summaryContent?.data?.content?.[0]?.content ||
+          (typeof summaryContent === 'string'
+            ? summaryContent
+            : summaryContent?.data?.content?.[0]?.content) ||
           `In this lesson on ${lessonTitle}, we've covered the essential concepts, practical applications, and best practices. Remember to apply these insights in your own work and continue exploring the subject further.`,
         order: blockOrder++,
         isAIGenerated: true,
@@ -330,7 +394,7 @@ const AILessonContentGenerator = ({
 
       return blocks;
     } catch (error) {
-      console.error('Error generating lesson blocks:', error);
+      devLogger.error('Error generating lesson blocks:', error);
       // Return fallback content
       return [
         {
