@@ -207,13 +207,35 @@ class BackendAIService {
 
       console.log(`✅ Image generated ($${result.data.cost?.finalCost || 0})`);
 
-      return {
-        success: true,
+      const imageData = {
         url: result.data.imageUrl,
+        originalUrl: result.data.originalUrl,
         model: result.data.model,
         size: result.data.size,
         quality: result.data.quality,
+        style: result.data.style,
+        uploadedToS3: result.data.uploadedToS3,
         provider: 'backend',
+        createdAt: result.data.createdAt,
+      };
+
+      if (!imageData.url && imageData.originalUrl) {
+        imageData.url = imageData.originalUrl;
+        imageData.uploadedToS3 = false;
+      }
+
+      return {
+        success: true,
+        data: imageData,
+        url: imageData.url,
+        originalUrl: imageData.originalUrl,
+        model: imageData.model,
+        size: imageData.size,
+        quality: imageData.quality,
+        style: imageData.style,
+        provider: imageData.provider,
+        createdAt: imageData.createdAt,
+        uploadedToS3: imageData.uploadedToS3,
         cost: result.data.cost,
       };
     } catch (error) {
@@ -221,7 +243,34 @@ class BackendAIService {
         '⚠️ Backend unavailable, falling back to direct OpenAI for image generation...'
       );
       try {
-        return await directOpenAIService.generateImage(prompt, options);
+        const fallbackResult = await directOpenAIService.generateImage(
+          prompt,
+          options
+        );
+
+        if (
+          fallbackResult &&
+          fallbackResult.success &&
+          !fallbackResult.data &&
+          fallbackResult.url
+        ) {
+          return {
+            ...fallbackResult,
+            data: {
+              url: fallbackResult.url,
+              originalUrl: fallbackResult.originalUrl,
+              model: fallbackResult.model,
+              size: fallbackResult.size,
+              quality: fallbackResult.quality,
+              style: fallbackResult.style,
+              uploadedToS3: false,
+              provider: fallbackResult.provider || 'openai',
+              createdAt: fallbackResult.createdAt || new Date().toISOString(),
+            },
+          };
+        }
+
+        return fallbackResult;
       } catch (fallbackError) {
         console.error(
           '❌ Both backend and direct OpenAI failed for image generation:',
@@ -340,18 +389,41 @@ class BackendAIService {
         style: options.style || 'vivid',
       });
 
+      const imageData = result.data || {
+        url: result.url,
+        originalUrl: result.originalUrl,
+        model: result.model,
+        size: result.size,
+        quality: result.quality,
+        style: result.style,
+        provider: result.provider,
+        uploadedToS3: result.uploadedToS3,
+      };
+
       return {
         success: true,
         data: {
-          url: result.url,
-          model: result.model,
-          size: result.size,
-          provider: 'backend',
+          url: imageData.url,
+          originalUrl: imageData.originalUrl,
+          model: imageData.model,
+          size: imageData.size,
+          quality: imageData.quality,
+          style: imageData.style,
+          provider: imageData.provider || 'backend',
+          uploadedToS3: imageData.uploadedToS3,
         },
+        url: imageData.url,
+        originalUrl: imageData.originalUrl,
+        uploadedToS3: imageData.uploadedToS3,
         cost: result.cost,
       };
     } catch (error) {
-      this.handleError(error, 'Course image generation');
+      const formattedError = this.handleError(
+        error,
+        'Course image generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 

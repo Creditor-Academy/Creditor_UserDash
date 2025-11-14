@@ -75,6 +75,16 @@ class SecureAIService {
     // Handle fetch response errors
     if (response && response.status) {
       const status = response.status;
+      const backendMessage =
+        response.data?.message ||
+        response.data?.error ||
+        response.data?.details?.message;
+
+      if (response.data?.error?.code === 'content_policy_violation') {
+        return new Error(
+          'OpenAI rejected the image prompt due to safety filters. Please adjust the wording and try again.'
+        );
+      }
 
       switch (status) {
         case 401:
@@ -97,11 +107,13 @@ class SecureAIService {
         case 502:
         case 503:
           return new Error(
-            'AI service temporarily unavailable. Please try again later.'
+            backendMessage ||
+              'AI service temporarily unavailable. Please try again later.'
           );
         default:
           return new Error(
-            `Request failed with status ${status}. ${error.message || ''}`
+            backendMessage ||
+              `Request failed with status ${status}. ${error.message || ''}`
           );
       }
     }
@@ -109,6 +121,17 @@ class SecureAIService {
     // Check if error already has a response property
     if (error.response && error.response.status) {
       const status = error.response.status;
+      const backendMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        error.response.data?.details?.message;
+
+      if (error.response.data?.error?.code === 'content_policy_violation') {
+        return new Error(
+          'OpenAI rejected the image prompt due to safety filters. Please adjust the wording and try again.'
+        );
+      }
+
       switch (status) {
         case 401:
           return new Error(
@@ -130,7 +153,13 @@ class SecureAIService {
         case 502:
         case 503:
           return new Error(
-            'AI service temporarily unavailable. Please try again later.'
+            backendMessage ||
+              'AI service temporarily unavailable. Please try again later.'
+          );
+        default:
+          return new Error(
+            backendMessage ||
+              `Request failed with status ${status}. ${error.message || ''}`
           );
       }
     }
@@ -458,18 +487,37 @@ class SecureAIService {
         `✅ Image generated and uploaded to S3 ($${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
-      return {
-        success: true,
-        url: result.data.imageUrl, // S3 URL (permanent)
-        originalUrl: result.data.originalUrl, // OpenAI URL (temporary)
+      const imageData = {
+        url: result.data.imageUrl,
+        originalUrl: result.data.originalUrl,
         model: result.data.model,
         size: result.data.size,
         quality: result.data.quality,
         style: result.data.style,
         uploadedToS3: result.data.uploadedToS3,
         provider: 'backend',
-        cost: result.data.cost,
         createdAt: result.data.createdAt,
+      };
+
+      // Fallback: if S3 URL missing, reuse original OpenAI URL
+      if (!imageData.url && imageData.originalUrl) {
+        imageData.url = imageData.originalUrl;
+        imageData.uploadedToS3 = false;
+      }
+
+      return {
+        success: true,
+        data: imageData,
+        url: imageData.url,
+        originalUrl: imageData.originalUrl,
+        model: imageData.model,
+        size: imageData.size,
+        quality: imageData.quality,
+        style: imageData.style,
+        provider: imageData.provider,
+        createdAt: imageData.createdAt,
+        uploadedToS3: imageData.uploadedToS3,
+        cost: result.data.cost,
       };
     } catch (error) {
       const formattedError = this.handleError(
@@ -630,18 +678,41 @@ class SecureAIService {
         uploadToS3: true,
       });
 
+      const imageData = result.data || {
+        url: result.url,
+        originalUrl: result.originalUrl,
+        model: result.model,
+        size: result.size,
+        quality: result.quality,
+        style: result.style,
+        provider: result.provider,
+        uploadedToS3: result.uploadedToS3,
+      };
+
       return {
         success: true,
         data: {
-          url: result.url,
-          model: result.model,
-          size: result.size,
-          provider: 'backend',
+          url: imageData.url,
+          originalUrl: imageData.originalUrl,
+          model: imageData.model,
+          size: imageData.size,
+          quality: imageData.quality,
+          style: imageData.style,
+          provider: imageData.provider || 'backend',
+          uploadedToS3: imageData.uploadedToS3,
         },
+        url: imageData.url,
+        originalUrl: imageData.originalUrl,
+        uploadedToS3: imageData.uploadedToS3,
         cost: result.cost,
       };
     } catch (error) {
-      this.handleError(error, 'Course image generation');
+      const formattedError = this.handleError(
+        error,
+        'Course image generation',
+        error.response
+      );
+      throw formattedError;
     }
   }
 

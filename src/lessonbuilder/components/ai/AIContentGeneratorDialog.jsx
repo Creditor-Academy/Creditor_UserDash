@@ -233,7 +233,7 @@ const AIContentGeneratorDialog = ({
           imageResult?.imageTitle ||
           `AI Generated: ${userPrompt.substring(0, 50)}...`;
 
-        if (imageResult.success && imageUrl) {
+        if (imageResult?.success && imageUrl) {
           generatedContent = {
             type: 'image',
             template: selectedTemplate,
@@ -256,7 +256,12 @@ const AIContentGeneratorDialog = ({
             }),
           };
         } else {
-          throw new Error('Failed to generate image');
+          devLogger.error('Image generation failed:', imageResult);
+          const errorMessage =
+            imageResult?.error ||
+            imageResult?.message ||
+            'Failed to generate image';
+          throw new Error(errorMessage);
         }
       } else {
         // Generate other content types using content block AI service
