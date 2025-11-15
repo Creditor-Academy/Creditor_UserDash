@@ -98,15 +98,52 @@ const InstructorCourseModulesPage = () => {
 
   const handleModuleSaved = async moduleData => {
     try {
+      let savedModule;
       if (moduleDialogMode === 'edit' && editModuleData) {
-        await updateModule(courseId, editModuleData.id, moduleData);
+        savedModule = await updateModule(
+          courseId,
+          editModuleData.id,
+          moduleData
+        );
       } else {
-        await createModule(courseId, moduleData);
+        savedModule = await createModule(courseId, moduleData);
       }
-      const updated = await fetchCourseModules(courseId);
-      setModules(updated || []);
+
+      const normalizedModule = savedModule?.data ?? savedModule;
+      const normalizedId =
+        normalizedModule?.id ??
+        normalizedModule?.module_id ??
+        editModuleData?.id;
+
+      setModules(prevModules => {
+        if (!Array.isArray(prevModules))
+          return normalizedModule ? [normalizedModule] : [];
+
+        if (moduleDialogMode === 'edit' && normalizedId) {
+          return prevModules.map(module =>
+            (module?.id ?? module?.module_id) === normalizedId
+              ? { ...module, ...normalizedModule }
+              : module
+          );
+        }
+
+        return normalizedModule
+          ? [...prevModules, normalizedModule]
+          : prevModules;
+      });
+
       setShowCreateModuleDialog(false);
     } catch (err) {
+      console.error(
+        'Failed to save module locally, falling back to refetch:',
+        err
+      );
+      try {
+        const refreshed = await fetchCourseModules(courseId);
+        setModules(Array.isArray(refreshed) ? refreshed : []);
+      } catch (fallbackErr) {
+        console.error('Fallback fetch after save failed:', fallbackErr);
+      }
       alert('Failed to save module: ' + err.message);
     }
   };
