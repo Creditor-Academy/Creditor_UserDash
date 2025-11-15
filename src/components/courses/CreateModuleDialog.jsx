@@ -1,105 +1,117 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createModule } from "@/services/courseService";
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { createModule } from '@/services/courseService';
 
-export function CreateModuleDialog({ 
-  isOpen, 
-  onClose, 
-  courseId, 
+export function CreateModuleDialog({
+  isOpen,
+  onClose,
+  courseId,
   onModuleCreated,
   existingModules = [],
   initialData = null,
-  mode = "create",
-  onSave
+  mode = 'create',
+  onSave,
 }) {
+  const defaultCategory = 'BOOK_SMART';
   const [form, setForm] = useState({
-    title: "",
-    description: "",
+    title: '',
+    description: '',
     order: 1,
     estimated_duration: 60,
-    module_status: "DRAFT",
-    thumbnail: "",
-    price: 0
+    module_status: 'DRAFT',
+    thumbnail: '',
+    price: 0,
+    category: defaultCategory,
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (initialData && mode === "edit") {
+    if (initialData && mode === 'edit') {
       setForm({
-        title: initialData.title || "",
-        description: initialData.description || "",
+        title: initialData.title || '',
+        description: initialData.description || '',
         order: initialData.order || 1,
         estimated_duration: initialData.estimated_duration || 60,
-        module_status: initialData.module_status || "DRAFT",
-        thumbnail: initialData.thumbnail || "",
-        price: initialData.price || 0
+        module_status: initialData.module_status || 'DRAFT',
+        thumbnail: initialData.thumbnail || '',
+        price: initialData.price || 0,
+        category: initialData.category || defaultCategory,
       });
-    } else if (mode === "create") {
+    } else if (mode === 'create') {
       setForm({
-        title: "",
-        description: "",
+        title: '',
+        description: '',
         order: existingModules.length + 1,
         estimated_duration: 60,
-        module_status: "DRAFT",
-        thumbnail: "",
-        price: 0
+        module_status: 'DRAFT',
+        thumbnail: '',
+        price: 0,
+        category: defaultCategory,
       });
     }
   }, [initialData, mode, existingModules.length, isOpen]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value, type } = e.target;
     setForm(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value) || 0 : value
+      [name]: type === 'number' ? parseInt(value) || 0 : value,
     }));
   };
 
   const handleSelectChange = (name, value) => {
     setForm(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
       if (!form.title.trim()) {
-        setError("Module title is required");
+        setError('Module title is required');
         setLoading(false);
         return;
       }
       const moduleData = {
         title: form.title.trim(),
-        description: form.description.trim() || "test description",
-        order: parseInt(form.order) || (existingModules.length + 1),
+        description: form.description.trim() || 'test description',
+        order: parseInt(form.order) || existingModules.length + 1,
         estimated_duration: parseInt(form.estimated_duration) || 60,
-        module_status: form.module_status || "DRAFT",
-        thumbnail: form.thumbnail.trim() || "test thumbnail",
-        price: parseInt(form.price) || 0
+        module_status: form.module_status || 'DRAFT',
+        thumbnail: form.thumbnail.trim() || 'test thumbnail',
+        price: parseInt(form.price) || 0,
+        category: form.category || defaultCategory,
       };
       await onSave(moduleData);
       setForm({
-        title: "",
-        description: "",
+        title: '',
+        description: '',
         order: existingModules.length + 2,
         estimated_duration: 60,
-        module_status: "DRAFT",
-        thumbnail: "",
-        price: 0
+        module_status: 'DRAFT',
+        thumbnail: '',
+        price: 0,
+        category: defaultCategory,
       });
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to save module");
+      setError(err.message || 'Failed to save module');
     } finally {
       setLoading(false);
     }
@@ -107,15 +119,16 @@ export function CreateModuleDialog({
 
   const handleClose = () => {
     setForm({
-      title: "",
-      description: "",
+      title: '',
+      description: '',
       order: existingModules.length + 1,
       estimated_duration: 60,
-      module_status: "DRAFT",
-      thumbnail: "",
-      price: 0
+      module_status: 'DRAFT',
+      thumbnail: '',
+      price: 0,
+      category: defaultCategory,
     });
-    setError("");
+    setError('');
     onClose();
   };
 
@@ -131,7 +144,9 @@ export function CreateModuleDialog({
         >
           &times;
         </button>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">{mode === "edit" ? "Edit Module" : "Create New Module"}</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          {mode === 'edit' ? 'Edit Module' : 'Create New Module'}
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title">Module Title*</Label>
@@ -198,13 +213,17 @@ export function CreateModuleDialog({
               min="0"
               className="mt-1"
             />
-            <p className="text-sm text-gray-500 mt-1">Number of credits required to unlock this module</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Number of credits required to unlock this module
+            </p>
           </div>
           <div>
             <Label htmlFor="module_status">Module Status</Label>
             <Select
               value={form.module_status}
-              onValueChange={(value) => handleSelectChange("module_status", value)}
+              onValueChange={value =>
+                handleSelectChange('module_status', value)
+              }
             >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select status" />
@@ -213,6 +232,21 @@ export function CreateModuleDialog({
                 <SelectItem value="DRAFT">Draft</SelectItem>
                 <SelectItem value="PUBLISHED">Published</SelectItem>
                 <SelectItem value="ARCHIVED">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={form.category}
+              onValueChange={value => handleSelectChange('category', value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BOOK_SMART">Book Smart</SelectItem>
+                <SelectItem value="STREET_SMART">Street Smart</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -242,16 +276,18 @@ export function CreateModuleDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex-1"
-            >
-              {loading ? (mode === "edit" ? "Saving..." : "Creating...") : (mode === "edit" ? "Save Changes" : "Create Module")}
+            <Button type="submit" disabled={loading} className="flex-1">
+              {loading
+                ? mode === 'edit'
+                  ? 'Saving...'
+                  : 'Creating...'
+                : mode === 'edit'
+                  ? 'Save Changes'
+                  : 'Create Module'}
             </Button>
           </div>
         </form>
       </div>
     </div>
   );
-} 
+}

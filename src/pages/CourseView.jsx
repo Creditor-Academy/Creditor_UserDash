@@ -138,6 +138,9 @@ export function CourseView() {
   const [selectedModuleForSequential, setSelectedModuleForSequential] =
     useState(null);
 
+  // View mode state for Book Smart / Street Smart
+  const [viewMode, setViewMode] = useState('book');
+
   // Initialize unlocked modules from backend for this user
   useEffect(() => {
     const initUnlocked = async () => {
@@ -926,6 +929,110 @@ export function CourseView() {
             </div>
           </div>
 
+          {/* Book Smart availability notice */}
+          <div className="mb-6">
+            <div className="rounded-2xl border border-blue-100 bg-white shadow-sm px-5 py-4 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h4 className="text-base font-semibold text-gray-900">
+                    Book Smart modules are coming soon
+                  </h4>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    Coming Soon
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  We are finalizing the guided Book Smart lessons to ensure you
+                  get the most comprehensive learning experience. Please check
+                  back shortly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Street Smart UI Section */}
+          <div className="space-y-3 mb-8">
+            {/* Street Smart Section */}
+            <div
+              className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-pointer select-none ${
+                viewMode === 'street'
+                  ? 'bg-purple-100 border-purple-300 shadow-lg'
+                  : 'bg-purple-50 border-purple-200 hover:shadow-md'
+              }`}
+              onClick={() => setViewMode('street')}
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="p-4 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg">
+                      <Play className="h-7 w-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          Street Smart
+                        </h3>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
+                            viewMode === 'street'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              viewMode === 'street'
+                                ? 'bg-purple-500'
+                                : 'bg-gray-400'
+                            }`}
+                          ></span>
+                          Recorded
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-4">
+                        Recorded lessons for this course
+                      </p>
+
+                      <div className="flex items-center gap-8">
+                        <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                          <BookOpen className="w-4 h-4 text-purple-600" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            {filteredModules.length} modules
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                          <Clock className="w-4 h-4 text-purple-600" />
+                          <span className="text-sm font-semibold text-gray-700">
+                            {Math.round(
+                              (filteredModules.reduce(
+                                (total, module) =>
+                                  total +
+                                  (parseInt(module.estimated_duration) || 60),
+                                0
+                              ) /
+                                60) *
+                                10
+                            ) / 10}{' '}
+                            hr
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`h-5 w-5 text-gray-400 mt-1 transition-transform ${
+                      viewMode === 'street' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Course modules grid */}
           {filteredModules.length === 0 ? (
             <div className="text-center py-12">
@@ -1007,34 +1114,6 @@ export function CourseView() {
                             {module.description}
                           </p>
                         </CardHeader>
-                        <CardContent className="space-y-3 px-0 pt-0 pb-0">
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <BookOpen size={14} />
-                              <span>
-                                {(() => {
-                                  const title = (
-                                    module.title ||
-                                    module.name ||
-                                    ''
-                                  ).toLowerCase();
-                                  const isIntroModule =
-                                    title.includes('why you must exit') &&
-                                    (title.includes('llc') ||
-                                      title.includes('corporation')) &&
-                                    title.includes('structure');
-                                  return isIntroModule
-                                    ? 'Intro Module'
-                                    : `Order: ${module.order || 'N/A'}`;
-                                })()}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock size={14} />
-                              <span>{module.estimated_duration || 0} min</span>
-                            </div>
-                          </div>
-                        </CardContent>
                       </div>
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
@@ -1061,7 +1140,7 @@ export function CourseView() {
                                 </Button>
                               </Link>
                               {/* Mark as Complete button */}
-                              {!completedModuleIds.has(String(module.id)) ? (
+                              {/* {!completedModuleIds.has(String(module.id)) ? (
                                 <Button
                                   variant="secondary"
                                   className="w-full disabled:opacity-60"
@@ -1109,7 +1188,7 @@ export function CourseView() {
                                 <div className="w-full flex items-center justify-center">
                                   <Badge className="px-3 py-1">Completed</Badge>
                                 </div>
-                              )}
+                              )} */}
                             </>
                           ) : !modulesWithLessons.has(String(module.id)) ? (
                             <Button
