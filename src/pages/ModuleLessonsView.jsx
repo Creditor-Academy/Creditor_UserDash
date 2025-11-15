@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import {
   X,
   Upload,
   Link,
+  ExternalLink,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -102,6 +103,14 @@ const ModuleLessonsView = () => {
   const [scormLesson, setScormLesson] = useState(null);
   const [scormUrl, setScormUrl] = useState('');
   const [isAddingScorm, setIsAddingScorm] = useState(false);
+  const [scormFile, setScormFile] = useState(null);
+  const [isUploadingScorm, setIsUploadingScorm] = useState(false);
+  const [existingScormUrl, setExistingScormUrl] = useState('');
+  const [isFetchingScorm, setIsFetchingScorm] = useState(false);
+  const [isDeletingScorm, setIsDeletingScorm] = useState(false);
+  const [scormUploadProgress, setScormUploadProgress] = useState(0);
+  const [scormServerProgress, setScormServerProgress] = useState(null);
+  const scormProgressIntervalRef = useRef(null);
 
   // Lesson content state
   const [lessonContent, setLessonContent] = useState(null);
@@ -118,6 +127,12 @@ const ModuleLessonsView = () => {
   useEffect(() => {
     fetchModuleLessons();
   }, [courseId, moduleId]);
+
+  useEffect(() => {
+    return () => {
+      stopScormProgressPolling(true);
+    };
+  }, []);
 
   const fetchModuleLessons = async () => {
     try {
@@ -488,10 +503,344 @@ const ModuleLessonsView = () => {
     setShowCreateDialog(true);
   };
 
+  const fetchLessonScormDetails = async lessonId => {
+    if (!lessonId) return;
+
+    try {
+      setIsFetchingScorm(true);
+
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await axios.get(
+        `${apiBaseUrl}/api/lessoncontent/${lessonId}`,
+        {
+          withCredentials: true,
+          headers: {
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      const data = response.data?.data || response.data;
+      const lessonData = data?.lesson || data;
+      const fetchedScormUrl =
+        data?.scorm_url ||
+        data?.scormUrl ||
+        lessonData?.scorm_url ||
+        lessonData?.scormUrl ||
+        '';
+
+      setExistingScormUrl(fetchedScormUrl);
+      setScormUrl(prev => prev || fetchedScormUrl || '');
+
+      if (fetchedScormUrl) {
+        setLessons(prev =>
+          prev.map(lesson =>
+            lesson.id === lessonId
+              ? { ...lesson, scormUrl: fetchedScormUrl }
+              : lesson
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching SCORM details:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load existing SCORM details.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsFetchingScorm(false);
+    }
+  };
+
+  const stopScormProgressPolling = (reset = false) => {
+    if (scormProgressIntervalRef.current) {
+      clearInterval(scormProgressIntervalRef.current);
+      scormProgressIntervalRef.current = null;
+    }
+    if (reset) {
+      setScormServerProgress(null);
+    }
+  };
+
+  const startScormProgressPolling = lessonId => {
+    if (!lessonId) return;
+
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+    const poll = async () => {
+      try {
+        const response = await axios.get(
+          `${apiBaseUrl}/api/scorm/progress/${lessonId}`,
+          {
+            withCredentials: true,
+            headers: {
+              ...getAuthHeader(),
+            },
+          }
+        );
+
+        const payload = response.data?.data || response.data || {};
+        const totalFiles =
+          payload.totalFiles ??
+          payload.total ??
+          payload.total_files ??
+          payload.totalfiles ??
+          null;
+        const uploadedCount =
+          payload.uploadedCount ??
+          payload.uploaded ??
+          payload.uploaded_files ??
+          payload.uploadedcount ??
+          null;
+
+        let percent = payload.percent;
+        if (
+          (percent === undefined || percent === null) &&
+          totalFiles &&
+          totalFiles > 0
+        ) {
+          percent = Math.round(((uploadedCount || 0) / totalFiles) * 100);
+        }
+        if (percent === undefined || percent === null) {
+          percent = 0;
+        }
+        percent = Math.max(0, Math.min(100, percent));
+
+        setScormServerProgress({
+          percent,
+          uploadedCount,
+          totalFiles,
+          status: payload.status || 'processing',
+        });
+
+        if (percent >= 100 || payload.status === 'completed') {
+          stopScormProgressPolling(false);
+        }
+      } catch (error) {
+        if (error.response?.status === 404) {
+          setScormServerProgress(null);
+          return;
+        }
+        console.error('Error fetching SCORM progress:', error);
+      }
+    };
+
+    stopScormProgressPolling(false);
+    poll();
+    scormProgressIntervalRef.current = setInterval(poll, 1500);
+  };
+
   const handleOpenScormDialog = lesson => {
+    stopScormProgressPolling(true);
+    setScormUploadProgress(0);
     setScormLesson(lesson);
     setScormUrl(lesson?.scormUrl || '');
+    setScormFile(null);
+    setExistingScormUrl(lesson?.scormUrl || '');
     setShowAddScormDialog(true);
+    fetchLessonScormDetails(lesson?.id);
+  };
+
+  const handleCloseScormDialog = () => {
+    setShowAddScormDialog(false);
+    setScormLesson(null);
+    setScormUrl('');
+    setScormFile(null);
+    setExistingScormUrl('');
+    setIsFetchingScorm(false);
+    setScormUploadProgress(0);
+    setScormServerProgress(null);
+    stopScormProgressPolling(true);
+  };
+
+  const handleScormFileChange = event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 1024 * 1024 * 1200; // 1200MB
+    if (file.size > maxSize) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select a SCORM package under 1200MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'SCORM packages must be provided as .zip files.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setScormFile(file);
+  };
+
+  const handleUploadScormFile = async () => {
+    if (!scormLesson) {
+      toast({
+        title: 'Select a Lesson',
+        description: 'Choose a lesson before uploading a SCORM package.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (existingScormUrl) {
+      toast({
+        title: 'Remove Existing SCORM',
+        description:
+          'Delete the currently attached SCORM package before uploading a new one.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!scormFile) {
+      toast({
+        title: 'Select a File',
+        description: 'Choose a SCORM package before uploading.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsUploadingScorm(true);
+      setScormUploadProgress(0);
+      setScormServerProgress(null);
+      startScormProgressPolling(scormLesson.id);
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      const formData = new FormData();
+      formData.append('scorm', scormFile);
+      formData.append('lesson_id', scormLesson.id);
+
+      const response = await axios.post(
+        `${apiBaseUrl}/api/scorm/upload`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: progressEvent => {
+            if (!progressEvent.total) return;
+            const percent = Math.round(
+              (progressEvent.loaded / progressEvent.total) * 100
+            );
+            setScormUploadProgress(percent);
+          },
+        }
+      );
+
+      const uploadedUrl =
+        response.data?.data?.scorm_url ||
+        response.data?.data?.url ||
+        response.data?.scorm_url ||
+        response.data?.url;
+
+      if (!uploadedUrl) {
+        throw new Error('Upload succeeded but no SCORM URL was returned.');
+      }
+
+      setScormUrl(uploadedUrl);
+      setExistingScormUrl(uploadedUrl);
+      setLessons(prev =>
+        prev.map(lesson =>
+          lesson.id === scormLesson.id
+            ? { ...lesson, scormUrl: uploadedUrl }
+            : lesson
+        )
+      );
+      setScormUploadProgress(100);
+      toast({
+        title: 'Upload Successful',
+        description: 'SCORM package uploaded and linked to this lesson.',
+      });
+      setTimeout(() => setScormServerProgress(null), 1500);
+    } catch (error) {
+      console.error('Error uploading SCORM package:', error);
+      let errorMessage = 'Failed to upload SCORM package. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setScormServerProgress(null);
+      toast({
+        title: 'Upload Failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingScorm(false);
+      setTimeout(() => setScormUploadProgress(0), 600);
+      stopScormProgressPolling(false);
+    }
+  };
+
+  const handleDeleteExistingScorm = async () => {
+    if (!scormLesson) return;
+
+    try {
+      setIsDeletingScorm(true);
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      await axios.post(
+        `${apiBaseUrl}/api/lessoncontent/add-scorm-url/${scormLesson.id}`,
+        {
+          lesson_id: scormLesson.id,
+          scorm_url: null,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      setExistingScormUrl('');
+      setScormUrl('');
+      setLessons(prev =>
+        prev.map(lesson =>
+          lesson.id === scormLesson.id ? { ...lesson, scormUrl: null } : lesson
+        )
+      );
+
+      toast({
+        title: 'Deleted',
+        description: 'Existing SCORM package removed.',
+      });
+    } catch (error) {
+      console.error('Error deleting SCORM package:', error);
+      let errorMessage = 'Failed to delete SCORM package. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingScorm(false);
+    }
   };
 
   const handleAddScorm = async () => {
@@ -539,9 +888,8 @@ const ModuleLessonsView = () => {
         description: 'SCORM package added successfully.',
       });
 
-      setShowAddScormDialog(false);
-      setScormLesson(null);
-      setScormUrl('');
+      setExistingScormUrl(payload.scorm_url);
+      handleCloseScormDialog();
     } catch (error) {
       console.error('Error adding SCORM package:', error);
       let errorMessage = 'Failed to add SCORM package. Please try again.';
@@ -1299,7 +1647,10 @@ const ModuleLessonsView = () => {
       </Dialog>
 
       {/* Add SCORM Dialog */}
-      <Dialog open={showAddScormDialog} onOpenChange={setShowAddScormDialog}>
+      <Dialog
+        open={showAddScormDialog}
+        onOpenChange={open => !open && handleCloseScormDialog()}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
@@ -1313,6 +1664,135 @@ const ModuleLessonsView = () => {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            {isFetchingScorm && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading existing SCORM details...</span>
+              </div>
+            )}
+
+            {existingScormUrl && !isFetchingScorm && (
+              <div className="space-y-2">
+                <Label>Existing SCORM Package</Label>
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-3">
+                  <p className="text-sm text-gray-700 break-all">
+                    {existingScormUrl}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        window.open(
+                          existingScormUrl,
+                          '_blank',
+                          'noopener,noreferrer'
+                        )
+                      }
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteExistingScorm}
+                      disabled={isDeletingScorm}
+                    >
+                      {isDeletingScorm ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        'Delete Existing'
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Delete the current SCORM package before uploading a
+                    replacement.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="scorm-file">Upload SCORM Package *</Label>
+              <Input
+                id="scorm-file"
+                type="file"
+                accept=".zip"
+                onChange={handleScormFileChange}
+                disabled={isUploadingScorm || !!existingScormUrl}
+              />
+              {scormFile && (
+                <p className="text-xs text-gray-600">
+                  Selected file: {scormFile.name}
+                </p>
+              )}
+              {(isUploadingScorm || scormServerProgress) && (
+                <div className="space-y-2 rounded-md border border-blue-100 bg-blue-50/70 p-3">
+                  <div className="flex items-center justify-between text-xs text-blue-700 font-medium">
+                    <span>
+                      {scormServerProgress
+                        ? 'Processing SCORM package'
+                        : 'Uploading to server'}
+                    </span>
+                    <span>
+                      {scormServerProgress
+                        ? `${scormServerProgress.percent}%`
+                        : `${scormUploadProgress}%`}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-600 transition-all duration-200"
+                      style={{
+                        width: `${
+                          scormServerProgress
+                            ? scormServerProgress.percent
+                            : scormUploadProgress
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  {scormServerProgress && (
+                    <p className="text-xs text-blue-700">
+                      {(
+                        scormServerProgress.uploadedCount ?? 0
+                      ).toLocaleString()}
+                      {scormServerProgress.totalFiles
+                        ? ` / ${scormServerProgress.totalFiles.toLocaleString()} files`
+                        : ''}{' '}
+                      uploaded
+                    </p>
+                  )}
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleUploadScormFile}
+                disabled={isUploadingScorm || !scormFile || !!existingScormUrl}
+              >
+                {isUploadingScorm ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload SCORM'
+                )}
+              </Button>
+              <p className="text-xs text-gray-500">
+                Upload a ZIP file (max 1200MB). After the upload completes, the
+                SCORM URL field below will be filled automatically.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="scorm-url">SCORM URL *</Label>
               <Input
@@ -1329,11 +1809,7 @@ const ModuleLessonsView = () => {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowAddScormDialog(false);
-                setScormLesson(null);
-                setScormUrl('');
-              }}
+              onClick={handleCloseScormDialog}
               disabled={isAddingScorm}
             >
               Cancel
