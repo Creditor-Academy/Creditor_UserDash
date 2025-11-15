@@ -15,6 +15,134 @@ import { getUnlockedModulesByUser } from '../services/modulesService';
 import { fetchUserUnlockedCatalogs, fetchCatalogCourses } from '../services/catalogService';
 import api from '../services/apiClient';
 
+const MOCK_HIERARCHY = [
+  {
+    id: "catalog-operate",
+    name: "Operate Private Collection",
+    description: "In-depth playbooks for asset protection, private business ops, and trust workflows.",
+    heroImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600",
+    tag: "Premium Bundle",
+    courses: [
+      {
+        id: "course-operate",
+        title: "Operate Private",
+        description: "Hands-on course to help you lawfully conduct business and protect assets.",
+        thumbnail: "https://images.unsplash.com/photo-1554224154-22dec7ec8818?q=80&w=1200",
+        modules: [
+          {
+            id: "module-operate-foundations",
+            title: "Structuring Foundations",
+            description: "Lay the groundwork with entity selection and compliant filings.",
+            duration: "35 min",
+            lessons: [
+              { id: "lesson-operate-101", title: "Welcome & Orientation", duration: "07:30" },
+              { id: "lesson-operate-entities", title: "Setting Up Entities", duration: "18:40" },
+              { id: "lesson-operate-compliance", title: "Maintaining Compliance", duration: "09:15" },
+            ],
+          },
+          {
+            id: "module-operate-advanced",
+            title: "Advanced Trust Workflows",
+            description: "Learn how to orchestrate layered trusts and custodians.",
+            duration: "48 min",
+            lessons: [
+              { id: "lesson-advanced-overview", title: "Trust Archetypes" },
+              { id: "lesson-advanced-funding", title: "Funding Strategies" },
+              { id: "lesson-advanced-maintenance", title: "Maintenance Rituals" },
+            ],
+          },
+          {
+            id: "module-operate-defense",
+            title: "Defense Playbook",
+            description: "Respond rapidly to audits, disputes, and account freezes.",
+            duration: "29 min",
+            lessons: [
+              { id: "lesson-defense-audit", title: "Audit Prep" },
+              { id: "lesson-defense-litigate", title: "Litigation Shield" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "course-business-trust",
+        title: "Business Trust",
+        description: "Create and operate business trusts with clarity.",
+        thumbnail: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?q=80&w=1200",
+        modules: [
+          {
+            id: "module-business-setup",
+            title: "Forming the Trust",
+            description: "Documentation, filings, and trustees.",
+            duration: "24 min",
+            lessons: [
+              { id: "lesson-business-overview", title: "Overview" },
+              { id: "lesson-business-filers", title: "Filers & Roles" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "course-growth",
+        title: "Free Financial Growth Consultation",
+        description: "Roadmap to smarter money management.",
+        thumbnail: "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200",
+        modules: [
+          {
+            id: "module-growth-basics",
+            title: "Mindset Basics",
+            description: "Set the vision for generational wealth.",
+            duration: "18 min",
+            lessons: [
+              { id: "lesson-growth-intro", title: "Mindset Reset" },
+              { id: "lesson-growth-plan", title: "Planning Canvas" },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "catalog-credit",
+    name: "Credit Mastery Catalog",
+    description: "Everything you need to master personal and business credit instruments.",
+    heroImage: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1600",
+    tag: "Coming Soon",
+    courses: [
+      {
+        id: "course-credit",
+        title: "Credit Masterclass",
+        description: "Rebuild, repair, and leverage credit.",
+        thumbnail: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=1200",
+        modules: [],
+      },
+    ],
+  },
+];
+
+const MOCK_PURCHASED_LESSON_ID = "lesson-operate-entities";
+
+const computeUnlockState = (purchasedLessonId, hierarchy) => {
+  if (!purchasedLessonId || !Array.isArray(hierarchy)) return null;
+
+  for (const catalog of hierarchy) {
+    for (const course of catalog?.courses || []) {
+      for (const module of course?.modules || []) {
+        const lessonMatch = (module?.lessons || []).find((lesson) => lesson.id === purchasedLessonId);
+        if (lessonMatch) {
+          return {
+            catalogId: catalog.id,
+            courseId: course.id,
+            moduleId: module.id,
+            lessonId: lessonMatch.id,
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
 export function Courses() {
   const { userProfile } = useUser();
   const [courses, setCourses] = useState([]);
@@ -45,6 +173,23 @@ export function Courses() {
   const [completeModulesCache, setCompleteModulesCache] = useState({});
   // Track modules currently loading for Start Module
   const [loadingStartModuleIds, setLoadingStartModuleIds] = useState(new Set());
+  const demoUnlockState = useMemo(
+    () => computeUnlockState(MOCK_PURCHASED_LESSON_ID, MOCK_HIERARCHY),
+    []
+  );
+  const demoVisibleCatalogs = useMemo(
+    () =>
+      demoUnlockState
+        ? MOCK_HIERARCHY.filter((catalog) => catalog.id === demoUnlockState.catalogId)
+        : [],
+    [demoUnlockState]
+  );
+  const demoCatalog = demoVisibleCatalogs[0];
+  const demoCourses = demoCatalog?.courses || [];
+  const demoCourse = demoCourses.find((course) => course.id === demoUnlockState?.courseId);
+  const demoModules = demoCourse?.modules || [];
+  const demoModule = demoModules.find((module) => module.id === demoUnlockState?.moduleId);
+  const demoLessons = demoModule?.lessons || [];
 
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
@@ -855,6 +1000,202 @@ export function Courses() {
               </Button> */}
             </div>
           </div>
+
+          {demoUnlockState && (
+            <section className="mb-10">
+              <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50 to-blue-100/30 p-6 sm:p-8 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Demo mode</p>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Single-lesson unlock preview</h2>
+                    <p className="text-sm text-gray-600">
+                      Full hierarchy stays visible while only the purchased path can expand.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-inner">
+                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    Lesson ID: {demoUnlockState.lessonId}
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-6">
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <span>Level 1 · Catalog</span>
+                      <span className="text-gray-400 normal-case">Only the catalog that owns the purchased lesson is visible.</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {demoVisibleCatalogs.map((catalog) => (
+                        <div
+                          key={catalog.id}
+                          className="relative rounded-2xl border border-blue-200 bg-white/90 p-5 shadow-sm"
+                        >
+                          <div className="flex flex-col gap-3">
+                            {catalog.tag && (
+                              <div>
+                                <Badge className="bg-blue-600/10 text-blue-700">{catalog.tag}</Badge>
+                              </div>
+                            )}
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{catalog.name}</h3>
+                              <p className="mt-1 text-sm text-muted-foreground line-clamp-3">{catalog.description}</p>
+                            </div>
+                            <div className="rounded-2xl border border-dashed border-blue-100 bg-blue-50/50 p-4">
+                              <p className="text-xs font-semibold uppercase text-blue-600">Includes</p>
+                              <p className="text-sm text-gray-700">{catalog.courses.length} courses</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <span>Level 2 · Courses</span>
+                      {demoCatalog && (
+                        <span className="text-gray-400 normal-case">Inside {demoCatalog.name}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                      {demoCourses.map((course) => {
+                        const locked = course.id !== demoUnlockState.courseId;
+                        return (
+                          <div
+                            key={course.id}
+                            className={`relative rounded-2xl border p-5 transition-all ${
+                              locked
+                                ? 'border-dashed border-gray-200 bg-white/70 text-gray-500'
+                                : 'border-blue-200 bg-white shadow-md shadow-blue-100/70'
+                            }`}
+                            aria-disabled={locked}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                                <img
+                                  src={
+                                    course.thumbnail ||
+                                    "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200"
+                                  }
+                                  alt={course.title}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div>
+                                <h4 className="text-base font-semibold">{course.title}</h4>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{course.description}</p>
+                              </div>
+                            </div>
+                            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                              <Layers className="h-4 w-4" />
+                              <span>{course.modules.length} modules</span>
+                            </div>
+                            {locked && (
+                              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/85 backdrop-blur-sm text-gray-600">
+                                <Lock className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-semibold">Locked</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <span>Level 3 · Modules</span>
+                      {demoCourse && (
+                        <span className="text-gray-400 normal-case">Inside {demoCourse.title}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      {demoModules.map((module) => {
+                        const locked = module.id !== demoUnlockState.moduleId;
+                        return (
+                          <div
+                            key={module.id}
+                            className={`relative rounded-2xl border p-5 transition-all ${
+                              locked
+                                ? 'border-dashed border-gray-200 bg-white/70 text-gray-500'
+                                : 'border-blue-200 bg-white shadow-md shadow-blue-100/70'
+                            }`}
+                            aria-disabled={locked}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <h4 className="text-base font-semibold">{module.title}</h4>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{module.description}</p>
+                              </div>
+                              <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                                {module.duration}
+                              </Badge>
+                            </div>
+                            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                              <BookOpen className="h-4 w-4" />
+                              <span>{module.lessons.length} lessons</span>
+                            </div>
+                            {locked && (
+                              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/85 backdrop-blur-sm text-gray-600">
+                                <Lock className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-semibold">Locked</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <span>Level 4 · Lessons</span>
+                      {demoModule && (
+                        <span className="text-gray-400 normal-case">Inside {demoModule.title}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {demoLessons.map((lesson) => {
+                        const locked = lesson.id !== demoUnlockState.lessonId;
+                        return (
+                          <div
+                            key={lesson.id}
+                            className={`relative rounded-2xl border p-4 transition-all ${
+                              locked
+                                ? 'border-dashed border-gray-200 bg-white/70 text-gray-500'
+                                : 'border-blue-200 bg-white shadow-md shadow-blue-100/70'
+                            }`}
+                            aria-disabled={locked}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">{lesson.title}</p>
+                                {lesson.duration && (
+                                  <p className="text-xs text-muted-foreground">{lesson.duration}</p>
+                                )}
+                              </div>
+                              {!locked && (
+                                <Button size="sm" className="gap-1">
+                                  <Play className="h-4 w-4" />
+                                  Continue
+                                </Button>
+                              )}
+                            </div>
+                            {locked && (
+                              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/85 backdrop-blur-sm text-gray-600">
+                                <Lock className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-semibold">Locked</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
 
           <div className="mb-6">
             <div className="inline-flex flex-wrap gap-2 rounded-2xl border border-gray-200 bg-white/80 p-1 shadow-sm backdrop-blur-sm">
