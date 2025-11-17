@@ -3,14 +3,8 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ "**" ]
-    paths:
-      - 'Creditor_UserDash/**'
-      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ "**" ]
-    paths:
-      - 'Creditor_UserDash/**'
-      - '.github/workflows/ci.yml'
 
 jobs:
   test:
@@ -32,36 +26,31 @@ jobs:
     - name: Cache npm dependencies
       uses: actions/cache@v4
       with:
-        path: Creditor_UserDash/node_modules
-        key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('Creditor_UserDash/package-lock.json') }}
+        path: node_modules
+        key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-${{ matrix.node-version }}-
         
     - name: Install dependencies
-      working-directory: ./Creditor_UserDash
       run: npm ci
       
     - name: Run linter
-      working-directory: ./Creditor_UserDash
       run: npm run lint
       
     - name: Run tests
-      working-directory: ./Creditor_UserDash
       run: npm run test:run
       
     - name: Run tests with coverage
-      working-directory: ./Creditor_UserDash
       run: npm run test:coverage
       
     - name: Run E2E tests (optional - can be skipped in CI)
-      working-directory: ./Creditor_UserDash
       continue-on-error: true
       run: npm run test:e2e || echo "E2E tests skipped"
       
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
       with:
-        file: ./Creditor_UserDash/coverage/lcov.info
+        file: ./coverage/lcov.info
         flags: frontend
         name: frontend-coverage
         
@@ -81,24 +70,22 @@ jobs:
     - name: Cache npm dependencies
       uses: actions/cache@v4
       with:
-        path: Creditor_UserDash/node_modules
-        key: ${{ runner.os }}-node-20.x-${{ hashFiles('Creditor_UserDash/package-lock.json') }}
+        path: node_modules
+        key: ${{ runner.os }}-node-20.x-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-20.x-
         
     - name: Install dependencies
-      working-directory: ./Creditor_UserDash
       run: npm ci
       
     - name: Build application
-      working-directory: ./Creditor_UserDash
       run: npm run build
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: build-files
-        path: Creditor_UserDash/dist/
+        path: dist/
         
   deploy-staging:
     runs-on: ubuntu-latest
@@ -115,11 +102,9 @@ jobs:
         node-version: '20.x'
         
     - name: Install dependencies
-      working-directory: ./Creditor_UserDash
       run: npm ci
       
     - name: Build for staging
-      working-directory: ./Creditor_UserDash
       run: npm run build:dev
       
     - name: Check deployment secrets
@@ -138,7 +123,7 @@ jobs:
       if: steps.check-secrets.outputs.secrets-available == 'true'
       uses: nwtgck/actions-netlify@v2.0
       with:
-        publish-dir: './Creditor_UserDash/dist'
+        publish-dir: './dist'
         production-branch: main
         github-token: ${{ secrets.GITHUB_TOKEN }}
         deploy-message: "Deploy from GitHub Actions - Staging"
@@ -164,11 +149,9 @@ jobs:
         node-version: '20.x'
         
     - name: Install dependencies
-      working-directory: ./Creditor_UserDash
       run: npm ci
       
     - name: Build for production
-      working-directory: ./Creditor_UserDash
       run: npm run build
       
     - name: Check deployment secrets
@@ -187,7 +170,7 @@ jobs:
       if: steps.check-secrets-prod.outputs.secrets-available == 'true'
       uses: nwtgck/actions-netlify@v2.0
       with:
-        publish-dir: './Creditor_UserDash/dist'
+        publish-dir: './dist'
         production-deploy: true
         github-token: ${{ secrets.GITHUB_TOKEN }}
         deploy-message: "Deploy from GitHub Actions - Production"
