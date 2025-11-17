@@ -6,7 +6,6 @@ import { uploadAudio } from './audioUploadService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 const AI_UPLOAD_API = `${API_BASE}/api/ai/upload-resource`;
-const AI_IMAGE_UPLOAD_API = `${API_BASE}/api/ai/upload-ai-image`;
 
 /**
  * Upload AI-generated image from URL to S3
@@ -17,53 +16,61 @@ const AI_IMAGE_UPLOAD_API = `${API_BASE}/api/ai/upload-ai-image`;
  */
 export async function uploadAIGeneratedImage(imageUrl, options = {}) {
   try {
-    console.log('🤖 Uploading AI-generated image to S3 via /api/ai:', imageUrl);
-
-    const response = await api.post(
-      AI_IMAGE_UPLOAD_API,
-      { imageUrl },
-      {
-        timeout: 300000,
-        withCredentials: true,
-      }
+    console.log(
+      '🤖 Uploading AI-generated image to S3 via generic resource upload:',
+      imageUrl
     );
 
-    if (response?.data) {
-      const { url, message } = response.data;
-
-      if (!url) {
-        throw new Error(message || 'Upload failed - no URL returned');
-      }
-
-      console.log('✅ AI image uploaded successfully to S3:', url);
-
-      return {
-        success: true,
-        imageUrl: url,
-        s3Url: url,
-        message: message || 'AI image uploaded successfully',
-        uploadedToS3: true,
-        source: 'ai-generated',
-      };
+    // 1) Download the AI image from the provided URL
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to download AI image (status ${response.status})`
+      );
     }
 
-    throw new Error('Upload failed');
+    const blob = await response.blob();
+    const fileName =
+      options.fileName ||
+      `ai-generated-${Date.now()}.${blob.type?.includes('png') ? 'png' : 'jpg'}`;
+    const fileType = blob.type || 'image/png';
+
+    // 2) Wrap the blob in a File and upload using the standard S3 image upload
+    const file = new File([blob], fileName, { type: fileType });
+
+    const uploadResult = await uploadImage(file, {
+      folder: options.folder || 'ai-lesson-images',
+      public: options.public ?? true,
+      type: 'image',
+    });
+
+    const finalUrl = uploadResult.imageUrl;
+
+    console.log('✅ AI image uploaded successfully to S3:', finalUrl);
+
+    return {
+      success: true,
+      imageUrl: finalUrl,
+      s3Url: finalUrl,
+      message: uploadResult.message || 'AI image uploaded successfully',
+      uploadedToS3: true,
+      source: 'ai-generated',
+    };
   } catch (error) {
     console.error('❌ Error uploading AI-generated image:', error);
 
-    if (error.response) {
-      const errorMessage =
-        error.response.data?.message ||
-        error.response.data?.error ||
-        `Upload failed with status ${error.response.status}`;
-      throw new Error(errorMessage);
-    } else if (error.request) {
-      throw new Error(
-        'Network error. Please check your connection and try again.'
-      );
-    } else {
-      throw new Error(error.message || 'An unexpected error occurred');
-    }
+    // Fallback: return the original URL so callers can still use the
+    // temporary AI URL even if S3 upload fails. The content library
+    // service will handle this gracefully.
+    return {
+      success: false,
+      imageUrl: imageUrl,
+      s3Url: imageUrl,
+      message:
+        error.message || 'AI image upload failed, using original image URL',
+      uploadedToS3: false,
+      source: 'ai-generated-fallback',
+    };
   }
 }
 

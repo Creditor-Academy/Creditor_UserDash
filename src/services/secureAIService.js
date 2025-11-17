@@ -41,6 +41,7 @@ class SecureAIService {
       generateStructured: '/api/ai-proxy/generate-structured',
       generateImage: '/api/ai-proxy/generate-image',
       generateCourseOutline: '/api/ai-proxy/generate-course-outline',
+      generateCourseBlueprint: '/api/ai-proxy/generate-course-blueprint',
       status: '/api/ai-proxy/status',
     };
     this.statusCache = {
@@ -692,6 +693,129 @@ class SecureAIService {
     }
   }
 
+  async generateCourseBlueprint(blueprintInput) {
+    try {
+      clientLogger.debug(
+        '📘 Generating course blueprint via secure backend endpoint...'
+      );
+
+      const status = await this.checkBackendStatus();
+      if (!status.openai?.available) {
+        throw new Error(
+          status.error ||
+            'AI service is currently unavailable. Please try again later.'
+        );
+      }
+
+      const payload = {
+        courseTitle: blueprintInput?.courseTitle || blueprintInput?.title || '',
+        subjectDomain:
+          blueprintInput?.subjectDomain || blueprintInput?.subject || '',
+        courseDescription:
+          blueprintInput?.courseDescription ||
+          blueprintInput?.description ||
+          '',
+        duration: blueprintInput?.duration || '4 weeks',
+        difficulty: blueprintInput?.difficulty || 'intermediate',
+        learningObjectives:
+          blueprintInput?.learningObjectives ||
+          blueprintInput?.objectives ||
+          '',
+        targetAudience:
+          blueprintInput?.targetAudience || blueprintInput?.audience || '',
+        priorKnowledge: blueprintInput?.priorKnowledge || null,
+        rawInput: blueprintInput || null,
+      };
+
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.generateCourseBlueprint,
+        {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Course blueprint generation failed');
+      }
+
+      clientLogger.debug(
+        `✅ Course blueprint generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+      );
+
+      return {
+        success: true,
+        data: result.data.blueprint,
+        provider: result.data?.provider || 'backend',
+        tokensUsed: result.data?.tokensUsed,
+        cost: result.data?.cost,
+      };
+    } catch (error) {
+      // If the dedicated backend route is missing (HTTP 404), fall back to
+      // using the generic structured generation endpoint that is guaranteed
+      // to exist on older backends.
+      if (error?.response?.status === 404) {
+        clientLogger.warn(
+          '⚠️ Course blueprint endpoint not found on backend, falling back to structured generation'
+        );
+
+        try {
+          const systemPrompt = `You are an expert instructional designer and learning architect.
+Return ONLY valid JSON for a course blueprint with the following top-level keys:
+- "meta": { "courseTitle", "subjectDomain", "difficulty", "duration" }
+- "purpose": { "overview", "businessGoal", "problemStatement" }
+- "learnerPersona": { "primaryAudience", "experienceLevel", "context", "motivations", "constraints" }
+- "objectives": { "framework", "overallObjectives": [string], "moduleObjectives": [{ "moduleId": string, "moduleTitle": string, "objectives": [string] }] }
+- "structure": { "modules": [{ "id": string, "title": string, "description": string, "order": number, "lessons": [{ "id": string, "title": string, "description": string, "order": number, "objectives": [string], "contentPlan": { "sections": [string] }, "assessmentPlan": { "types": [string], "strategy": string }, "interactionPlan": { "activities": [string] }, "mediaPlan": { "assets": [string] } }] }] }
+- "assessmentStrategy": { "formative": string, "summative": string, "questionTypes": [string], "gradingApproach": string }
+- "interactivityPlan": { "scenarios": [string], "simulations": [string], "practicePatterns": [string] }
+- "analyticsPlan": { "kpis": [string], "events": [string], "evaluationMethods": [string] }
+- "branding": { "tone": string, "voice": string, "colors": [string], "imageStyle": string, "typography": string, "characters": [string], "narrator": string }
+- "qualityRules": { "checklist": [string], "constraints": [string] }`;
+
+          const userPrompt = `Use the following course design inputs to create a complete course blueprint. If any fields are missing, make reasonable, curriculum-aligned assumptions.
+
+Inputs:
+${JSON.stringify(blueprintInput || {}, null, 2)}`;
+
+          const jsonData = await this.generateStructured(
+            systemPrompt,
+            userPrompt,
+            {
+              model: 'gpt-4o-mini',
+              maxTokens: 4000,
+              temperature: 0.7,
+              skipStatusCheck: true,
+            }
+          );
+
+          return {
+            success: true,
+            data: jsonData,
+            provider: 'backend',
+          };
+        } catch (fallbackError) {
+          const formattedFallbackError = this.handleError(
+            fallbackError,
+            'Course blueprint generation (fallback)',
+            fallbackError.response
+          );
+          throw formattedFallbackError;
+        }
+      }
+
+      const formattedError = this.handleError(
+        error,
+        'Course blueprint generation',
+        error.response
+      );
+      throw formattedError;
+    }
+  }
+
   /**
    * Generate course thumbnail image via backend
    * @param {string} prompt - Image prompt
@@ -991,6 +1115,7 @@ export const {
   generateStructured,
   generateImage,
   generateCourseOutline,
+  generateCourseBlueprint,
   generateComprehensiveCourse,
   generateCourseImage,
   generateLessonContent,

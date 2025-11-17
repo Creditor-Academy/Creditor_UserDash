@@ -94,6 +94,24 @@ class OpenAIService {
   }
 
   /**
+   * Generate a structured course blueprint via backend API
+   * @param {Object} blueprintInput - High-level course design inputs
+   * @returns {Promise<Object>} Course blueprint JSON
+   */
+  async generateCourseBlueprint(blueprintInput) {
+    try {
+      return await this.backend.generateCourseBlueprint(blueprintInput);
+    } catch (error) {
+      clientLogger.error('❌ Course blueprint generation failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
    * Generate comprehensive course via backend API
    * @param {Object} courseData - Course information
    * @returns {Promise<Object>} Comprehensive course structure
@@ -184,6 +202,7 @@ export const {
   generateImage,
   generateCourseOutline,
   generateComprehensiveCourse,
+  generateCourseBlueprint,
   generateCourseImage,
   generateLessonContent,
   enhanceLessonContent,
