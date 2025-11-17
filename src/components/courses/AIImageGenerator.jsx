@@ -109,7 +109,7 @@ const AIImageGenerator = ({ onFeatureUse, usageInfo }) => {
       // Extract dimensions from size
       const [width, height] = size.split('x').map(Number);
 
-      // Handle different response formats from Bytez API
+      // Handle different response formats from AI API
       let imageUrl;
       if (response && response.images && Array.isArray(response.images)) {
         imageUrl = response.images[0]?.url || response.images[0];

@@ -88,9 +88,6 @@ export default defineConfig(({ mode }) => ({
       process.env.VITE_OPENAI_API_KEY || ''
     ),
     // Optional: Add other API keys if needed
-    'import.meta.env.VITE_DEEPAI_API_KEY': JSON.stringify(
-      process.env.VITE_DEEPAI_API_KEY || ''
-    ),
     'import.meta.env.VITE_HUGGINGFACE_API_KEY': JSON.stringify(
       process.env.VITE_HUGGINGFACE_API_KEY || ''
     ),
