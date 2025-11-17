@@ -28,8 +28,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: Creditor_UserDash/package-lock.json
+        
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: Creditor_UserDash/node_modules
+        key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('Creditor_UserDash/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ matrix.node-version }}-
         
     - name: Install dependencies
       working-directory: ./Creditor_UserDash
@@ -71,8 +77,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
-        cache-dependency-path: Creditor_UserDash/package-lock.json
+        
+    - name: Cache npm dependencies
+      uses: actions/cache@v4
+      with:
+        path: Creditor_UserDash/node_modules
+        key: ${{ runner.os }}-node-20.x-${{ hashFiles('Creditor_UserDash/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-20.x-
         
     - name: Install dependencies
       working-directory: ./Creditor_UserDash
@@ -101,7 +113,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
         
     - name: Install dependencies
       working-directory: ./Creditor_UserDash
@@ -151,7 +162,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
         
     - name: Install dependencies
       working-directory: ./Creditor_UserDash
