@@ -3,16 +3,66 @@ import React from 'react';
 const OurClients = () => {
   // Array of companies with their brand fonts and colors
   const companies = [
-    { name: 'Google', fontFamily: "'Product Sans', sans-serif", color: '#4285F4', fontWeight: '500' },
-    { name: 'Microsoft', fontFamily: "'Segoe UI', sans-serif", color: '#00A4EF', fontWeight: '600' },
-    { name: 'Amazon', fontFamily: "'Amazon Ember', Arial, sans-serif", color: '#FF9900', fontWeight: '700' },
-    { name: 'Meta', fontFamily: "'Optimistic Display', sans-serif", color: '#0081FB', fontWeight: '700' },
-    { name: 'Apple', fontFamily: "'SF Pro Display', -apple-system, sans-serif", color: '#000000', fontWeight: '600' },
-    { name: 'Netflix', fontFamily: "'Netflix Sans', 'Bebas Neue', sans-serif", color: '#E50914', fontWeight: '700' },
-    { name: 'IBM', fontFamily: "'IBM Plex Sans', sans-serif", color: '#0F62FE', fontWeight: '600' },
-    { name: 'Salesforce', fontFamily: "'Salesforce Sans', sans-serif", color: '#00A1E0', fontWeight: '700' },
-    { name: 'Adobe', fontFamily: "'Adobe Clean', sans-serif", color: '#FF0000', fontWeight: '700' },
-    { name: 'Intel', fontFamily: "'Intel Clear', 'Arial Narrow', sans-serif", color: '#0071C5', fontWeight: '700' },
+    {
+      name: 'Google',
+      fontFamily: "'Product Sans', sans-serif",
+      color: '#4285F4',
+      fontWeight: '500',
+    },
+    {
+      name: 'Microsoft',
+      fontFamily: "'Segoe UI', sans-serif",
+      color: '#00A4EF',
+      fontWeight: '600',
+    },
+    {
+      name: 'Amazon',
+      fontFamily: "'Amazon Ember', Arial, sans-serif",
+      color: '#FF9900',
+      fontWeight: '700',
+    },
+    {
+      name: 'Meta',
+      fontFamily: "'Optimistic Display', sans-serif",
+      color: '#0081FB',
+      fontWeight: '700',
+    },
+    {
+      name: 'Apple',
+      fontFamily: "'SF Pro Display', -apple-system, sans-serif",
+      color: '#000000',
+      fontWeight: '600',
+    },
+    {
+      name: 'Netflix',
+      fontFamily: "'Netflix Sans', 'Bebas Neue', sans-serif",
+      color: '#E50914',
+      fontWeight: '700',
+    },
+    {
+      name: 'IBM',
+      fontFamily: "'IBM Plex Sans', sans-serif",
+      color: '#0F62FE',
+      fontWeight: '600',
+    },
+    {
+      name: 'Salesforce',
+      fontFamily: "'Salesforce Sans', sans-serif",
+      color: '#00A1E0',
+      fontWeight: '700',
+    },
+    {
+      name: 'Adobe',
+      fontFamily: "'Adobe Clean', sans-serif",
+      color: '#FF0000',
+      fontWeight: '700',
+    },
+    {
+      name: 'Intel',
+      fontFamily: "'Intel Clear', 'Arial Narrow', sans-serif",
+      color: '#0071C5',
+      fontWeight: '700',
+    },
   ];
 
   return (
@@ -20,17 +70,18 @@ const OurClients = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <h2 
-            className="text-4xl md:text-5xl font-normal text-gray-900 mb-4" 
+          <h2
+            className="text-4xl md:text-5xl font-normal text-gray-900 mb-4"
             style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
           >
             Trusted by Industry Leaders
           </h2>
-          <p 
-            className="text-lg text-gray-600 max-w-2xl mx-auto" 
+          <p
+            className="text-lg text-gray-600 max-w-2xl mx-auto"
             style={{ fontFamily: 'Arial, sans-serif' }}
           >
-            We've partnered with top organizations to create transformative learning experiences
+            We've partnered with top organizations to create transformative
+            learning experiences
           </p>
         </div>
 
@@ -45,16 +96,13 @@ const OurClients = () => {
             <div className="marquee-content">
               {/* First set of logos */}
               {companies.map((company, index) => (
-                <div
-                  key={`first-${index}`}
-                  className="marquee-item"
-                >
+                <div key={`first-${index}`} className="marquee-item">
                   <span
                     className="company-name"
                     style={{
                       fontFamily: company.fontFamily,
                       color: company.color,
-                      fontWeight: company.fontWeight
+                      fontWeight: company.fontWeight,
                     }}
                   >
                     {company.name}
@@ -63,16 +111,13 @@ const OurClients = () => {
               ))}
               {/* Duplicate set for seamless loop */}
               {companies.map((company, index) => (
-                <div
-                  key={`second-${index}`}
-                  className="marquee-item"
-                >
+                <div key={`second-${index}`} className="marquee-item">
                   <span
                     className="company-name"
                     style={{
                       fontFamily: company.fontFamily,
                       color: company.color,
-                      fontWeight: company.fontWeight
+                      fontWeight: company.fontWeight,
                     }}
                   >
                     {company.name}
@@ -85,7 +130,10 @@ const OurClients = () => {
 
         {/* Additional Info */}
         <div className="text-center mt-12">
-          <p className="text-sm text-gray-500" style={{ fontFamily: 'Arial, sans-serif' }}>
+          <p
+            className="text-sm text-gray-500"
+            style={{ fontFamily: 'Arial, sans-serif' }}
+          >
             Join hundreds of organizations transforming their learning programs
           </p>
         </div>
@@ -147,13 +195,13 @@ const OurClients = () => {
           .marquee-content {
             gap: 2.5rem;
           }
-          
+
           .marquee-item {
             min-width: 100px;
             height: 2.5rem;
             padding: 0 0.75rem;
           }
-          
+
           .company-name {
             font-size: 1.25rem;
           }
@@ -164,4 +212,3 @@ const OurClients = () => {
 };
 
 export default OurClients;
-

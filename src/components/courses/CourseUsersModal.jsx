@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCourseUsers, unenrollUser } from '../../services/courseService';
-import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus, Download } from 'lucide-react';
+import {
+  X,
+  Users,
+  Search,
+  UserCheck,
+  UserX,
+  Mail,
+  Shield,
+  Crown,
+  CheckSquare,
+  Square,
+  UserPlus,
+  Download,
+} from 'lucide-react';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import AddToGroupModal from './AddToGroupModal';
 import * as XLSX from 'xlsx';
@@ -8,9 +21,9 @@ import * as XLSX from 'xlsx';
 const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [courseUsers, setCourseUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [unenrollLoading, setUnenrollLoading] = useState({});
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
   const [userToUnenroll, setUserToUnenroll] = useState(null);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -21,13 +34,13 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
     if (isOpen) {
       // Store the current scroll position
       const scrollY = window.scrollY;
-      
+
       // Add styles to prevent body scroll
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
-      
+
       // Cleanup function to restore scroll
       return () => {
         document.body.style.position = '';
@@ -51,19 +64,19 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
 
   const fetchUsers = async () => {
     setUsersLoading(true);
-    setError("");
+    setError('');
     try {
       const users = await fetchCourseUsers(courseId);
       setCourseUsers(users);
     } catch (err) {
-      setError(err.message || "Failed to fetch course users");
+      setError(err.message || 'Failed to fetch course users');
       setCourseUsers([]);
     } finally {
       setUsersLoading(false);
     }
   };
 
-  const handleUnenroll = async (userId) => {
+  const handleUnenroll = async userId => {
     const user = courseUsers.find(u => u.user_id === userId);
     setUserToUnenroll(user);
     setShowUnenrollConfirm(true);
@@ -71,22 +84,27 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
 
   const confirmUnenroll = async () => {
     if (!userToUnenroll) return;
-    
+
     setUnenrollLoading(prev => ({ ...prev, [userToUnenroll.user_id]: true }));
     try {
       const response = await unenrollUser(courseId, userToUnenroll.user_id);
       if (response.success) {
         // Remove the user from the list
-        setCourseUsers(prev => prev.filter(user => user.user_id !== userToUnenroll.user_id));
+        setCourseUsers(prev =>
+          prev.filter(user => user.user_id !== userToUnenroll.user_id)
+        );
         // Show success message
         alert('User unenrolled successfully!');
       } else {
         throw new Error(response.message || 'Failed to unenroll user');
       }
     } catch (err) {
-      setError(err.message || "Failed to unenroll user");
+      setError(err.message || 'Failed to unenroll user');
     } finally {
-      setUnenrollLoading(prev => ({ ...prev, [userToUnenroll.user_id]: false }));
+      setUnenrollLoading(prev => ({
+        ...prev,
+        [userToUnenroll.user_id]: false,
+      }));
       setShowUnenrollConfirm(false);
       setUserToUnenroll(null);
     }
@@ -98,7 +116,7 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   };
 
   // Handle individual user selection
-  const handleUserSelection = (userId) => {
+  const handleUserSelection = userId => {
     setSelectedUsers(prev => {
       if (prev.includes(userId)) {
         return prev.filter(id => id !== userId);
@@ -112,7 +130,7 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const handleSelectAll = () => {
     const allUserIds = filteredUsers.map(user => user.user_id);
     const allSelected = allUserIds.every(id => selectedUsers.includes(id));
-    
+
     if (allSelected) {
       // If all are selected, deselect all
       setSelectedUsers([]);
@@ -143,26 +161,27 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
 
   // Filter users based on search term
   const filteredUsers = courseUsers.filter(user => {
-    const fullName = `${user.user.first_name} ${user.user.last_name}`.toLowerCase();
+    const fullName =
+      `${user.user.first_name} ${user.user.last_name}`.toLowerCase();
     const email = user.user.email.toLowerCase();
     const search = searchTerm.toLowerCase();
     return fullName.includes(search) || email.includes(search);
   });
 
   // Get role badge styling
-  const getRoleBadgeStyle = (role) => {
+  const getRoleBadgeStyle = role => {
     const roleLower = role.toLowerCase();
     if (roleLower.includes('admin') || roleLower.includes('instructor')) {
-      return "bg-purple-100 text-purple-800 border-purple-200";
+      return 'bg-purple-100 text-purple-800 border-purple-200';
     } else if (roleLower.includes('user')) {
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return 'bg-blue-100 text-blue-800 border-blue-200';
     } else {
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   // Get role icon
-  const getRoleIcon = (role) => {
+  const getRoleIcon = role => {
     const roleLower = role.toLowerCase();
     if (roleLower.includes('admin')) {
       return <Crown className="w-3 h-3" />;
@@ -195,9 +214,11 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
         'User ID': userData.user_id,
         'First Name': userData.user.first_name || '',
         'Last Name': userData.user.last_name || '',
-        'Email': userData.user.email || '',
-        'Role': userRole,
-        'Enrolled Date': userData.enrolled_at ? new Date(userData.enrolled_at).toLocaleDateString() : 'N/A'
+        Email: userData.user.email || '',
+        Role: userRole,
+        'Enrolled Date': userData.enrolled_at
+          ? new Date(userData.enrolled_at).toLocaleDateString()
+          : 'N/A',
       };
     });
 
@@ -210,12 +231,9 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
     const maxWidth = 50;
     const columnWidths = Object.keys(excelData[0]).map(key => ({
       wch: Math.min(
-        Math.max(
-          key.length,
-          ...excelData.map(row => String(row[key]).length)
-        ),
+        Math.max(key.length, ...excelData.map(row => String(row[key]).length)),
         maxWidth
-      )
+      ),
     }));
     worksheet['!cols'] = columnWidths;
 
@@ -241,7 +259,8 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Course Users</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} enrolled
+                {filteredUsers.length} user
+                {filteredUsers.length !== 1 ? 's' : ''} enrolled
               </p>
             </div>
           </div>
@@ -273,11 +292,11 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               type="text"
               placeholder="Search users by name or email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
-          
+
           {/* Selection Controls */}
           {filteredUsers.length > 0 && (
             <div className="flex items-center justify-between mt-4">
@@ -295,11 +314,12 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
                 </button>
                 {isSomeSelected() && (
                   <span className="text-sm text-gray-600">
-                    {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+                    {selectedUsers.length} user
+                    {selectedUsers.length !== 1 ? 's' : ''} selected
                   </span>
                 )}
               </div>
-              
+
               {isSomeSelected() && (
                 <button
                   onClick={() => setShowAddToGroupModal(true)}
@@ -323,7 +343,7 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               </div>
             </div>
           )}
-          
+
           {usersLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mb-4"></div>
@@ -332,11 +352,11 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
           ) : filteredUsers.length > 0 ? (
             <div className="space-y-4">
               {filteredUsers.map((userData, index) => (
-                <div 
-                  key={userData.user_id} 
+                <div
+                  key={userData.user_id}
                   className={`group bg-white border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${
-                    selectedUsers.includes(userData.user_id) 
-                      ? 'border-blue-300 bg-blue-50' 
+                    selectedUsers.includes(userData.user_id)
+                      ? 'border-blue-300 bg-blue-50'
                       : 'border-gray-200 hover:border-blue-200'
                   }`}
                 >
@@ -357,14 +377,15 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-lg">
                           {userData.user.image ? (
-                            <img 
-                              src={userData.user.image} 
-                              alt="User" 
-                              className="w-12 h-12 rounded-full object-cover" 
+                            <img
+                              src={userData.user.image}
+                              alt="User"
+                              className="w-12 h-12 rounded-full object-cover"
                             />
                           ) : (
                             <span>
-                              {userData.user.first_name?.[0]}{userData.user.last_name?.[0]}
+                              {userData.user.first_name?.[0]}
+                              {userData.user.last_name?.[0]}
                             </span>
                           )}
                         </div>
@@ -381,22 +402,36 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
                             ID: {userData.user_id}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 mb-3">
                           <Mail className="w-4 h-4 text-gray-400" />
-                          <p className="text-sm text-gray-600">{userData.user.email}</p>
+                          <p className="text-sm text-gray-600">
+                            {userData.user.email}
+                          </p>
                         </div>
 
                         {/* Role Badge - Show only highest priority role */}
                         <div className="flex flex-wrap gap-2">
                           {(() => {
-                            if (userData.user.user_roles && userData.user.user_roles.length > 0) {
-                              const roles = userData.user.user_roles.map(roleObj => roleObj.role);
-                              const priorityRoles = ['admin', 'instructor', 'user'];
-                              const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
-                              
+                            if (
+                              userData.user.user_roles &&
+                              userData.user.user_roles.length > 0
+                            ) {
+                              const roles = userData.user.user_roles.map(
+                                roleObj => roleObj.role
+                              );
+                              const priorityRoles = [
+                                'admin',
+                                'instructor',
+                                'user',
+                              ];
+                              const highestRole =
+                                priorityRoles.find(role =>
+                                  roles.includes(role)
+                                ) || 'user';
+
                               return (
-                                <span 
+                                <span
                                   className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full border ${getRoleBadgeStyle(highestRole)}`}
                                 >
                                   {getRoleIcon(highestRole)}
@@ -420,12 +455,16 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
                         {unenrollLoading[userData.user_id] ? (
                           <>
                             <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin"></div>
-                            <span className="text-sm font-medium">Unenrolling...</span>
+                            <span className="text-sm font-medium">
+                              Unenrolling...
+                            </span>
                           </>
                         ) : (
                           <>
                             <UserX className="w-4 h-4" />
-                            <span className="text-sm font-medium">Unenroll</span>
+                            <span className="text-sm font-medium">
+                              Unenroll
+                            </span>
                           </>
                         )}
                       </button>
@@ -443,10 +482,9 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
                 {searchTerm ? 'No users found' : 'No users enrolled'}
               </h3>
               <p className="text-gray-500">
-                {searchTerm 
-                  ? 'Try adjusting your search terms' 
-                  : 'Users will appear here once they enroll in this course'
-                }
+                {searchTerm
+                  ? 'Try adjusting your search terms'
+                  : 'Users will appear here once they enroll in this course'}
               </p>
             </div>
           )}
@@ -494,4 +532,4 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   );
 };
 
-export default CourseUsersModal; 
+export default CourseUsersModal;

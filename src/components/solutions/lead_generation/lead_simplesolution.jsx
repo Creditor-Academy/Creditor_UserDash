@@ -1,58 +1,66 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
 
 const solutions = [
   {
     id: 1,
-    title: "Lead magnets",
+    title: 'Lead magnets',
     description:
-      "Create compelling lead magnets that attract high-quality prospects. Offer valuable content like free courses, industry reports, webinars, and exclusive guides that showcase your expertise and build trust with potential customers.",
-    imagePosition: "right",
-    imageBg: "bg-gradient-to-br from-purple-500 to-purple-600",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop&crop=edges",
-    placeholder: "Lead Magnet Dashboard",
+      'Create compelling lead magnets that attract high-quality prospects. Offer valuable content like free courses, industry reports, webinars, and exclusive guides that showcase your expertise and build trust with potential customers.',
+    imagePosition: 'right',
+    imageBg: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    image:
+      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop&crop=edges',
+    placeholder: 'Lead Magnet Dashboard',
   },
   {
     id: 2,
-    title: "Content marketing",
+    title: 'Content marketing',
     description:
-      "Build a content marketing engine that consistently generates leads. Create educational content, thought leadership pieces, and interactive experiences that position your brand as the go-to resource in your industry.",
-    imagePosition: "left",
-    imageBg: "bg-gradient-to-br from-pink-500 to-pink-600",
-    image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=600&fit=crop&crop=edges",
-    placeholder: "Content Analytics",
+      'Build a content marketing engine that consistently generates leads. Create educational content, thought leadership pieces, and interactive experiences that position your brand as the go-to resource in your industry.',
+    imagePosition: 'left',
+    imageBg: 'bg-gradient-to-br from-pink-500 to-pink-600',
+    image:
+      'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=600&fit=crop&crop=edges',
+    placeholder: 'Content Analytics',
   },
   {
     id: 3,
-    title: "Email nurturing",
+    title: 'Email nurturing',
     description:
       "Convert leads into customers with automated email sequences that nurture prospects through the buyer's journey. Create personalized learning paths that educate prospects about your solution and guide them toward making a purchase decision.",
-    imagePosition: "right",
-    imageBg: "bg-gradient-to-br from-blue-500 to-blue-600",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop&crop=faces",
-    placeholder: "Email Campaign Builder",
+    imagePosition: 'right',
+    imageBg: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    image:
+      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop&crop=faces',
+    placeholder: 'Email Campaign Builder',
   },
   {
     id: 4,
-    title: "Lead scoring",
+    title: 'Lead scoring',
     description:
-      "Identify your hottest prospects with intelligent lead scoring that tracks engagement, content consumption, and behavioral data. Focus your sales efforts on the leads most likely to convert and optimize your marketing spend.",
-    imagePosition: "left",
-    imageBg: "bg-gradient-to-br from-orange-500 to-orange-600",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop&crop=edges",
-    placeholder: "Lead Scoring Dashboard",
+      'Identify your hottest prospects with intelligent lead scoring that tracks engagement, content consumption, and behavioral data. Focus your sales efforts on the leads most likely to convert and optimize your marketing spend.',
+    imagePosition: 'left',
+    imageBg: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    image:
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop&crop=edges',
+    placeholder: 'Lead Scoring Dashboard',
   },
 ];
 
 export default function LeadSimpleSolution() {
   return (
-    <section className="relative py-20 sm:py-24 lg:py-32 overflow-hidden" style={{
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
-    }}>
+    <section
+      className="relative py-20 sm:py-24 lg:py-32 overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+      }}
+    >
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating animated orbs */}
-        <motion.div 
+        <motion.div
           className="absolute top-40 right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
           animate={{
             x: [0, 100, 0],
@@ -62,10 +70,10 @@ export default function LeadSimpleSolution() {
           transition={{
             duration: 20,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
-        <motion.div 
+        <motion.div
           className="absolute bottom-40 left-20 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"
           animate={{
             x: [0, -80, 0],
@@ -75,10 +83,10 @@ export default function LeadSimpleSolution() {
           transition={{
             duration: 18,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
-        <motion.div 
+        <motion.div
           className="absolute top-1/2 left-1/2 w-72 h-72 bg-cyan-500/15 rounded-full blur-3xl"
           animate={{
             x: [0, -60, 0],
@@ -88,10 +96,10 @@ export default function LeadSimpleSolution() {
           transition={{
             duration: 22,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
-        
+
         {/* Floating particles */}
         {[...Array(8)].map((_, i) => (
           <motion.div
@@ -109,12 +117,12 @@ export default function LeadSimpleSolution() {
             transition={{
               duration: 10 + Math.random() * 10,
               repeat: Infinity,
-              ease: "easeInOut",
+              ease: 'easeInOut',
               delay: i * 0.5,
             }}
           />
         ))}
-        
+
         {/* Animated grid lines */}
         <motion.div
           className="absolute inset-0"
@@ -129,7 +137,7 @@ export default function LeadSimpleSolution() {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
       </div>
@@ -143,12 +151,20 @@ export default function LeadSimpleSolution() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16 lg:mb-24"
         >
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-            Simple solutions to your biggest{" "}
+          <h2
+            className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight"
+            style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+          >
+            Simple solutions to your biggest{' '}
             <span className="text-blue-400">lead generation needs</span>
           </h2>
-          <p className="text-lg sm:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-            Generate more qualified leads with compelling content, automated nurturing, and intelligent scoring. When you're done, prove your ROI with detailed analytics and conversion tracking.
+          <p
+            className="text-lg sm:text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-normal"
+            style={{ fontFamily: 'Arial, sans-serif' }}
+          >
+            Generate more qualified leads with compelling content, automated
+            nurturing, and intelligent scoring. When you're done, prove your ROI
+            with detailed analytics and conversion tracking.
           </p>
         </motion.div>
 
@@ -162,19 +178,25 @@ export default function LeadSimpleSolution() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.7, delay: index * 0.1 }}
               className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center ${
-                item.imagePosition === "left" ? "lg:flex-row-reverse" : ""
+                item.imagePosition === 'left' ? 'lg:flex-row-reverse' : ''
               }`}
             >
               {/* Content Side */}
               <div
                 className={`${
-                  item.imagePosition === "left" ? "lg:order-2" : "lg:order-1"
+                  item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'
                 } flex flex-col justify-center`}
               >
-                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-normal text-white mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                <h3
+                  className="text-3xl sm:text-4xl lg:text-5xl font-normal text-white mb-6 leading-tight"
+                  style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                >
                   {item.title}
                 </h3>
-                <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-6 font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
+                <p
+                  className="text-base sm:text-lg text-gray-300 leading-relaxed mb-6 font-normal"
+                  style={{ fontFamily: 'Arial, sans-serif' }}
+                >
                   {item.description}
                 </p>
                 {/* Decorative underline */}
@@ -184,7 +206,7 @@ export default function LeadSimpleSolution() {
               {/* Image Side */}
               <div
                 className={`${
-                  item.imagePosition === "left" ? "lg:order-1" : "lg:order-2"
+                  item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'
                 }`}
               >
                 <motion.div
@@ -193,15 +215,15 @@ export default function LeadSimpleSolution() {
                   className={`relative rounded-3xl shadow-2xl overflow-hidden h-full min-h-[300px] group`}
                 >
                   {/* Background Image */}
-                  <img 
+                  <img
                     src={item.image}
                     alt={item.placeholder}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  
+
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/20 to-black/40" />
-                  
+
                   {/* Content overlay */}
                   <div className="relative z-10 h-full flex items-end p-8">
                     <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 transition-all duration-300 group-hover:bg-white group-hover:shadow-3xl">

@@ -4,8 +4,8 @@ import {
   CarouselContent,
   CarouselItem,
   CarouselNext,
-  CarouselPrevious
-} from "@/components/ui/carousel";
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 
 const carouselItems = [
   // {
@@ -61,40 +61,49 @@ export function DashboardCarousel() {
     };
   }, []);
 
-
   return (
     <div className="group relative w-full max-w-4xl mx-auto">
       {/* Section header */}
       <div className="mb-4 px-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Featured</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            Featured
+          </span>
           <span className="text-[11px] text-gray-400">|</span>
           <span className="text-[11px] text-gray-500">Upcoming</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Upcoming Events</h2>
-        <p className="text-gray-500 text-sm sm:text-base">Discover what’s events upcoming for you</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+          Upcoming Events
+        </h2>
+        <p className="text-gray-500 text-sm sm:text-base">
+          Discover what’s events upcoming for you
+        </p>
         <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40" />
       </div>
       {/* Removed outer decorative border to match banner bounds */}
-      
+
       <Carousel
         opts={{
-          align: "center",
+          align: 'center',
           loop: true,
           // Slow down the embla scroll animation for a smoother feel
-          duration: 40
+          duration: 40,
         }}
         className="w-full relative z-10 px-1"
-        setApi={(api) => {
+        setApi={api => {
           carouselApiRef.current = api;
           if (api) {
             api.on('select', () => {
               const newSlide = api.selectedScrollSnap();
               setCurrentSlide(newSlide);
-              
+
               // Check if current slide is a video and restart it
               const currentItem = carouselItems[newSlide];
-              if (currentItem && currentItem.type === "video" && videoRef.current) {
+              if (
+                currentItem &&
+                currentItem.type === 'video' &&
+                videoRef.current
+              ) {
                 videoRef.current.currentTime = 0;
                 videoRef.current.play();
               }
@@ -107,7 +116,7 @@ export function DashboardCarousel() {
             <CarouselItem key={item.id} className="md:basis-full">
               <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100">
                 <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] bg-white flex items-center justify-center p-2 sm:p-3">
-                  {item.type === "video" ? (
+                  {item.type === 'video' ? (
                     <video
                       ref={videoRef}
                       src={item.videoUrl}
@@ -116,17 +125,21 @@ export function DashboardCarousel() {
                       loop
                       playsInline
                       className="max-w-full max-h-full object-contain transition-all duration-700 select-none rounded-lg"
-                      onMouseEnter={(e) => {
+                      onMouseEnter={e => {
                         e.target.muted = false;
                       }}
-                      onMouseLeave={(e) => {
+                      onMouseLeave={e => {
                         e.target.muted = true;
                       }}
                     />
                   ) : (
                     <img
                       src={item.image}
-                      alt={item.title ? `${item.title} – ${item.course || ''}`.trim() : (item.course || 'Banner')}
+                      alt={
+                        item.title
+                          ? `${item.title} – ${item.course || ''}`.trim()
+                          : item.course || 'Banner'
+                      }
                       loading="lazy"
                       draggable={false}
                       referrerPolicy="no-referrer"
@@ -171,7 +184,7 @@ export function DashboardCarousel() {
 
         {/* Removed dark overlays to avoid any grayish background tint */}
       </Carousel>
-      
+
       {/* Subtle bottom accent line */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent rounded-full"></div>
     </div>

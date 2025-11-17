@@ -5,20 +5,23 @@ import DashLogo from '../../assets/dashlogo.webp';
 
 const MonetizeSection = () => {
   const features = [
-    "No developer experience needed",
-    "Drag-and-drop course builder",
-    "AI-powered course outline generator",
-    "Built-in selling and payment solutions",
-    "Advanced analytics"
+    'No developer experience needed',
+    'Drag-and-drop course builder',
+    'AI-powered course outline generator',
+    'Built-in selling and payment solutions',
+    'Advanced analytics',
   ];
 
   return (
-    <section className="py-20 pt-32 md:pt-20 px-4 relative overflow-hidden" style={{
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
-    }}>
+    <section
+      className="py-20 pt-32 md:pt-20 px-4 relative overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+      }}
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          
           {/* Left Section - Content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -29,19 +32,31 @@ const MonetizeSection = () => {
           >
             {/* Headline */}
             <div>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                Monetize your<br />
+              <h2
+                className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight"
+                style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+              >
+                Monetize your
+                <br />
                 <span className="text-white">knowledge</span>
               </h2>
             </div>
 
             {/* Description */}
             <div className="space-y-4">
-              <p className="text-lg text-white leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Transform your expertise into courses, communities, and other high-quality learning experiences.
+              <p
+                className="text-lg text-white leading-relaxed font-normal"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+              >
+                Transform your expertise into courses, communities, and other
+                high-quality learning experiences.
               </p>
-              <p className="text-lg text-white leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Our platform is designed to drive revenue growth for businesses like yours.
+              <p
+                className="text-lg text-white leading-relaxed font-normal"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+              >
+                Our platform is designed to drive revenue growth for businesses
+                like yours.
               </p>
             </div>
 
@@ -59,7 +74,10 @@ const MonetizeSection = () => {
                   <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center flex-shrink-0">
                     <Check className="w-4 h-4 text-black" />
                   </div>
-                  <span className="text-white font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  <span
+                    className="text-white font-normal"
+                    style={{ fontFamily: 'Arial, sans-serif' }}
+                  >
                     {feature}
                   </span>
                 </motion.div>
@@ -74,11 +92,19 @@ const MonetizeSection = () => {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <a href="/contact" className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-4 px-8 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <a
+                href="/contact"
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-4 px-8 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+              >
                 Start Creating
                 <ArrowUpRight size={16} strokeWidth={2} />
               </a>
-              <a href="/login" className="bg-transparent hover:bg-white/10 text-white font-semibold py-4 px-8 border border-white rounded-lg transition-all duration-300 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <a
+                href="/login"
+                className="bg-transparent hover:bg-white/10 text-white font-semibold py-4 px-8 border border-white rounded-lg transition-all duration-300 flex items-center justify-center"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+              >
                 Book a Demo
               </a>
             </motion.div>
@@ -95,17 +121,19 @@ const MonetizeSection = () => {
             {/* Dashboard Logo */}
             <div className="relative w-full max-w-2xl mx-auto">
               {/* Glassmorphism border/glow effect */}
-              <div 
+              <div
                 className="absolute -inset-4 rounded-2xl"
                 style={{
-                  background: "linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 50%, rgba(59, 130, 246, 0.3) 100%)",
-                  boxShadow: "0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(147, 51, 234, 0.3)",
-                  backdropFilter: "blur(10px)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  filter: "blur(2px)"
+                  background:
+                    'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 50%, rgba(59, 130, 246, 0.3) 100%)',
+                  boxShadow:
+                    '0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(147, 51, 234, 0.3)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  filter: 'blur(2px)',
                 }}
               />
-              
+
               {/* Image */}
               <img
                 src={DashLogo}
@@ -113,7 +141,6 @@ const MonetizeSection = () => {
                 className="w-full rounded-lg shadow-2xl relative z-10"
               />
             </div>
-
           </motion.div>
         </div>
       </div>

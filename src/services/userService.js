@@ -53,20 +53,22 @@ export function setSingleRole(role) {
     console.warn('setSingleRole: No role provided, defaulting to user');
     role = 'user';
   }
-  
+
   // Validate role
   const validRoles = ['user', 'instructor', 'admin'];
   if (!validRoles.includes(role)) {
     console.warn(`setSingleRole: Invalid role "${role}", defaulting to user`);
     role = 'user';
   }
-  
+
   // Set single role - replace all existing roles
   localStorage.setItem('userRole', role);
   localStorage.setItem('userRoles', JSON.stringify([role]));
-  
-  console.log(`setSingleRole: User role set to "${role}" (replaced all existing roles)`);
-  
+
+  console.log(
+    `setSingleRole: User role set to "${role}" (replaced all existing roles)`
+  );
+
   // Dispatch custom event to notify other components
   window.dispatchEvent(new Event('userRoleChanged'));
 }
@@ -81,6 +83,7 @@ export function clearUserData() {
 
 import { getAuthHeader } from './authHeader';
 import api from './apiClient';
+import { logDetailedError, handleAuthError } from '@/utils/authErrorHandler';
 
 export async function fetchUserProfile() {
   try {
@@ -89,53 +92,72 @@ export async function fetchUserProfile() {
     });
     return response.data?.data ?? response.data;
   } catch (error) {
+    // Log detailed error information for debugging
+    logDetailedError(error, '/api/user/getUserProfile');
+
+    // Check if this is an authentication error and handle accordingly
+    const handled = handleAuthError(error, 'fetchUserProfile');
+
+    if (!handled) {
+      console.error(
+        '[fetchUserProfile] Non-auth error, rethrowing:',
+        error.message
+      );
+    }
+
     throw error;
   }
 }
 
 export async function fetchAllUsers() {
   try {
-    console.log("📤 userService: Fetching all users");
+    console.log('📤 userService: Fetching all users');
     const response = await api.get('/api/user/all', {
       withCredentials: true,
     });
-    
+
     if (response.data && response.data.code === 200) {
       const users = response.data.data || [];
-      console.log("✅ userService: Users fetched successfully:", users.length);
+      console.log('✅ userService: Users fetched successfully:', users.length);
       return users;
     } else {
       throw new Error('Failed to fetch users');
     }
   } catch (error) {
-    console.error("❌ userService: Error fetching users:", error);
+    console.error('❌ userService: Error fetching users:', error);
     throw error;
   }
 }
 
 export async function updateUserProfile(profileData) {
   try {
-    console.log("📤 userService: Updating profile to:", `/api/user/updateUserProfile`);
-    console.log("📤 userService: Update data:", profileData);
-    
+    console.log(
+      '📤 userService: Updating profile to:',
+      `/api/user/updateUserProfile`
+    );
+    console.log('📤 userService: Update data:', profileData);
+
     const response = await api.put('/api/user/updateUserProfile', profileData);
-    
-    console.log("✅ userService: Update profile success:", response.data);
+
+    console.log('✅ userService: Update profile success:', response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ userService: Update profile error:", error);
+    console.error('❌ userService: Update profile error:', error);
     throw error;
   }
 }
 
 export async function fetchAllCourses() {
   try {
-    console.log("🔍 userService: Fetching all courses from:", `/api/course/getCourses`);
+    console.log(
+      '🔍 userService: Fetching all courses from:',
+      `/api/course/getCourses`
+    );
     const response = await api.get('/api/course/getCourses');
-    console.log("✅ userService: Fetch courses success:", response.data);
+    console.log('✅ userService: Fetch courses success:', response.data);
     return response.data?.data || response.data;
   } catch (error) {
-    console.error("❌ userService: Fetch courses error:", error);
+    console.error('❌ userService: Fetch courses error:', error);
     throw error;
   }
 }
@@ -150,34 +172,45 @@ export async function fetchUserCoursesByUserId(userId) {
     const base = `${import.meta.env.VITE_API_BASE_URL}`;
     const url = `${base}/api/course/getUserCoursesByUserId`;
 
-    console.log("🔍 userService: Fetching courses for user (POST with body { userId }):", { url, userId });
+    console.log(
+      '🔍 userService: Fetching courses for user (POST with body { userId }):',
+      { url, userId }
+    );
 
-    const response = await api.post('/api/course/getUserCoursesByUserId', { userId });
+    const response = await api.post('/api/course/getUserCoursesByUserId', {
+      userId,
+    });
 
-    console.log("✅ userService: Fetch user courses success:", response.data);
+    console.log('✅ userService: Fetch user courses success:', response.data);
     return response.data?.data || response.data;
   } catch (error) {
-    console.error("❌ userService: Fetch user courses error:", error);
+    console.error('❌ userService: Fetch user courses error:', error);
     throw error;
   }
 }
 
 export async function updateProfilePicture(formData) {
   try {
-    const response = await api.post('/api/user/updateProfilePictureS3', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.post(
+      '/api/user/updateProfilePictureS3',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
 
     return response.data;
   } catch (error) {
-    console.error("❌ userService: Update profile picture error:", error);
+    console.error('❌ userService: Update profile picture error:', error);
     throw error;
   }
 }
 
 export async function fetchDetailedUserProfile(userId) {
   try {
-    const response = await api.post('/api/instructor/getUserAllData', { userId });
+    const response = await api.post('/api/instructor/getUserAllData', {
+      userId,
+    });
 
     const data = response.data;
     if (data.success && data.code === 200) {
@@ -212,7 +245,6 @@ export async function fetchPublicUserProfile(userId) {
   }
 }
 
-
 // Admin/Instructor: fetch all users (includes activity_log for last visited)
 export async function fetchAllUsersAdmin() {
   try {
@@ -231,19 +263,20 @@ export async function fetchAllUsersAdmin() {
   }
 }
 
-
 export async function logoutUser() {
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    
+    const baseUrl =
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+    const token =
+      localStorage.getItem('authToken') || localStorage.getItem('token');
+
     const response = await fetch(`${baseUrl}/api/auth/logout`, {
       method: 'GET',
       credentials: 'include', // Keep for any same-domain cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -258,4 +291,3 @@ export async function logoutUser() {
     return false;
   }
 }
-

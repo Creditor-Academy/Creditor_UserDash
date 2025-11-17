@@ -27,6 +27,7 @@ The Course Analytics page should display:
 ### 3. Testing Features
 
 #### A. Overview Tab
+
 - [ ] Verify that "Most Active Courses" are displayed in ranked order
 - [ ] Check that each course shows:
   - Rank badge (gold for #1, silver for #2, bronze for #3)
@@ -40,6 +41,7 @@ The Course Analytics page should display:
 - [ ] Check inactive courses show trend indicator (down arrow)
 
 #### B. Monthly Analysis Tab
+
 - [ ] Click on the "Monthly Analysis" tab
 - [ ] Use the month dropdown to select different months
 - [ ] Use the year dropdown to select different years
@@ -47,6 +49,7 @@ The Course Analytics page should display:
 - [ ] Check that the selected month/year is displayed
 
 #### C. All Courses Tab
+
 - [ ] Click on the "All Courses" tab
 - [ ] Verify all courses are listed in order
 - [ ] Check that each course shows:
@@ -57,6 +60,7 @@ The Course Analytics page should display:
   - Activity percentage badge
 
 #### D. Refresh Functionality
+
 - [ ] Click the "Refresh" button in the top-right corner
 - [ ] Verify that data reloads
 - [ ] Check for success toast notification
@@ -64,13 +68,17 @@ The Course Analytics page should display:
 ### 4. Expected Behavior
 
 #### With Backend Connected
+
 When the backend is properly implemented and connected:
+
 - Real course data should be displayed
 - All metrics should be accurate
 - Filtering by month/year should show actual historical data
 
 #### Without Backend (Current State)
+
 When backend is not available or not implemented:
+
 - Sample/demo data will be displayed automatically
 - A toast notification will indicate that sample data is being shown
 - All UI features will still work to demonstrate functionality
@@ -78,6 +86,7 @@ When backend is not available or not implemented:
 ### 5. Sample Data
 
 If backend is not yet implemented, you should see sample courses like:
+
 - Private Merchant Course (high activity)
 - Sovereignty 101 (high activity)
 - Business Credit Fundamentals (medium activity)
@@ -89,17 +98,21 @@ If backend is not yet implemented, you should see sample courses like:
 Open the browser console (F12) to check for:
 
 #### Successful API Call
+
 ```
 ✓ Course analytics loaded successfully
 ```
 
 #### Failed API Call (Expected if backend not implemented)
+
 ```
 Failed to fetch course analytics. Using sample data for demonstration.
 ```
 
 #### Network Tab
+
 Check the Network tab for API calls to:
+
 - `/api/analytics/course-activity/summary`
 - `/api/analytics/courses/activity`
 
@@ -126,16 +139,19 @@ Check the Network tab for API calls to:
 Test error scenarios:
 
 #### A. Network Error
+
 - Disconnect internet or block API in DevTools
 - Try to refresh data
 - Should show error toast: "Failed to load course analytics"
 - Should fall back to sample data
 
 #### B. Invalid Month Selection
+
 - Should not allow invalid selections
 - Dropdowns should only show valid options
 
 #### C. No Data Available
+
 - Should show appropriate "No data available" message
 - Icons should be displayed in empty states
 
@@ -150,25 +166,33 @@ Test error scenarios:
 ## Common Issues and Solutions
 
 ### Issue: "Course Analytics" tab not showing
-**Solution:** 
+
+**Solution:**
+
 - Verify you're logged in as an instructor or admin
 - Check that `Instructorpage.jsx` was updated correctly
 - Clear browser cache and reload
 
 ### Issue: Page shows error immediately
+
 **Solution:**
+
 - Open browser console to see error details
 - Check that all imports are correct
 - Verify API base URL in `.env` file
 
 ### Issue: No data showing at all
+
 **Solution:**
+
 - Check browser console for JavaScript errors
 - Verify that sample data fallback is working
 - Check network tab for failed API calls
 
 ### Issue: Styles look broken
+
 **Solution:**
+
 - Verify Tailwind CSS is working
 - Check that Shadcn UI components are imported
 - Clear CSS cache
@@ -206,6 +230,7 @@ Run through this script to ensure everything works:
 To add automated tests, create test files:
 
 ### Unit Tests
+
 ```javascript
 // analyticsService.test.js
 describe('Analytics Service', () => {
@@ -218,6 +243,7 @@ describe('Analytics Service', () => {
 ```
 
 ### Integration Tests
+
 ```javascript
 // CourseActivityAnalytics.test.jsx
 describe('CourseActivityAnalytics', () => {
@@ -233,6 +259,7 @@ describe('CourseActivityAnalytics', () => {
 Once backend is implemented, test the API endpoints directly:
 
 ### Using cURL
+
 ```bash
 # Test course activity summary
 curl -X GET "http://localhost:3000/api/analytics/course-activity/summary?year=2024&month=10" \
@@ -244,6 +271,7 @@ curl -X GET "http://localhost:3000/api/analytics/courses/activity?year=2024&mont
 ```
 
 ### Using Postman
+
 1. Import the API endpoints
 2. Set up authentication
 3. Test each endpoint
@@ -299,9 +327,9 @@ After testing is complete:
 ## Support
 
 If you encounter issues:
+
 1. Check this testing guide
 2. Review `COURSE_ANALYTICS_IMPLEMENTATION.md`
 3. Check browser console for errors
 4. Review backend logs
 5. Contact development team
-

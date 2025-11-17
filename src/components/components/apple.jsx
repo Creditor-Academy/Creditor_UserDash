@@ -4,15 +4,15 @@ import React, {
   useState,
   createContext,
   useContext,
-} from "react";
+} from 'react';
 import {
   IconArrowNarrowLeft,
   IconArrowNarrowRight,
   IconX,
-} from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
-import { useOutsideClick } from "@/hooks/useOutsideClick";
+} from '@tabler/icons-react';
+import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useOutsideClick } from '@/hooks/useOutsideClick';
 
 export const CarouselContext = createContext({
   onCardClose: () => {},
@@ -42,24 +42,24 @@ export const Carousel = ({ items, initialScroll = 0 }) => {
 
   const scrollLeft = () => {
     if (carouselRef.current) {
-      carouselRef.current.scrollBy({ left: -300, behavior: "smooth" });
+      carouselRef.current.scrollBy({ left: -300, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
     if (carouselRef.current) {
-      carouselRef.current.scrollBy({ left: 300, behavior: "smooth" });
+      carouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
     }
   };
 
-  const handleCardClose = (index) => {
+  const handleCardClose = index => {
     if (carouselRef.current) {
       const cardWidth = isMobile() ? 230 : 384; // (md:w-96)
       const gap = isMobile() ? 4 : 8;
       const scrollPosition = (cardWidth + gap) * (index + 1);
       carouselRef.current.scrollTo({
         left: scrollPosition,
-        behavior: "smooth",
+        behavior: 'smooth',
       });
       setCurrentIndex(index);
     }
@@ -81,15 +81,11 @@ export const Carousel = ({ items, initialScroll = 0 }) => {
         >
           <div
             className={cn(
-              "absolute right-0 z-[1000] h-auto w-[5%] overflow-hidden bg-gradient-to-l"
+              'absolute right-0 z-[1000] h-auto w-[5%] overflow-hidden bg-gradient-to-l'
             )}
           ></div>
 
-          <div
-            className={cn(
-              "flex flex-row justify-start gap-4 pl-4 pr-4"
-            )}
-          >
+          <div className={cn('flex flex-row justify-start gap-4 pl-4 pr-4')}>
             {items.map((item, index) => (
               <motion.div
                 initial={{
@@ -102,10 +98,10 @@ export const Carousel = ({ items, initialScroll = 0 }) => {
                   transition: {
                     duration: 0.5,
                     delay: 0.2 * index,
-                    ease: "easeOut",
+                    ease: 'easeOut',
                   },
                 }}
-                key={"card" + index}
+                key={'card' + index}
                 className="rounded-3xl snap-start mx-2"
               >
                 {item}
@@ -147,19 +143,19 @@ export const Card = ({ card, index, layout = false }) => {
 
   useEffect(() => {
     function onKeyDown(event) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         handleClose();
       }
     }
 
     if (open) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = 'auto';
     }
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
   useOutsideClick(containerRef, () => handleClose());
@@ -249,13 +245,13 @@ export const BlurImage = ({ src, className, alt, ...rest }) => {
   const [isLoading, setLoading] = useState(true);
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden", className)}>
+    <div className={cn('relative h-full w-full overflow-hidden', className)}>
       <img
         src={src}
-        alt={alt || "Background image"}
+        alt={alt || 'Background image'}
         className={cn(
-          "w-full h-full object-cover transition duration-300 ease-in-out",
-          isLoading ? "blur-sm scale-105" : "blur-0 scale-100"
+          'w-full h-full object-cover transition duration-300 ease-in-out',
+          isLoading ? 'blur-sm scale-105' : 'blur-0 scale-100'
         )}
         onLoad={() => setLoading(false)}
         {...rest}
@@ -263,4 +259,3 @@ export const BlurImage = ({ src, className, alt, ...rest }) => {
     </div>
   );
 };
-

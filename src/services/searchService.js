@@ -1,97 +1,78 @@
-// src/services/searchService.js
-import { getAuthHeader } from './authHeader';
+// Search Service - Placeholder functions (API calls removed)
+// All functions now return mock data instead of making API calls
+
+// Helper function to generate mock response
+const createMockResponse = data => {
+  return Promise.resolve({
+    success: true,
+    data: data,
+    message: 'Mock response - API calls have been removed',
+  });
+};
 
 export async function search(query) {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
+  console.log('Mock: Searching for', query);
+  return createMockResponse({
+    results: [
+      {
+        id: 'result-1',
+        title: `Mock search result for "${query}"`,
+        type: 'course',
+        description: 'Sample search result',
       },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error searching:', error);
-    throw error;
-  }
+    ],
+    total: 1,
+    query: query,
+  });
 }
 
 // Enhanced search function that includes course and module data
 export async function searchWithCoursesAndModules(query) {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&include=courses,modules`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
+  console.log('Mock: Searching with courses and modules for', query);
+  return createMockResponse({
+    results: [
+      {
+        id: 'course-1',
+        title: `Mock course for "${query}"`,
+        type: 'course',
+        modules: [{ id: 'module-1', title: 'Sample Module' }],
       },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error searching with courses and modules:', error);
-    throw error;
-  }
+    ],
+    total: 1,
+    query: query,
+  });
 }
 
 // Search specifically for users with their enrolled courses and modules
 export async function searchUsersWithEnrollments(query) {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search/users?q=${encodeURIComponent(query)}&include=enrollments,modules`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
+  console.log('Mock: Searching users with enrollments for', query);
+  return createMockResponse({
+    results: [
+      {
+        id: 'user-1',
+        name: `Mock user for "${query}"`,
+        type: 'user',
+        enrollments: [{ courseId: 'course-1', courseName: 'Sample Course' }],
       },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error searching users with enrollments:', error);
-    throw error;
-  }
+    ],
+    total: 1,
+    query: query,
+  });
 }
 
 // Search for courses with their modules
 export async function searchCoursesWithModules(query) {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search/courses?q=${encodeURIComponent(query)}&include=modules`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
+  console.log('Mock: Searching courses with modules for', query);
+  return createMockResponse({
+    results: [
+      {
+        id: 'course-1',
+        title: `Mock course for "${query}"`,
+        type: 'course',
+        modules: [{ id: 'module-1', title: 'Sample Module' }],
       },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error searching courses with modules:', error);
-    throw error;
-  }
+    ],
+    total: 1,
+    query: query,
+  });
 }

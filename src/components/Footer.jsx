@@ -1,5 +1,5 @@
-import React from "react";
-import { FaLinkedin, FaInstagram, FaFacebook, FaGithub } from "react-icons/fa";
+import React from 'react';
+import { FaLinkedin, FaInstagram, FaFacebook, FaGithub } from 'react-icons/fa';
 
 /**
  * Redesigned responsive footer:
@@ -10,88 +10,88 @@ import { FaLinkedin, FaInstagram, FaFacebook, FaGithub } from "react-icons/fa";
 
 const styles = {
   footer: {
-    background: "linear-gradient(180deg, #e3f0fc 60%, #e0f2fc 100%)",
-    color: "#225e95",
-    fontFamily: "inherit",
-    fontSize: "1.03rem",
-    borderRadius: "16px 16px 0 0",
-    overflow: "hidden",
+    background: 'linear-gradient(180deg, #e3f0fc 60%, #e0f2fc 100%)',
+    color: '#225e95',
+    fontFamily: 'inherit',
+    fontSize: '1.03rem',
+    borderRadius: '16px 16px 0 0',
+    overflow: 'hidden',
   },
   container: {
-    display: "flex",
+    display: 'flex',
     gap: 32,
-    padding: "40px 64px",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
+    padding: '40px 64px',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
   col: {
     flex: 1,
     minWidth: 200,
   },
   brand: {
-    fontSize: "1.9rem",
+    fontSize: '1.9rem',
     fontWeight: 700,
-    color: "#225e95",
+    color: '#225e95',
     marginBottom: 8,
   },
   tagline: {
-    color: "#225e95",
+    color: '#225e95',
     lineHeight: 1.45,
     marginBottom: 12,
   },
   sectionTitle: {
     fontWeight: 700,
-    fontSize: "1.15rem",
+    fontSize: '1.15rem',
     marginBottom: 10,
-    color: "#225e95",
+    color: '#225e95',
   },
   link: {
-    color: "#1890d7",
-    textDecoration: "none",
-    display: "inline-block",
+    color: '#1890d7',
+    textDecoration: 'none',
+    display: 'inline-block',
     marginBottom: 8,
     fontWeight: 500,
   },
   address: {
-    color: "#225e95",
+    color: '#225e95',
     lineHeight: 1.5,
   },
   bottomBar: {
-    borderTop: "1px solid rgba(21,94,149,0.08)",
-    padding: "14px 64px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
+    borderTop: '1px solid rgba(21,94,149,0.08)',
+    padding: '14px 64px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: 16,
-    flexWrap: "wrap",
+    flexWrap: 'wrap',
   },
   bottomLeft: {
-    display: "flex",
+    display: 'flex',
     gap: 24,
-    alignItems: "center",
-    flexWrap: "wrap",
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   copyright: {
-    color: "#225e95",
-    fontSize: "0.96rem",
+    color: '#225e95',
+    fontSize: '0.96rem',
   },
   socialRow: {
-    display: "flex",
+    display: 'flex',
     gap: 14,
-    alignItems: "center",
+    alignItems: 'center',
   },
   socialIcon: {
-    color: "#1890d7",
-    fontSize: "1.4rem",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
+    color: '#1890d7',
+    fontSize: '1.4rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   condensedLinks: {
-    display: "flex",
+    display: 'flex',
     gap: 12,
-    alignItems: "center",
+    alignItems: 'center',
   },
 };
 
@@ -140,19 +140,17 @@ const Footer = () => (
 
     <div
       className="athena-footer-container"
-      style={{ maxWidth: 1280, margin: "0 auto" }}
+      style={{ maxWidth: 1280, margin: '0 auto' }}
     >
       <div className="athena-footer columns" style={styles.container}>
         {/* Column 1 - Brand / Athena heading */}
-        <div
-          className="brand-col"
-          style={{ ...styles.col, flex: "0 0 260px" }}
-        >
+        <div className="brand-col" style={{ ...styles.col, flex: '0 0 260px' }}>
           <div className="brand" style={styles.brand}>
             Athena LMS
           </div>
           <div className="tagline" style={styles.tagline}>
-            Transforming education through innovative technology and personalized learning experiences.
+            Transforming education through innovative technology and
+            personalized learning experiences.
           </div>
           <div style={{ marginTop: 8 }}>
             <a href="/about" style={styles.link} className="footer-link">
@@ -167,42 +165,47 @@ const Footer = () => (
             Office
           </div>
           <address style={styles.address}>
-            Athena LMS<br />
-            Kirkland, Washington, USA<br /><br />
-            GF-20, Omaxe Square, Jasola District<br /> Centre, New Delhi - 110025
-          
+            Athena LMS
+            <br />
+            Kirkland, Washington, USA
+            <br />
+            <br />
+            GF-20, Omaxe Square, Jasola District
+            <br /> Centre, New Delhi - 110025
           </address>
 
-          <div style={{ marginTop: 10, fontWeight: 600, pointerEvents: "auto" }}>
-  <a
-    href="mailto:admin@lmsathena.com"
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{
-      color: "#225e95",
-      textDecoration: "none",
-      cursor: "pointer",
-      pointerEvents: "auto",
-    }}
-  >
-    admin@lmsathena.com
-  </a>
-</div>
+          <div
+            style={{ marginTop: 10, fontWeight: 600, pointerEvents: 'auto' }}
+          >
+            <a
+              href="mailto:admin@lmsathena.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#225e95',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+              }}
+            >
+              admin@lmsathena.com
+            </a>
+          </div>
 
-<div style={{ marginTop: 6, pointerEvents: "auto" }}>
-  <a
-    href="tel:+919811773207"
-    style={{
-      color: "#225e95",
-      textDecoration: "none",
-      cursor: "pointer",
-      pointerEvents: "auto",
-    }}
-  >
-    +91 9811773207
-  </a>
-</div>
-  </div>
+          <div style={{ marginTop: 6, pointerEvents: 'auto' }}>
+            <a
+              href="tel:+919811773207"
+              style={{
+                color: '#225e95',
+                textDecoration: 'none',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+              }}
+            >
+              +91 9811773207
+            </a>
+          </div>
+        </div>
 
         {/* Column 3 - Links */}
         <div style={styles.col} aria-labelledby="footer-links-main">
@@ -210,23 +213,70 @@ const Footer = () => (
             Links
           </div>
           <nav aria-label="Main links">
-          <div><a href="/instructionaldesign" style={styles.link} className="footer-link">Solutions</a></div>
-            <div><a href="/contact" style={styles.link} className="footer-link">Contact</a></div>
-            <div><a href="/website" style={styles.link} className="footer-link">Website</a></div>
-            <div><a href="/pricing" style={styles.link} className="footer-link">Pricing</a></div>
+            <div>
+              <a
+                href="/instructionaldesign"
+                style={styles.link}
+                className="footer-link"
+              >
+                Solutions
+              </a>
+            </div>
+            <div>
+              <a href="/contact" style={styles.link} className="footer-link">
+                Contact
+              </a>
+            </div>
+            <div>
+              <a href="/website" style={styles.link} className="footer-link">
+                Website
+              </a>
+            </div>
+            <div>
+              <a href="/pricing" style={styles.link} className="footer-link">
+                Pricing
+              </a>
+            </div>
           </nav>
         </div>
 
         {/* Column 4 - Useful Links */}
-        <div style={{ ...styles.col, flex: "0 0 220px" }} aria-labelledby="footer-links">
+        <div
+          style={{ ...styles.col, flex: '0 0 220px' }}
+          aria-labelledby="footer-links"
+        >
           <div id="footer-links" style={styles.sectionTitle}>
             Useful Links
           </div>
           <nav aria-label="Useful links">
-            <div><a href="/term-athena" style={styles.link} className="footer-link">Terms</a></div>
-            <div><a href="/privacy-athena" style={styles.link} className="footer-link">Privacy</a></div>
-            <div><a href="/cookies" style={styles.link} className="footer-link">Cookies</a></div>
-            <div><a href="/sitemap" style={styles.link} className="footer-link">Sitemap</a></div>
+            <div>
+              <a
+                href="/term-athena"
+                style={styles.link}
+                className="footer-link"
+              >
+                Terms
+              </a>
+            </div>
+            <div>
+              <a
+                href="/privacy-athena"
+                style={styles.link}
+                className="footer-link"
+              >
+                Privacy
+              </a>
+            </div>
+            <div>
+              <a href="/cookies" style={styles.link} className="footer-link">
+                Cookies
+              </a>
+            </div>
+            <div>
+              <a href="/sitemap" style={styles.link} className="footer-link">
+                Sitemap
+              </a>
+            </div>
           </nav>
         </div>
       </div>
@@ -234,15 +284,30 @@ const Footer = () => (
       {/* Bottom bar */}
       <div className="athena-footer bottom" style={styles.bottomBar}>
         <div style={styles.bottomLeft} className="left">
-          <nav className="condensed-links" aria-label="footer quick links" style={styles.condensedLinks}>
-            <a href="/privacy-athena" style={styles.link}>Privacy</a>
-            <a href="/term-athena" style={styles.link}>Terms</a>
-            <a href="/cookies" style={styles.link}>Cookies</a>
+          <nav
+            className="condensed-links"
+            aria-label="footer quick links"
+            style={styles.condensedLinks}
+          >
+            <a href="/privacy-athena" style={styles.link}>
+              Privacy
+            </a>
+            <a href="/term-athena" style={styles.link}>
+              Terms
+            </a>
+            <a href="/cookies" style={styles.link}>
+              Cookies
+            </a>
           </nav>
         </div>
 
-        <div className="right" style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <div style={styles.copyright}>© 2025 Athena LMS. All rights reserved.</div>
+        <div
+          className="right"
+          style={{ display: 'flex', alignItems: 'center', gap: 18 }}
+        >
+          <div style={styles.copyright}>
+            © 2025 Athena LMS. All rights reserved.
+          </div>
 
           <div style={styles.socialRow} aria-label="social links">
             <a

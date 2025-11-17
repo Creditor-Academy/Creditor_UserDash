@@ -1,6 +1,6 @@
-import React from "react";
-import { ArrowUpRight } from "lucide-react";
-import ochiside from "../../assets/dashlogo.webp";
+import React from 'react';
+import { ArrowUpRight } from 'lucide-react';
+import ochiside from '../../assets/dashlogo.webp';
 
 const Hero = () => {
   return (
@@ -255,14 +255,25 @@ const Hero = () => {
       <div className="hero-aurora-grid" />
       <div className="hero-container">
         <div className="hero-left">
-          <div className="text-sm" style={{ color: '#fff', fontWeight: 600, opacity: 0.9, marginBottom: '0.75rem' }}>
+          <div
+            className="text-sm"
+            style={{
+              color: '#fff',
+              fontWeight: 600,
+              opacity: 0.9,
+              marginBottom: '0.75rem',
+            }}
+          >
             About | Athena LMS
           </div>
           <h1 className="hero-heading" style={{ marginBottom: '1.5rem' }}>
-            Empowering Learning. <span style={{ color: '#fbbf24' }}>Built for Impact.</span>
+            Empowering Learning.{' '}
+            <span style={{ color: '#fbbf24' }}>Built for Impact.</span>
           </h1>
           <p className="hero-description">
-            We combine instructional design thinking with modern technology to craft meaningful learning experiences for organisations and individuals.
+            We combine instructional design thinking with modern technology to
+            craft meaningful learning experiences for organisations and
+            individuals.
           </p>
           <div className="hero-buttons">
             <a href="/about" className="btn-primary">
@@ -275,13 +286,28 @@ const Hero = () => {
           </div>
         </div>
         <div className="hero-right">
-          <div style={{ position: 'relative', width: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.35)' }}>
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.35)',
+            }}
+          >
             <img
               src={ochiside}
               alt="About Athena"
               style={{ width: '100%', height: '400px', objectFit: 'cover' }}
             />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.35), transparent 50%)' }}></div>
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(to top, rgba(0,0,0,0.35), transparent 50%)',
+              }}
+            ></div>
             {/* <div style={{ position: 'absolute', bottom: '16px', right: '16px' }}>
               <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(6px)', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

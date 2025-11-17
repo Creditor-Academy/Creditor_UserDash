@@ -1,44 +1,39 @@
-import React from "react";
-import { motion } from "framer-motion";
-import {
-  Rocket,
-  Infinity,
-  Headphones,
-  ArrowUpRight,
-} from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Rocket, Infinity, Headphones, ArrowUpRight } from 'lucide-react';
 
 const features = [
   {
     id: 1,
     icon: Rocket,
-    title: "Easy-to-use",
+    title: 'Easy-to-use',
     description:
-      "Focus on selling your expertise, not tech challenges. Enjoy intuitive drag-and-drop course builders and AI-powered tools that make it easy to create learning content.",
-    gradient: "from-blue-400 to-cyan-400",
+      'Focus on selling your expertise, not tech challenges. Enjoy intuitive drag-and-drop course builders and AI-powered tools that make it easy to create learning content.',
+    gradient: 'from-blue-400 to-cyan-400',
   },
   {
     id: 2,
     icon: Infinity,
-    title: "All-in-one",
+    title: 'All-in-one',
     description:
-      "Everything — from course creation to payments and community management — happens in one central place, giving you full control over your business.",
-    gradient: "from-purple-400 to-pink-400",
+      'Everything — from course creation to payments and community management — happens in one central place, giving you full control over your business.',
+    gradient: 'from-purple-400 to-pink-400',
   },
   {
     id: 3,
     icon: Headphones,
-    title: "Support that goes beyond",
+    title: 'Support that goes beyond',
     description:
-      "Our team partners with you to build and sell courses, communities, and other learning experiences quickly and easily.",
-    gradient: "from-amber-400 to-orange-400",
+      'Our team partners with you to build and sell courses, communities, and other learning experiences quickly and easily.',
+    gradient: 'from-amber-400 to-orange-400',
   },
   {
     id: 4,
     icon: ArrowUpRight,
-    title: "Built for scalability",
+    title: 'Built for scalability',
     description:
-      "Process more orders, host unlimited content, and grow your audience — no matter how big your learner base gets.",
-    gradient: "from-emerald-400 to-teal-400",
+      'Process more orders, host unlimited content, and grow your audience — no matter how big your learner base gets.',
+    gradient: 'from-emerald-400 to-teal-400',
   },
 ];
 
@@ -83,13 +78,12 @@ export default function ExpertChoose() {
           className="text-center mb-20"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal text-white mb-4 leading-tight">
-            Why experts choose{" "}
-            <span className="text-blue-400 font-semibold">
-              Athena
-            </span>
+            Why experts choose{' '}
+            <span className="text-blue-400 font-semibold">Athena</span>
           </h2>
           <p className="text-base sm:text-lg text-blue-200 max-w-2xl mx-auto">
-            Empower your expertise with a comprehensive platform designed for growth and success
+            Empower your expertise with a comprehensive platform designed for
+            growth and success
           </p>
         </motion.div>
 
@@ -101,7 +95,7 @@ export default function ExpertChoose() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
         >
-          {features.map((feature) => {
+          {features.map(feature => {
             const Icon = feature.icon;
             return (
               <motion.div
@@ -112,7 +106,9 @@ export default function ExpertChoose() {
                 <div className="relative h-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 hover:bg-white/15 transition-all duration-300 hover:shadow-xl">
                   <div className="flex items-start gap-6">
                     {/* Icon */}
-                    <div className={`flex-shrink-0 p-3 rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg`}>
+                    <div
+                      className={`flex-shrink-0 p-3 rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg`}
+                    >
                       <Icon className="w-7 h-7 text-white" strokeWidth={2} />
                     </div>
 

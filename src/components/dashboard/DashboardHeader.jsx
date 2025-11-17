@@ -1,20 +1,39 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User, Menu } from "lucide-react";
-import ProfileDropdown from "./ProfileDropdown";
-import NotificationModal from "./NotificationModal";
-import InboxModal from "./InboxModal";
-import CalendarModal from "./CalendarModal";
-import UserDetailsModal from "@/components/UserDetailsModal";
-import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
-import { search } from "@/services/searchService";
-import { fetchUserCourses } from "@/services/courseService";
-import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
-import { useAuth } from "@/contexts/AuthContext";
-import { fetchNotifications } from "@/services/notificationService";
-import { useCredits } from "@/contexts/CreditsContext";
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Search,
+  Calendar,
+  Mail,
+  BellDot,
+  BookOpen,
+  Loader2,
+  Lock,
+  AlertCircle,
+  Users,
+  User,
+  Menu,
+  Menu as MenuIcon,
+} from 'lucide-react';
+import ProfileDropdown from './ProfileDropdown';
+import NotificationModal from './NotificationModal';
+import InboxModal from './InboxModal';
+import CalendarModal from './CalendarModal';
+import UserDetailsModal from '@/components/UserDetailsModal';
+import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import { search } from '@/services/searchService';
+import { fetchUserCourses } from '@/services/courseService';
+import {
+  fetchDetailedUserProfile,
+  fetchUserCoursesByUserId,
+  fetchAllUsersAdmin,
+  fetchUserProfile,
+  fetchPublicUserProfile,
+} from '@/services/userService';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchNotifications } from '@/services/notificationService';
+import { useCredits } from '@/contexts/CreditsContext';
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const { isInstructorOrAdmin, hasRole } = useAuth();
@@ -23,7 +42,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -46,7 +65,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   // Display helper: format credit points using USD-style units (K, M, B, T)
   // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
-  const formatCreditPoints = (value) => {
+  const formatCreditPoints = value => {
     const num = Number(value) || 0;
     const abs = Math.abs(num);
     const sign = num < 0 ? '-' : '';
@@ -60,7 +79,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       }
       // Keep at most one decimal place; strip trailing .0
       const rounded = Math.round(display * 10) / 10;
-      const text = (rounded % 1 === 0) ? String(rounded) : rounded.toFixed(1);
+      const text = rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
       return `${sign}${text}${suffix}${clamped ? '+' : ''}`;
     };
 
@@ -119,7 +138,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       return [];
     }
   };
-  const writeLocalNotifications = (items) => {
+  const writeLocalNotifications = items => {
     try {
       localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(items || []));
     } catch {}
@@ -131,18 +150,38 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       return null;
     }
   };
-  const writeReadAllAt = (isoString) => {
+  const writeReadAllAt = isoString => {
     try {
-      localStorage.setItem(READ_ALL_AT_KEY, isoString || "");
+      localStorage.setItem(READ_ALL_AT_KEY, isoString || '');
     } catch {}
   };
 
-  // Fetch enrolled courses on component mount
+  // Fetch enrolled courses on component mount with caching
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       try {
+        // Check if we have cached enrolled courses (valid for 5 minutes)
+        const cached = localStorage.getItem('enrolledCourses');
+        const cacheTime = localStorage.getItem('enrolledCoursesTime');
+        const now = Date.now();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+        if (cached && cacheTime && now - parseInt(cacheTime) < CACHE_DURATION) {
+          console.log(
+            '✅ Using cached enrolled courses - avoiding getCourses API call!'
+          );
+          setEnrolledCourses(JSON.parse(cached));
+          setIsLoadingEnrolled(false);
+          return;
+        }
+
+        console.log('🔄 Fetching enrolled courses from API...');
         const courses = await fetchUserCourses();
         setEnrolledCourses(courses);
+
+        // Cache the results
+        localStorage.setItem('enrolledCourses', JSON.stringify(courses));
+        localStorage.setItem('enrolledCoursesTime', now.toString());
       } catch (error) {
         console.error('Failed to fetch enrolled courses:', error);
         setEnrolledCourses([]);
@@ -175,19 +214,20 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       const response = await fetchNotifications();
       console.log('Full notification response:', response);
       console.log('Response data:', response.data);
-      
+
       // Backend returns: { success: true, notifications: [...] }
       // Handle different possible response structures
-      let notificationsRaw = response.data?.notifications || 
-                            response.data?.data?.notifications || 
-                            response.data?.data || 
-                            (Array.isArray(response.data) ? response.data : []);
-      
+      let notificationsRaw =
+        response.data?.notifications ||
+        response.data?.data?.notifications ||
+        response.data?.data ||
+        (Array.isArray(response.data) ? response.data : []);
+
       console.log('Parsed notifications raw:', notificationsRaw);
       // Do not show ticket-reply notifications to admins
       if (hasRole && hasRole('admin')) {
-        notificationsRaw = notificationsRaw.filter(n =>
-          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+        notificationsRaw = notificationsRaw.filter(
+          n => (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
         );
       }
       const readAllAt = readReadAllAt();
@@ -195,44 +235,54 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       // Apply client-side read cutoff so items before readAllAt are treated as read
       const notifications = notificationsRaw.map(n => {
         if (!readAllAtTime) return n;
-        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
+        const createdTime = n.created_at
+          ? new Date(n.created_at).getTime()
+          : null;
         if (createdTime && createdTime <= readAllAtTime) {
           return { ...n, read: true };
         }
         return n;
       });
-      
+
       // Merge with local notifications currently in state by id
       setApiNotifications(prev => {
         const localItems = readLocalNotifications();
         const byId = new Map();
-        [...localItems, ...notifications, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        [...localItems, ...notifications, ...prev].forEach(n =>
+          byId.set(String(n.id ?? n._id), n)
+        );
         const merged = Array.from(byId.values());
         return merged;
       });
-      
+
       let localItems = readLocalNotifications().map(n => {
         if (!readAllAtTime) return n;
-        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
+        const createdTime = n.created_at
+          ? new Date(n.created_at).getTime()
+          : null;
         if (createdTime && createdTime <= readAllAtTime) {
           return { ...n, read: true };
         }
         return n;
       });
       if (hasRole && hasRole('admin')) {
-        localItems = localItems.filter(n =>
-          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+        localItems = localItems.filter(
+          n => (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
         );
       }
-      const unread = [...notifications, ...localItems].filter(n => !n.read).length;
+      const unread = [...notifications, ...localItems].filter(
+        n => !n.read
+      ).length;
       setUnreadNotifications(unread);
     } catch (err) {
-      console.error("Failed to fetch notifications:", err);
+      console.error('Failed to fetch notifications:', err);
       // On failure, at least reflect local unread count
       const localItems = readLocalNotifications();
       setApiNotifications(prev => {
         const byId = new Map();
-        [...localItems, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        [...localItems, ...prev].forEach(n =>
+          byId.set(String(n.id ?? n._id), n)
+        );
         return Array.from(byId.values());
       });
       setUnreadNotifications(localItems.filter(n => !n.read).length);
@@ -256,7 +306,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       const normalizedLocals = readAllAtTime
         ? locals.map(n => {
             const t = n.created_at ? new Date(n.created_at).getTime() : null;
-            return (t && t <= readAllAtTime) ? { ...n, read: true } : n;
+            return t && t <= readAllAtTime ? { ...n, read: true } : n;
           })
         : locals;
       setApiNotifications(prev => [...normalizedLocals, ...prev]);
@@ -280,7 +330,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   // Listen for adding a local notification (frontend fallback)
   useEffect(() => {
-    const handler = (e) => {
+    const handler = e => {
       const incoming = e?.detail;
       if (!incoming) return;
       setApiNotifications(prev => [incoming, ...prev]);
@@ -295,7 +345,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   // Debounced search effect
   useEffect(() => {
-    if (searchQuery.trim() === "") {
+    if (searchQuery.trim() === '') {
       setSearchResults(null);
       setShowDropdown(false);
       return;
@@ -333,32 +383,33 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       }
     }
     if (showDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     } else {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDropdown]);
 
   // Handle keyboard navigation
-  const handleKeyDown = (e) => {
+  const handleKeyDown = e => {
     if (!showDropdown || !searchResults) return;
 
-    const totalResults = (searchResults.results?.courses?.length || 0) + 
-                        (searchResults.results?.users?.length || 0);
+    const totalResults =
+      (searchResults.results?.courses?.length || 0) +
+      (searchResults.results?.users?.length || 0);
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedResultIndex(prev => 
+        setSelectedResultIndex(prev =>
           prev < totalResults - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedResultIndex(prev => 
+        setSelectedResultIndex(prev =>
           prev > 0 ? prev - 1 : totalResults - 1
         );
         break;
@@ -368,7 +419,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           // Navigate to the selected result
           const courses = searchResults.results?.courses || [];
           const users = searchResults.results?.users || [];
-          
+
           if (selectedResultIndex < courses.length) {
             handleCourseClick(courses[selectedResultIndex].id);
           } else {
@@ -392,13 +443,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     setSelectedResultIndex(-1);
   }, [searchResults]);
 
-  const handleCourseClick = (courseId) => {
+  const handleCourseClick = courseId => {
     // Check if user is enrolled in this course
     const isEnrolled = enrolledCourses.some(course => course.id === courseId);
-    
+
     if (isEnrolled) {
       setShowDropdown(false);
-      setSearchQuery("");
+      setSearchQuery('');
       setShowMobileSearch(false);
       navigate(`/dashboard/courses/${courseId}/modules`);
     } else {
@@ -410,14 +461,14 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     }
   };
 
-  const handleUserClick = async (userId) => {
+  const handleUserClick = async userId => {
     setShowDropdown(false);
-    setSearchQuery("");
+    setSearchQuery('');
     setShowMobileSearch(false);
     setUserDetailsError(null);
     setUserDetailsLoading(true);
     setShowUserDetailsModal(true);
-    
+
     try {
       if (isInstructorOrAdmin()) {
         // For instructors/admins, fetch detailed profile
@@ -449,7 +500,10 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             setSelectedUser(publicProfile);
           }
         } catch (publicErr) {
-          console.warn('Could not fetch public user profile, fallback to search result user:', publicErr);
+          console.warn(
+            'Could not fetch public user profile, fallback to search result user:',
+            publicErr
+          );
           const users = searchResults.results?.users || [];
           const fallback = users.find(user => user.id === userId);
           if (fallback) {
@@ -467,9 +521,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     }
   };
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = e => {
     e.preventDefault();
-    if (searchQuery.trim() !== "" && searchResults) {
+    if (searchQuery.trim() !== '' && searchResults) {
       setShowDropdown(true);
     }
   };
@@ -480,7 +534,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   };
 
   // Handle notification updates
-  const handleNotificationUpdate = (newCount) => {
+  const handleNotificationUpdate = newCount => {
     setUnreadNotifications(newCount);
   };
 
@@ -515,7 +569,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
               aria-label="Open menu"
               onClick={() => onMobileMenuClick && onMobileMenuClick()}
             >
-              <Menu className="h-5 w-5" />
+              <MenuIcon className="h-5 w-5" />
             </button>
             <button
               className="flex items-center focus:outline-none"
@@ -528,11 +582,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
               }}
             >
               <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                LMS Athena 
+                LMS Athena
               </h1>
             </button>
           </div>
-          
+
           {/* Search Bar - Desktop */}
           <div className="hidden md:block flex-1 max-w-md mx-4 lg:mx-8 relative">
             <form onSubmit={handleSearchSubmit} className="relative">
@@ -548,7 +602,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 type="text"
                 placeholder="Search courses and users..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="pl-12 pr-4 py-3 w-full bg-gray-50 border-0 rounded-2xl text-gray-800 text-sm h-12 shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-offset-0 transition-all duration-200"
                 style={{ outline: 'none' }}
@@ -562,12 +616,20 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
               >
                 {/* Total Results Header */}
-                {((searchResults.results?.courses?.length > 0) || (searchResults.results?.users?.length > 0)) && (
+                {(searchResults.results?.courses?.length > 0 ||
+                  searchResults.results?.users?.length > 0) && (
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-700">
-                      Found {searchResults.results?.courses?.length || 0} course{(searchResults.results?.courses?.length || 0) !== 1 ? 's' : ''}
+                      Found {searchResults.results?.courses?.length || 0} course
+                      {(searchResults.results?.courses?.length || 0) !== 1
+                        ? 's'
+                        : ''}
                       {searchResults.results?.users?.length > 0 && (
-                        <span> and {searchResults.results.users.length} user{(searchResults.results.users.length !== 1) ? 's' : ''}</span>
+                        <span>
+                          {' '}
+                          and {searchResults.results.users.length} user
+                          {searchResults.results.users.length !== 1 ? 's' : ''}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -582,7 +644,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.results.courses.map((course, index) => {
-                        const isEnrolled = enrolledCourses.some(ec => ec.id === course.id);
+                        const isEnrolled = enrolledCourses.some(
+                          ec => ec.id === course.id
+                        );
                         const isSelected = selectedResultIndex === index;
                         return (
                           <button
@@ -596,7 +660,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                           >
                             <BookOpen className="h-4 w-4 text-blue-600" />
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">{course.title}</div>
+                              <div className="font-medium text-gray-900">
+                                {course.title}
+                              </div>
                               <div className="text-sm text-gray-500 flex items-center gap-2">
                                 Course
                                 {isEnrolled ? (
@@ -628,16 +694,25 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="space-y-2">
                       {searchResults.results.users.map((user, index) => {
                         const userRole = user.user_roles?.[0]?.role || 'user';
-                        const roleColor = userRole === 'admin' ? 'bg-red-100 text-red-800' : 
-                                        userRole === 'instructor' ? 'bg-blue-100 text-blue-800' : 
-                                        'bg-gray-100 text-gray-600';
-                        const isSelected = selectedResultIndex === searchResults.results.courses.length + index;
-                        
+                        const roleColor =
+                          userRole === 'admin'
+                            ? 'bg-red-100 text-red-800'
+                            : userRole === 'instructor'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-600';
+                        const isSelected =
+                          selectedResultIndex ===
+                          searchResults.results.courses.length + index;
+
                         return (
                           <button
                             key={user.id}
                             onClick={() => handleUserClick(user.id)}
-                            onMouseEnter={() => setSelectedResultIndex(searchResults.results.courses.length + index)}
+                            onMouseEnter={() =>
+                              setSelectedResultIndex(
+                                searchResults.results.courses.length + index
+                              )
+                            }
                             onMouseLeave={() => setSelectedResultIndex(-1)}
                             className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
                               isSelected ? 'bg-blue-50' : ''
@@ -658,8 +733,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               </div>
                               <div className="text-sm text-gray-500 flex items-center gap-2">
                                 {user.email}
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleColor}`}>
-                                  {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleColor}`}
+                                >
+                                  {userRole.charAt(0).toUpperCase() +
+                                    userRole.slice(1)}
                                 </span>
                               </div>
                             </div>
@@ -670,15 +748,19 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-
                 {/* No Results Message */}
-                {(!searchResults.results?.courses?.length && !searchResults.results?.users?.length) && (
-                  <div className="p-4 text-center text-gray-500">
-                    <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p className="font-medium">No results found for "{searchQuery}"</p>
-                    <p className="text-sm text-gray-400 mt-1">Try different keywords or check your spelling</p>
-                  </div>
-                )}
+                {!searchResults.results?.courses?.length &&
+                  !searchResults.results?.users?.length && (
+                    <div className="p-4 text-center text-gray-500">
+                      <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="font-medium">
+                        No results found for "{searchQuery}"
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Try different keywords or check your spelling
+                      </p>
+                    </div>
+                  )}
 
                 {/* Loading State */}
                 {isSearching && (
@@ -689,16 +771,19 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 )}
 
                 {/* Keyboard Navigation Hints */}
-                {showDropdown && searchResults && !isSearching && 
-                 ((searchResults.results?.courses?.length > 0) || (searchResults.results?.users?.length > 0)) && (
-                  <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
-                    <div className="flex items-center justify-center gap-4">
-                      <span>↑↓ Navigate</span>
-                      <span>Enter Select</span>
-                      <span>Esc Close</span>
+                {showDropdown &&
+                  searchResults &&
+                  !isSearching &&
+                  (searchResults.results?.courses?.length > 0 ||
+                    searchResults.results?.users?.length > 0) && (
+                    <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+                      <div className="flex items-center justify-center gap-4">
+                        <span>↑↓ Navigate</span>
+                        <span>Enter Select</span>
+                        <span>Esc Close</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
           </div>
@@ -723,10 +808,14 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
               <span className="inline-flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[9px] sm:text-[10px] font-extrabold shadow-inner">
                 CP
               </span>
-              <span className="text-xs sm:text-sm font-semibold tabular-nums tracking-wide">{formatCreditPoints(balance)}</span>
-              <span className="ml-1 inline-flex items-center justify-center h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
+              <span className="text-xs sm:text-sm font-semibold tabular-nums tracking-wide">
+                {formatCreditPoints(balance)}
+              </span>
+              <span className="ml-1 inline-flex items-center justify-center h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                +
+              </span>
             </button>
-            
+
             {/* Notification Bell */}
             <button
               onClick={() => setNotificationModalOpen(true)}
@@ -740,14 +829,14 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 </span>
               )}
             </button>
-            
+
             {/* Profile Dropdown */}
             <div className="ml-1 sm:ml-2">
               <ProfileDropdown />
             </div>
           </div>
         </div>
-        
+
         {/* Mobile Search Bar */}
         {showMobileSearch && (
           <div className="md:hidden p-4 border-t border-gray-200 bg-white">
@@ -764,7 +853,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 type="text"
                 placeholder="Search courses and users..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="pl-12 pr-4 py-3 w-full bg-gray-50 border-0 rounded-2xl text-gray-800 text-sm h-12 shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-offset-0 transition-all duration-200"
                 style={{ outline: 'none' }}
@@ -775,7 +864,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 onClick={() => {
                   setShowMobileSearch(false);
                   setShowDropdown(false);
-                  setSearchQuery("");
+                  setSearchQuery('');
                 }}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
@@ -790,12 +879,20 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 className="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
               >
                 {/* Total Results Header */}
-                {((searchResults.results?.courses?.length > 0) || (searchResults.results?.users?.length > 0)) && (
+                {(searchResults.results?.courses?.length > 0 ||
+                  searchResults.results?.users?.length > 0) && (
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-700">
-                      Found {searchResults.results?.courses?.length || 0} course{(searchResults.results?.courses?.length || 0) !== 1 ? 's' : ''}
+                      Found {searchResults.results?.courses?.length || 0} course
+                      {(searchResults.results?.courses?.length || 0) !== 1
+                        ? 's'
+                        : ''}
                       {searchResults.results?.users?.length > 0 && (
-                        <span> and {searchResults.results.users.length} user{(searchResults.results.users.length !== 1) ? 's' : ''}</span>
+                        <span>
+                          {' '}
+                          and {searchResults.results.users.length} user
+                          {searchResults.results.users.length !== 1 ? 's' : ''}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -810,7 +907,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.results.courses.map((course, index) => {
-                        const isEnrolled = enrolledCourses.some(ec => ec.id === course.id);
+                        const isEnrolled = enrolledCourses.some(
+                          ec => ec.id === course.id
+                        );
                         const isSelected = selectedResultIndex === index;
                         return (
                           <button
@@ -824,7 +923,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                           >
                             <BookOpen className="h-4 w-4 text-blue-600" />
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">{course.title}</div>
+                              <div className="font-medium text-gray-900">
+                                {course.title}
+                              </div>
                               <div className="text-sm text-gray-500 flex items-center gap-2">
                                 Course
                                 {isEnrolled ? (
@@ -856,16 +957,25 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="space-y-2">
                       {searchResults.results.users.map((user, index) => {
                         const userRole = user.user_roles?.[0]?.role || 'user';
-                        const roleColor = userRole === 'admin' ? 'bg-red-100 text-red-800' : 
-                                        userRole === 'instructor' ? 'bg-blue-100 text-blue-800' : 
-                                        'bg-gray-100 text-gray-600';
-                        const isSelected = selectedResultIndex === searchResults.results.courses.length + index;
-                        
+                        const roleColor =
+                          userRole === 'admin'
+                            ? 'bg-red-100 text-red-800'
+                            : userRole === 'instructor'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-600';
+                        const isSelected =
+                          selectedResultIndex ===
+                          searchResults.results.courses.length + index;
+
                         return (
                           <button
                             key={user.id}
                             onClick={() => handleUserClick(user.id)}
-                            onMouseEnter={() => setSelectedResultIndex(searchResults.results.courses.length + index)}
+                            onMouseEnter={() =>
+                              setSelectedResultIndex(
+                                searchResults.results.courses.length + index
+                              )
+                            }
                             onMouseLeave={() => setSelectedResultIndex(-1)}
                             className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
                               isSelected ? 'bg-blue-50' : ''
@@ -886,8 +996,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               </div>
                               <div className="text-sm text-gray-500 flex items-center gap-2">
                                 {user.email}
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleColor}`}>
-                                  {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleColor}`}
+                                >
+                                  {userRole.charAt(0).toUpperCase() +
+                                    userRole.slice(1)}
                                 </span>
                               </div>
                             </div>
@@ -899,13 +1012,18 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 )}
 
                 {/* No Results Message */}
-                {(!searchResults.results?.courses?.length && !searchResults.results?.users?.length) && (
-                  <div className="p-4 text-center text-gray-500">
-                    <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p className="font-medium">No results found for "{searchQuery}"</p>
-                    <p className="text-sm text-gray-400 mt-1">Try different keywords or check your spelling</p>
-                  </div>
-                )}
+                {!searchResults.results?.courses?.length &&
+                  !searchResults.results?.users?.length && (
+                    <div className="p-4 text-center text-gray-500">
+                      <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="font-medium">
+                        No results found for "{searchQuery}"
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Try different keywords or check your spelling
+                      </p>
+                    </div>
+                  )}
 
                 {/* Loading State */}
                 {isSearching && (
@@ -918,28 +1036,25 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             )}
           </div>
         )}
-        
+
         {/* Calendar Modal */}
-        <CalendarModal 
-          open={calendarModalOpen} 
-          onOpenChange={setCalendarModalOpen} 
+        <CalendarModal
+          open={calendarModalOpen}
+          onOpenChange={setCalendarModalOpen}
         />
-        
+
         {/* Notification Modal */}
-        <NotificationModal 
-          open={notificationModalOpen} 
+        <NotificationModal
+          open={notificationModalOpen}
           onOpenChange={setNotificationModalOpen}
           onNotificationUpdate={handleNotificationUpdate}
           notificationsFromApi={apiNotifications}
           onMarkedAllRead={handleAllMarkedRead}
         />
-        
+
         {/* Inbox Modal */}
-        <InboxModal 
-          open={inboxModalOpen} 
-          onOpenChange={setInboxModalOpen} 
-        />
-        
+        <InboxModal open={inboxModalOpen} onOpenChange={setInboxModalOpen} />
+
         {/* User Details Modal */}
         <UserDetailsModal
           isOpen={showUserDetailsModal}
@@ -956,8 +1071,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       </header>
 
       {/* Credits Modal - render outside header to center across full viewport */}
-      <CreditPurchaseModal 
-        open={creditsModalOpen} 
+      <CreditPurchaseModal
+        open={creditsModalOpen}
         onClose={() => setCreditsModalOpen(false)}
         balance={balance}
         onBalanceChange={(_, meta) => {
@@ -975,11 +1090,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 <AlertCircle className="h-6 w-6 text-orange-500" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Course Not Enrolled</h3>
-                <p className="text-sm text-gray-600">You need to enroll in this course to access its modules.</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Course Not Enrolled
+                </h3>
+                <p className="text-sm text-gray-600">
+                  You need to enroll in this course to access its modules.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
               <Button
                 onClick={() => navigate('/dashboard/catalog')}

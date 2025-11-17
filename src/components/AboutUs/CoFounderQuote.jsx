@@ -29,15 +29,21 @@ const CoFounderQuote = () => {
   useEffect(() => {
     // Autoplay slider
     intervalRef.current = setInterval(() => {
-      setActive((prev) => (prev + 1) % slides.length);
+      setActive(prev => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(intervalRef.current);
   }, [slides.length]);
 
   return (
-    <section className="py-20 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)' }}>
+    <section
+      className="py-20 relative overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
+      }}
+    >
       {/* Animated Grid Background - Right Side */}
-      <div 
+      <div
         className="absolute right-0 top-0 bottom-0 pointer-events-none"
         style={{
           width: '60%',
@@ -59,21 +65,18 @@ const CoFounderQuote = () => {
             )
           `,
           maskImage: 'linear-gradient(to left, black 30%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to left, black 30%, transparent 100%)',
-          animation: 'gridPulse 4s ease-in-out infinite'
+          WebkitMaskImage:
+            'linear-gradient(to left, black 30%, transparent 100%)',
+          animation: 'gridPulse 4s ease-in-out infinite',
         }}
       />
-      
+
       {/* Background Logo - Visible on the left */}
-      <div 
+      <div
         className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/4 opacity-10 pointer-events-none"
         style={{ width: '700px', height: '700px' }}
       >
-        <img 
-          src={logo} 
-          alt="" 
-          className="w-full h-full object-contain"
-        />
+        <img src={logo} alt="" className="w-full h-full object-contain" />
       </div>
 
       {/* Keyframe Animation */}
@@ -87,7 +90,7 @@ const CoFounderQuote = () => {
           }
         }
       `}</style>
-      
+
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Slider wrapper */}
         <div className="overflow-hidden">
@@ -100,14 +103,25 @@ const CoFounderQuote = () => {
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                   {/* Text Section */}
                   <div className="space-y-6">
-                    <blockquote className="text-2xl md:text-3xl font-normal text-white leading-relaxed" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                    <blockquote
+                      className="text-2xl md:text-3xl font-normal text-white leading-relaxed"
+                      style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                    >
                       {s.quote}
                     </blockquote>
                     <div className="space-y-1">
-                      <p className="text-lg font-semibold text-white" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                      <p
+                        className="text-lg font-semibold text-white"
+                        style={{
+                          fontFamily: 'Georgia, Times New Roman, serif',
+                        }}
+                      >
                         {s.name}
                       </p>
-                      <p className="text-base text-gray-200" style={{ fontFamily: 'Arial, sans-serif' }}>
+                      <p
+                        className="text-base text-gray-200"
+                        style={{ fontFamily: 'Arial, sans-serif' }}
+                      >
                         {s.role}
                       </p>
                     </div>
@@ -150,5 +164,3 @@ const CoFounderQuote = () => {
 };
 
 export default CoFounderQuote;
-
-
