@@ -96,6 +96,18 @@ export function CourseView() {
   const navigate = useNavigate();
   const hasAccessFromState = location.state?.isAccessible ?? false;
   const { userProfile } = useUser();
+
+  /**
+   * Purchase Context from My Courses or Catalog Courses page
+   *
+   * This contains information about what the user has purchased:
+   * - purchaseType: 'CATALOG' | 'COURSE' | 'MODULE'
+   * - unlockedItems: { courseIds: [], moduleIds: [] }
+   *
+   * This is passed via route state when navigating from My Courses or Catalog Courses page.
+   * If not present, we fall back to checking enrolled courses and unlocked modules.
+   */
+  const purchaseContext = location.state?.purchaseContext || null;
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -1047,17 +1059,74 @@ export function CourseView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredModules.map(module => {
-                const hasAccess =
-                  isEnrolled || unlockedIds.has(String(module.id));
+                /**
+                 * Determine if module is unlocked/accessible
+                 *
+                 * Logic:
+                 * - If user is enrolled in course → All modules unlocked
+                 * - If purchaseType is 'CATALOG' → All modules unlocked
+                 * - If purchaseType is 'COURSE' → All modules unlocked (course purchase)
+                 * - If purchaseType is 'MODULE' → Only modules in unlockedItems.moduleIds are unlocked
+                 * - Otherwise → Check unlockedIds from backend
+                 */
+                let hasAccess = false;
+
+                // If enrolled, all modules are accessible
+                if (isEnrolled) {
+                  hasAccess = true;
+                }
+                // If purchase context exists, use it
+                else if (purchaseContext) {
+                  const { purchaseType, unlockedItems } = purchaseContext;
+
+                  // CATALOG or COURSE purchase → All modules unlocked
+                  if (purchaseType === 'CATALOG' || purchaseType === 'COURSE') {
+                    hasAccess = true;
+                  }
+                  // MODULE purchase → Only specific modules unlocked
+                  else if (purchaseType === 'MODULE') {
+                    hasAccess = unlockedItems.moduleIds.includes(
+                      String(module.id)
+                    );
+                  }
+                }
+                // Fall back to checking unlocked modules from backend
+                else {
+                  hasAccess = unlockedIds.has(String(module.id));
+                }
+
                 const isLocked = !hasAccess;
                 const modulePrice =
                   Number(module.price) > 0
                     ? Number(module.price)
                     : getStableRandomPrice(module);
 
-                // Sequential unlock: allow only the first module or next after highest unlocked
+                /**
+                 * Sequential unlock logic
+                 *
+                 * For MODULE purchases, allow unlocking modules in order.
+                 * For CATALOG/COURSE purchases, all modules are already unlocked.
+                 *
+                 * Sequential unlock: allow only the first module or next after highest unlocked
+                 */
                 let canUnlockInOrder = false;
                 if (isLocked) {
+                  // Get unlocked module IDs based on purchase context or backend data
+                  let unlockedModuleIdsForSequential = new Set();
+
+                  if (
+                    purchaseContext &&
+                    purchaseContext.purchaseType === 'MODULE'
+                  ) {
+                    // Use module IDs from purchase context
+                    unlockedModuleIdsForSequential = new Set(
+                      purchaseContext.unlockedItems.moduleIds.map(String)
+                    );
+                  } else {
+                    // Fall back to unlockedIds from backend
+                    unlockedModuleIdsForSequential = unlockedIds;
+                  }
+
                   const allOrders = modules
                     .map(m => Number(m.order) || 0)
                     .filter(n => n > 0);
@@ -1066,7 +1135,9 @@ export function CourseView() {
                     : 1;
                   const unlockedOrders = new Set(
                     modules
-                      .filter(m => unlockedIds.has(m.id))
+                      .filter(m =>
+                        unlockedModuleIdsForSequential.has(String(m.id))
+                      )
                       .map(m => Number(m.order) || 0)
                   );
                   const highestUnlocked = unlockedOrders.size
