@@ -19,24 +19,10 @@ const carouselItems = [
   {
     id: 1,
     type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/15nov.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/22nov.png",
     title: "This Saturday",
     course: "8th Nov",
     
-  },
-  {
-    id: 2,
-    type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Event3.png",
-    title: "Upcoming Event",
-    course: "Banner 2"
-  },
-  {
-    id: 3,
-    type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Event2.png",
-    title: "Upcoming Event",
-    course: "Banner 3"
   },
 ];
 
