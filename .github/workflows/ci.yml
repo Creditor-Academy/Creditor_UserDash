@@ -3,12 +3,19 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ "**" ]
+    paths:
+      - 'Creditor_UserDash/**'
   pull_request:
     branches: [ "**" ]
+    paths:
+      - 'Creditor_UserDash/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Creditor_UserDash
     
     strategy:
       matrix:
@@ -26,7 +33,7 @@ jobs:
     - name: Cache npm dependencies
       uses: actions/cache@v4
       with:
-        path: node_modules
+        path: ./node_modules
         key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-${{ matrix.node-version }}-
@@ -57,6 +64,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
+    defaults:
+      run:
+        working-directory: Creditor_UserDash
     
     steps:
     - name: Checkout code
@@ -70,7 +80,7 @@ jobs:
     - name: Cache npm dependencies
       uses: actions/cache@v4
       with:
-        path: node_modules
+        path: ./node_modules
         key: ${{ runner.os }}-node-20.x-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-20.x-
@@ -85,11 +95,14 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: build-files
-        path: dist/
+        path: ./dist/
         
   deploy-staging:
     runs-on: ubuntu-latest
     needs: [test, build]
+    defaults:
+      run:
+        working-directory: Creditor_UserDash
     if: github.ref == 'refs/heads/develop'
     
     steps:
@@ -137,6 +150,9 @@ jobs:
   deploy-production:
     runs-on: ubuntu-latest
     needs: [test, build]
+    defaults:
+      run:
+        working-directory: Creditor_UserDash
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -170,7 +186,7 @@ jobs:
       if: steps.check-secrets-prod.outputs.secrets-available == 'true'
       uses: nwtgck/actions-netlify@v2.0
       with:
-        publish-dir: './dist'
+        publish-dir: './Creditor_UserDash/dist'
         production-deploy: true
         github-token: ${{ secrets.GITHUB_TOKEN }}
         deploy-message: "Deploy from GitHub Actions - Production"
