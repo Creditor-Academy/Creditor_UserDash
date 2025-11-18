@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BANNER_URL =
@@ -9,7 +8,6 @@ const BANNER_URL =
 export default function ThanksgivingPromo({ onExtendMembership }) {
   const [isOpen, setIsOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const navigate = useNavigate();
 
   // Preload the image before showing the modal
   useEffect(() => {
@@ -40,13 +38,9 @@ export default function ThanksgivingPromo({ onExtendMembership }) {
   }, []);
 
   const handleExtendMembership = () => {
-    setIsOpen(false);
-    if (onExtendMembership) {
-      onExtendMembership();
-    } else {
-      // Fallback: navigate to credits page or open modal
-      navigate('/credits');
-    }
+    const membershipUrl =
+      'https://quickclick.com/r/ylju71tqiulsto3pqq6w9mq9tbrnmn';
+    window.open(membershipUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -106,7 +100,7 @@ export default function ThanksgivingPromo({ onExtendMembership }) {
                 {/* Button text */}
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   <span className="bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent group-hover:from-red-700 group-hover:to-red-800 transition-all duration-300">
-                    Extend Your Membership
+                    Extend Your Membership For 1 Year
                   </span>
                 </span>
 
