@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useCredits } from '@/contexts/CreditsContext';
 import { useUser } from '@/contexts/UserContext';
 import api from '@/services/apiClient';
@@ -212,8 +213,11 @@ const CreditPurchaseModal = ({
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+  // Ensure we're in the browser before using portal
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-3xl">
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -480,7 +484,7 @@ const CreditPurchaseModal = ({
       </div>
 
       {checkoutOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-none sm:rounded-xl shadow-lg border-0 sm:border border-gray-200 w-full h-full sm:w-full sm:h-auto max-w-none sm:max-w-3xl max-h-none sm:max-h-[80vh] overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 sm:px-4 sm:py-3 border-b sticky top-0 bg-white">
@@ -823,7 +827,7 @@ const CreditPurchaseModal = ({
       )}
 
       {confirmModal.open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+        <div className="fixed inset-0 z-[10003] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
             <div className="mb-2">
@@ -855,7 +859,8 @@ const CreditPurchaseModal = ({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 

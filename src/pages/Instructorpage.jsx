@@ -118,19 +118,19 @@ const InstructorPage = () => {
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-gray-50 to-white">
       {/* Main Sidebar */}
-      <div className="fixed top-0 left-0 h-screen z-30">
+      <div className="fixed top-0 left-0 h-screen z-[1]">
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       </div>
 
       {/* Sub Sidebar - Always show when on instructor page */}
       <div
-        className="fixed top-0 h-screen z-20 bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-52"
+        className="fixed top-0 h-screen z-[2] bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-52"
         style={{
           left: collapsed ? '4.5rem' : '17rem',
         }}
       >
         {/* Sub Sidebar Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
+        <div className="sticky top-0 z-[1] bg-white border-b border-gray-200 px-4 py-3">
           <h2 className="text-lg font-semibold text-gray-800">
             Instructor Tools
           </h2>
@@ -286,7 +286,7 @@ const InstructorPage = () => {
         }}
       >
         <header
-          className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 h-16 transition-all duration-300"
+          className="fixed top-0 left-0 right-0 z-[3] bg-white border-b border-gray-200 h-16 transition-all duration-300"
           style={{
             marginLeft: collapsed
               ? 'calc(4.5rem + 13rem)'
@@ -300,7 +300,7 @@ const InstructorPage = () => {
 
         {/* Fixed Dashboard Header */}
         <div
-          className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-10 transition-all duration-300"
+          className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-[3] transition-all duration-300"
           style={{
             top: '4rem',
             left: collapsed ? 'calc(4.5rem + 13rem)' : 'calc(17rem + 13rem)',
