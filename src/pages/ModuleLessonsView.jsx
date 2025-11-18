@@ -563,73 +563,73 @@ const ModuleLessonsView = () => {
     }
   };
 
-  const startScormProgressPolling = lessonId => {
-    if (!lessonId) return;
+  // const startScormProgressPolling = lessonId => {
+  //   if (!lessonId) return;
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  //   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const poll = async () => {
-      try {
-        const response = await axios.get(
-          `${apiBaseUrl}/api/scorm/progress/${lessonId}`,
-          {
-            withCredentials: true,
-            headers: {
-              ...getAuthHeader(),
-            },
-          }
-        );
+  //   const poll = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `${apiBaseUrl}/api/scorm/progress/${lessonId}`,
+  //         {
+  //           withCredentials: true,
+  //           headers: {
+  //             ...getAuthHeader(),
+  //           },
+  //         }
+  //       );
 
-        const payload = response.data?.data || response.data || {};
-        const totalFiles =
-          payload.totalFiles ??
-          payload.total ??
-          payload.total_files ??
-          payload.totalfiles ??
-          null;
-        const uploadedCount =
-          payload.uploadedCount ??
-          payload.uploaded ??
-          payload.uploaded_files ??
-          payload.uploadedcount ??
-          null;
+  //       const payload = response.data?.data || response.data || {};
+  //       const totalFiles =
+  //         payload.totalFiles ??
+  //         payload.total ??
+  //         payload.total_files ??
+  //         payload.totalfiles ??
+  //         null;
+  //       const uploadedCount =
+  //         payload.uploadedCount ??
+  //         payload.uploaded ??
+  //         payload.uploaded_files ??
+  //         payload.uploadedcount ??
+  //         null;
 
-        let percent = payload.percent;
-        if (
-          (percent === undefined || percent === null) &&
-          totalFiles &&
-          totalFiles > 0
-        ) {
-          percent = Math.round(((uploadedCount || 0) / totalFiles) * 100);
-        }
-        if (percent === undefined || percent === null) {
-          percent = 0;
-        }
-        percent = Math.max(0, Math.min(100, percent));
+  //       let percent = payload.percent;
+  //       if (
+  //         (percent === undefined || percent === null) &&
+  //         totalFiles &&
+  //         totalFiles > 0
+  //       ) {
+  //         percent = Math.round(((uploadedCount || 0) / totalFiles) * 100);
+  //       }
+  //       if (percent === undefined || percent === null) {
+  //         percent = 0;
+  //       }
+  //       percent = Math.max(0, Math.min(100, percent));
 
-        setScormServerProgress({
-          percent,
-          uploadedCount,
-          totalFiles,
-          status: payload.status || 'processing',
-        });
+  //       setScormServerProgress({
+  //         percent,
+  //         uploadedCount,
+  //         totalFiles,
+  //         status: payload.status || 'processing',
+  //       });
 
-        if (percent >= 100 || payload.status === 'completed') {
-          stopScormProgressPolling(false);
-        }
-      } catch (error) {
-        if (error.response?.status === 404) {
-          setScormServerProgress(null);
-          return;
-        }
-        console.error('Error fetching SCORM progress:', error);
-      }
-    };
+  //       if (percent >= 100 || payload.status === 'completed') {
+  //         stopScormProgressPolling(false);
+  //       }
+  //     } catch (error) {
+  //       if (error.response?.status === 404) {
+  //         setScormServerProgress(null);
+  //         return;
+  //       }
+  //       console.error('Error fetching SCORM progress:', error);
+  //     }
+  //   };
 
-    stopScormProgressPolling(false);
-    poll();
-    scormProgressIntervalRef.current = setInterval(poll, 1500);
-  };
+  //   stopScormProgressPolling(false);
+  //   poll();
+  //   scormProgressIntervalRef.current = setInterval(poll, 1500);
+  // };
 
   const handleOpenScormDialog = lesson => {
     stopScormProgressPolling(true);
@@ -713,7 +713,7 @@ const ModuleLessonsView = () => {
       setIsUploadingScorm(true);
       setScormUploadProgress(0);
       setScormServerProgress(null);
-      startScormProgressPolling(scormLesson.id);
+      // startScormProgressPolling(scormLesson.id);
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
       const formData = new FormData();
       formData.append('scorm', scormFile);
