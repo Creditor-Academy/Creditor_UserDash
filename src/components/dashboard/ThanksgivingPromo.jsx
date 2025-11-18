@@ -18,14 +18,14 @@ export default function ThanksgivingPromo({ onExtendMembership }) {
 
     const handleLoad = () => {
       setImageLoaded(true);
-      // Small delay after image loads before showing modal
-      timer = setTimeout(() => setIsOpen(true), 300);
+      // Delay after image loads before showing modal (2.5 seconds)
+      timer = setTimeout(() => setIsOpen(true), 1000);
     };
 
     const handleError = () => {
       // If image fails to load, still show after a delay
       setImageLoaded(true);
-      timer = setTimeout(() => setIsOpen(true), 300);
+      timer = setTimeout(() => setIsOpen(true), 1000);
     };
 
     img.onload = handleLoad;
@@ -69,7 +69,7 @@ export default function ThanksgivingPromo({ onExtendMembership }) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
             className="relative w-full max-w-sm sm:max-w-md md:max-w-lg overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 max-h-[90vh] overflow-y-auto"
           >
             {/* Close button */}
