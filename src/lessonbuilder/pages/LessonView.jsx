@@ -26,6 +26,7 @@ import { fetchCourseById, fetchCourseModules } from '@/services/courseService';
 import { getAuthHeader } from '@/services/authHeader';
 import { SidebarContext } from '@/layouts/DashboardLayout';
 import axios from 'axios';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const LessonView = () => {
   const { courseId, moduleId } = useParams();
@@ -34,7 +35,7 @@ const LessonView = () => {
   const { toast } = useToast();
   const { setSidebarCollapsed } = useContext(SidebarContext);
 
-  console.log('LessonView rendered with params:', { courseId, moduleId });
+  devLogger.debug('LessonView rendered with params:', { courseId, moduleId });
 
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,7 @@ const LessonView = () => {
 
   // Fetch module and lessons data
   useEffect(() => {
-    console.log(
+    devLogger.debug(
       'LessonView component mounted with courseId:',
       courseId,
       'moduleId:',
@@ -56,7 +57,7 @@ const LessonView = () => {
     // Check if we have data from navigation state (OPTIMIZATION)
     const navigationState = location.state;
     if (navigationState?.moduleData && navigationState?.courseData) {
-      console.log('Using navigation state data - avoiding 2 API calls!');
+      devLogger.debug('Using navigation state data - avoiding 2 API calls!');
 
       // Use passed data instead of API calls
       setCourseDetails(navigationState.courseData);
@@ -67,7 +68,9 @@ const LessonView = () => {
         fetchLessonsOnly();
       }
     } else {
-      console.log('No navigation state data - falling back to full API calls');
+      devLogger.debug(
+        'No navigation state data - falling back to full API calls'
+      );
       // Fallback to current approach if no state data
       if (courseId && moduleId) {
         fetchModuleLessons();
@@ -78,7 +81,7 @@ const LessonView = () => {
   const fetchModuleLessons = async () => {
     try {
       setLoading(true);
-      console.log(
+      devLogger.debug(
         'Fetching lessons for courseId:',
         courseId,
         'moduleId:',
@@ -91,8 +94,8 @@ const LessonView = () => {
         fetchCourseModules(courseId),
       ]);
 
-      console.log('Course data:', courseData);
-      console.log('Modules data:', modulesData);
+      devLogger.debug('Course data:', courseData);
+      devLogger.debug('Modules data:', modulesData);
 
       // Set course details
       setCourseDetails({
@@ -112,7 +115,7 @@ const LessonView = () => {
           module.module_id?.toString() === moduleId?.toString()
       );
 
-      console.log('Current module:', currentModule);
+      devLogger.debug('Current module:', currentModule);
 
       if (currentModule) {
         setModuleDetails({
@@ -145,7 +148,7 @@ const LessonView = () => {
         }
       );
 
-      console.log('Lessons response:', lessonsResponse.data);
+      devLogger.debug('Lessons response:', lessonsResponse.data);
 
       // Handle lessons response
       let lessonsData = [];
@@ -191,7 +194,7 @@ const LessonView = () => {
 
       setLessons(publishedLessons);
     } catch (err) {
-      console.error('Error fetching module lessons:', err);
+      devLogger.error('Error fetching module lessons:', err);
       setError('Failed to load module lessons. Please try again later.');
       toast({
         title: 'Error',
@@ -207,7 +210,7 @@ const LessonView = () => {
   const fetchLessonsOnly = async () => {
     try {
       setLoading(true);
-      console.log(
+      devLogger.debug(
         'Fetching lessons only for courseId:',
         courseId,
         'moduleId:',
@@ -223,7 +226,7 @@ const LessonView = () => {
         }
       );
 
-      console.log('Lessons response:', lessonsResponse.data);
+      devLogger.debug('Lessons response:', lessonsResponse.data);
 
       // Handle lessons response (same logic as fetchModuleLessons)
       let lessonsData = [];
@@ -269,7 +272,7 @@ const LessonView = () => {
 
       setLessons(publishedLessons);
     } catch (err) {
-      console.error('Error fetching lessons:', err);
+      devLogger.error('Error fetching lessons:', err);
       setError('Failed to load lessons. Please try again later.');
       toast({
         title: 'Error',
@@ -326,7 +329,7 @@ const LessonView = () => {
       }
 
       const responseData = await response.json();
-      console.log('Lesson content response:', responseData);
+      devLogger.debug('Lesson content response:', responseData);
 
       // Extract the actual data from the API response
       const data = responseData.data || responseData;
@@ -337,7 +340,7 @@ const LessonView = () => {
 
       if (scormUrl && scormUrl.trim()) {
         // If SCORM URL exists, open it in a new tab
-        console.log('Opening SCORM URL in new tab:', scormUrl);
+        devLogger.debug('Opening SCORM URL in new tab:', scormUrl);
         window.open(scormUrl, '_blank', 'noopener,noreferrer');
 
         toast({
@@ -346,13 +349,13 @@ const LessonView = () => {
         });
       } else {
         // If no SCORM URL, navigate to lesson preview (regardless of content)
-        console.log('No SCORM URL found, navigating to preview page');
+        devLogger.debug('No SCORM URL found, navigating to preview page');
         navigate(
           `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`
         );
       }
     } catch (error) {
-      console.error('Error fetching lesson content:', error);
+      devLogger.error('Error fetching lesson content:', error);
       toast({
         title: 'Error',
         description: 'Failed to load lesson content. Please try again.',

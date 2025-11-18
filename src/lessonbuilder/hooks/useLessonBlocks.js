@@ -1,4 +1,5 @@
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const useLessonBlocks = ({
   contentBlocks,
@@ -522,7 +523,7 @@ const useLessonBlocks = ({
             </div>`;
         }
       } catch (e) {
-        console.error('Error parsing list content:', e);
+        devLogger.error('Error parsing list content:', e);
         extractedListType = 'bulleted';
         htmlContent = `<div class="list-block"><ul class="list-disc list-inside"><li>Error loading list</li></ul></div>`;
       }
@@ -583,7 +584,7 @@ const useLessonBlocks = ({
       }
 
       if (!targetBlock) {
-        console.error('Block not found for checkbox toggle:', blockId);
+        devLogger.error('Block not found for checkbox toggle:', blockId);
         return;
       }
 
@@ -641,7 +642,7 @@ const useLessonBlocks = ({
           }
         }
       } catch (e) {
-        console.log('Could not update content JSON:', e);
+        devLogger.debug('Could not update content JSON:', e);
       }
 
       const updatedBlock = {
@@ -685,7 +686,7 @@ const useLessonBlocks = ({
 
       toast.success('Checkbox state saved');
     } catch (error) {
-      console.error('Error in handleCheckboxToggle:', error);
+      devLogger.error('Error in handleCheckboxToggle:', error);
       toast.error('Error updating checkbox');
     }
   };
@@ -698,7 +699,7 @@ const useLessonBlocks = ({
       );
 
     if (!editingBlock) {
-      console.error('Block not found for update:', blockId);
+      devLogger.error('Block not found for update:', blockId);
       return;
     }
 
@@ -706,7 +707,7 @@ const useLessonBlocks = ({
     try {
       updatedQuoteContent = JSON.parse(updatedContentString);
     } catch (e) {
-      console.error('Error parsing updated content:', e);
+      devLogger.error('Error parsing updated content:', e);
       return;
     }
 
@@ -1431,7 +1432,7 @@ const useLessonBlocks = ({
             quoteComponentRef.current?.setActiveCarouselTab(0);
           }
         } catch (e) {
-          console.error('Error setting carousel content:', e);
+          devLogger.error('Error setting carousel content:', e);
         }
       }
 

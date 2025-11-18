@@ -47,6 +47,20 @@ class UniversalAILessonService {
         );
       }
 
+      // Structured lesson plan path for premium mode
+      if (options.useStructuredLessonPlan) {
+        const structuredBlocks = await this.generateLessonFromStructuredPlan(
+          lessonData,
+          moduleData,
+          courseData,
+          options
+        );
+
+        if (structuredBlocks && structuredBlocks.length > 0) {
+          return structuredBlocks;
+        }
+      }
+
       // NEW: Use comprehensive content library generation
       if (options.useContentLibrary !== false) {
         console.log('🎯 Using comprehensive content library generation');
@@ -78,6 +92,376 @@ class UniversalAILessonService {
         courseData?.title || 'Course'
       );
     }
+  }
+
+  async generateLessonFromStructuredPlan(
+    lessonData,
+    moduleData,
+    courseData,
+    options = {}
+  ) {
+    const lessonTitle = lessonData?.title || 'Untitled Lesson';
+    const moduleTitle = moduleData?.title || 'Module';
+    const courseTitle = courseData?.title || 'Course';
+
+    try {
+      const systemPrompt = `You are a senior instructional designer creating a complete lesson plan for a professional online course.
+Return ONLY valid JSON with the following top-level keys:
+- "meta": { "lessonTitle": string, "difficulty": string, "estimatedTimeMinutes": number }
+- "overview": { "shortSummary": string, "whyItMatters": string }
+- "objectives": [string]
+- "coreConcepts": { "explanation": string, "keyPoints": [string], "comparisonTable": { "headers": [string], "rows": [[string]] } }
+- "guidedExample": { "title": string, "steps": [string], "explanation": string }
+- "practice": { "taskTitle": string, "steps": [string] }
+- "bestPractices": { "tips": [string], "pitfalls": [string] }
+- "assessment": { "reflectionQuestions": [string] }
+- "resources": [ { "title": string, "url": string, "description": string } ]
+- "images": [ { "slot": string, "prompt": string, "alt": string } ]`;
+
+      const inputSummary = {
+        course: courseData || {},
+        module: moduleData || {},
+        lesson: lessonData || {},
+        options: {
+          difficulty: courseData?.difficulty,
+          mode: options.mode || 'premium',
+          includeImages: options.includeImages !== false,
+        },
+      };
+
+      const userPrompt = `Create a complete lesson plan for the following context.
+
+Focus on accurate, production-grade educational content that a learner can rely on.
+Use clear language, concrete examples, and avoid markdown or bullet characters inside strings.
+Use arrays for lists like objectives, keyPoints, tips, steps, and questions.
+
+Inputs:
+${JSON.stringify(inputSummary, null, 2)}`;
+
+      const plan = await openAIService.generateStructured(
+        systemPrompt,
+        userPrompt,
+        {
+          model: 'gpt-4o-mini',
+          maxTokens: 3200,
+          temperature: 0.7,
+        }
+      );
+
+      if (!plan || typeof plan !== 'object') {
+        return [];
+      }
+
+      const blocks = await this.convertLessonPlanToBlocks(
+        plan,
+        lessonTitle,
+        moduleTitle,
+        courseTitle,
+        options
+      );
+
+      return blocks;
+    } catch (error) {
+      console.error('❌ Structured lesson plan generation failed:', error);
+      return [];
+    }
+  }
+
+  async convertLessonPlanToBlocks(
+    plan,
+    lessonTitle,
+    moduleTitle,
+    courseTitle,
+    options = {}
+  ) {
+    const blocks = [];
+    let order = 0;
+
+    const meta = plan.meta || {};
+    const overview = plan.overview || {};
+    const objectives = Array.isArray(plan.objectives)
+      ? plan.objectives
+      : plan.objectives
+        ? [plan.objectives]
+        : [];
+    const coreConcepts = plan.coreConcepts || {};
+    const guidedExample = plan.guidedExample || {};
+    const practice = plan.practice || {};
+    const bestPractices = plan.bestPractices || {};
+    const assessment = plan.assessment || {};
+    const resources = Array.isArray(plan.resources) ? plan.resources : [];
+
+    const title = meta.lessonTitle || lessonTitle;
+
+    blocks.push(this.createMasterHeading(title, order++, 'gradient1'));
+
+    const overviewText =
+      overview.shortSummary ||
+      overview.description ||
+      `This lesson introduces ${title} as part of ${moduleTitle} in the ${courseTitle} course.`;
+
+    blocks.push({
+      id: `overview-${Date.now()}`,
+      type: 'text',
+      textType: 'paragraph',
+      content: overviewText,
+      order: order++,
+      isAIGenerated: true,
+    });
+
+    if (options.includeImages !== false) {
+      try {
+        const heroBlock = await this.generateLessonHeroImage(
+          title,
+          moduleTitle,
+          courseTitle,
+          order++
+        );
+        if (heroBlock) {
+          blocks.push(heroBlock);
+        }
+      } catch (imageError) {
+        console.warn('⚠️ Hero image skipped:', imageError.message);
+      }
+    }
+
+    if (objectives.length > 0) {
+      blocks.push({
+        id: `objectives-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'subheading',
+        content: 'Learning Objectives',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      blocks.push({
+        id: `objectives-list-${Date.now()}`,
+        type: 'list',
+        listType: 'numbered',
+        numberingStyle: 'decimal',
+        items: objectives,
+        order: order++,
+        isAIGenerated: true,
+      });
+    }
+
+    const coreExplanation = coreConcepts.explanation;
+    const coreKeyPoints = Array.isArray(coreConcepts.keyPoints)
+      ? coreConcepts.keyPoints
+      : [];
+
+    if (coreExplanation || coreKeyPoints.length > 0) {
+      blocks.push({
+        id: `core-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'heading',
+        content: 'Core Concepts',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      if (coreExplanation) {
+        blocks.push({
+          id: `core-explanation-${Date.now()}`,
+          type: 'text',
+          textType: 'paragraph',
+          content: coreExplanation,
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+
+      if (coreKeyPoints.length > 0) {
+        blocks.push({
+          id: `core-keypoints-${Date.now()}`,
+          type: 'list',
+          listType: 'bulleted',
+          bulletStyle: 'disc',
+          items: coreKeyPoints,
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+
+      const table = coreConcepts.comparisonTable;
+      if (
+        table &&
+        Array.isArray(table.headers) &&
+        table.headers.length > 0 &&
+        Array.isArray(table.rows) &&
+        table.rows.length > 0
+      ) {
+        blocks.push({
+          id: `core-table-${Date.now()}`,
+          type: 'table',
+          content: {
+            headers: table.headers,
+            rows: table.rows,
+          },
+          order: order++,
+          isAIGenerated: true,
+          metadata: { variant: 'data-table' },
+        });
+      }
+    }
+
+    if (
+      guidedExample.title ||
+      guidedExample.explanation ||
+      guidedExample.steps
+    ) {
+      blocks.push({
+        id: `example-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'heading',
+        content: guidedExample.title || 'Guided Example',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      if (guidedExample.explanation) {
+        blocks.push({
+          id: `example-explanation-${Date.now()}`,
+          type: 'text',
+          textType: 'paragraph',
+          content: guidedExample.explanation,
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+
+      const exampleSteps = Array.isArray(guidedExample.steps)
+        ? guidedExample.steps
+        : [];
+      if (exampleSteps.length > 0) {
+        blocks.push({
+          id: `example-steps-${Date.now()}`,
+          type: 'checklist',
+          items: exampleSteps,
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+    }
+
+    const practiceSteps = Array.isArray(practice.steps) ? practice.steps : [];
+    if (practice.taskTitle || practiceSteps.length > 0) {
+      blocks.push({
+        id: `practice-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'subheading',
+        content: practice.taskTitle || 'Practice Activity',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      if (practiceSteps.length > 0) {
+        blocks.push({
+          id: `practice-steps-${Date.now()}`,
+          type: 'checklist',
+          items: practiceSteps,
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+    }
+
+    const tips = Array.isArray(bestPractices.tips) ? bestPractices.tips : [];
+    const pitfalls = Array.isArray(bestPractices.pitfalls)
+      ? bestPractices.pitfalls
+      : [];
+
+    if (tips.length > 0 || pitfalls.length > 0) {
+      blocks.push({
+        id: `best-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'heading',
+        content: 'Best Practices and Pitfalls',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      if (tips.length > 0) {
+        blocks.push({
+          id: `best-tips-${Date.now()}`,
+          type: 'list',
+          listType: 'bulleted',
+          bulletStyle: 'disc',
+          items: tips,
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+
+      if (pitfalls.length > 0) {
+        blocks.push({
+          id: `best-pitfalls-${Date.now()}`,
+          type: 'statement',
+          statementType: 'note',
+          content: pitfalls.join('\n'),
+          order: order++,
+          isAIGenerated: true,
+        });
+      }
+    }
+
+    const questions = Array.isArray(assessment.reflectionQuestions)
+      ? assessment.reflectionQuestions
+      : [];
+    if (questions.length > 0) {
+      blocks.push({
+        id: `assessment-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'subheading',
+        content: 'Reflection Questions',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      blocks.push({
+        id: `assessment-questions-${Date.now()}`,
+        type: 'list',
+        listType: 'numbered',
+        numberingStyle: 'decimal',
+        items: questions,
+        order: order++,
+        isAIGenerated: true,
+      });
+    }
+
+    if (resources.length > 0) {
+      blocks.push({
+        id: `resources-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'subheading',
+        content: 'Additional Resources',
+        order: order++,
+        isAIGenerated: true,
+      });
+
+      resources.forEach(resource => {
+        if (!resource || !resource.url) {
+          return;
+        }
+
+        blocks.push({
+          id: `resource-${Date.now()}-${Math.random()}`,
+          type: 'link',
+          content: {
+            url: resource.url,
+            title: resource.title || `Resource for ${lessonTitle}`,
+            description:
+              resource.description ||
+              'Recommended reading to deepen your understanding.',
+          },
+          order: order++,
+          isAIGenerated: true,
+        });
+      });
+    }
+
+    return blocks;
   }
 
   /**
@@ -944,20 +1328,210 @@ Style: modern infographic, educational diagram, clear and concise.`;
       };
     }
 
+    const normalizedBlocks = this.postProcessBlocks(blocks);
+
     // Convert blocks with proper html_css field
-    const processedBlocks = blocks.map(block => ({
-      ...block,
-      html_css: block.html_css || this.convertBlockToHTML(block),
-    }));
+    const processedBlocks = normalizedBlocks.map(block => {
+      const cleanedBlock = this.cleanBlock(block);
+      return {
+        ...cleanedBlock,
+        html_css:
+          cleanedBlock.html_css || this.convertBlockToHTML(cleanedBlock),
+      };
+    });
 
     return {
       content: processedBlocks, // Backend expects 'content' field
       metadata: {
         aiGenerated: true,
         generatedAt: new Date().toISOString(),
-        totalBlocks: blocks.length,
+        totalBlocks: processedBlocks.length,
       },
     };
+  }
+
+  postProcessBlocks(blocks) {
+    if (!Array.isArray(blocks) || blocks.length === 0) {
+      return blocks || [];
+    }
+
+    const result = [];
+    let numberedLists = 0;
+    let bulletLists = 0;
+    let tables = 0;
+    let quoteCarouselSeen = false;
+
+    for (const block of blocks) {
+      if (!block || typeof block !== 'object') {
+        continue;
+      }
+
+      const clone = { ...block };
+
+      if (clone.type === 'list') {
+        if (clone.listType === 'numbered') {
+          numberedLists += 1;
+          if (numberedLists > 3) {
+            continue;
+          }
+          clone.numberingStyle = 'decimal';
+        } else if (clone.listType === 'bulleted') {
+          bulletLists += 1;
+          if (bulletLists > 3) {
+            continue;
+          }
+          const allowedBullets = ['disc', 'circle'];
+          if (!allowedBullets.includes(clone.bulletStyle)) {
+            clone.bulletStyle = 'disc';
+          }
+        }
+      }
+
+      if (clone.type === 'table') {
+        tables += 1;
+        if (tables > 2) {
+          continue;
+        }
+      }
+
+      if (clone.type === 'quote' && clone.subtype === 'carousel') {
+        if (quoteCarouselSeen) {
+          continue;
+        }
+        quoteCarouselSeen = true;
+      }
+
+      result.push(clone);
+    }
+
+    return result;
+  }
+
+  cleanBlock(block) {
+    if (!block || typeof block !== 'object') {
+      return block;
+    }
+
+    const cleaned = { ...block };
+
+    if (cleaned.type === 'text') {
+      if (typeof cleaned.content === 'string') {
+        cleaned.content = this.sanitizeTextContent(cleaned.content, false);
+      }
+    }
+
+    if (cleaned.type === 'statement') {
+      if (typeof cleaned.content === 'string') {
+        cleaned.content = this.sanitizeTextContent(cleaned.content, false);
+      }
+    }
+
+    if (cleaned.type === 'quote') {
+      if (typeof cleaned.content === 'string') {
+        cleaned.content = this.sanitizeTextContent(cleaned.content, false);
+      }
+      if (Array.isArray(cleaned.quotes)) {
+        cleaned.quotes = cleaned.quotes.map(q => ({
+          ...q,
+          quote:
+            typeof q.quote === 'string'
+              ? this.sanitizeTextContent(q.quote, false)
+              : q.quote,
+        }));
+      }
+    }
+
+    if (cleaned.type === 'list') {
+      if (Array.isArray(cleaned.items)) {
+        cleaned.items = cleaned.items
+          .map(item =>
+            typeof item === 'string'
+              ? this.sanitizeTextContent(item, true)
+              : item
+          )
+          .filter(item =>
+            typeof item === 'string' ? item.trim().length > 0 : true
+          );
+      } else if (typeof cleaned.content === 'string') {
+        const rawLines = cleaned.content.split('\n');
+        const items = rawLines
+          .map(line => this.sanitizeTextContent(line, true))
+          .filter(line => line && line.trim().length > 0);
+        cleaned.items = items;
+      }
+    }
+
+    if (cleaned.type === 'checklist' && Array.isArray(cleaned.items)) {
+      cleaned.items = cleaned.items
+        .map(item =>
+          typeof item === 'string' ? this.sanitizeTextContent(item, true) : item
+        )
+        .filter(item =>
+          typeof item === 'string' ? item.trim().length > 0 : true
+        );
+    }
+
+    if (cleaned.type === 'link' && cleaned.content) {
+      if (typeof cleaned.content.title === 'string') {
+        cleaned.content.title = this.sanitizeTextContent(
+          cleaned.content.title,
+          false
+        );
+      }
+      if (typeof cleaned.content.description === 'string') {
+        cleaned.content.description = this.sanitizeTextContent(
+          cleaned.content.description,
+          false
+        );
+      }
+    }
+
+    if (cleaned.type === 'image' && cleaned.content) {
+      if (typeof cleaned.content.text === 'string') {
+        cleaned.content.text = this.sanitizeTextContent(
+          cleaned.content.text,
+          false
+        );
+      }
+      if (typeof cleaned.content.caption === 'string') {
+        cleaned.content.caption = this.sanitizeTextContent(
+          cleaned.content.caption,
+          false
+        );
+      }
+    }
+
+    return cleaned;
+  }
+
+  sanitizeTextContent(text, forList = false) {
+    if (!text || typeof text !== 'string') {
+      return text;
+    }
+
+    let result = text.trim();
+
+    result = result.replace(/^["']+/, '').replace(/["']+$/, '');
+
+    result = result.replace(/\r\n/g, '\n');
+
+    if (forList) {
+      const lines = result.split('\n').map(line => {
+        let current = line.trim();
+        current = current.replace(/^([-*+•]\s+)+/, '');
+        current = current.replace(/^\d+[\.)]\s+/, '');
+        return current;
+      });
+
+      result = lines
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
+    } else {
+      result = result.replace(/^[-*+•]\s+/, '');
+    }
+
+    return result;
   }
 
   /**

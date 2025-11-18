@@ -1,6 +1,6 @@
-// Enhanced AI Service - OpenAI Only Solution
-// Simplified to use only OpenAI (removed HuggingFace, Deep AI, Bytez, Qwen)
-import openAIService from './openAIService';
+// Enhanced AI Service - Secure Backend Implementation
+// All AI operations now go through secure backend (no direct OpenAI calls)
+import secureAIService from './secureAIService';
 
 /**
  * Enhanced AI Service - OpenAI Only
@@ -8,8 +8,8 @@ import openAIService from './openAIService';
  */
 class EnhancedAIService {
   constructor() {
-    this.openai = openAIService;
-    console.log('✅ Enhanced AI Service initialized (OpenAI only)');
+    this.openai = secureAIService;
+    console.log('✅ Enhanced AI Service initialized (Secure Backend)');
   }
 
   /**

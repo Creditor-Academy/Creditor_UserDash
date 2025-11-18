@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const useLessonLoader = ({
   courseId,
@@ -30,7 +31,7 @@ const useLessonLoader = ({
 
           try {
             const lessonId = location.state.lessonData.id;
-            console.log('Fetching lesson content for:', lessonId);
+            devLogger.debug('Fetching lesson content for:', lessonId);
 
             const baseUrl =
               import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
@@ -52,7 +53,7 @@ const useLessonLoader = ({
             }
 
             const responseData = await response.json();
-            console.log('Fetched lesson content:', responseData);
+            devLogger.debug('Fetched lesson content:', responseData);
 
             const scormUrl =
               responseData.data?.scorm_url ||
@@ -72,10 +73,10 @@ const useLessonLoader = ({
               },
               message: 'Lesson content fetched successfully',
             };
-            console.log('Content response:', contentData);
+            devLogger.debug('Content response:', contentData);
 
             if (contentData) {
-              console.log('Setting lesson content:', contentData);
+              devLogger.debug('Setting lesson content:', contentData);
               setLessonContent(contentData);
 
               try {
@@ -215,7 +216,7 @@ const useLessonLoader = ({
                         const content = JSON.parse(b.content);
                         template = content.template;
                       } catch {
-                        console.log(
+                        devLogger.warn(
                           'Could not parse interactive content as JSON'
                         );
                       }
@@ -260,7 +261,7 @@ const useLessonLoader = ({
                       try {
                         audioContent = JSON.parse(b.content);
                       } catch {
-                        console.log(
+                        devLogger.warn(
                           'Could not parse existing audio content, reconstructing from details'
                         );
                       }
@@ -296,7 +297,7 @@ const useLessonLoader = ({
                       try {
                         youTubeContent = JSON.parse(b.content);
                       } catch {
-                        console.log(
+                        devLogger.warn(
                           'Could not parse existing YouTube content, reconstructing from details'
                         );
                       }
@@ -305,11 +306,11 @@ const useLessonLoader = ({
                       !youTubeContent.url ||
                       youTubeContent.url.trim() === ''
                     ) {
-                      console.log(
+                      devLogger.debug(
                         'Reconstructing YouTube content from details:',
                         b.details
                       );
-                      console.log('Available block data:', {
+                      devLogger.debug('Available block data:', {
                         details: b.details,
                         content: b.content,
                         html_css: b.html_css ? 'Present' : 'Missing',
@@ -343,7 +344,7 @@ const useLessonLoader = ({
                           );
                         if (srcMatch) {
                           const extractedUrl = srcMatch[1];
-                          console.log(
+                          devLogger.debug(
                             'Extracted URL from html_css:',
                             extractedUrl
                           );
@@ -362,7 +363,7 @@ const useLessonLoader = ({
                       }
                     }
 
-                    console.log('YouTube block loading result:', {
+                    devLogger.debug('YouTube block loading result:', {
                       blockId: b.id,
                       finalContent: youTubeContent,
                       hasUrl: !!youTubeContent.url,
@@ -411,17 +412,17 @@ const useLessonLoader = ({
                   setLessonContent(null);
                 }
               } catch (e) {
-                console.warn(
+                devLogger.warn(
                   'Failed to map fetched content to edit blocks:',
                   e
                 );
               }
             } else {
-              console.log('No content found for this lesson');
+              devLogger.debug('No content found for this lesson');
             }
           } catch (contentError) {
-            console.error('Error fetching lesson content:', contentError);
-            console.error(
+            devLogger.error('Error fetching lesson content:', contentError);
+            devLogger.error(
               'Error details:',
               contentError.response?.data || contentError.message
             );
@@ -438,7 +439,7 @@ const useLessonLoader = ({
             throw new Error('Authentication token not found');
           }
 
-          console.log('Fetching lesson data for:', {
+          devLogger.debug('Fetching lesson data for:', {
             courseId,
             moduleId,
             lessonId,
@@ -464,7 +465,7 @@ const useLessonLoader = ({
           }
 
           const lessonResponseData = await lessonResponse.json();
-          console.log('Fetched lesson data:', lessonResponseData);
+          devLogger.debug('Fetched lesson data:', lessonResponseData);
 
           const lessonData = lessonResponseData.data || lessonResponseData;
 
@@ -473,7 +474,7 @@ const useLessonLoader = ({
           setContentBlocks(lessonData.contentBlocks || []);
 
           try {
-            console.log('Fetching lesson content for lessonId:', lessonId);
+            devLogger.debug('Fetching lesson content for lessonId:', lessonId);
 
             const contentResponse = await fetch(
               `${baseUrl}/api/lessoncontent/${lessonId}`,
@@ -488,7 +489,7 @@ const useLessonLoader = ({
 
             if (contentResponse.ok) {
               const contentResponseData = await contentResponse.json();
-              console.log('Fetched lesson content:', contentResponseData);
+              devLogger.debug('Fetched lesson content:', contentResponseData);
 
               const scormUrl =
                 contentResponseData.data?.scorm_url ||
@@ -651,7 +652,7 @@ const useLessonLoader = ({
                         const content = JSON.parse(b.content);
                         template = content.template;
                       } catch {
-                        console.log(
+                        devLogger.warn(
                           'Could not parse interactive content as JSON'
                         );
                       }
@@ -696,7 +697,7 @@ const useLessonLoader = ({
                       try {
                         audioContent = JSON.parse(b.content);
                       } catch {
-                        console.log(
+                        devLogger.warn(
                           'Could not parse existing audio content, reconstructing from details'
                         );
                       }
@@ -732,7 +733,7 @@ const useLessonLoader = ({
                       try {
                         youTubeContent = JSON.parse(b.content);
                       } catch {
-                        console.log(
+                        devLogger.warn(
                           'Could not parse existing YouTube content, reconstructing from details'
                         );
                       }
@@ -741,11 +742,11 @@ const useLessonLoader = ({
                       !youTubeContent.url ||
                       youTubeContent.url.trim() === ''
                     ) {
-                      console.log(
+                      devLogger.debug(
                         'Reconstructing YouTube content from details:',
                         b.details
                       );
-                      console.log('Available block data:', {
+                      devLogger.debug('Available block data:', {
                         details: b.details,
                         content: b.content,
                         html_css: b.html_css ? 'Present' : 'Missing',
@@ -779,7 +780,7 @@ const useLessonLoader = ({
                           );
                         if (srcMatch) {
                           const extractedUrl = srcMatch[1];
-                          console.log(
+                          devLogger.debug(
                             'Extracted URL from html_css:',
                             extractedUrl
                           );
@@ -798,7 +799,7 @@ const useLessonLoader = ({
                       }
                     }
 
-                    console.log('YouTube block loading result:', {
+                    devLogger.debug('YouTube block loading result:', {
                       blockId: b.id,
                       finalContent: youTubeContent,
                       hasUrl: !!youTubeContent.url,
@@ -849,12 +850,12 @@ const useLessonLoader = ({
                 }
               }
             } else {
-              console.log(
+              devLogger.debug(
                 'No content found for this lesson or content fetch failed'
               );
             }
           } catch (contentError) {
-            console.error('Error fetching lesson content:', contentError);
+            devLogger.error('Error fetching lesson content:', contentError);
           }
         } else {
           setLessonTitle('New Lesson');
@@ -868,7 +869,7 @@ const useLessonLoader = ({
           setContentBlocks([]);
         }
       } catch (error) {
-        console.error('Error loading lesson data:', error);
+        devLogger.error('Error loading lesson data:', error);
         setLessonTitle('Untitled Lesson');
         if (error.message.includes('token') || error.message.includes('401')) {
           navigate('/login');

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import UniversalAIContentButton from './UniversalAIContentButton';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 /**
  * Integration component for LessonBuilder to handle AI content generation
@@ -27,7 +28,10 @@ const LessonBuilderAIIntegration = ({
   }, [location.state]);
 
   const handleAIContentGenerated = generatedBlocks => {
-    console.log('🎯 AI Content Generated for Lesson Builder:', generatedBlocks);
+    devLogger.debug(
+      '🎯 AI Content Generated for Lesson Builder:',
+      generatedBlocks
+    );
 
     // Add generated blocks to existing content
     const newBlocks = generatedBlocks.map((block, index) => ({

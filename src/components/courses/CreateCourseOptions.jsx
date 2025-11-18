@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  PenTool, 
-  X
-} from 'lucide-react';
+import { Sparkles, PenTool, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
@@ -15,45 +11,45 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       id: 'ai',
       title: 'AI Course',
       icon: Sparkles,
-      color: 'bg-purple-500 hover:bg-purple-600'
+      color: 'bg-purple-500 hover:bg-purple-600',
     },
     {
       id: 'blank',
       title: 'Manual Course',
       icon: PenTool,
-      color: 'bg-gray-600 hover:bg-gray-700'
-    }
+      color: 'bg-gray-600 hover:bg-gray-700',
+    },
   ];
 
   const overlayVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1 }
+    visible: { opacity: 1 },
   };
 
   const modalVariants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       scale: 0.95,
-      y: 20
+      y: 20,
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       scale: 1,
       y: 0,
       transition: {
-        type: "spring",
+        type: 'spring',
         stiffness: 300,
-        damping: 30
-      }
+        damping: 30,
+      },
     },
     exit: {
       opacity: 0,
       scale: 0.95,
       y: 20,
       transition: {
-        duration: 0.2
-      }
-    }
+        duration: 0.2,
+      },
+    },
   };
 
   if (!isOpen) return null;
@@ -66,7 +62,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
         animate="visible"
         exit="hidden"
         className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
-        onClick={(e) => {
+        onClick={e => {
           // Only close if clicking the backdrop itself
           if (e.target === e.currentTarget) {
             onClose();
@@ -79,7 +75,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
           animate="visible"
           exit="exit"
           className="bg-white rounded-xl shadow-2xl max-w-sm w-full"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -92,6 +88,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
               onClick={onClose}
               className="rounded-full hover:bg-gray-100 h-8 w-8"
               aria-label="Close dialog"
+              title="Close course creation options"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -100,13 +97,13 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
           {/* Content */}
           <div className="p-4">
             <div className="grid grid-cols-2 gap-3">
-              {courseOptions.map((option) => (
+              {courseOptions.map(option => (
                 <motion.div
                   key={option.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`${option.color} rounded-lg p-4 cursor-pointer transition-all duration-200 text-white text-center group`}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     onSelectOption(option.id);

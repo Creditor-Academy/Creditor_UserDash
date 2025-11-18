@@ -38,6 +38,7 @@ import { uploadAudio as uploadAudioResource } from '@/services/audioUploadServic
 import ImageEditor from '../MediaBlocks/ImageEditor';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const accordionQuillModules = {
   toolbar: [
@@ -91,6 +92,7 @@ const InteractiveComponent = forwardRef(
       onInteractiveTemplateSelect,
       onInteractiveUpdate,
       editingInteractiveBlock,
+      onAICreation,
     },
     ref
   ) => {
@@ -280,7 +282,7 @@ const InteractiveComponent = forwardRef(
           });
         });
       } catch (error) {
-        console.error('Error extracting tabs data from HTML:', error);
+        devLogger.error('Error extracting tabs data from HTML:', error);
       }
 
       return extractedData;
@@ -350,7 +352,7 @@ const InteractiveComponent = forwardRef(
           });
         });
       } catch (error) {
-        console.error('Error extracting accordion data from HTML:', error);
+        devLogger.error('Error extracting accordion data from HTML:', error);
       }
 
       return extractedData;
@@ -358,7 +360,7 @@ const InteractiveComponent = forwardRef(
 
     // Helper function to extract labeled graphic data from HTML
     const extractLabeledGraphicFromHTML = htmlContent => {
-      console.log(
+      devLogger.debug(
         'Extracting labeled graphic from HTML:',
         htmlContent.substring(0, 500) + '...'
       );
@@ -386,7 +388,7 @@ const InteractiveComponent = forwardRef(
 
         // Extract hotspots
         const hotspotElements = tempDiv.querySelectorAll('.hotspot');
-        console.log('Found hotspot elements:', hotspotElements.length);
+        devLogger.debug('Found hotspot elements:', hotspotElements.length);
         hotspotElements.forEach((hotspot, index) => {
           const hotspotId =
             hotspot.getAttribute('data-hotspot-id') || (index + 1).toString();
@@ -490,18 +492,18 @@ const InteractiveComponent = forwardRef(
               description: description,
               audio: audio,
             };
-            console.log('Extracted hotspot:', hotspotData);
+            devLogger.debug('Extracted hotspot:', hotspotData);
             extractedData.hotspots.push(hotspotData);
           }
         });
       } catch (error) {
-        console.error(
+        devLogger.error(
           'Error extracting labeled graphic data from HTML:',
           error
         );
       }
 
-      console.log('Final extracted data:', extractedData);
+      devLogger.debug('Final extracted data:', extractedData);
       return extractedData;
     };
 
@@ -569,7 +571,7 @@ const InteractiveComponent = forwardRef(
           });
         });
       } catch (error) {
-        console.error('Error extracting timeline data from HTML:', error);
+        devLogger.error('Error extracting timeline data from HTML:', error);
       }
 
       return extractedData;
@@ -633,9 +635,9 @@ const InteractiveComponent = forwardRef(
           });
         });
 
-        console.log('Extracted process data from HTML:', extractedData);
+        devLogger.debug('Extracted process data from HTML:', extractedData);
       } catch (error) {
-        console.error('Error extracting process data from HTML:', error);
+        devLogger.error('Error extracting process data from HTML:', error);
       }
 
       return extractedData;
@@ -854,7 +856,7 @@ const InteractiveComponent = forwardRef(
     // Initialize form when editing
     useEffect(() => {
       if (editingInteractiveBlock && showInteractiveEditDialog) {
-        console.log(
+        devLogger.debug(
           'Loading interactive block for editing:',
           editingInteractiveBlock
         );
@@ -871,7 +873,7 @@ const InteractiveComponent = forwardRef(
             const content = JSON.parse(editingInteractiveBlock.content);
             template = content.template;
           } catch (error) {
-            console.log(
+            devLogger.debug(
               'Could not parse content as JSON, trying HTML detection'
             );
           }
@@ -909,7 +911,7 @@ const InteractiveComponent = forwardRef(
           }
         }
 
-        console.log('Detected template:', template);
+        devLogger.debug('Detected template:', template);
 
         if (template) {
           setSelectedTemplate(template);
@@ -917,12 +919,12 @@ const InteractiveComponent = forwardRef(
           // Load existing data
           try {
             if (editingInteractiveBlock.content) {
-              console.log(
+              devLogger.debug(
                 'Raw content from database:',
                 editingInteractiveBlock.content
               );
               const content = JSON.parse(editingInteractiveBlock.content);
-              console.log('Parsed content:', content);
+              devLogger.debug('Parsed content:', content);
               if (template === 'tabs' && content.tabsData) {
                 setTabsData(content.tabsData);
               } else if (template === 'accordion' && content.accordionData) {
@@ -931,27 +933,32 @@ const InteractiveComponent = forwardRef(
                 template === 'labeled-graphic' &&
                 content.labeledGraphicData
               ) {
-                console.log(
+                devLogger.debug(
                   'Loading labeled graphic data:',
                   content.labeledGraphicData
                 );
                 setLabeledGraphicData(content.labeledGraphicData);
               } else if (template === 'timeline' && content.timelineData) {
-                console.log('Loading timeline data:', content.timelineData);
+                devLogger.debug('Loading timeline data:', content.timelineData);
                 setTimelineData(content.timelineData);
               } else if (template === 'process' && content.processData) {
-                console.log('Loading process data:', content.processData);
+                devLogger.debug('Loading process data:', content.processData);
                 setProcessData(content.processData);
               }
             } else {
-              console.log('No JSON content found, trying to extract from HTML');
+              devLogger.debug(
+                'No JSON content found, trying to extract from HTML'
+              );
               // If no structured content, try to extract from HTML
               if (template === 'tabs' && editingInteractiveBlock.html_css) {
                 const extractedData = extractTabsFromHTML(
                   editingInteractiveBlock.html_css
                 );
                 if (extractedData.length > 0) {
-                  console.log('Extracted tabs data from HTML:', extractedData);
+                  devLogger.debug(
+                    'Extracted tabs data from HTML:',
+                    extractedData
+                  );
                   setTabsData(extractedData);
                 }
               } else if (
@@ -962,7 +969,7 @@ const InteractiveComponent = forwardRef(
                   editingInteractiveBlock.html_css
                 );
                 if (extractedData.length > 0) {
-                  console.log(
+                  devLogger.debug(
                     'Extracted accordion data from HTML:',
                     extractedData
                   );
@@ -976,7 +983,7 @@ const InteractiveComponent = forwardRef(
                   editingInteractiveBlock.html_css
                 );
                 if (extractedData.image) {
-                  console.log(
+                  devLogger.debug(
                     'Extracted labeled graphic data from HTML:',
                     extractedData
                   );
@@ -990,7 +997,7 @@ const InteractiveComponent = forwardRef(
                   editingInteractiveBlock.html_css
                 );
                 if (extractedData.length > 0) {
-                  console.log(
+                  devLogger.debug(
                     'Extracted timeline data from HTML:',
                     extractedData
                   );
@@ -1004,7 +1011,7 @@ const InteractiveComponent = forwardRef(
                   editingInteractiveBlock.html_css
                 );
                 if (extractedData.length > 0) {
-                  console.log(
+                  devLogger.debug(
                     'Extracted process data from HTML:',
                     extractedData
                   );
@@ -1013,7 +1020,7 @@ const InteractiveComponent = forwardRef(
               }
             }
           } catch (error) {
-            console.error('Error parsing interactive block content:', error);
+            devLogger.error('Error parsing interactive block content:', error);
             // Set default data if parsing fails
             if (template === 'tabs') {
               setTabsData([
@@ -1399,7 +1406,7 @@ const InteractiveComponent = forwardRef(
             throw new Error('Audio upload failed');
           }
         } catch (error) {
-          console.error('Error uploading audio:', error);
+          devLogger.error('Error uploading audio:', error);
           toast.error(
             error.message || 'Failed to upload audio. Please try again.'
           );
@@ -1504,7 +1511,7 @@ const InteractiveComponent = forwardRef(
             throw new Error('Audio upload failed');
           }
         } catch (error) {
-          console.error('Error uploading audio:', error);
+          devLogger.error('Error uploading audio:', error);
           toast.error(
             error.message || 'Failed to upload audio. Please try again.'
           );
@@ -1667,7 +1674,7 @@ const InteractiveComponent = forwardRef(
             throw new Error('Audio upload failed');
           }
         } catch (error) {
-          console.error('Error uploading audio:', error);
+          devLogger.error('Error uploading audio:', error);
           toast.error(
             error.message || 'Failed to upload audio. Please try again.'
           );
@@ -1773,7 +1780,7 @@ const InteractiveComponent = forwardRef(
             throw new Error('Audio upload failed');
           }
         } catch (error) {
-          console.error('Error uploading audio:', error);
+          devLogger.error('Error uploading audio:', error);
           toast.error(
             error.message || 'Failed to upload audio. Please try again.'
           );
@@ -1870,7 +1877,7 @@ const InteractiveComponent = forwardRef(
             throw new Error('Audio upload failed');
           }
         } catch (error) {
-          console.error('Error uploading audio:', error);
+          devLogger.error('Error uploading audio:', error);
           toast.error(
             error.message || 'Failed to upload audio. Please try again.'
           );
@@ -1942,7 +1949,7 @@ const InteractiveComponent = forwardRef(
           throw new Error('Upload failed - no image URL returned');
         }
       } catch (error) {
-        console.error('Error uploading edited image:', error);
+        devLogger.error('Error uploading edited image:', error);
         toast.error(
           error.message || 'Failed to upload image. Please try again.'
         );
@@ -2560,10 +2567,10 @@ const InteractiveComponent = forwardRef(
     useEffect(() => {
       // Process carousel navigation functions (based on quotes carousel logic)
       window.processCarouselPrev = button => {
-        console.log('Process Carousel Prev clicked');
+        devLogger.debug('Process Carousel Prev clicked');
         const carousel = button.closest('.process-carousel');
         if (!carousel) {
-          console.log('No process carousel found for prev button');
+          devLogger.debug('No process carousel found for prev button');
           return;
         }
 
@@ -2571,7 +2578,7 @@ const InteractiveComponent = forwardRef(
         const dots = carousel.querySelectorAll('.process-carousel-dot');
         let currentIndex = parseInt(carousel.dataset.current || '0');
 
-        console.log(
+        devLogger.debug(
           'Process carousel prev - current index:',
           currentIndex,
           'total slides:',
@@ -2583,10 +2590,10 @@ const InteractiveComponent = forwardRef(
       };
 
       window.processCarouselNext = button => {
-        console.log('Process Carousel Next clicked');
+        devLogger.debug('Process Carousel Next clicked');
         const carousel = button.closest('.process-carousel');
         if (!carousel) {
-          console.log('No process carousel found for next button');
+          devLogger.debug('No process carousel found for next button');
           return;
         }
 
@@ -2594,7 +2601,7 @@ const InteractiveComponent = forwardRef(
         const dots = carousel.querySelectorAll('.process-carousel-dot');
         let currentIndex = parseInt(carousel.dataset.current || '0');
 
-        console.log(
+        devLogger.debug(
           'Process carousel next - current index:',
           currentIndex,
           'total slides:',
@@ -2606,17 +2613,17 @@ const InteractiveComponent = forwardRef(
       };
 
       window.processCarouselGoTo = (button, index) => {
-        console.log('Process Carousel GoTo clicked');
+        devLogger.debug('Process Carousel GoTo clicked');
         const carousel = button.closest('.process-carousel');
         if (!carousel) {
-          console.log('No process carousel found for goTo button');
+          devLogger.debug('No process carousel found for goTo button');
           return;
         }
 
         const slides = carousel.querySelectorAll('.process-step');
         const dots = carousel.querySelectorAll('.process-carousel-dot');
 
-        console.log(
+        devLogger.debug(
           'Process carousel goTo - target index:',
           index,
           'total slides:',
@@ -2893,6 +2900,69 @@ const InteractiveComponent = forwardRef(
               </div>
 
               <div className="p-6 space-y-4">
+                {/* AI Generation Option */}
+                <div
+                  onClick={() => {
+                    setShowInteractiveTemplateSidebar(false);
+                    if (onAICreation) {
+                      onAICreation({ id: 'interactive', title: 'Interactive' });
+                    }
+                  }}
+                  className="border border-purple-200 rounded-lg p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 bg-gradient-to-br from-purple-50 to-pink-50"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-purple-800 flex items-center gap-2">
+                        Generate with AI
+                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                          Recommended
+                        </span>
+                      </h3>
+                      <p className="text-sm text-purple-600">
+                        Describe what you want and let AI create professional
+                        interactive content instantly
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mini Preview */}
+                  <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
+                    <div className="flex items-center gap-2 text-purple-600">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        AI-powered interactive generation
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {interactiveTemplates.map(template => (
                   <div
                     key={template.id}
@@ -3691,7 +3761,7 @@ const InteractiveComponent = forwardRef(
                                             setShowImageEditor(true);
                                           })
                                           .catch(err => {
-                                            console.error(
+                                            devLogger.error(
                                               'Error loading image for editing:',
                                               err
                                             );
@@ -3934,7 +4004,7 @@ const InteractiveComponent = forwardRef(
                                             setShowImageEditor(true);
                                           })
                                           .catch(error => {
-                                            console.error(
+                                            devLogger.error(
                                               'Error creating file from image src:',
                                               error
                                             );

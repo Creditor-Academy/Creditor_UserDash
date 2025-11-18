@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 // Separate component for contentEditable list item editor
 const ListItemEditor = ({
@@ -148,6 +149,7 @@ const ListComponent = forwardRef(
       onListTemplateSelect,
       onListUpdate,
       editingListBlock,
+      onAICreation,
     },
     ref
   ) => {
@@ -442,7 +444,7 @@ const ListComponent = forwardRef(
           setNumberingStyle(listContent.numberingStyle || 'decimal');
           setBulletStyle(listContent.bulletStyle || 'circle');
         } catch (e) {
-          console.error('Error parsing list content:', e);
+          devLogger.error('Error parsing list content:', e);
           setListItems(['']);
           setListType('bulleted');
           setCheckedItems({});
@@ -787,7 +789,7 @@ const ListComponent = forwardRef(
               }, 0);
             }
           } catch (e) {
-            console.error('Error applying bold formatting:', e);
+            devLogger.error('Error applying bold formatting:', e);
           }
         }, 10);
       } else {
@@ -814,7 +816,7 @@ const ListComponent = forwardRef(
                   const index = parseInt(node.id.split('-')[2]);
                   updateListItem(index, node.innerHTML);
                 } catch (e) {
-                  console.error('Error applying bold:', e);
+                  devLogger.error('Error applying bold:', e);
                 }
               }, 10);
               break;
@@ -859,6 +861,79 @@ const ListComponent = forwardRef(
               </div>
 
               <div className="p-6 space-y-6 max-h-[calc(100vh-140px)] overflow-y-auto">
+                {/* AI Generation Option */}
+                <div
+                  onClick={() => {
+                    setShowListTemplateSidebar(false);
+                    if (onAICreation) {
+                      onAICreation({ id: 'list', title: 'List' });
+                    }
+                  }}
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 rounded-xl border border-purple-200 hover:border-purple-300 overflow-hidden group bg-gradient-to-br from-purple-50 to-pink-50"
+                >
+                  {/* Template Header with AI Branding */}
+                  <div className="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 group-hover:from-purple-100 group-hover:to-pink-100 transition-all duration-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md transition-shadow duration-200">
+                          <svg
+                            className="w-6 h-6 text-purple-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-purple-900 text-lg flex items-center gap-2">
+                            Generate with AI
+                            <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                              Recommended
+                            </span>
+                          </h4>
+                          <p className="text-sm text-purple-700 mt-1">
+                            Describe what you want and let AI create
+                            professional list content instantly
+                          </p>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1 bg-white rounded-full text-xs font-medium text-purple-700 border border-purple-200 group-hover:border-purple-300 transition-all duration-200">
+                        AI Powered
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Template Preview */}
+                  <div className="p-6">
+                    <div className="bg-white/70 rounded-lg p-4 border border-purple-100">
+                      <div className="flex items-center gap-2 text-purple-600">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          AI-powered list generation
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {listTemplates.map(template => (
                   <div
                     key={template.id}

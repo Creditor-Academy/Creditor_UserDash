@@ -1,11 +1,42 @@
 import openAIService from './openAIService.js';
-import { uploadAIGeneratedImage } from './aiUploadService.js';
 import { updateLessonContent } from './courseService.js';
 
 /**
  * Structured Lesson Generator
  * Generates lessons with fixed 8-block structure using single user prompt
  */
+const DEFAULT_IMAGE_OPTIONS = {
+  size: '1024x1024',
+  quality: 'standard',
+  uploadToS3: true,
+};
+
+const IMAGE_FOLDERS = {
+  left: 'ai-lesson-images/blocks/left',
+  right: 'ai-lesson-images/blocks/right',
+};
+
+const IMAGE_PLACEHOLDER =
+  'https://via.placeholder.com/600x400?text=Image+Placeholder';
+
+function resolveImageResponse(result) {
+  if (!result) {
+    return { success: false, url: null, uploadedToS3: false };
+  }
+
+  const data = result.data || {};
+  const primary =
+    data.url || data.imageUrl || result.url || result.imageUrl || null;
+  const fallback = data.originalUrl || result.originalUrl || null;
+
+  return {
+    success: result.success !== false,
+    url: primary || fallback,
+    originalUrl: fallback,
+    uploadedToS3: data.uploadedToS3 ?? result.uploadedToS3 ?? false,
+  };
+}
+
 class StructuredLessonGenerator {
   constructor() {
     this.gradients = [
@@ -231,6 +262,10 @@ Requirements:
       temperature: 0.8,
     });
 
+    // Remove surrounding quotes if present
+    let cleanedContent = content.trim();
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+
     const randomGradient =
       this.gradients[Math.floor(Math.random() * this.gradients.length)];
 
@@ -238,7 +273,7 @@ Requirements:
       id: `master-heading-${Date.now()}`,
       type: 'text',
       textType: 'master_heading',
-      content: content.trim(),
+      content: cleanedContent,
       gradient: `gradient${Math.floor(Math.random() * 6) + 1}`,
       order: 0,
       isAIGenerated: true,
@@ -269,11 +304,15 @@ Requirements:
       temperature: 0.7,
     });
 
+    // Remove surrounding quotes if present
+    let cleanedContent = content.trim();
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+
     return {
       id: `paragraph-${Date.now()}`,
       type: 'text',
       textType: 'paragraph',
-      content: content.trim(),
+      content: cleanedContent,
       order: 1,
       isAIGenerated: true,
       metadata: {
@@ -301,11 +340,15 @@ Requirements:
       temperature: 0.8,
     });
 
+    // Remove surrounding quotes if present
+    let cleanedContent = content.trim();
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+
     return {
       id: `statement-${Date.now()}`,
       type: 'statement',
       variant: 'statement-b',
-      content: content.trim(),
+      content: cleanedContent,
       order: 2,
       isAIGenerated: true,
       metadata: {
@@ -406,20 +449,27 @@ Requirements:
     });
 
     // Generate AI image with DALL-E
-    let imageUrl;
+    let imageUrl = IMAGE_PLACEHOLDER;
     try {
       console.log('🎨 Generating AI image (left):', imagePrompt.trim());
-      const imageResult = await openAIService.generateImage(imagePrompt.trim());
-      const tempImageUrl = imageResult.url;
-
-      // Upload to S3 (same as thumbnail logic)
-      imageUrl = await this.uploadImageToS3(tempImageUrl, {
-        folder: 'ai-lesson-images',
-        fileName: `lesson_image_left_${Date.now()}.png`,
-      });
+      const imageResult = await openAIService.generateImage(
+        imagePrompt.trim(),
+        {
+          ...DEFAULT_IMAGE_OPTIONS,
+          folder: IMAGE_FOLDERS.left,
+        }
+      );
+      const resolved = resolveImageResponse(imageResult);
+      if (resolved.url) {
+        imageUrl = resolved.url;
+        if (!resolved.uploadedToS3) {
+          console.warn('⚠️ Left image not stored in S3, using fallback URL');
+        }
+      } else {
+        console.error('❌ Left image generation returned no URL:', imageResult);
+      }
     } catch (error) {
       console.error('❌ Image generation failed:', error);
-      imageUrl = 'https://via.placeholder.com/600x400?text=Image+Placeholder';
     }
 
     return {
@@ -479,19 +529,30 @@ Requirements:
       temperature: 0.7,
     });
 
-    let imageUrl;
+    let imageUrl = IMAGE_PLACEHOLDER;
     try {
       console.log('🎨 Generating AI image (right):', imagePrompt.trim());
-      const imageResult = await openAIService.generateImage(imagePrompt.trim());
-      const tempImageUrl = imageResult.url;
-
-      imageUrl = await this.uploadImageToS3(tempImageUrl, {
-        folder: 'ai-lesson-images',
-        fileName: `lesson_image_right_${Date.now()}.png`,
-      });
+      const imageResult = await openAIService.generateImage(
+        imagePrompt.trim(),
+        {
+          ...DEFAULT_IMAGE_OPTIONS,
+          folder: IMAGE_FOLDERS.right,
+        }
+      );
+      const resolved = resolveImageResponse(imageResult);
+      if (resolved.url) {
+        imageUrl = resolved.url;
+        if (!resolved.uploadedToS3) {
+          console.warn('⚠️ Right image not stored in S3, using fallback URL');
+        }
+      } else {
+        console.error(
+          '❌ Right image generation returned no URL:',
+          imageResult
+        );
+      }
     } catch (error) {
       console.error('❌ Image generation failed:', error);
-      imageUrl = 'https://via.placeholder.com/600x400?text=Image+Placeholder';
     }
 
     return {
@@ -642,42 +703,6 @@ Requirements:
         variant: 'simple',
       },
     };
-  }
-
-  /**
-   * Upload DALL-E image to S3 - Uses /api/ai/upload-ai-image endpoint
-   * Same logic as thumbnail upload to avoid CORS errors
-   */
-  async uploadImageToS3(dalleUrl, options = {}) {
-    try {
-      const { folder = 'ai-lesson-images', fileName } = options;
-
-      console.log(
-        `📤 Uploading AI-generated image to S3 via /api/ai: ${fileName}`
-      );
-      console.log(`🔗 Source URL: ${dalleUrl}`);
-
-      // Use uploadAIGeneratedImage which calls /api/ai/upload-ai-image
-      // This sends the URL to backend, backend downloads and uploads to S3
-      // No CORS issues because backend handles the download
-      const uploadResult = await uploadAIGeneratedImage(dalleUrl, {
-        public: true,
-        folder: folder,
-      });
-
-      if (uploadResult.success && uploadResult.imageUrl) {
-        console.log(`✅ S3 upload successful: ${uploadResult.imageUrl}`);
-        return uploadResult.imageUrl;
-      } else {
-        console.warn('⚠️ S3 upload failed, using temporary URL');
-        return dalleUrl;
-      }
-    } catch (error) {
-      console.error('❌ S3 upload error:', error);
-      console.error('Error details:', error.message);
-      // Fallback to original URL if upload fails
-      return dalleUrl;
-    }
   }
 
   /**
