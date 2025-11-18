@@ -1269,6 +1269,16 @@ function LessonBuilder() {
                             </button>
                           </div>
 
+                          {/* Multi-page Content Note */}
+                          <div className="mt-6 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm text-amber-800 leading-relaxed">
+                              <span className="font-semibold">💡 Tip:</span> For
+                              multi-page content: Start pages with master
+                              heading (text block) and end them with continue
+                              block (divider block).
+                            </p>
+                          </div>
+
                           {/* Decorative elements */}
                           <div className="absolute top-4 left-4 w-2 h-2 bg-blue-400 rounded-full opacity-60"></div>
                           <div className="absolute top-8 right-6 w-1 h-1 bg-purple-400 rounded-full opacity-60"></div>
