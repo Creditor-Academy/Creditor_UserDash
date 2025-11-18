@@ -79,6 +79,39 @@ const UPCOMING_COURSES = [
     image:
       'https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+2.png',
   },
+
+  // SOV 101
+  {
+    id: 'sov-101-lesson-12-introduction-purpose-self-ownership',
+    title: 'Lesson 12 – Introduction, Purpose, Self-Ownership',
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson12.png',
+  },
+  {
+    id: 'sov-101-lesson-15-basics-of-sovereignty-summary-of-freedom',
+    title: 'Lesson 15 – Basics of Sovereignty, Summary of Freedom',
+    course: 'SOV 101',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson+15.png',
+  },
+  {
+    id: 'sov-101-lesson-18-figuring-it-all-out-protection-by-god-vs-government',
+    title: 'Lesson 18 – Figuring It All Out, Protection by God vs Government',
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson18.png',
+  },
+  {
+    id: 'sov-101-lesson-19-gods-religion-vs-governments-religion',
+    title: "Lesson 19 – God's Religion vs. Government's Religion",
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson19.png',
+  },
+  {
+    id: 'sov-101-lesson-20-public-vs-private-separation-of-powers-rise',
+    title: 'Lesson 20 – Public vs. Private, Separation of Powers Rise',
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson20.png',
+  },
 ];
 
 function UpcomingCourses() {
@@ -89,7 +122,10 @@ function UpcomingCourses() {
 
   const courseFilters = [
     'All',
-    ...Array.from(new Set(UPCOMING_COURSES.map(c => c.course))),
+    'SOV 101',
+    ...Array.from(
+      new Set(UPCOMING_COURSES.map(c => c.course).filter(c => c !== 'SOV 101'))
+    ),
   ];
 
   const visibleCourses =
