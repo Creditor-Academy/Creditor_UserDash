@@ -58,9 +58,6 @@ export function Courses() {
   const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
   // Cache for complete module data to avoid repeated API calls
   const [completeModulesCache, setCompleteModulesCache] = useState({});
-  // Track modules currently loading for Start Module
-  const [loadingStartModuleIds, setLoadingStartModuleIds] = useState(new Set());
-
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
     const h = Math.floor(secs / 3600)
@@ -365,7 +362,7 @@ export function Courses() {
                 >
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
-                    My Lessons
+                    My Modules
                   </div>
                 </button>
               </div>
@@ -553,7 +550,7 @@ export function Courses() {
               >
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4" />
-                  My Lessons
+                  My Modules
                   {loadingLessons && (
                     <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                   )}
@@ -723,7 +720,7 @@ export function Courses() {
             <div>
               {loadingLessons ? (
                 <div className="text-center py-10 text-sm text-gray-600">
-                  Loading your lessons...
+                  Loading your modules...
                 </div>
               ) : (
                 (() => {
@@ -831,157 +828,22 @@ export function Courses() {
                               <div className="mt-auto px-6 pb-4">
                                 <CardFooter className="p-0 flex flex-col gap-2">
                                   {/* Since these are unlocked lessons, they should always have content available */}
-                                  <Button
-                                    className="w-full disabled:opacity-60"
-                                    disabled={loadingStartModuleIds.has(
-                                      String(module?.id)
-                                    )}
-                                    onClick={async () => {
-                                      const idStr = String(module?.id);
-
-                                      // Prevent multiple clicks
-                                      if (loadingStartModuleIds.has(idStr))
-                                        return;
-
-                                      setLoadingStartModuleIds(prev => {
-                                        const next = new Set(prev);
-                                        next.add(idStr);
-                                        return next;
-                                      });
-
-                                      try {
-                                        let completeModule = null;
-
-                                        // Check cache first
-                                        const cacheKey = `${courseId}-${module?.id}`;
-                                        if (completeModulesCache[cacheKey]) {
-                                          console.log(
-                                            'Using cached module data'
-                                          );
-                                          completeModule =
-                                            completeModulesCache[cacheKey];
-                                        } else {
-                                          console.log(
-                                            'Fetching complete module data for course:',
-                                            courseId,
-                                            'module:',
-                                            module?.id
-                                          );
-                                          const courseModules =
-                                            await fetchCourseModules(courseId);
-                                          completeModule = courseModules.find(
-                                            m => m.id === module?.id
-                                          );
-
-                                          // Cache the result
-                                          if (completeModule) {
-                                            setCompleteModulesCache(prev => ({
-                                              ...prev,
-                                              [cacheKey]: completeModule,
-                                            }));
-                                          }
-                                        }
-
-                                        console.log(
-                                          'Complete module data:',
-                                          completeModule
-                                        );
-
-                                        // Get resource_url from complete module data
-                                        let fullUrl =
-                                          completeModule?.resource_url;
-
-                                        // If still no resource_url, try from original module data as fallback
-                                        if (!fullUrl) {
-                                          fullUrl = module?.resource_url;
-                                          console.log(
-                                            'Using fallback resource_url from original module:',
-                                            fullUrl
-                                          );
-                                        }
-
-                                        console.log(
-                                          'Final resource_url:',
-                                          fullUrl
-                                        );
-
-                                        // If it's not already a full URL, prepend the API base URL
-                                        if (
-                                          fullUrl &&
-                                          !fullUrl.startsWith('http')
-                                        ) {
-                                          fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                        }
-
-                                        // For S3 URLs, ensure they have the correct protocol
-                                        if (
-                                          fullUrl &&
-                                          fullUrl.includes(
-                                            's3.amazonaws.com'
-                                          ) &&
-                                          !fullUrl.startsWith('https://')
-                                        ) {
-                                          fullUrl = fullUrl.replace(
-                                            'http://',
-                                            'https://'
-                                          );
-                                        }
-
-                                        console.log(
-                                          'Final URL to open:',
-                                          fullUrl
-                                        );
-
-                                        // Open in new tab
-                                        if (fullUrl) {
-                                          window.open(
-                                            fullUrl,
-                                            '_blank',
-                                            'noopener,noreferrer'
-                                          );
-                                        } else {
-                                          console.error(
-                                            'No resource URL found for module:',
-                                            completeModule || module
-                                          );
-                                          alert(
-                                            'No content URL available for this lesson. Please contact support.'
-                                          );
-                                        }
-                                      } catch (error) {
-                                        console.error(
-                                          'Error fetching module data:',
-                                          error
-                                        );
-                                        alert(
-                                          'Failed to load lesson content. Please try again.'
-                                        );
-                                      } finally {
-                                        setLoadingStartModuleIds(prev => {
-                                          const next = new Set(prev);
-                                          next.delete(idStr);
-                                          return next;
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    {loadingStartModuleIds.has(
-                                      String(module?.id)
-                                    ) ? (
-                                      <>
-                                        <Clock
-                                          size={16}
-                                          className="mr-2 animate-spin"
-                                        />
-                                        Loading...
-                                      </>
-                                    ) : (
-                                      <>
+                                  {courseId && module?.id ? (
+                                    <Link
+                                      to={`/dashboard/courses/${courseId}/modules/${module?.id}/lessons`}
+                                      className="w-full"
+                                    >
+                                      <Button className="w-full">
                                         <Play size={16} className="mr-2" />
-                                        Start Module
-                                      </>
-                                    )}
-                                  </Button>
+                                        View Lessons
+                                      </Button>
+                                    </Link>
+                                  ) : (
+                                    <Button className="w-full" disabled>
+                                      <Play size={16} className="mr-2" />
+                                      View Lessons
+                                    </Button>
+                                  )}
                                   <Link
                                     to={`/dashboard/courses/${courseId}/modules/${module?.id}/assessments`}
                                     className="w-full"
@@ -991,7 +853,7 @@ export function Courses() {
                                       className="w-full"
                                     >
                                       <FileText size={16} className="mr-2" />
-                                      Start Assessment
+                                      View Assessment
                                     </Button>
                                   </Link>
                                   {/* Mark as Complete - only show when not completed */}

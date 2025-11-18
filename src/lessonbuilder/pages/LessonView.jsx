@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -654,13 +654,22 @@ const LessonView = () => {
                 )} */}
               </CardContent>
 
-              <CardFooter className="pt-0">
+              <CardFooter className="pt-0 flex flex-col gap-2">
                 <Button
                   className="w-full flex items-center justify-center gap-2"
                   onClick={() => handleViewLesson(lesson)}
                 >
                   <Play className="h-4 w-4" /> Start Lesson
                 </Button>
+                <Link
+                  to={`/dashboard/courses/${courseId}/modules/${moduleId}/assessments`}
+                  className="w-full"
+                >
+                  <Button variant="outline" className="w-full">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Start Assessment
+                  </Button>
+                </Link>
               </CardFooter>
             </Card>
           ))}
