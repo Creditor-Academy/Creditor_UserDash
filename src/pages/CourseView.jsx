@@ -829,26 +829,15 @@ export function CourseView() {
           <div className="mt-auto px-6 pb-4">
             <CardFooter className="p-0 flex flex-col gap-2">
               {hasAccess && modulesWithLessons.has(String(module.id)) ? (
-                <>
-                  <Link
-                    to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`}
-                    className="w-full"
-                  >
-                    <Button className="w-full">
-                      <Play size={16} className="mr-2" />
-                      View Lessons
-                    </Button>
-                  </Link>
-                  <Link
-                    to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`}
-                    className="w-full"
-                  >
-                    <Button variant="outline" className="w-full">
-                      <FileText size={16} className="mr-2" />
-                      View Assessment
-                    </Button>
-                  </Link>
-                </>
+                <Link
+                  to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`}
+                  className="w-full"
+                >
+                  <Button className="w-full">
+                    <Play size={16} className="mr-2" />
+                    View Lessons
+                  </Button>
+                </Link>
               ) : !modulesWithLessons.has(String(module.id)) ? (
                 <Button
                   className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
