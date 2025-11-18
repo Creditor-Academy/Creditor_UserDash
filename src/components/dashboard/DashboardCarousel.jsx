@@ -44,7 +44,7 @@ const carouselItems = [
     id: 3,
     type: 'image',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Thanksgiving.png',
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/thanks+giving+(1).png',
     title: 'Upcoming Event',
     course: 'Banner 3',
   },
