@@ -2374,7 +2374,8 @@ const AdminPayments = () => {
             </div>
           )}
 
-          {userDetailModal.open && userDetailModal.user && (
+          {/* User credit modal disabled for now */}
+          {false && userDetailModal.open && userDetailModal.user && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div
                 className="absolute inset-0 bg-black/30"
