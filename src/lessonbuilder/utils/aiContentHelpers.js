@@ -241,13 +241,25 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         aiResponse.templateId ||
         aiResponse.template ||
         'paragraph';
-      const htmlContent = generateTextHTML(textType, aiResponse.content);
+
+      // Clean markdown from content
+      let cleanedContent = aiResponse.content || '';
+      if (typeof cleanedContent === 'string') {
+        // Remove markdown formatting
+        cleanedContent = cleanedContent.replace(/\*\*(.*?)\*\*/g, '$1');
+        cleanedContent = cleanedContent.replace(/^#{1,6}\s+/gm, '');
+        cleanedContent = cleanedContent.replace(/\*(.*?)\*/g, '$1');
+        cleanedContent = cleanedContent.replace(/__(.*?)__/g, '$1');
+        cleanedContent = cleanedContent.trim();
+      }
+
+      const htmlContent = generateTextHTML(textType, cleanedContent);
 
       return {
         ...baseBlock,
         textType,
-        content: aiResponse.content,
-        text: aiResponse.content,
+        content: cleanedContent,
+        text: cleanedContent,
         html_css: htmlContent,
         metadata: {
           ...(aiResponse.metadata || {}),

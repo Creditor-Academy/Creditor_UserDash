@@ -112,6 +112,40 @@ COURSE CONTEXT:
   }
 
   /**
+   * Clean markdown formatting from AI-generated content
+   */
+  cleanMarkdown(text) {
+    if (!text || typeof text !== 'string') return text;
+
+    // Remove markdown bold (**text** or __text__)
+    let cleaned = text.replace(/\*\*(.*?)\*\*/g, '$1');
+    cleaned = cleaned.replace(/__(.*?)__/g, '$1');
+
+    // Remove markdown headers (##, ###, etc.)
+    cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
+
+    // Remove markdown italic (*text* or _text_)
+    cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');
+    cleaned = cleaned.replace(/_(.*?)_/g, '$1');
+
+    // Remove markdown code blocks
+    cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
+    cleaned = cleaned.replace(/`(.*?)`/g, '$1');
+
+    // Remove markdown links [text](url)
+    cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+    // Remove markdown images ![alt](url)
+    cleaned = cleaned.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '');
+
+    // Clean up extra whitespace
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    cleaned = cleaned.trim();
+
+    return cleaned;
+  }
+
+  /**
    * Generate TEXT block content
    */
   async generateText(userPrompt, instructions, templateId, context) {
@@ -130,14 +164,15 @@ Generate appropriate text content based on the template:
 - heading_paragraph: A heading followed by a supporting paragraph
 - subheading_paragraph: A subheading followed by explanatory paragraph
 
-Return ONLY the text content without any HTML tags or formatting.`;
+IMPORTANT: Return ONLY plain text content. Do NOT use markdown formatting like **bold**, ## headers, or any other markdown syntax. Use plain text only.`;
 
     const response = await this.callOpenAI(prompt, 500);
+    const cleanedContent = this.cleanMarkdown(response.trim());
 
     return {
       type: 'text',
       textType: templateId,
-      content: response.trim(),
+      content: cleanedContent,
     };
   }
 
@@ -161,14 +196,17 @@ Generate a statement based on the template style:
 
 For statement-c, mark words to highlight with ** like: **important word**
 
-Return only the statement text.`;
+IMPORTANT: Return only plain text. Do NOT use markdown headers (##) or other markdown syntax except ** for statement-c highlights.`;
 
     const response = await this.callOpenAI(prompt, 300);
+    // Only clean markdown headers, keep ** for statement-c highlights
+    let cleaned = response.trim();
+    cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
 
     return {
       type: 'statement',
       templateId: templateId,
-      content: response.trim(),
+      content: cleaned,
     };
   }
 

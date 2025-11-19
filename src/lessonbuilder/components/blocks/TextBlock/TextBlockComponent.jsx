@@ -104,6 +104,58 @@ const TextBlockComponent = ({
       </div>
     `;
 
+    // Calculate order based on insertion position
+    const blocksToUse =
+      lessonContent?.data?.content && lessonContent.data.content.length > 0
+        ? lessonContent.data.content
+        : contentBlocks;
+
+    let calculatedOrder;
+    if (insertionPosition !== null) {
+      // Inserting at specific position
+      if (blocksToUse.length === 0) {
+        calculatedOrder = 1;
+      } else if (insertionPosition === 0) {
+        const firstBlock = blocksToUse[0];
+        const firstOrder =
+          firstBlock?.order !== undefined && firstBlock.order !== null
+            ? firstBlock.order
+            : 1;
+        calculatedOrder = Math.max(0, firstOrder - 0.5);
+      } else if (insertionPosition >= blocksToUse.length) {
+        const lastBlock = blocksToUse[blocksToUse.length - 1];
+        const lastOrder =
+          lastBlock?.order !== undefined && lastBlock.order !== null
+            ? lastBlock.order
+            : blocksToUse.length;
+        calculatedOrder = lastOrder + 1;
+      } else {
+        const prevBlock = blocksToUse[insertionPosition - 1];
+        const nextBlock = blocksToUse[insertionPosition];
+        const prevOrder =
+          prevBlock?.order !== undefined && prevBlock.order !== null
+            ? prevBlock.order
+            : insertionPosition;
+        const nextOrder =
+          nextBlock?.order !== undefined && nextBlock.order !== null
+            ? nextBlock.order
+            : insertionPosition + 1;
+        calculatedOrder = (prevOrder + nextOrder) / 2;
+      }
+    } else {
+      // Adding at the end
+      if (blocksToUse.length === 0) {
+        calculatedOrder = 1;
+      } else {
+        const lastBlock = blocksToUse[blocksToUse.length - 1];
+        const lastOrder =
+          lastBlock?.order !== undefined && lastBlock.order !== null
+            ? lastBlock.order
+            : blocksToUse.length;
+        calculatedOrder = lastOrder + 1;
+      }
+    }
+
     const newBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
@@ -114,10 +166,7 @@ const TextBlockComponent = ({
       html_css: htmlContent,
       ...(heading !== null && { heading }),
       ...(subheading !== null && { subheading }),
-      order:
-        (lessonContent?.data?.content
-          ? lessonContent.data.content.length
-          : contentBlocks.length) + 1,
+      order: calculatedOrder,
     };
 
     // Check if we're inserting at a specific position
@@ -1002,10 +1051,22 @@ const TextBlockComponent = ({
             textTypes.find(t => t.id === effectiveTextTypeForNew)?.style || {},
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          order:
-            (lessonContent?.data?.content
-              ? lessonContent.data.content.length
-              : contentBlocks.length) + 1,
+          order: (() => {
+            const blocksToUse =
+              lessonContent?.data?.content &&
+              lessonContent.data.content.length > 0
+                ? lessonContent.data.content
+                : contentBlocks;
+            if (blocksToUse.length === 0) {
+              return 1;
+            }
+            const lastBlock = blocksToUse[blocksToUse.length - 1];
+            const lastOrder =
+              lastBlock?.order !== undefined && lastBlock.order !== null
+                ? lastBlock.order
+                : blocksToUse.length;
+            return lastOrder + 1;
+          })(),
         };
 
         // If we have existing lesson content, add to that structure

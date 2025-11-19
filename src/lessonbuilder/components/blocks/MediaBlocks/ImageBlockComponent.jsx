@@ -4,7 +4,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { Image, X, Loader2, Crop } from 'lucide-react';
+import { Image, X, Loader2, Crop, Grid3x3, Layout } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import devLogger from '@lessonbuilder/utils/devLogger';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import ImageEditor from './ImageEditor';
+import ImageGallery from './ImageGallery';
+import ImageTypeSelector from './ImageTypeSelector';
 
 const ImageBlockComponent = forwardRef(
   (
@@ -55,6 +57,11 @@ const ImageBlockComponent = forwardRef(
     const [showImageEditor, setShowImageEditor] = useState(false);
     const [imageToEdit, setImageToEdit] = useState(null);
     const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
+
+    // Gallery state
+    const [activeTab, setActiveTab] = useState('gallery'); // 'gallery', 'templates'
+    const [showTypeSelector, setShowTypeSelector] = useState(false);
+    const [pendingGalleryImage, setPendingGalleryImage] = useState(null);
 
     // Image block templates
     const imageTemplates = [
@@ -230,6 +237,68 @@ const ImageBlockComponent = forwardRef(
       // Call parent callback
       onImageTemplateSelect(newBlock);
       setShowImageTemplateSidebar(false);
+    };
+
+    const handleGalleryImageSelect = galleryImage => {
+      // Close the sidebar first to avoid dialog stacking issues
+      setShowImageTemplateSidebar(false);
+      // Show type selector dialog instead of directly creating block
+      setPendingGalleryImage(galleryImage);
+      // Use setTimeout to ensure sidebar closes before opening type selector
+      setTimeout(() => {
+        setShowTypeSelector(true);
+      }, 100);
+    };
+
+    const handleTypeSelectorConfirm = imageWithTemplate => {
+      const { template, ...galleryImage } = imageWithTemplate;
+
+      // Create block with selected template
+      const newBlock = {
+        id: `image-${Date.now()}`,
+        block_id: `image-${Date.now()}`,
+        type: 'image',
+        title: template.title || galleryImage.fileName || 'Image',
+        layout: template.layout || 'centered',
+        templateType: template.id || 'gallery-image',
+        alignment: template.alignment || 'center',
+        imageUrl: galleryImage.url,
+        imageTitle: galleryImage.fileName || 'Image',
+        imageDescription: '',
+        text: template.defaultContent?.text
+          ? `<p>${template.defaultContent.text}</p>`
+          : '',
+        isEditing: false,
+        timestamp: new Date().toISOString(),
+        order: 0, // Will be set by parent
+        details: {
+          image_url: galleryImage.url,
+          caption: template.defaultContent?.text || '',
+          caption_html: template.defaultContent?.text
+            ? `<p>${template.defaultContent.text}</p>`
+            : '',
+          alt_text: galleryImage.fileName || 'Image',
+          layout: template.layout || 'centered',
+          template: template.id || 'gallery-image',
+          alignment: template.alignment || 'center',
+          source: 'gallery',
+          folder: galleryImage.folder,
+        },
+      };
+
+      // Generate HTML content immediately for the new block
+      newBlock.html_css = generateImageBlockHtml(newBlock);
+
+      // Call parent callback
+      onImageTemplateSelect(newBlock);
+      setShowTypeSelector(false);
+      setPendingGalleryImage(null);
+      setShowImageTemplateSidebar(false);
+    };
+
+    const handleTypeSelectorClose = () => {
+      setShowTypeSelector(false);
+      setPendingGalleryImage(null);
     };
 
     const handleImageBlockEdit = (blockId, field, value) => {
@@ -682,12 +751,13 @@ const ImageBlockComponent = forwardRef(
             />
 
             {/* Sidebar */}
-            <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
-              <div className="p-6 border-b border-gray-200">
+            <div className="relative bg-white w-[500px] h-full shadow-xl flex flex-col animate-slide-in-left">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                     <Image className="h-6 w-6" />
-                    Image Templates
+                    Add Image
                   </h2>
                   <Button
                     variant="ghost"
@@ -695,157 +765,217 @@ const ImageBlockComponent = forwardRef(
                     onClick={() => setShowImageTemplateSidebar(false)}
                     className="h-8 w-8 p-0 hover:bg-gray-100"
                   >
-                    ×
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="text-sm text-gray-600 mt-2">
-                  Choose a template to add to your lesson
+                  Choose from gallery or use templates
                 </p>
               </div>
 
-              <div className="p-6 space-y-4">
-                {/* AI Generation Option */}
-                <div
-                  onClick={() => {
-                    setShowImageTemplateSidebar(false);
-                    if (onAICreation) {
-                      onAICreation({ id: 'image', title: 'Image' });
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 flex-shrink-0">
+                <button
+                  onClick={() => setActiveTab('gallery')}
+                  className={`
+                    flex-1 px-4 py-3 text-sm font-medium transition-colors
+                    ${
+                      activeTab === 'gallery'
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }
-                  }}
-                  className="p-5 border rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200"
+                  `}
                 >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-purple-600 mt-1 group-hover:text-purple-700">
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-purple-900 group-hover:text-purple-900 text-base flex items-center gap-2">
-                        Generate with AI
-                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
-                          Recommended
-                        </span>
-                      </h3>
-                      <p className="text-sm text-purple-700 mt-1">
-                        Describe what you want and let AI create professional
-                        images instantly
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Grid3x3 className="h-4 w-4" />
+                    <span>Gallery</span>
                   </div>
-
-                  {/* Mini Preview */}
-                  <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
-                    <div className="flex items-center gap-2 text-purple-600">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                      <span className="text-sm font-medium">
-                        AI-powered image generation
-                      </span>
-                    </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('templates')}
+                  className={`
+                    flex-1 px-4 py-3 text-sm font-medium transition-colors
+                    ${
+                      activeTab === 'templates'
+                        ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Layout className="h-4 w-4" />
+                    <span>Templates</span>
                   </div>
-                </div>
+                </button>
+              </div>
 
-                {imageTemplates.map(template => (
-                  <div
-                    key={template.id}
-                    onClick={() => handleImageTemplateSelect(template)}
-                    className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-                  >
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="text-blue-600 mt-1 group-hover:text-blue-700">
-                        {template.icon}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">
-                          {template.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {template.description}
-                        </p>
-                      </div>
-                    </div>
+              {/* Tab Content */}
+              <div className="flex-1 overflow-hidden">
+                {activeTab === 'gallery' && (
+                  <div className="h-full">
+                    <ImageGallery
+                      onSelectImage={handleGalleryImageSelect}
+                      onClose={() => setShowImageTemplateSidebar(false)}
+                    />
+                  </div>
+                )}
 
-                    {/* Mini Preview */}
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      {template.layout === 'side-by-side' && (
-                        <div className="flex gap-3 items-start">
-                          <div className="w-1/2">
-                            <img
-                              src={template.defaultContent.imageUrl}
-                              alt="Preview"
-                              className="w-full h-20 object-cover rounded"
+                {activeTab === 'templates' && (
+                  <div className="h-full overflow-y-auto p-6 space-y-4">
+                    {/* AI Generation Option */}
+                    <div
+                      onClick={() => {
+                        setShowImageTemplateSidebar(false);
+                        if (onAICreation) {
+                          onAICreation({ id: 'image', title: 'Image' });
+                        }
+                      }}
+                      className="p-5 border rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200"
+                    >
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className="text-purple-600 mt-1 group-hover:text-purple-700">
+                          <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
                             />
-                          </div>
-                          <div className="w-1/2">
-                            <p className="text-xs text-gray-600 line-clamp-4">
-                              {template.defaultContent.text.substring(0, 60)}...
-                            </p>
-                          </div>
+                          </svg>
                         </div>
-                      )}
-                      {template.layout === 'overlay' && (
-                        <div className="relative">
-                          <img
-                            src={template.defaultContent.imageUrl}
-                            alt="Preview"
-                            className="w-full h-24 object-cover rounded"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
-                            <p className="text-white text-sm text-center line-clamp-3">
-                              {template.defaultContent.text.substring(0, 50)}...
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      {template.layout === 'centered' && (
-                        <div className="text-center space-y-2">
-                          <img
-                            src={template.defaultContent.imageUrl}
-                            alt="Preview"
-                            className="mx-auto h-20 object-cover rounded"
-                          />
-                          <p className="text-xs text-gray-600 italic line-clamp-2">
-                            {template.defaultContent.text.substring(0, 40)}...
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-purple-900 group-hover:text-purple-900 text-base flex items-center gap-2">
+                            Generate with AI
+                            <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                              Recommended
+                            </span>
+                          </h3>
+                          <p className="text-sm text-purple-700 mt-1">
+                            Describe what you want and let AI create
+                            professional images instantly
                           </p>
                         </div>
-                      )}
-                      {template.layout === 'full-width' && (
-                        <div className="space-y-2">
-                          <img
-                            src={template.defaultContent.imageUrl}
-                            alt="Preview"
-                            className="w-full h-24 object-cover rounded"
-                          />
-                          <p className="text-xs text-gray-600 line-clamp-3">
-                            {template.defaultContent.text.substring(0, 60)}...
-                          </p>
+                      </div>
+
+                      {/* Mini Preview */}
+                      <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
+                        <div className="flex items-center gap-2 text-purple-600">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
+                          </svg>
+                          <span className="text-sm font-medium">
+                            AI-powered image generation
+                          </span>
                         </div>
-                      )}
+                      </div>
                     </div>
+
+                    {imageTemplates.map(template => (
+                      <div
+                        key={template.id}
+                        onClick={() => handleImageTemplateSelect(template)}
+                        className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                      >
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="text-blue-600 mt-1 group-hover:text-blue-700">
+                            {template.icon}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">
+                              {template.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {template.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Mini Preview */}
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          {template.layout === 'side-by-side' && (
+                            <div className="flex gap-3 items-start">
+                              <div className="w-1/2">
+                                <img
+                                  src={template.defaultContent.imageUrl}
+                                  alt="Preview"
+                                  className="w-full h-20 object-cover rounded"
+                                />
+                              </div>
+                              <div className="w-1/2">
+                                <p className="text-xs text-gray-600 line-clamp-4">
+                                  {template.defaultContent.text.substring(
+                                    0,
+                                    60
+                                  )}
+                                  ...
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          {template.layout === 'overlay' && (
+                            <div className="relative">
+                              <img
+                                src={template.defaultContent.imageUrl}
+                                alt="Preview"
+                                className="w-full h-24 object-cover rounded"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
+                                <p className="text-white text-sm text-center line-clamp-3">
+                                  {template.defaultContent.text.substring(
+                                    0,
+                                    50
+                                  )}
+                                  ...
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          {template.layout === 'centered' && (
+                            <div className="text-center space-y-2">
+                              <img
+                                src={template.defaultContent.imageUrl}
+                                alt="Preview"
+                                className="mx-auto h-20 object-cover rounded"
+                              />
+                              <p className="text-xs text-gray-600 italic line-clamp-2">
+                                {template.defaultContent.text.substring(0, 40)}
+                                ...
+                              </p>
+                            </div>
+                          )}
+                          {template.layout === 'full-width' && (
+                            <div className="space-y-2">
+                              <img
+                                src={template.defaultContent.imageUrl}
+                                alt="Preview"
+                                className="w-full h-24 object-cover rounded"
+                              />
+                              <p className="text-xs text-gray-600 line-clamp-3">
+                                {template.defaultContent.text.substring(0, 60)}
+                                ...
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -1037,6 +1167,14 @@ const ImageBlockComponent = forwardRef(
           imageFile={imageToEdit}
           onSave={handleImageEditorSave}
           title={imageEditorTitle}
+        />
+
+        {/* Image Type Selector Dialog */}
+        <ImageTypeSelector
+          open={showTypeSelector}
+          onClose={handleTypeSelectorClose}
+          selectedImage={pendingGalleryImage}
+          onConfirm={handleTypeSelectorConfirm}
         />
       </>
     );

@@ -474,6 +474,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
     setBlueprintError('');
 
     try {
+      // Auto-enhance blueprint inputs (1.1-1.8) if they exist
+      const hasBlueprintInputs = [
+        courseData.blueprintCoursePurpose,
+        courseData.blueprintLearnerProfile,
+        courseData.blueprintLearningConstraints,
+        courseData.blueprintComplianceRequirements,
+        courseData.blueprintPriorKnowledge,
+        courseData.blueprintCourseStructure,
+        courseData.blueprintSuccessMeasurement,
+        courseData.blueprintRequiredResources,
+      ].some(value => value && value.trim().length > 0);
+
+      if (hasBlueprintInputs && !hasEnhancedBlueprint) {
+        // Auto-enhance blueprint inputs before generating
+        await handleEnhanceBlueprintInputs();
+      }
+
       // Get module and lesson counts (default to 1 if not specified)
       const moduleCount = courseData.moduleCount || 1;
       const lessonsPerModule = courseData.lessonsPerModule || 1;
@@ -2582,28 +2599,13 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                       assessments) before building content.
                                     </p>
 
-                                    <div className="flex items-center justify-between mt-2 mb-2">
+                                    <div className="mt-2 mb-2">
                                       <span className="text-xs text-gray-500">
                                         Architect inputs 1.1–1.8 (purpose,
-                                        persona, constraints, etc.)
+                                        persona, constraints, etc.) - Will be
+                                        automatically enhanced when generating
+                                        blueprint
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={handleEnhanceBlueprintInputs}
-                                        disabled={isEnhancingPrompt}
-                                        title="Enhance blueprint inputs"
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                                          isEnhancingPrompt
-                                            ? 'border-purple-300 text-purple-400 bg-purple-50 cursor-not-allowed'
-                                            : 'border-purple-500 text-purple-600 bg-purple-50 hover:bg-purple-100'
-                                        }`}
-                                      >
-                                        {isEnhancingPrompt ? (
-                                          <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                          <Sparkles className="w-3 h-3" />
-                                        )}
-                                      </button>
                                     </div>
 
                                     {/* Architect inputs 1.1–1.8 */}
@@ -3108,25 +3110,6 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                             <label className="block text-sm font-medium text-gray-700">
                                               AI Image Prompt
                                             </label>
-                                            <Button
-                                              type="button"
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={handleEnhancePrompt}
-                                              disabled={
-                                                isEnhancingPrompt ||
-                                                !aiImagePrompt?.trim()
-                                              }
-                                              title="Enhance AI image prompt"
-                                              className="h-7 text-xs flex items-center gap-1 hover:bg-purple-50 hover:border-purple-300"
-                                            >
-                                              {isEnhancingPrompt ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                              ) : (
-                                                <Wand2 className="w-3 h-3" />
-                                              )}
-                                              Enhance
-                                            </Button>
                                           </div>
                                           <textarea
                                             value={aiImagePrompt}

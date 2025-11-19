@@ -732,8 +732,14 @@ export const buildLessonUpdatePayload = ({
 
   const mergedBlocks = mergeBlocks(contentBlocks, lessonContent);
   const uniqueBlocks = removeDuplicateBlocks(mergedBlocks);
-  const content = uniqueBlocks.map(mapBlockToPayload);
-  const convertedBlocks = convertBlocksToHtml(uniqueBlocks);
+  // Sort blocks by order to preserve 10-section structure
+  const sortedBlocks = uniqueBlocks.sort((a, b) => {
+    const orderA = a.order !== undefined && a.order !== null ? a.order : 999999;
+    const orderB = b.order !== undefined && b.order !== null ? b.order : 999999;
+    return orderA - orderB;
+  });
+  const content = sortedBlocks.map(mapBlockToPayload);
+  const convertedBlocks = convertBlocksToHtml(sortedBlocks);
   const lessonDataToUpdate = {
     lesson_id: lessonId,
     content,
