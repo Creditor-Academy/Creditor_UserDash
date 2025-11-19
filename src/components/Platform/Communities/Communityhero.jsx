@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from "framer-motion";
-import { ArrowRight, Megaphone, Heart, MessageSquare } from "lucide-react";
+import { motion } from 'framer-motion';
+import { ArrowRight, Megaphone, Heart, MessageSquare } from 'lucide-react';
 
 const Communityhero = () => {
   return (
@@ -27,9 +27,7 @@ const Communityhero = () => {
                 Features
               </span>
               <span className="text-gray-400">|</span>
-              <span className="font-semibold text-gray-900">
-                Communities
-              </span>
+              <span className="font-semibold text-gray-900">Communities</span>
             </div>
 
             {/* Main Heading */}
@@ -39,7 +37,11 @@ const Communityhero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Scale your business by building an online learning space that improves customer success rates and retention. Create an exclusive space — hosted directly on the same platform as your learning business— to share content, foster connection, and encourage collaboration.
+              Scale your business by building an online learning space that
+              improves customer success rates and retention. Create an exclusive
+              space — hosted directly on the same platform as your learning
+              business— to share content, foster connection, and encourage
+              collaboration.
             </p>
 
             {/* CTA Buttons */}
@@ -102,7 +104,9 @@ const Communityhero = () => {
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-gray-900 text-sm">Lily Lee</span>
+                          <span className="font-semibold text-gray-900 text-sm">
+                            Lily Lee
+                          </span>
                           <span className="px-1.5 py-0.5 bg-gray-600 text-white text-[10px] font-semibold rounded">
                             ★ Moderator
                           </span>
@@ -118,8 +122,9 @@ const Communityhero = () => {
                     <p className="text-gray-900 leading-relaxed text-sm">
                       <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
                         ⏰ 1 hour to go!
-                      </span>{" "}
-                      Join us live for a deep dive into Strategic Planning—you won't want to miss it.
+                      </span>{' '}
+                      Join us live for a deep dive into Strategic Planning—you
+                      won't want to miss it.
                     </p>
                   </div>
 

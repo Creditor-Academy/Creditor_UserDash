@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import React, { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 export default function Ready() {
   const navigate = useNavigate();
@@ -203,15 +203,14 @@ export default function Ready() {
         <div className="circle circle-3"></div>
       </div>
 
-      <div className={`ready-content${showContent ? " show" : ""}`}>
-        <h2 className="ready-heading">
-          Ready to Start Your Journey?
-        </h2>
-        
+      <div className={`ready-content${showContent ? ' show' : ''}`}>
+        <h2 className="ready-heading">Ready to Start Your Journey?</h2>
+
         <p className="ready-subheading">
-          Join thousands of educators transforming learning with <span className="ready-highlight">AI-powered</span> course creation
+          Join thousands of educators transforming learning with{' '}
+          <span className="ready-highlight">AI-powered</span> course creation
         </p>
-        
+
         <button className="ready-cta" onClick={() => navigate('/contact')}>
           Join Now
           <ArrowRight size={20} className="ready-cta-icon" />

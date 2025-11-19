@@ -37,7 +37,7 @@ export default function Digitalfaq() {
 
         {/* FAQ List */}
         <div className="divide-y divide-gray-200 rounded-2xl bg-white shadow-xl">
-          {faqs.map((item) => {
+          {faqs.map(item => {
             const isOpen = openId === item.id;
             return (
               <div key={item.id} className="px-5 sm:px-6 lg:px-8">
@@ -49,7 +49,11 @@ export default function Digitalfaq() {
                     {item.q}
                   </span>
                   <span className="text-gray-900">
-                    {isOpen ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    {isOpen ? (
+                      <X className="w-5 h-5" />
+                    ) : (
+                      <Plus className="w-5 h-5" />
+                    )}
                   </span>
                 </button>
 

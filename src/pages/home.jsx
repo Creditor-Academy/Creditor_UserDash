@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import Navbar from '../components/navbar.jsx';
 import Footer from '../components/Footer.jsx';
 import Hero from '../components/homepage/herosection.jsx';
@@ -19,7 +19,6 @@ import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
 import MonetizeSection from '../components/homepage/MonetizeSection.jsx';
 import LearningPathways from '../components/homepage/LearningPathways.jsx';
 import CTA from '../components/homepage/cta.jsx';
-
 
 const Home = () => {
   return (

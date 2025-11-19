@@ -1,82 +1,92 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Video, Users, ExternalLink, Bell, MapPin } from "lucide-react";
-import { toast } from "sonner";
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Calendar,
+  Clock,
+  Video,
+  Users,
+  ExternalLink,
+  Bell,
+  MapPin,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { markEventAttendance } from '../../services/attendanceService';
 
 const upcomingClasses = [
   {
-    id: "1",
-    title: "Constitutional Law Deep Dive",
-    instructor: "Prof. Sarah Wilson",
-    date: "2025-06-19",
-    time: "15:00", // 3:00 PM
-    duration: "2h",
-    zoomLink: "https://zoom.us/j/constitutional123",
-    description: "Comprehensive analysis of constitutional amendments and their modern applications",
+    id: '1',
+    title: 'Constitutional Law Deep Dive',
+    instructor: 'Prof. Sarah Wilson',
+    date: '2025-06-19',
+    time: '15:00', // 3:00 PM
+    duration: '2h',
+    zoomLink: 'https://zoom.us/j/constitutional123',
+    description:
+      'Comprehensive analysis of constitutional amendments and their modern applications',
     attendees: 45,
     maxAttendees: 60,
     isLive: false,
-    canJoin: false
+    canJoin: false,
   },
   {
-    id: "2",
-    title: "Criminal Procedure Workshop",
-    instructor: "Prof. Michael Chen",
-    date: "2025-06-20",
-    time: "10:00", // 10:00 AM
-    duration: "1h 30m",
-    zoomLink: "https://zoom.us/j/criminal456",
-    description: "Interactive workshop on criminal procedure rules and evidence handling",
+    id: '2',
+    title: 'Criminal Procedure Workshop',
+    instructor: 'Prof. Michael Chen',
+    date: '2025-06-20',
+    time: '10:00', // 10:00 AM
+    duration: '1h 30m',
+    zoomLink: 'https://zoom.us/j/criminal456',
+    description:
+      'Interactive workshop on criminal procedure rules and evidence handling',
     attendees: 38,
     maxAttendees: 50,
     isLive: false,
-    canJoin: false
+    canJoin: false,
   },
   {
-    id: "3",
-    title: "Contract Law Case Studies",
-    instructor: "Prof. Emily Rodriguez",
-    date: "2025-06-21",
-    time: "14:30", // 2:30 PM
-    duration: "2h 15m",
-    zoomLink: "https://zoom.us/j/contract789",
-    description: "Real-world contract disputes and their legal implications",
+    id: '3',
+    title: 'Contract Law Case Studies',
+    instructor: 'Prof. Emily Rodriguez',
+    date: '2025-06-21',
+    time: '14:30', // 2:30 PM
+    duration: '2h 15m',
+    zoomLink: 'https://zoom.us/j/contract789',
+    description: 'Real-world contract disputes and their legal implications',
     attendees: 52,
     maxAttendees: 65,
     isLive: false,
-    canJoin: false
+    canJoin: false,
   },
   {
-    id: "4",
-    title: "Legal Research Methodology",
-    instructor: "Prof. David Park",
-    date: "2025-06-22",
-    time: "11:00", // 11:00 AM
-    duration: "1h 45m",
-    zoomLink: "https://zoom.us/j/research101",
-    description: "Advanced techniques for legal research and citation methods",
+    id: '4',
+    title: 'Legal Research Methodology',
+    instructor: 'Prof. David Park',
+    date: '2025-06-22',
+    time: '11:00', // 11:00 AM
+    duration: '1h 45m',
+    zoomLink: 'https://zoom.us/j/research101',
+    description: 'Advanced techniques for legal research and citation methods',
     attendees: 29,
     maxAttendees: 40,
     isLive: false,
-    canJoin: false
+    canJoin: false,
   },
   {
-    id: "5",
-    title: "Civil Rights and Liberties",
-    instructor: "Prof. Lisa Thompson",
-    date: "2025-06-23",
-    time: "16:00", // 4:00 PM
-    duration: "2h",
-    zoomLink: "https://zoom.us/j/civilrights202",
-    description: "Evolution of civil rights law and contemporary challenges",
+    id: '5',
+    title: 'Civil Rights and Liberties',
+    instructor: 'Prof. Lisa Thompson',
+    date: '2025-06-23',
+    time: '16:00', // 4:00 PM
+    duration: '2h',
+    zoomLink: 'https://zoom.us/j/civilrights202',
+    description: 'Evolution of civil rights law and contemporary challenges',
     attendees: 41,
     maxAttendees: 55,
     isLive: false,
-    canJoin: false
-  }
+    canJoin: false,
+  },
 ];
 
 export function UpcomingLiveClasses() {
@@ -94,85 +104,100 @@ export function UpcomingLiveClasses() {
   useEffect(() => {
     const updatedClasses = classes.map(classItem => {
       const classDateTime = new Date(`${classItem.date}T${classItem.time}:00`);
-      const classEndTime = new Date(classDateTime.getTime() + (2 * 60 * 60 * 1000)); // Assuming 2 hours max
+      const classEndTime = new Date(
+        classDateTime.getTime() + 2 * 60 * 60 * 1000
+      ); // Assuming 2 hours max
       const now = currentTime;
-      
+
       // Class is live if current time is within 15 minutes before and during the class
-      const canJoinTime = new Date(classDateTime.getTime() - (15 * 60 * 1000)); // 15 minutes before
+      const canJoinTime = new Date(classDateTime.getTime() - 15 * 60 * 1000); // 15 minutes before
       const isLive = now >= classDateTime && now <= classEndTime;
       const canJoin = now >= canJoinTime && now <= classEndTime;
 
       return {
         ...classItem,
         isLive,
-        canJoin
+        canJoin,
       };
     });
 
     setClasses(updatedClasses);
   }, [currentTime]);
 
-  const handleJoinClass = async (classItem) => {
+  const handleJoinClass = async classItem => {
     if (classItem.canJoin) {
       try {
         // Mark attendance first
         await markEventAttendance(classItem.id);
-        toast.success("Attendance marked successfully!");
-        
+        toast.success('Attendance marked successfully!');
+
         // Then open the zoom link
         window.open(classItem.zoomLink, '_blank');
       } catch (error) {
         console.error('Error marking attendance:', error);
-        
+
         // Show error message but still allow joining the meeting
-        toast.error(error.message || "Failed to mark attendance, but you can still join the meeting");
-        
+        toast.error(
+          error.message ||
+            'Failed to mark attendance, but you can still join the meeting'
+        );
+
         // Open the zoom link even if attendance marking fails
         window.open(classItem.zoomLink, '_blank');
       }
     } else {
       const classDateTime = new Date(`${classItem.date}T${classItem.time}:00`);
-      const timeUntilClass = Math.floor((classDateTime.getTime() - currentTime.getTime()) / (1000 * 60));
-      
+      const timeUntilClass = Math.floor(
+        (classDateTime.getTime() - currentTime.getTime()) / (1000 * 60)
+      );
+
       if (timeUntilClass > 0) {
-        toast.info(`Class starts in ${timeUntilClass} minutes. Join button will be active 15 minutes before class.`);
+        toast.info(
+          `Class starts in ${timeUntilClass} minutes. Join button will be active 15 minutes before class.`
+        );
       } else {
-        toast.error("This class has already ended.");
+        toast.error('This class has already ended.');
       }
     }
   };
 
-  const handleSetReminder = (classItem) => {
-    toast.success(`Reminder set for ${classItem.title} on ${new Date(classItem.date).toLocaleDateString()}`);
+  const handleSetReminder = classItem => {
+    toast.success(
+      `Reminder set for ${classItem.title} on ${new Date(classItem.date).toLocaleDateString()}`
+    );
   };
 
-  const handleViewDetails = (classItem) => {
-    toast.info(`${classItem.description}\n\nInstructor: ${classItem.instructor}\nAttendees: ${classItem.attendees}/${classItem.maxAttendees}`);
+  const handleViewDetails = classItem => {
+    toast.info(
+      `${classItem.description}\n\nInstructor: ${classItem.instructor}\nAttendees: ${classItem.attendees}/${classItem.maxAttendees}`
+    );
   };
 
-  const formatDate = (dateStr) => {
+  const formatDate = dateStr => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
     });
   };
 
-  const formatTime = (timeStr) => {
+  const formatTime = timeStr => {
     const [hours, minutes] = timeStr.split(':');
     const date = new Date();
     date.setHours(parseInt(hours), parseInt(minutes));
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   };
 
-  const getStatusBadge = (classItem) => {
+  const getStatusBadge = classItem => {
     if (classItem.isLive) {
-      return <Badge className="bg-red-500 text-white animate-pulse">LIVE NOW</Badge>;
+      return (
+        <Badge className="bg-red-500 text-white animate-pulse">LIVE NOW</Badge>
+      );
     } else if (classItem.canJoin) {
       return <Badge className="bg-green-500 text-white">Join Available</Badge>;
     } else {
@@ -184,8 +209,12 @@ export function UpcomingLiveClasses() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-gray-800">Upcoming Live Classes</h3>
-          <p className="text-gray-600">Join your scheduled classes when they go live</p>
+          <h3 className="text-2xl font-bold text-gray-800">
+            Upcoming Live Classes
+          </h3>
+          <p className="text-gray-600">
+            Join your scheduled classes when they go live
+          </p>
         </div>
         <div className="text-sm text-gray-500">
           Current Time: {currentTime.toLocaleTimeString()}
@@ -193,15 +222,15 @@ export function UpcomingLiveClasses() {
       </div>
 
       <div className="grid gap-4">
-        {classes.map((classItem) => (
-          <Card 
-            key={classItem.id} 
+        {classes.map(classItem => (
+          <Card
+            key={classItem.id}
             className={`transition-all duration-300 hover:shadow-lg border-l-4 ${
-              classItem.isLive 
-                ? 'border-l-red-500 bg-red-50/30 shadow-red-100' 
-                : classItem.canJoin 
-                ? 'border-l-green-500 bg-green-50/30 shadow-green-100'
-                : 'border-l-blue-500 hover:bg-blue-50/30'
+              classItem.isLive
+                ? 'border-l-red-500 bg-red-50/30 shadow-red-100'
+                : classItem.canJoin
+                  ? 'border-l-green-500 bg-green-50/30 shadow-green-100'
+                  : 'border-l-blue-500 hover:bg-blue-50/30'
             }`}
           >
             <CardContent className="p-6">
@@ -212,11 +241,15 @@ export function UpcomingLiveClasses() {
                       <Video className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-800 hover:text-blue-600 cursor-pointer transition-colors"
-                          onClick={() => handleViewDetails(classItem)}>
+                      <h4
+                        className="text-lg font-semibold text-gray-800 hover:text-blue-600 cursor-pointer transition-colors"
+                        onClick={() => handleViewDetails(classItem)}
+                      >
                         {classItem.title}
                       </h4>
-                      <p className="text-sm text-gray-600">with {classItem.instructor}</p>
+                      <p className="text-sm text-gray-600">
+                        with {classItem.instructor}
+                      </p>
                     </div>
                     {getStatusBadge(classItem)}
                   </div>
@@ -246,18 +279,24 @@ export function UpcomingLiveClasses() {
                     onClick={() => handleJoinClass(classItem)}
                     disabled={!classItem.canJoin}
                     className={`${
-                      classItem.isLive 
-                        ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                        : classItem.canJoin 
-                        ? 'bg-green-500 hover:bg-green-600'
-                        : 'bg-gray-400'
+                      classItem.isLive
+                        ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                        : classItem.canJoin
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-gray-400'
                     } text-white transition-all duration-300`}
                   >
                     <Video className="w-4 h-4 mr-2" />
-                    {classItem.isLive ? 'Join Live' : classItem.canJoin ? 'Join Class' : 'Not Available'}
-                    {classItem.canJoin && <ExternalLink className="w-3 h-3 ml-1" />}
+                    {classItem.isLive
+                      ? 'Join Live'
+                      : classItem.canJoin
+                        ? 'Join Class'
+                        : 'Not Available'}
+                    {classItem.canJoin && (
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    )}
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
