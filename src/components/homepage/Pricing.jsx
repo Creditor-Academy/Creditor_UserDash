@@ -28,7 +28,7 @@ const Pricing = () => {
       ],
       sectionHeader: "Starter Includes:",
       cta: "Join Now",
-      link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=6d5d77cdb6e670bba957fa20875f2451&internal_timestamp=1763571410&tid=a297c9cfed5273354bcf687ed0628c65",  
+      link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8",  
       popular: false,
       buttonStyle: "white"
     },
