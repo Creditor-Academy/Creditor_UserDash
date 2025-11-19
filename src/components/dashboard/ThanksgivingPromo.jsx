@@ -17,14 +17,35 @@ export default function ThanksgivingPromo({ onExtendMembership }) {
   const CTA_HEIGHT = 160; // design height for CTA block
   const navigate = useNavigate();
 
-  // Clear storage on mount to ensure banner shows on every login
-  // This ensures the banner appears every time the component mounts (on login)
+  // Listen for login event and clear storage to show banner on new login
   useEffect(() => {
-    // Clear the storage when component mounts so banner shows on every login
-    sessionStorage.removeItem(STORAGE_KEY);
-    setIsCollapsed(false);
-    setIsOpen(false);
-  }, []);
+    const handleUserLoggedIn = () => {
+      // Clear storage when user logs in so banner shows once per login session
+      sessionStorage.removeItem(STORAGE_KEY);
+      setIsCollapsed(false);
+      setIsOpen(false);
+
+      // If image is already loaded, show the banner after a delay
+      if (imageLoaded) {
+        setTimeout(() => {
+          setIsOpen(true);
+        }, 2500);
+      }
+    };
+
+    // Listen for login event
+    window.addEventListener('userLoggedIn', handleUserLoggedIn);
+
+    // Check if banner has been closed in current session
+    const hasBeenClosed = sessionStorage.getItem(STORAGE_KEY) === 'true';
+    if (hasBeenClosed) {
+      setIsCollapsed(true);
+    }
+
+    return () => {
+      window.removeEventListener('userLoggedIn', handleUserLoggedIn);
+    };
+  }, [imageLoaded]);
 
   // Preload the image before showing the modal
   useEffect(() => {
@@ -38,19 +59,25 @@ export default function ThanksgivingPromo({ onExtendMembership }) {
       });
       setImageLoaded(true);
 
-      // Always auto-open on login (after image loads)
-      // Delay after image loads before showing modal
-      timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 2500); // 2.5 seconds delay
+      // Only auto-open if it hasn't been closed in this session
+      const hasBeenClosed = sessionStorage.getItem(STORAGE_KEY) === 'true';
+      if (!hasBeenClosed) {
+        // Delay after image loads before showing modal
+        timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 2500); // 2.5 seconds delay
+      }
     };
 
     const handleError = () => {
       // If image fails to load, still show after a delay
       setImageLoaded(true);
-      timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 2500);
+      const hasBeenClosed = sessionStorage.getItem(STORAGE_KEY) === 'true';
+      if (!hasBeenClosed) {
+        timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 2500);
+      }
     };
 
     img.onload = handleLoad;
