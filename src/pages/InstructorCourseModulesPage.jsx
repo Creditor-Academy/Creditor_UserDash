@@ -33,6 +33,19 @@ const InstructorCourseModulesPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [moduleToDelete, setModuleToDelete] = useState(null);
 
+  const DEFAULT_MODULE_CATEGORY = 'BOOK_SMART';
+  const normalizeModuleCategory = module => {
+    if (!module || typeof module !== 'object') return module;
+    return {
+      ...module,
+      category: module.category || DEFAULT_MODULE_CATEGORY,
+    };
+  };
+  const normalizeModulesList = modulesArray =>
+    (Array.isArray(modulesArray) ? modulesArray : []).map(
+      normalizeModuleCategory
+    );
+
   useEffect(() => {
     if (!isAllowed) return;
     const init = async () => {
@@ -57,7 +70,7 @@ const InstructorCourseModulesPage = () => {
 
           // Only fetch modules data (1 API call instead of 2)
           const modulesData = await fetchCourseModules(courseId);
-          setModules(Array.isArray(modulesData) ? modulesData : []);
+          setModules(normalizeModulesList(modulesData));
         } else {
           console.log(
             '❌ No navigation state data - falling back to full API calls'
@@ -68,7 +81,7 @@ const InstructorCourseModulesPage = () => {
             fetchCourseModules(courseId),
           ]);
           setCourse(courseData);
-          setModules(Array.isArray(modulesData) ? modulesData : []);
+          setModules(normalizeModulesList(modulesData));
         }
       } catch (err) {
         console.error('Error loading course/modules:', err);
@@ -117,18 +130,20 @@ const InstructorCourseModulesPage = () => {
 
       setModules(prevModules => {
         if (!Array.isArray(prevModules))
-          return normalizedModule ? [normalizedModule] : [];
+          return normalizedModule
+            ? [normalizeModuleCategory({ ...normalizedModule })]
+            : [];
 
         if (moduleDialogMode === 'edit' && normalizedId) {
           return prevModules.map(module =>
             (module?.id ?? module?.module_id) === normalizedId
-              ? { ...module, ...normalizedModule }
+              ? normalizeModuleCategory({ ...module, ...normalizedModule })
               : module
           );
         }
 
         return normalizedModule
-          ? [...prevModules, normalizedModule]
+          ? [...prevModules, normalizeModuleCategory({ ...normalizedModule })]
           : prevModules;
       });
 
@@ -163,7 +178,7 @@ const InstructorCourseModulesPage = () => {
 
       await deleteModule(courseId, moduleToDelete.id, moduleData);
       const updated = await fetchCourseModules(courseId);
-      setModules(updated || []);
+      setModules(normalizeModulesList(updated));
       setShowDeleteConfirm(false);
       setModuleToDelete(null);
     } catch (err) {
