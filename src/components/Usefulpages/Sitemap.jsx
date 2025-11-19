@@ -1,49 +1,48 @@
-import React, { useEffect } from "react";
-import { Link } from "react-router-dom"; // Optional: only if using React Router
+import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Optional: only if using React Router
 
 const Sitemap = () => {
   useEffect(() => {
-    document.title = "Sitemap — Athena LMS";
+    document.title = 'Sitemap — Athena LMS';
   }, []);
 
   const sections = [
     {
-      title: "Main Pages",
+      title: 'Main Pages',
       links: [
-        { label: "Home", href: "/" },
-        { label: "About Us", href: "/about" },
-        { label: "Platform", href: "/platform/courses" },
-        { label: "Pricing", href: "/pricing" },
-        { label: "Contact", href: "/contact" },
+        { label: 'Home', href: '/' },
+        { label: 'About Us', href: '/about' },
+        { label: 'Platform', href: '/platform/courses' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'Contact', href: '/contact' },
       ],
     },
     {
-      title: "Learning & Solutions",
+      title: 'Learning & Solutions',
       links: [
-        { label: "Revenue Generation", href: "/revenue_generation" },
-        { label: "Customer Training", href: "/customer_training" },
-        { label: "Lead Generation", href: "/lead_generation" },
-        { label: "Analytics", href: "/platform/analytics" },
-
+        { label: 'Revenue Generation', href: '/revenue_generation' },
+        { label: 'Customer Training', href: '/customer_training' },
+        { label: 'Lead Generation', href: '/lead_generation' },
+        { label: 'Analytics', href: '/platform/analytics' },
       ],
     },
     {
-      title: "Legal & Policies",
+      title: 'Legal & Policies',
       links: [
-        { label: "Privacy Policy", href: "/privacy-athena" },
-        { label: "Terms & Conditions", href: "/term-athena" },
-        { label: "Cookies Policy", href: "/cookies" },
-        { label: "Sitemap", href: "/sitemap" },
+        { label: 'Privacy Policy', href: '/privacy-athena' },
+        { label: 'Terms & Conditions', href: '/term-athena' },
+        { label: 'Cookies Policy', href: '/cookies' },
+        { label: 'Sitemap', href: '/sitemap' },
       ],
     },
     {
-      title: "Get in Touch",
+      title: 'Get in Touch',
       links: [
         {
-          label: "Email: admin@lmsathena.com",
-          href: "mailto:admin@lmsathena.com",
+          label: 'Email: admin@lmsathena.com',
+          href: 'mailto:admin@lmsathena.com',
         },
-        { label: "Phone: +91 9811773207", href: "tel:+91 9811773207" },
+        { label: 'Phone: +91 9811773207', href: 'tel:+91 9811773207' },
       ],
     },
   ];

@@ -1,15 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { 
-  Lightbulb, 
-  BookOpen, 
-  Server, 
-  Video, 
+import {
+  Lightbulb,
+  BookOpen,
+  Server,
+  Video,
   Award,
   X,
   ArrowRight,
   CheckCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 
 const ServicesOverview = () => {
@@ -22,83 +22,93 @@ const ServicesOverview = () => {
     {
       id: 1,
       icon: <Lightbulb />,
-      title: "Instructional Design Strategy & Needs Analysis",
-      shortDescription: "Align learning objectives with business goals through research-backed design frameworks.",
-      color: "#3b82f6", // blue
-      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop",
+      title: 'Instructional Design Strategy & Needs Analysis',
+      shortDescription:
+        'Align learning objectives with business goals through research-backed design frameworks.',
+      color: '#3b82f6', // blue
+      image:
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop',
       benefits: [
-        "Comprehensive needs analysis and gap assessment",
-        "Learning objectives aligned with business KPIs",
-        "Audience analysis and persona development",
-        "Curriculum architecture and learning pathway design",
-        "Cognitive load optimization strategies",
-        "Evidence-based instructional frameworks (ADDIE, SAM, Bloom's Taxonomy)"
-      ]
+        'Comprehensive needs analysis and gap assessment',
+        'Learning objectives aligned with business KPIs',
+        'Audience analysis and persona development',
+        'Curriculum architecture and learning pathway design',
+        'Cognitive load optimization strategies',
+        "Evidence-based instructional frameworks (ADDIE, SAM, Bloom's Taxonomy)",
+      ],
     },
     {
       id: 2,
       icon: <BookOpen />,
-      title: "Custom E-Learning & Course Development",
-      shortDescription: "Engaging, interactive courses tailored to your learners and delivered on any platform.",
-      color: "#f59e0b", // orange
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=600&fit=crop",
+      title: 'Custom E-Learning & Course Development',
+      shortDescription:
+        'Engaging, interactive courses tailored to your learners and delivered on any platform.',
+      color: '#f59e0b', // orange
+      image:
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&h=600&fit=crop',
       benefits: [
-        "Scenario-based learning and branching simulations",
-        "Mobile-first responsive course design",
-        "Rich multimedia integration (video, audio, interactive elements)",
-        "Accessibility compliance (WCAG 2.1, Section 508)",
-        "SCORM/xAPI/LTI-compliant packages",
-        "Custom graphics, animations, and visual design"
-      ]
+        'Scenario-based learning and branching simulations',
+        'Mobile-first responsive course design',
+        'Rich multimedia integration (video, audio, interactive elements)',
+        'Accessibility compliance (WCAG 2.1, Section 508)',
+        'SCORM/xAPI/LTI-compliant packages',
+        'Custom graphics, animations, and visual design',
+      ],
     },
     {
       id: 3,
       icon: <Server />,
-      title: "LMS Integration & Platform Support",
-      shortDescription: "Seamless deployment and ongoing technical support for your learning ecosystem.",
-      color: "#10b981", // green
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop",
+      title: 'LMS Integration & Platform Support',
+      shortDescription:
+        'Seamless deployment and ongoing technical support for your learning ecosystem.',
+      color: '#10b981', // green
+      image:
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop',
       benefits: [
-        "LMS selection and implementation consulting",
-        "Content migration and system integration",
-        "Single Sign-On (SSO) and API integration",
-        "Custom reporting and analytics dashboards",
-        "User onboarding and admin training",
-        "Ongoing maintenance and technical support"
-      ]
+        'LMS selection and implementation consulting',
+        'Content migration and system integration',
+        'Single Sign-On (SSO) and API integration',
+        'Custom reporting and analytics dashboards',
+        'User onboarding and admin training',
+        'Ongoing maintenance and technical support',
+      ],
     },
     {
       id: 4,
       icon: <Video />,
-      title: "Live & Virtual Instructor-Led Training Solutions",
-      shortDescription: "Hybrid training experiences that combine the best of live instruction and digital delivery.",
-      color: "#8b5cf6", // purple
-      image: "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?w=800&h=600&fit=crop",
+      title: 'Live & Virtual Instructor-Led Training Solutions',
+      shortDescription:
+        'Hybrid training experiences that combine the best of live instruction and digital delivery.',
+      color: '#8b5cf6', // purple
+      image:
+        'https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?w=800&h=600&fit=crop',
       benefits: [
-        "Virtual classroom design and facilitation",
-        "Blended learning program development",
-        "Interactive webinar and workshop design",
-        "Facilitator guides and participant materials",
-        "Breakout room activities and collaboration tools",
-        "Post-session reinforcement and follow-up"
-      ]
+        'Virtual classroom design and facilitation',
+        'Blended learning program development',
+        'Interactive webinar and workshop design',
+        'Facilitator guides and participant materials',
+        'Breakout room activities and collaboration tools',
+        'Post-session reinforcement and follow-up',
+      ],
     },
     {
       id: 5,
       icon: <Award />,
-      title: "Assessment, Gamification & Micro-Learning",
-      shortDescription: "Boost engagement and retention with game mechanics, bite-sized content, and validated assessments.",
-      color: "#06b6d4", // cyan
-      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop",
+      title: 'Assessment, Gamification & Micro-Learning',
+      shortDescription:
+        'Boost engagement and retention with game mechanics, bite-sized content, and validated assessments.',
+      color: '#06b6d4', // cyan
+      image:
+        'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop',
       benefits: [
-        "Engagement design with points, badges, and leaderboards",
-        "Scenario-based branching narratives",
-        "Mobile-first micro-modules (2-5 minute lessons)",
-        "Knowledge checks and formative assessments",
-        "Performance-based simulations and evaluations",
-        "Spaced repetition and reinforcement strategies"
-      ]
-    }
+        'Engagement design with points, badges, and leaderboards',
+        'Scenario-based branching narratives',
+        'Mobile-first micro-modules (2-5 minute lessons)',
+        'Knowledge checks and formative assessments',
+        'Performance-based simulations and evaluations',
+        'Spaced repetition and reinforcement strategies',
+      ],
+    },
   ];
 
   // Handle responsive slides per view
@@ -126,7 +136,7 @@ const ServicesOverview = () => {
     }
   }, [slidesPerView, currentSlide, services.length]);
 
-  const openModal = (service) => {
+  const openModal = service => {
     setSelectedService(service);
     document.body.style.overflow = 'hidden';
   };
@@ -138,16 +148,16 @@ const ServicesOverview = () => {
 
   // Slider functions
   const maxSlide = Math.max(0, services.length - slidesPerView);
-  
+
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev >= maxSlide ? 0 : prev + 1));
+    setCurrentSlide(prev => (prev >= maxSlide ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev <= 0 ? maxSlide : prev - 1));
+    setCurrentSlide(prev => (prev <= 0 ? maxSlide : prev - 1));
   };
 
-  const goToSlide = (index) => {
+  const goToSlide = index => {
     if (index <= maxSlide) {
       setCurrentSlide(index);
     }
@@ -695,26 +705,36 @@ const ServicesOverview = () => {
       <section className="services-section">
         {/* Background decorations */}
         <div className="services-bg-decoration">
-          <div className="services-bg-blob" style={{
-            top: '10%',
-            left: '10%',
-            width: '400px',
-            height: '400px',
-            background: '#3b82f6'
-          }} />
-          <div className="services-bg-blob" style={{
-            bottom: '10%',
-            right: '10%',
-            width: '500px',
-            height: '500px',
-            background: '#8b5cf6'
-          }} />
+          <div
+            className="services-bg-blob"
+            style={{
+              top: '10%',
+              left: '10%',
+              width: '400px',
+              height: '400px',
+              background: '#3b82f6',
+            }}
+          />
+          <div
+            className="services-bg-blob"
+            style={{
+              bottom: '10%',
+              right: '10%',
+              width: '500px',
+              height: '500px',
+              background: '#8b5cf6',
+            }}
+          />
         </div>
 
         <div className="services-container">
           <h2 className="services-title">Our Services</h2>
-          <p className="services-subtitle" style={{ fontFamily: 'Arial, sans-serif' }}>
-            Comprehensive instructional design and e-learning solutions tailored to your organization's needs
+          <p
+            className="services-subtitle"
+            style={{ fontFamily: 'Arial, sans-serif' }}
+          >
+            Comprehensive instructional design and e-learning solutions tailored
+            to your organization's needs
           </p>
 
           {/* Slider Container */}
@@ -730,12 +750,14 @@ const ServicesOverview = () => {
 
             {/* Cards Container */}
             <div className="services-slider-wrapper">
-              <div 
+              <div
                 ref={sliderRef}
                 className="services-slider"
-                style={{ transform: `translateX(-${currentSlide * (100 / slidesPerView)}%)` }}
+                style={{
+                  transform: `translateX(-${currentSlide * (100 / slidesPerView)}%)`,
+                }}
               >
-                {services.map((service) => (
+                {services.map(service => (
                   <div key={service.id} className="service-slide">
                     <div
                       className="service-card"
@@ -749,10 +771,17 @@ const ServicesOverview = () => {
                           className="service-image"
                         />
                         <div className="service-image-overlay" />
-                        
+
                         {/* Icon overlay */}
                         <div className="service-icon-wrapper">
-                          <div style={{ color: service.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div
+                            style={{
+                              color: service.color,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
                             {service.icon}
                           </div>
                         </div>
@@ -765,17 +794,32 @@ const ServicesOverview = () => {
                           className="service-hover-fill"
                           style={{ backgroundColor: service.color }}
                         />
-                        
+
                         {/* Content with higher z-index */}
                         <div className="service-content-inner">
-                          <h3 className="service-title" style={{ fontFamily: 'Arial, sans-serif' }}>{service.title}</h3>
-                          <p className="service-description" style={{ fontFamily: 'Arial, sans-serif' }}>{service.shortDescription}</p>
+                          <h3
+                            className="service-title"
+                            style={{ fontFamily: 'Arial, sans-serif' }}
+                          >
+                            {service.title}
+                          </h3>
+                          <p
+                            className="service-description"
+                            style={{ fontFamily: 'Arial, sans-serif' }}
+                          >
+                            {service.shortDescription}
+                          </p>
                         </div>
                       </div>
 
                       {/* Bottom Color Line */}
                       <div className="service-bottom-bar">
-                        <div style={{ backgroundColor: service.color, height: '100%' }} />
+                        <div
+                          style={{
+                            backgroundColor: service.color,
+                            height: '100%',
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -809,7 +853,7 @@ const ServicesOverview = () => {
         {/* Modal */}
         {selectedService && (
           <div className="modal-overlay" onClick={closeModal}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
                 <div className="modal-header-content">
                   <div
@@ -820,7 +864,9 @@ const ServicesOverview = () => {
                   </div>
                   <div className="modal-title-wrapper">
                     <h3 className="modal-title">{selectedService.title}</h3>
-                    <p className="modal-description">{selectedService.shortDescription}</p>
+                    <p className="modal-description">
+                      {selectedService.shortDescription}
+                    </p>
                   </div>
                 </div>
                 <button className="modal-close-btn" onClick={closeModal}>
@@ -847,4 +893,3 @@ const ServicesOverview = () => {
 };
 
 export default ServicesOverview;
-

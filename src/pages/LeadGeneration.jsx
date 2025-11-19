@@ -21,9 +21,8 @@ export const LeadGeneration = () => {
       {/* <LeadSucceed /> */}
       <LeadDeliver />
       <Footer />
-    </>  
+    </>
   );
 };
 
 export default LeadGeneration;
-

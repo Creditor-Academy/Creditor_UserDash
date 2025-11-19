@@ -1,14 +1,16 @@
-import React, { useRef, useEffect, useState } from "react";
-import { motion, useAnimation, useInView } from "framer-motion";
-import LiveClassBanner from "../assets/LiveClassBanner.png";
+import React, { useRef, useEffect, useState } from 'react';
+import { motion, useAnimation, useInView } from 'framer-motion';
+import LiveClassBanner from '../assets/LiveClassBanner.png';
 import { markEventAttendance } from '../services/attendanceService';
-import { toast } from "sonner";
+import { toast } from 'sonner';
 
 // Helper to convert a date to PST (America/Los_Angeles)
 function toPST(date) {
   // Get UTC time in ms, then subtract 8 hours for PST offset
   // Note: This does not handle daylight saving time
-  return new Date(date.getTime() - (date.getTimezoneOffset() * 60000) - (8 * 60 * 60000));
+  return new Date(
+    date.getTime() - date.getTimezoneOffset() * 60000 - 8 * 60 * 60000
+  );
 }
 
 const ClassLC = () => {
@@ -29,15 +31,15 @@ const ClassLC = () => {
 
   useEffect(() => {
     if (bannerInView) {
-      bannerControls.start("visible");
+      bannerControls.start('visible');
     } else {
-      bannerControls.start("hidden");
+      bannerControls.start('hidden');
     }
 
     if (ctaInView) {
-      ctaControls.start("visible");
+      ctaControls.start('visible');
     } else {
-      ctaControls.start("hidden");
+      ctaControls.start('hidden');
     }
   }, [bannerInView, ctaInView]);
 
@@ -53,10 +55,16 @@ const ClassLC = () => {
         startOfDayPST.setHours(0, 0, 0, 0);
         const endOfDayPST = new Date(nowPST);
         endOfDayPST.setHours(23, 59, 59, 999);
-        const params = new URLSearchParams({ startDate: startOfDayPST.toISOString(), endDate: endOfDayPST.toISOString() });
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/calendar/events?${params.toString()}`, {
-          credentials: 'include'
+        const params = new URLSearchParams({
+          startDate: startOfDayPST.toISOString(),
+          endDate: endOfDayPST.toISOString(),
         });
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/calendar/events?${params.toString()}`,
+          {
+            credentials: 'include',
+          }
+        );
         const data = await response.json();
         if (data && data.data && data.data.length > 0) {
           // Filter events to only show classes for the current date in PST
@@ -101,38 +109,42 @@ const ClassLC = () => {
   }, []);
 
   // Get user's timezone from localStorage, default to EST if not set
-  const userTimezone = localStorage.getItem('userTimezone') || 'America/New_York';
+  const userTimezone =
+    localStorage.getItem('userTimezone') || 'America/New_York';
   // Format time for display
-  const formatTimeInUserTimezone = (utcTime) => {
+  const formatTimeInUserTimezone = utcTime => {
     if (!utcTime) return '';
     const date = new Date(utcTime);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: userTimezone
+      timeZone: userTimezone,
     });
   };
 
   // Handle joining class with attendance marking
-  const handleJoinClass = async (event) => {
+  const handleJoinClass = async event => {
     try {
       // Mark attendance first
       await markEventAttendance(event.id);
-      toast.success("Attendance marked successfully!");
-      
+      toast.success('Attendance marked successfully!');
+
       // Then open the zoom link
-      const joinLink = event.description || event.zoomLink || "";
+      const joinLink = event.description || event.zoomLink || '';
       if (joinLink) {
         window.open(joinLink, '_blank');
       }
     } catch (error) {
       console.error('Error marking attendance:', error);
-      
+
       // Show error message but still allow joining the meeting
-      toast.error(error.message || "Failed to mark attendance, but you can still join the meeting");
-      
+      toast.error(
+        error.message ||
+          'Failed to mark attendance, but you can still join the meeting'
+      );
+
       // Open the zoom link even if attendance marking fails
-      const joinLink = event.description || event.zoomLink || "";
+      const joinLink = event.description || event.zoomLink || '';
       if (joinLink) {
         window.open(joinLink, '_blank');
       }
@@ -151,20 +163,20 @@ const ClassLC = () => {
           visible: {
             opacity: 1,
             scale: 1,
-            transition: { duration: 0.8, ease: "easeOut" },
+            transition: { duration: 0.8, ease: 'easeOut' },
           },
         }}
         style={{
-          position: "relative",
-          maxWidth: "100%",
-          height: "470px",
-          overflow: "hidden",
+          position: 'relative',
+          maxWidth: '100%',
+          height: '470px',
+          overflow: 'hidden',
         }}
       >
         <img
           src={LiveClassBanner}
           alt="Live Class Banner"
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       </motion.div>
 
@@ -178,67 +190,74 @@ const ClassLC = () => {
           visible: {
             opacity: 1,
             y: 0,
-            transition: { duration: 0.7, ease: "easeOut" },
+            transition: { duration: 0.7, ease: 'easeOut' },
           },
         }}
         style={{
-          backgroundColor: "#eaf3f8",
-          textAlign: "center",
-          padding: "40px 20px",
+          backgroundColor: '#eaf3f8',
+          textAlign: 'center',
+          padding: '40px 20px',
         }}
       >
-        <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>
-          {loading ? "Checking for live classes..." :
-            (liveEvents.length > 0 ? "Live Class is in Session!" : "Don't Miss Out on the Next Live Class!")}
+        <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>
+          {loading
+            ? 'Checking for live classes...'
+            : liveEvents.length > 0
+              ? 'Live Class is in Session!'
+              : "Don't Miss Out on the Next Live Class!"}
         </h2>
 
         <div
           style={{
-            display: "flex",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            gap: "20px",
+            display: 'flex',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: '20px',
           }}
         >
           {/* Show Join Now for each live event */}
-          {liveEvents.length > 0 && liveEvents.map((event, idx) => (
-            <motion.button
-              key={event.id || idx}
-              onClick={() => handleJoinClass(event)}
-              whileHover={{ scale: 1.07 }}
-              whileTap={{ scale: 0.98 }}
-              style={{
-                backgroundColor: "#27ae60",
-                color: "white",
-                textDecoration: "none",
-                border: "none",
-                padding: "12px 24px",
-                fontSize: "16px",
-                borderRadius: "30px",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                fontWeight: 600,
-              }}
-            >
-              Join Now: {event.title} ({formatTimeInUserTimezone(event.startTime)} - {formatTimeInUserTimezone(event.endTime)})
-            </motion.button>
-          ))}
+          {liveEvents.length > 0 &&
+            liveEvents.map((event, idx) => (
+              <motion.button
+                key={event.id || idx}
+                onClick={() => handleJoinClass(event)}
+                whileHover={{ scale: 1.07 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  backgroundColor: '#27ae60',
+                  color: 'white',
+                  textDecoration: 'none',
+                  border: 'none',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  borderRadius: '30px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  fontWeight: 600,
+                }}
+              >
+                Join Now: {event.title} (
+                {formatTimeInUserTimezone(event.startTime)} -{' '}
+                {formatTimeInUserTimezone(event.endTime)})
+              </motion.button>
+            ))}
 
           {/* If no live event, show next upcoming */}
           {liveEvents.length === 0 && nextEvent && (
             <div
               style={{
-                backgroundColor: "#5dade2",
-                color: "white",
-                border: "none",
-                padding: "12px 24px",
-                fontSize: "16px",
-                borderRadius: "30px",
+                backgroundColor: '#5dade2',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                fontSize: '16px',
+                borderRadius: '30px',
                 fontWeight: 600,
-                display: "inline-block",
+                display: 'inline-block',
               }}
             >
-              Next Class: {nextEvent.title} at {formatTimeInUserTimezone(nextEvent.startTime)}
+              Next Class: {nextEvent.title} at{' '}
+              {formatTimeInUserTimezone(nextEvent.startTime)}
             </div>
           )}
 
@@ -246,14 +265,14 @@ const ClassLC = () => {
           {liveEvents.length === 0 && !nextEvent && !loading && (
             <div
               style={{
-                backgroundColor: "#aaa",
-                color: "white",
-                border: "none",
-                padding: "12px 24px",
-                fontSize: "16px",
-                borderRadius: "30px",
+                backgroundColor: '#aaa',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                fontSize: '16px',
+                borderRadius: '30px',
                 fontWeight: 600,
-                display: "inline-block",
+                display: 'inline-block',
               }}
             >
               No live or upcoming classes for today.

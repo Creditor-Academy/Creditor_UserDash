@@ -1,37 +1,38 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, BookOpen } from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, BookOpen } from 'lucide-react';
 
 const caseStudies = [
   {
     id: 1,
     icon: BookOpen,
-    title: "How Taylor Loren made $100,000 on Athena LMS",
+    title: 'How Taylor Loren made $100,000 on Athena LMS',
     quote:
-      "I knew that I had a lot of expertise that I wanted to share — and knew that courses were a really good way to scale my income.",
-    author: "Taylor Loren, social media and content strategist",
-    bgColor: "bg-blue-400",
-    hoverColor: "hover:bg-blue-500",
+      'I knew that I had a lot of expertise that I wanted to share — and knew that courses were a really good way to scale my income.',
+    author: 'Taylor Loren, social media and content strategist',
+    bgColor: 'bg-blue-400',
+    hoverColor: 'hover:bg-blue-500',
   },
   {
     id: 2,
     icon: BookOpen,
-    title: "How Dorie Clark built a 6-figure online course in five months",
+    title: 'How Dorie Clark built a 6-figure online course in five months',
     quote:
       "For years, I'd wanted to create an online course. I knew it was the way I could increase my impact, reach more people, and earn revenue without constantly jumping on airplanes.",
-    author: "Dorie Clark, marketing strategist, author, and professional speaker",
-    bgColor: "bg-[#2d1b2e]",
-    hoverColor: "hover:bg-[#3d2b3e]",
+    author:
+      'Dorie Clark, marketing strategist, author, and professional speaker',
+    bgColor: 'bg-[#2d1b2e]',
+    hoverColor: 'hover:bg-[#3d2b3e]',
   },
   {
     id: 3,
     icon: BookOpen,
     title: "How 'Miss Excel' launched a six-figure online course business",
     quote:
-      "I did two webinars in April, granting me my first six-figure month. 99% of the revenue was from core sales on Athena LMS.",
-    author: "Kat Norton, Miss Excel",
-    bgColor: "bg-orange-500",
-    hoverColor: "hover:bg-orange-600",
+      'I did two webinars in April, granting me my first six-figure month. 99% of the revenue was from core sales on Athena LMS.',
+    author: 'Kat Norton, Miss Excel',
+    bgColor: 'bg-orange-500',
+    hoverColor: 'hover:bg-orange-600',
     hasProfileImage: true,
   },
 ];
@@ -39,12 +40,13 @@ const caseStudies = [
 const bottomCaseStudy = {
   id: 4,
   icon: BookOpen,
-  title: "How the brand stylist is helping entrepreneurs create exceptional brands",
+  title:
+    'How the brand stylist is helping entrepreneurs create exceptional brands',
   quote:
     "I've got a beautiful, established brand, which really makes a difference. Athena LMS makes displaying all of that seamlessly possible.",
-  author: "Fiona Humberstone, The Brand Stylist",
-  bgColor: "bg-[#F8F7F4]",
-  textColor: "text-gray-900",
+  author: 'Fiona Humberstone, The Brand Stylist',
+  bgColor: 'bg-[#F8F7F4]',
+  textColor: 'text-gray-900',
   hasProfileImage: true,
 };
 
@@ -92,7 +94,7 @@ export default function ExpertCase() {
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-gray-900 mb-8 leading-tight">
               Expert Case Studies
             </h2>
-            
+
             <button className="inline-flex items-center gap-2 px-8 py-4 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
               See all case studies
               <ArrowRight className="w-4 h-4" />
@@ -101,7 +103,9 @@ export default function ExpertCase() {
 
           <div className="lg:pt-2">
             <p className="text-base text-gray-700 leading-relaxed">
-              Explore the countless ways Athena's learning commerce platform helps thousands of subject matter experts maximize their revenue and impact.
+              Explore the countless ways Athena's learning commerce platform
+              helps thousands of subject matter experts maximize their revenue
+              and impact.
             </p>
           </div>
         </motion.div>
@@ -114,7 +118,7 @@ export default function ExpertCase() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"
         >
-          {caseStudies.map((study) => {
+          {caseStudies.map(study => {
             const Icon = study.icon;
             return (
               <motion.div
@@ -157,7 +161,9 @@ export default function ExpertCase() {
                   {study.hasProfileImage && (
                     <div className="absolute bottom-4 right-4 w-16 h-16 rounded-full overflow-hidden bg-white/20">
                       <div className="w-full h-full bg-gradient-to-br from-orange-200 to-yellow-100 flex items-center justify-center">
-                        <span className="text-orange-600 text-xs font-semibold">KN</span>
+                        <span className="text-orange-600 text-xs font-semibold">
+                          KN
+                        </span>
                       </div>
                     </div>
                   )}
@@ -183,7 +189,8 @@ export default function ExpertCase() {
                 {/* Placeholder for Fiona's circular image */}
                 <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-100 flex items-center justify-center">
                   <p className="text-gray-400 text-center px-4 text-sm">
-                    [Fiona Humberstone]<br />
+                    [Fiona Humberstone]
+                    <br />
                     Circular Photo
                   </p>
                 </div>
@@ -197,7 +204,10 @@ export default function ExpertCase() {
             <div className="flex-1 flex flex-col justify-center">
               {/* Icon */}
               <div className="mb-6">
-                <BookOpen className="w-10 h-10 text-gray-700" strokeWidth={1.5} />
+                <BookOpen
+                  className="w-10 h-10 text-gray-700"
+                  strokeWidth={1.5}
+                />
               </div>
 
               {/* Title */}
@@ -228,7 +238,8 @@ export default function ExpertCase() {
                 {/* Placeholder for Fiona's rectangular image */}
                 <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-200 flex items-center justify-center">
                   <p className="text-white text-center px-4 text-sm">
-                    [Fiona Humberstone]<br />
+                    [Fiona Humberstone]
+                    <br />
                     Rectangular Photo
                   </p>
                 </div>

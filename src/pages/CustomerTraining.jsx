@@ -21,9 +21,8 @@ export const CustomerTraining = () => {
       {/* <CustomerSucceed /> */}
       <CustomerDeliver />
       <Footer />
-    </>  
+    </>
   );
 };
 
 export default CustomerTraining;
-

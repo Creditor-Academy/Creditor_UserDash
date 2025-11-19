@@ -1,5 +1,5 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
 
 export const HeroSectionOne = () => {
   return (
@@ -27,8 +27,8 @@ export const HeroSectionOne = () => {
           </h1>
 
           <p className="text-lg sm:text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto mb-10">
-            Create stunning, professional websites with our expert team.
-            Fast, secure, and optimized for success.
+            Create stunning, professional websites with our expert team. Fast,
+            secure, and optimized for success.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -44,5 +44,3 @@ export const HeroSectionOne = () => {
     </section>
   );
 };
-
-

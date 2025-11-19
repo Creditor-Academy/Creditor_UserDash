@@ -1,97 +1,116 @@
-import React, { useRef, useState, useEffect } from "react";
-import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from "lucide-react";
+import React, { useRef, useState, useEffect } from 'react';
+import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from 'lucide-react';
 
 const UPCOMING_COURSES = [
   // Become Private
   {
-    id: "become-private-security-agreement-and-collateralization",
-    title: "Security Agreement and Collateralization",
-    course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp9.png",
+    id: 'become-private-part-1-declaration-political-status',
+    title: 'Become Private – Part 1 (Declaration of Political Status)',
+    course: 'Become Private',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+2.png',
   },
   {
-    id: "become-private-legal-protections-and-risk-management",
-    title: "Legal Protections and Risk Management",
-    course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp10.png",
+    id: 'become-private-part-2-restoration-former-status',
+    title: 'Become Private – Part 2 (Restoration of Former Status)',
+    course: 'Become Private',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+3.png',
   },
   {
-    id: "become-private-sample-trust-implementation",
-    title: "Sample Trust Implementation",
-    course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp11.png",
+    id: 'become-private-part-3-declaration-naturalization-1972',
+    title: 'Become Private – Part 3 (Declaration of Naturalization 1972)',
+    course: 'Become Private',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+4.png',
   },
   {
-    id: "become-private-closing-and-continuation",
-    title: "Closing and Continuation",
-    course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp12.png",
-  },
-
-  // Private Merchant
-  {
-    id: "private-merchant-showdown-merchant-account-provider-vs-aggregators-1",
-    title: "Showdown: Merchant Account Provider vs Agrgegators 1",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm22.png",
-  },
-  {
-    id: "private-merchant-how-to-find-your-payment-processing-soul-mate",
-    title: "How To Find Your Payment Processing Soul Mate",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm29.png",
-  },
-  {
-    id: "private-merchant-the-future-of-payments",
-    title: "The Future of Payments",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm30.png",
-  },
-
-  // Operate Private
-  {
-    id: "operate-private-business-trust-part-17-appendix-c-trustee-liability-protection-provisions",
-    title: "Business Trust Part 17 ( Appendix “C” ~ Trustee Liability Protection Provisions )",
-    course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+17.png",
-  },
-  {
-    id: "operate-private-pma-articles-of-association",
-    title: "PMA Articles of Association",
-    course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pma1.png",
-  },
-  {
-    id: "operate-private-pma-ein-application-process-of-church-based-ministry",
-    title: "PMA EIN Application Process Of Church Based Ministry",
-    course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pma2.png",
+    id: 'become-private-part-4-witness-testimony',
+    title:
+      'Become Private – Part 4 (Witness Testimony Affirming American State Political Status and Identity)',
+    course: 'Become Private',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+5.png',
   },
 
   // Business Credit
   {
-    id: "business-credit-maverick-office-supplies-net-30-account",
-    title: "Maverick Office Supplies - Sign Up for a Free NET 30 Account",
-    course: "Business Credit",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+7+(3).png",
+    id: 'business-credit-lesson-1-why-business-credit-matters',
+    title: 'Why Business Credit Matters',
+    course: 'Business Credit',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+1.png',
   },
   {
-    id: "business-credit-list-of-tier-1-tradelines-to-get-started",
-    title: "List of Tier 1 Tradelines to Get Started",
-    course: "Business Credit",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+8+(4).png",
+    id: 'business-credit-lesson-2-credit-bureaus',
+    title: 'The Business Credit Bureaus',
+    course: 'Business Credit',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+2.png',
   },
   {
-    id: "business-credit-section-5-tier-2-business-credit-cards",
-    title: "Section 5: Tier 2 – Business Credit Cards",
-    course: "Business Credit",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+9+(3).png",
+    id: 'business-credit-lesson-3-credit-scores',
+    title: 'How Business Credit Scores Are Calculated',
+    course: 'Business Credit',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+3.png',
   },
   {
-    id: "business-credit-tier-3-credit-unions-and-community-banks",
-    title: "Tier 3 – Credit Unions and Community Banks",
-    course: "Business Credit",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+10+(4).png",
+    id: 'business-credit-lesson-4-tier-0-foundation',
+    title: 'Setting Up the Foundation (Tier 0)',
+    course: 'Business Credit',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+4.png',
+  },
+
+  // Operate Private
+  {
+    id: 'operate-private-lesson-1-fiduciary-duty',
+    title:
+      'Business Trust – Foundations of Fiduciary Duty & Trust Responsibility',
+    course: 'Operate Private',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+1.png',
+  },
+  {
+    id: 'operate-private-lesson-2-installing-irrevocable-trust',
+    title: 'Business Trust – Installing Your Irrevocable Trust',
+    course: 'Operate Private',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+2.png',
+  },
+
+  // SOV 101
+  {
+    id: 'sov-101-lesson-12-introduction-purpose-self-ownership',
+    title: 'Lesson 12 – Introduction, Purpose, Self-Ownership',
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson12.png',
+  },
+  {
+    id: 'sov-101-lesson-15-basics-of-sovereignty-summary-of-freedom',
+    title: 'Lesson 15 – Basics of Sovereignty, Summary of Freedom',
+    course: 'SOV 101',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson+15.png',
+  },
+  {
+    id: 'sov-101-lesson-18-figuring-it-all-out-protection-by-god-vs-government',
+    title: 'Lesson 18 – Figuring It All Out, Protection by God vs Government',
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson18.png',
+  },
+  {
+    id: 'sov-101-lesson-19-gods-religion-vs-governments-religion',
+    title: "Lesson 19 – God's Religion vs. Government's Religion",
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson19.png',
+  },
+  {
+    id: 'sov-101-lesson-20-public-vs-private-separation-of-powers-rise',
+    title: 'Lesson 20 – Public vs. Private, Separation of Powers Rise',
+    course: 'SOV 101',
+    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson20.png',
   },
 ];
 
@@ -99,16 +118,20 @@ function UpcomingCourses() {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState("All");
+  const [selectedCourse, setSelectedCourse] = useState('All');
 
   const courseFilters = [
-    "All",
-    ...Array.from(new Set(UPCOMING_COURSES.map((c) => c.course))),
+    'All',
+    'SOV 101',
+    ...Array.from(
+      new Set(UPCOMING_COURSES.map(c => c.course).filter(c => c !== 'SOV 101'))
+    ),
   ];
 
-  const visibleCourses = selectedCourse === "All"
-    ? UPCOMING_COURSES
-    : UPCOMING_COURSES.filter((c) => c.course === selectedCourse);
+  const visibleCourses =
+    selectedCourse === 'All'
+      ? UPCOMING_COURSES
+      : UPCOMING_COURSES.filter(c => c.course === selectedCourse);
 
   const updateScrollButtons = () => {
     const el = scrollRef.current;
@@ -118,11 +141,14 @@ function UpcomingCourses() {
     setCanScrollRight(el.scrollLeft < maxScrollLeft - 1);
   };
 
-  const scroll = (direction) => {
+  const scroll = direction => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollAmount = direction === "left" ? scrollLeft - clientWidth : scrollLeft + clientWidth;
-      scrollRef.current.scrollTo({ left: scrollAmount, behavior: "smooth" });
+      const scrollAmount =
+        direction === 'left'
+          ? scrollLeft - clientWidth
+          : scrollLeft + clientWidth;
+      scrollRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
@@ -143,20 +169,24 @@ function UpcomingCourses() {
       {/* Header */}
       <div className="mb-8 px-1">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Upcoming This Week</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Upcoming This Week
+          </h2>
           <p className="text-gray-500">New content launching soon</p>
         </div>
         {/* Course filters placed below header */}
         <div className="mt-4 flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
-          {courseFilters.map((course) => (
+          {courseFilters.map(course => (
             <button
               key={course}
               onClick={() => setSelectedCourse(course)}
               className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 
-                ${selectedCourse === course
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md ring-1 ring-blue-500/40 hover:shadow-lg hover:brightness-105'
-                  : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-blue-200 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'}
+                ${
+                  selectedCourse === course
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md ring-1 ring-blue-500/40 hover:shadow-lg hover:brightness-105'
+                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-blue-200 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
+                }
               `}
               aria-pressed={selectedCourse === course}
             >
@@ -169,7 +199,7 @@ function UpcomingCourses() {
       {/* Scroll Arrows */}
       {canScrollLeft && (
         <button
-          onClick={() => scroll("left")}
+          onClick={() => scroll('left')}
           className="absolute left-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll left"
         >
@@ -178,7 +208,7 @@ function UpcomingCourses() {
       )}
       {canScrollRight && (
         <button
-          onClick={() => scroll("right")}
+          onClick={() => scroll('right')}
           className="absolute right-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll right"
         >
@@ -199,9 +229,10 @@ function UpcomingCourses() {
               ${index > 1 ? 'opacity-80' : 'opacity-100'} 
               hover:shadow-2xl hover:-translate-y-2 hover:z-10 hover:border-blue-300/50`}
             style={{
-              background: 'linear-gradient(to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0.05))',
+              background:
+                'linear-gradient(to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0.05))',
               backdropFilter: 'blur(12px)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
             }}
           >
             {/* Image with frosted glass overlay */}
@@ -212,7 +243,7 @@ function UpcomingCourses() {
                 className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-              
+
               {/* Animated Coming Soon badge */}
               <div className="absolute top-3 left-3">
                 <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-white/90 text-blue-600 backdrop-blur-sm flex items-center gap-1 shadow-sm animate-shimmer">
@@ -228,7 +259,7 @@ function UpcomingCourses() {
               <h3 className="font-bold text-gray-900 mb-1 text-base leading-snug line-clamp-2 group-hover:text-gray-800 transition-colors">
                 {item.title}
               </h3>
-              
+
               {/* Course category */}
               <div className="mb-3">
                 <span className="inline-flex items-center text-xs text-gray-600 group-hover:text-gray-700 transition-colors">
@@ -236,7 +267,7 @@ function UpcomingCourses() {
                   {item.course}
                 </span>
               </div>
-              
+
               {/* Status row */}
               <div className="flex items-center gap-3 text-xs text-gray-500 border-t border-gray-100/50 pt-2 group-hover:text-gray-600 transition-colors">
                 <span className="inline-flex items-center gap-1">
@@ -250,7 +281,7 @@ function UpcomingCourses() {
                 </span>
               </div>
             </div>
-            
+
             {/* Hover effect elements */}
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-tr from-white/5 via-transparent to-transparent"></div>

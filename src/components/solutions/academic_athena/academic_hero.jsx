@@ -1,7 +1,7 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, TrendingUp } from "lucide-react";
-import trainer from "../../../assets/trainer.webp";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, TrendingUp } from 'lucide-react';
+import trainer from '../../../assets/trainer.webp';
 
 export default function AcademicHero() {
   return (
@@ -40,8 +40,8 @@ export default function AcademicHero() {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Deliver effective training at scale with the tools you need to create, 
-              manage, monetize, and measure your programs with ease.
+              Deliver effective training at scale with the tools you need to
+              create, manage, monetize, and measure your programs with ease.
             </p>
 
             {/* CTA Buttons */}
@@ -67,9 +67,9 @@ export default function AcademicHero() {
             <div className="relative h-[420px] w-full">
               {/* Professional Person Image - Main Background on Right */}
               <div className="absolute right-0 top-0 w-[400px] h-[380px] rounded-2xl overflow-hidden shadow-2xl z-10">
-                <img 
-                  src={trainer} 
-                  alt="Professional trainer" 
+                <img
+                  src={trainer}
+                  alt="Professional trainer"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/5" />
@@ -87,18 +87,23 @@ export default function AcademicHero() {
                 </h3>
                 <div className="flex items-end justify-between gap-0.5 h-24">
                   {/* Chart Bars */}
-                  {[45, 60, 55, 70, 65, 75, 80, 90, 85, 80, 75, 70, 65].map((height, i) => (
-                    <div key={i} className="flex flex-col justify-end gap-0.5 flex-1 h-full">
+                  {[45, 60, 55, 70, 65, 75, 80, 90, 85, 80, 75, 70, 65].map(
+                    (height, i) => (
                       <div
-                        className="w-full bg-gradient-to-t from-blue-600 to-blue-500 rounded-t-sm transition-all duration-300 hover:from-blue-700 hover:to-blue-600"
-                        style={{ height: `${height}%` }}
-                      />
-                      <div
-                        className="w-full bg-gray-200 rounded-b-sm"
-                        style={{ height: `${100 - height}%` }}
-                      />
-                    </div>
-                  ))}
+                        key={i}
+                        className="flex flex-col justify-end gap-0.5 flex-1 h-full"
+                      >
+                        <div
+                          className="w-full bg-gradient-to-t from-blue-600 to-blue-500 rounded-t-sm transition-all duration-300 hover:from-blue-700 hover:to-blue-600"
+                          style={{ height: `${height}%` }}
+                        />
+                        <div
+                          className="w-full bg-gray-200 rounded-b-sm"
+                          style={{ height: `${100 - height}%` }}
+                        />
+                      </div>
+                    )
+                  )}
                 </div>
                 <div className="flex items-center justify-between mt-3 text-[10px] text-gray-500">
                   <span>January</span>
@@ -132,4 +137,3 @@ export default function AcademicHero() {
     </section>
   );
 }
-

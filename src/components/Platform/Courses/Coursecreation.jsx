@@ -1,31 +1,41 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Video, Type, FileText, Mic, Image as ImageIcon, Presentation } from 'lucide-react';
+import {
+  Video,
+  Type,
+  FileText,
+  Mic,
+  Image as ImageIcon,
+  Presentation,
+} from 'lucide-react';
 import quizImage from '../../../assets/quiz.png';
 
 const features = [
   {
     id: 1,
-    title: "Your course, your way",
-    description: "Let your content shine by choosing the best medium for your message: text, images, videos, downloads, PDFs, audio, and presentations.",
-    mockupBg: "bg-[#e8e8e8]", // light gray like image
-    bottomColor: "#3b82f6", // blue
+    title: 'Your course, your way',
+    description:
+      'Let your content shine by choosing the best medium for your message: text, images, videos, downloads, PDFs, audio, and presentations.',
+    mockupBg: 'bg-[#e8e8e8]', // light gray like image
+    bottomColor: '#3b82f6', // blue
     showIcons: true,
   },
   {
     id: 2,
-    title: "Motivate learners",
-    description: "Measure and rate learner progress with assignments, AI-generated quizzes, surveys, and exams to keep them engaged and on track.",
-    mockupBg: "bg-[#e8e8e8]", // light gray same as other cards
-    bottomColor: "#f59e0b", // yellow/amber for hover effect
+    title: 'Motivate learners',
+    description:
+      'Measure and rate learner progress with assignments, AI-generated quizzes, surveys, and exams to keep them engaged and on track.',
+    mockupBg: 'bg-[#e8e8e8]', // light gray same as other cards
+    bottomColor: '#f59e0b', // yellow/amber for hover effect
     showQuiz: true,
   },
   {
     id: 3,
-    title: "Make data-driven decisions",
-    description: "Track engagement, revenue, and performance metrics with Athena Analytics to drive data-informed decisions that maximize your impact.",
-    mockupBg: "bg-[#e8e8e8]", // light gray like image
-    bottomColor: "#b91c1c", // red
+    title: 'Make data-driven decisions',
+    description:
+      'Track engagement, revenue, and performance metrics with Athena Analytics to drive data-informed decisions that maximize your impact.',
+    mockupBg: 'bg-[#e8e8e8]', // light gray like image
+    bottomColor: '#b91c1c', // red
     showChart: true,
   },
 ];
@@ -76,7 +86,9 @@ const Coursecreation = () => {
             Top-tier course creation tools for education businesses
           </h2>
           <p className="text-base sm:text-lg text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Your knowledge is unique. Athena LMS gives you the power and flexibility to offer a course experience your audience won't find anywhere else — plus the tools to help you track your results.
+            Your knowledge is unique. Athena LMS gives you the power and
+            flexibility to offer a course experience your audience won't find
+            anywhere else — plus the tools to help you track your results.
           </p>
         </motion.div>
 
@@ -88,19 +100,21 @@ const Coursecreation = () => {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          {features.map((feature) => (
+          {features.map(feature => (
             <motion.div
               key={feature.id}
               variants={itemVariants}
               className="group"
             >
-              <div 
+              <div
                 className="relative h-full bg-white overflow-hidden shadow-2xl hover:shadow-3xl border border-gray-200 transition-all duration-300 flex flex-col"
                 onMouseEnter={() => setHoveredIndex(feature.id - 1)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >
                 {/* Mockup Area */}
-                <div className={`${feature.mockupBg} h-48 flex items-center justify-center p-4 relative flex-shrink-0 overflow-hidden`}>
+                <div
+                  className={`${feature.mockupBg} h-48 flex items-center justify-center p-4 relative flex-shrink-0 overflow-hidden`}
+                >
                   {/* Icons Grid Mockup */}
                   {feature.showIcons && (
                     <div className="grid grid-cols-3 gap-3">
@@ -128,9 +142,9 @@ const Coursecreation = () => {
                   {/* Quiz Generator Mockup */}
                   {feature.showQuiz && (
                     <div className="relative w-full h-full flex items-center justify-center">
-                      <img 
-                        src={quizImage} 
-                        alt="Quiz Interface" 
+                      <img
+                        src={quizImage}
+                        alt="Quiz Interface"
                         className="w-full h-full object-contain scale-110"
                       />
                     </div>
@@ -139,12 +153,22 @@ const Coursecreation = () => {
                   {/* Chart Mockup */}
                   {feature.showChart && (
                     <div className="bg-white rounded-lg shadow-xl p-3 w-full max-w-[200px]">
-                      <div className="text-[10px] font-medium text-gray-600 mb-2">Revenue Over Time</div>
-                      <div className="bg-pink-200 rounded-lg p-2 mb-2 inline-block">
-                        <div className="text-lg font-bold text-gray-900">$246,301</div>
-                        <div className="text-[9px] text-gray-700">Total Revenue</div>
+                      <div className="text-[10px] font-medium text-gray-600 mb-2">
+                        Revenue Over Time
                       </div>
-                      <svg className="w-full h-12" viewBox="0 0 300 100" preserveAspectRatio="none">
+                      <div className="bg-pink-200 rounded-lg p-2 mb-2 inline-block">
+                        <div className="text-lg font-bold text-gray-900">
+                          $246,301
+                        </div>
+                        <div className="text-[9px] text-gray-700">
+                          Total Revenue
+                        </div>
+                      </div>
+                      <svg
+                        className="w-full h-12"
+                        viewBox="0 0 300 100"
+                        preserveAspectRatio="none"
+                      >
                         <path
                           d="M 0,80 L 30,75 L 60,70 L 90,65 L 120,60 L 150,55 L 180,45 L 210,35 L 240,25 L 270,15 L 300,10"
                           fill="none"
@@ -160,22 +184,29 @@ const Coursecreation = () => {
                 <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
                   {/* Hover Fill Animation */}
                   {feature.bottomColor && (
-                    <div 
+                    <div
                       className="absolute inset-0 transition-all duration-500 ease-out"
                       style={{
                         backgroundColor: feature.bottomColor,
-                        transform: hoveredIndex === feature.id - 1 ? 'translateY(0)' : 'translateY(100%)',
-                        opacity: hoveredIndex === feature.id - 1 ? 0.2 : 0
+                        transform:
+                          hoveredIndex === feature.id - 1
+                            ? 'translateY(0)'
+                            : 'translateY(100%)',
+                        opacity: hoveredIndex === feature.id - 1 ? 0.2 : 0,
                       }}
                     />
                   )}
-                  
+
                   {/* Content with higher z-index */}
                   <div className="relative z-10 flex flex-col flex-grow">
-                    <h3 className={`text-xl font-bold mb-3 ${feature.id === 2 ? 'text-gray-900' : 'text-gray-900'}`}>
+                    <h3
+                      className={`text-xl font-bold mb-3 ${feature.id === 2 ? 'text-gray-900' : 'text-gray-900'}`}
+                    >
                       {feature.title}
                     </h3>
-                    <p className={`text-sm leading-relaxed ${feature.id === 2 ? 'text-gray-800' : 'text-gray-600'}`}>
+                    <p
+                      className={`text-sm leading-relaxed ${feature.id === 2 ? 'text-gray-800' : 'text-gray-600'}`}
+                    >
                       {feature.description}
                     </p>
                   </div>
@@ -184,10 +215,10 @@ const Coursecreation = () => {
                 {/* Bottom Color Line - Static */}
                 {feature.bottomColor && (
                   <div className="absolute bottom-0 left-0 right-0 h-1">
-                    <div 
+                    <div
                       style={{
                         backgroundColor: feature.bottomColor,
-                        height: '100%'
+                        height: '100%',
                       }}
                     />
                   </div>
@@ -202,4 +233,3 @@ const Coursecreation = () => {
 };
 
 export default Coursecreation;
-

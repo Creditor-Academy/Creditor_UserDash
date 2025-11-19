@@ -5,12 +5,16 @@ import CreditorImage from '../../assets/creditor.png';
 
 const Video = () => {
   return (
-    <section className="py-20 px-4 relative overflow-hidden" style={{
-      background: "linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)"
-    }}>
+    <section
+      className="py-20 px-4 relative overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)',
+      }}
+    >
       {/* Background Decoration */}
       <div className="absolute inset-0">
-        <motion.div 
+        <motion.div
           className="absolute top-20 right-20 w-72 h-72 bg-sky-400/20 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
@@ -19,10 +23,10 @@ const Video = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
-        <motion.div 
+        <motion.div
           className="absolute bottom-20 left-20 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl"
           animate={{
             scale: [1.2, 1, 1.2],
@@ -31,8 +35,8 @@ const Video = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
+            ease: 'easeInOut',
+            delay: 1,
           }}
         />
       </div>
@@ -46,12 +50,22 @@ const Video = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-            The right learning products<br />for your customers
+          <h2
+            className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight"
+            style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+          >
+            The right learning products
+            <br />
+            for your customers
           </h2>
-          
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-            From online courses and communities to memberships and digital downloads. Athena LMS supports every way you want to share — and scale — your expertise.
+
+          <p
+            className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal"
+            style={{ fontFamily: 'Arial, sans-serif' }}
+          >
+            From online courses and communities to memberships and digital
+            downloads. Athena LMS supports every way you want to share — and
+            scale — your expertise.
           </p>
         </motion.div>
 

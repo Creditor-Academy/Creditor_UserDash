@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Environment Variable Test</title>
+</head>
+<body>
+    <h1>Vite Environment Variable Test</h1>
+    <div id="result"></div>
+    
+    <script type="module">
+        const bytezKey = import.meta.env.VITE_BYTEZ_KEY;
+        const allEnv = import.meta.env;
+        
+        document.getElementById('result').innerHTML = `
+            <h2>Environment Variables:</h2>
+            <p><strong>VITE_BYTEZ_KEY:</strong> ${bytezKey ? `Found (${bytezKey.substring(0, 10)}...)` : 'Not found'}</p>
+            <h3>All Vite Environment Variables:</h3>
+            <pre>${JSON.stringify(allEnv, null, 2)}</pre>
+        `;
+        
+        console.log('VITE_BYTEZ_KEY:', bytezKey);
+        console.log('All env vars:', allEnv);
+    </script>
+</body>
+</html>

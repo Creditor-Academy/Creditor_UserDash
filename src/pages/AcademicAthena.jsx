@@ -24,4 +24,3 @@ export const AcademicAthena = () => {
 };
 
 export default AcademicAthena;
-

@@ -1,6 +1,6 @@
-import React from "react";
-import { FaArrowRight } from "react-icons/fa";
-import { motion } from "framer-motion";
+import React from 'react';
+import { FaArrowRight } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 export default function Appointment() {
   return (
@@ -8,14 +8,15 @@ export default function Appointment() {
       id="hero"
       className="relative min-h-[60vh] flex items-center justify-center text-center overflow-hidden py-16"
       style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
+        background:
+          'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
       }}
     >
       {/* Content */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        transition={{ duration: 1, ease: 'easeOut' }}
         className="relative z-10 max-w-3xl mx-auto px-6 w-full h-full flex flex-col items-center justify-center"
       >
         <motion.h1
@@ -45,7 +46,8 @@ export default function Appointment() {
           className="text-lg text-white mb-8 font-normal"
           style={{ fontFamily: 'Arial, sans-serif' }}
         >
-          From the first impression to the final click, we design websites that connect with your audience and help your business thrive online
+          From the first impression to the final click, we design websites that
+          connect with your audience and help your business thrive online
         </motion.p>
 
         {/* CTA Button */}
@@ -62,4 +64,3 @@ export default function Appointment() {
     </section>
   );
 }
-

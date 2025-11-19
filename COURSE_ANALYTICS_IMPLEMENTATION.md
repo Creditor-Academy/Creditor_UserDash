@@ -1,16 +1,19 @@
 # Course Activity Analytics Implementation Guide
 
 ## Overview
+
 This document describes the implementation of the Course Activity Analytics feature that tracks the most active and inactive courses every month.
 
 ## Frontend Implementation
 
 ### Files Created
+
 1. **`src/services/analyticsService.js`** - Service layer for making API calls
 2. **`src/components/dashboard/CourseActivityAnalytics.jsx`** - Main UI component
 3. Updated **`src/pages/Instructorpage.jsx`** - Added Analytics tab
 
 ### Features Implemented
+
 - Track most active courses monthly
 - Track most inactive courses monthly
 - Display course enrollment statistics
@@ -23,13 +26,16 @@ This document describes the implementation of the Course Activity Analytics feat
 ## Backend API Endpoints Required
 
 ### 1. Get Course Activity Summary
+
 **Endpoint:** `GET /api/analytics/course-activity/summary`
 
 **Query Parameters:**
+
 - `year` (required): Year (e.g., 2024)
 - `month` (required): Month (1-12)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -61,13 +67,16 @@ This document describes the implementation of the Course Activity Analytics feat
 ```
 
 ### 2. Get All Courses Activity
+
 **Endpoint:** `GET /api/analytics/courses/activity`
 
 **Query Parameters:**
+
 - `year` (required): Year
 - `month` (required): Month (1-12)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -87,13 +96,16 @@ This document describes the implementation of the Course Activity Analytics feat
 ```
 
 ### 3. Get Course Activity by Month
+
 **Endpoint:** `GET /api/analytics/course-activity`
 
 **Query Parameters:**
+
 - `year` (required): Year
 - `month` (required): Month (1-12)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -110,13 +122,16 @@ This document describes the implementation of the Course Activity Analytics feat
 ```
 
 ### 4. Get Course Statistics
+
 **Endpoint:** `GET /api/analytics/course/:courseId/statistics`
 
 **Query Parameters:**
+
 - `year` (optional): Year
 - `month` (optional): Month (1-12)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -139,11 +154,13 @@ This document describes the implementation of the Course Activity Analytics feat
 ```
 
 ### 5. Get Course Activity Trends
+
 **Endpoint:** `GET /api/analytics/course-activity/trends`
 
 **Description:** Returns last 6 months of course activity data
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -167,9 +184,11 @@ This document describes the implementation of the Course Activity Analytics feat
 ```
 
 ### 6. Track Course Activity Event (Optional)
+
 **Endpoint:** `POST /api/analytics/course/track`
 
 **Request Body:**
+
 ```json
 {
   "courseId": "course-id",
@@ -183,6 +202,7 @@ This document describes the implementation of the Course Activity Analytics feat
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -193,6 +213,7 @@ This document describes the implementation of the Course Activity Analytics feat
 ## Backend Database Schema Recommendations
 
 ### CourseActivity Table
+
 ```sql
 CREATE TABLE course_activity (
   id UUID PRIMARY KEY,
@@ -212,9 +233,10 @@ CREATE INDEX idx_course_activity_event_type ON course_activity(event_type);
 ```
 
 ### CourseStatistics View (Optional - for performance)
+
 ```sql
 CREATE MATERIALIZED VIEW course_statistics_monthly AS
-SELECT 
+SELECT
   course_id,
   EXTRACT(YEAR FROM timestamp) as year,
   EXTRACT(MONTH FROM timestamp) as month,
@@ -241,18 +263,18 @@ const prisma = new PrismaClient();
 exports.getCourseActivitySummary = async (req, res) => {
   try {
     const { year, month } = req.query;
-    
+
     if (!year || !month) {
       return res.status(400).json({
         success: false,
-        message: 'Year and month are required'
+        message: 'Year and month are required',
       });
     }
-    
+
     // Get date range for the month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
-    
+
     // Get all courses with activity in this month
     const courses = await prisma.course.findMany({
       include: {
@@ -260,67 +282,68 @@ exports.getCourseActivitySummary = async (req, res) => {
           where: {
             enrolledAt: {
               gte: startDate,
-              lte: endDate
-            }
-          }
+              lte: endDate,
+            },
+          },
         },
         _count: {
           select: {
-            userCourses: true
-          }
-        }
-      }
+            userCourses: true,
+          },
+        },
+      },
     });
-    
+
     // Calculate activity metrics for each course
     const courseMetrics = await Promise.all(
-      courses.map(async (course) => {
+      courses.map(async course => {
         const enrollments = course._count.userCourses;
-        
+
         // Get active users (users who accessed the course in the month)
         const activeUsers = await prisma.courseActivity.count({
           where: {
             courseId: course.id,
             timestamp: {
               gte: startDate,
-              lte: endDate
+              lte: endDate,
             },
             eventType: {
-              in: ['start', 'view', 'module_complete']
-            }
+              in: ['start', 'view', 'module_complete'],
+            },
           },
-          distinct: ['userId']
+          distinct: ['userId'],
         });
-        
+
         // Get completion rate
         const completedUsers = await prisma.userCourse.count({
           where: {
             courseId: course.id,
             completedAt: {
               gte: startDate,
-              lte: endDate
-            }
-          }
+              lte: endDate,
+            },
+          },
         });
-        
-        const completionRate = enrollments > 0 
-          ? Math.round((completedUsers / enrollments) * 100) 
-          : 0;
-        
+
+        const completionRate =
+          enrollments > 0
+            ? Math.round((completedUsers / enrollments) * 100)
+            : 0;
+
         // Get average time spent
         const timeData = await prisma.courseActivity.aggregate({
           where: {
             courseId: course.id,
             timestamp: {
               gte: startDate,
-              lte: endDate
-            }
+              lte: endDate,
+            },
           },
           _avg: {
-            timeSpent: true
-          }
+            timeSpent: true,
+          },
         });
-        
+
         return {
           id: course.id,
           title: course.title,
@@ -328,41 +351,40 @@ exports.getCourseActivitySummary = async (req, res) => {
           activeUsers,
           completionRate,
           avgTimeSpent: Math.round(timeData._avg.timeSpent || 0),
-          activityScore: activeUsers // Used for sorting
+          activityScore: activeUsers, // Used for sorting
         };
       })
     );
-    
+
     // Sort by activity
     courseMetrics.sort((a, b) => b.activityScore - a.activityScore);
-    
+
     // Get top 5 active and bottom 5 inactive
     const mostActive = courseMetrics.slice(0, 5).map(c => ({
       ...c,
-      trend: 'up'
+      trend: 'up',
     }));
-    
+
     const mostInactive = courseMetrics
       .slice(-5)
       .reverse()
       .map(c => ({
         ...c,
-        trend: 'down'
+        trend: 'down',
       }));
-    
+
     res.json({
       success: true,
       data: {
         mostActive,
-        mostInactive
-      }
+        mostInactive,
+      },
     });
-    
   } catch (error) {
     console.error('Error fetching course activity summary:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch course activity summary'
+      message: 'Failed to fetch course activity summary',
     });
   }
 };
@@ -373,49 +395,48 @@ exports.getAllCoursesActivity = async (req, res) => {
     const { year, month } = req.query;
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
-    
+
     const courses = await prisma.course.findMany({
       include: {
         _count: {
           select: {
-            userCourses: true
-          }
-        }
-      }
+            userCourses: true,
+          },
+        },
+      },
     });
-    
+
     const coursesWithActivity = await Promise.all(
-      courses.map(async (course) => {
+      courses.map(async course => {
         const activeUsers = await prisma.courseActivity.count({
           where: {
             courseId: course.id,
             timestamp: {
               gte: startDate,
-              lte: endDate
-            }
+              lte: endDate,
+            },
           },
-          distinct: ['userId']
+          distinct: ['userId'],
         });
-        
+
         return {
           id: course.id,
           title: course.title,
           enrollments: course._count.userCourses,
-          activeUsers
+          activeUsers,
         };
       })
     );
-    
+
     res.json({
       success: true,
-      data: coursesWithActivity
+      data: coursesWithActivity,
     });
-    
   } catch (error) {
     console.error('Error fetching all courses activity:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch courses activity'
+      message: 'Failed to fetch courses activity',
     });
   }
 };
@@ -424,7 +445,9 @@ exports.getAllCoursesActivity = async (req, res) => {
 ## Metrics Calculation Logic
 
 ### Active Users
+
 A user is considered "active" if they have performed any of the following actions in the month:
+
 - Viewed course content
 - Started a module
 - Completed a module
@@ -432,13 +455,16 @@ A user is considered "active" if they have performed any of the following action
 - Accessed course materials
 
 ### Inactive Courses
+
 Courses are considered "inactive" based on:
+
 - Low enrollment numbers (< 50 enrollments)
 - Low active user percentage (< 30% of enrolled users are active)
 - Low completion rate (< 40%)
 - Low average time spent (< 300 minutes)
 
 ### Activity Score Formula
+
 ```
 Activity Score = (activeUsers * 0.4) + (completionRate * 0.3) + (enrollments * 0.2) + (avgTimeSpent/10 * 0.1)
 ```
@@ -446,6 +472,7 @@ Activity Score = (activeUsers * 0.4) + (completionRate * 0.3) + (enrollments * 0
 ## Usage
 
 ### For Instructors/Admins
+
 1. Navigate to the Instructor Dashboard
 2. Click on the "Course Analytics" tab in the sidebar
 3. View the overview of most active and inactive courses
@@ -453,6 +480,7 @@ Activity Score = (activeUsers * 0.4) + (completionRate * 0.3) + (enrollments * 0
 5. Check "All Courses" tab to see complete list with metrics
 
 ### For Developers
+
 ```javascript
 // Import the service
 import { fetchMostActiveInactiveCourses } from '@/services/analyticsService';
@@ -466,9 +494,11 @@ console.log(data.mostInactive);
 ## Testing
 
 ### Test Data Setup
+
 For testing without backend, the component automatically falls back to sample data if the API calls fail.
 
 ### Integration Testing
+
 1. Ensure backend endpoints are available
 2. Check browser console for API call logs
 3. Verify data displays correctly in the UI
@@ -476,6 +506,7 @@ For testing without backend, the component automatically falls back to sample da
 5. Test refresh functionality
 
 ## Future Enhancements
+
 1. Export analytics data to CSV/PDF
 2. Email reports to instructors
 3. Real-time activity tracking
@@ -506,9 +537,9 @@ For testing without backend, the component automatically falls back to sample da
    - Add pagination for large datasets
 
 ## Security Considerations
+
 - Ensure only instructors and admins can access analytics
 - Validate user permissions on backend
 - Sanitize all input parameters
 - Rate limit API endpoints
 - Log analytics access for audit trails
-
