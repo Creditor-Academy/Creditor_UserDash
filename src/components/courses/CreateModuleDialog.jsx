@@ -10,6 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Link, Upload, Loader2, X } from 'lucide-react';
+import ImageEditor from '@lessonbuilder/components/blocks/MediaBlocks/ImageEditor';
+import { uploadImage } from '@/services/imageUploadService';
+import { useToast } from '@/hooks/use-toast';
 import { createModule } from '@/services/courseService';
 
 export function CreateModuleDialog({
@@ -22,6 +27,7 @@ export function CreateModuleDialog({
   mode = 'create',
   onSave,
 }) {
+  const { toast } = useToast();
   const defaultCategory = 'BOOK_SMART';
   const [form, setForm] = useState({
     title: '',
@@ -35,6 +41,11 @@ export function CreateModuleDialog({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Image editor and upload state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     if (initialData && mode === 'edit') {
@@ -62,6 +73,15 @@ export function CreateModuleDialog({
     }
   }, [initialData, mode, existingModules.length, isOpen]);
 
+  // Clean up image editor state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowImageEditor(false);
+      setSelectedImageFile(null);
+      setIsUploadingImage(false);
+    }
+  }, [isOpen]);
+
   const handleInputChange = e => {
     const { name, value, type } = e.target;
     setForm(prev => ({
@@ -77,6 +97,81 @@ export function CreateModuleDialog({
     }));
   };
 
+  // Handle file selection for thumbnail
+  const handleFileSelect = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (500MB limit)
+    const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+    if (file.size > maxSize) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select an image under 500MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please select an image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedImageFile(file);
+    setShowImageEditor(true);
+  };
+
+  // Handle image save from editor
+  const handleImageEditorSave = async editedFile => {
+    setShowImageEditor(false);
+    setIsUploadingImage(true);
+
+    try {
+      // Use the same upload service as courses and lessons
+      const uploadResult = await uploadImage(editedFile, {
+        folder: 'module-thumbnails',
+        public: true,
+      });
+
+      if (uploadResult.success && uploadResult.imageUrl) {
+        setForm(prev => ({
+          ...prev,
+          thumbnail: uploadResult.imageUrl,
+        }));
+
+        toast({
+          title: 'Success',
+          description: 'Image uploaded successfully!',
+        });
+      } else {
+        throw new Error('Upload failed - no image URL returned');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Upload Failed',
+        description:
+          error.message || 'Failed to upload image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingImage(false);
+      setSelectedImageFile(null);
+    }
+  };
+
+  // Handle closing image editor
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setSelectedImageFile(null);
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
@@ -90,11 +185,11 @@ export function CreateModuleDialog({
       }
       const moduleData = {
         title: form.title.trim(),
-        description: form.description.trim() || 'test description',
+        description: form.description.trim() || '',
         order: parseInt(form.order) || existingModules.length + 1,
         estimated_duration: parseInt(form.estimated_duration) || 60,
         module_status: form.module_status || 'DRAFT',
-        thumbnail: form.thumbnail.trim() || 'test thumbnail',
+        thumbnail: form.thumbnail.trim() || null,
         price: parseInt(form.price) || 0,
         category: form.category || defaultCategory,
       };
@@ -109,6 +204,8 @@ export function CreateModuleDialog({
         price: 0,
         category: defaultCategory,
       });
+      setSelectedImageFile(null);
+      setShowImageEditor(false);
       onClose();
     } catch (err) {
       setError(err.message || 'Failed to save module');
@@ -129,6 +226,8 @@ export function CreateModuleDialog({
       category: defaultCategory,
     });
     setError('');
+    setSelectedImageFile(null);
+    setShowImageEditor(false);
     onClose();
   };
 
@@ -250,17 +349,94 @@ export function CreateModuleDialog({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor="thumbnail">Thumbnail URL</Label>
-            <Input
-              id="thumbnail"
-              name="thumbnail"
-              type="text"
-              value={form.thumbnail}
-              onChange={handleInputChange}
-              placeholder="https://example.com/image.jpg"
-              className="mt-1"
-            />
+          {/* Thumbnail Section */}
+          <div className="space-y-2">
+            <Label>Thumbnail Image</Label>
+            <Tabs defaultValue="url" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="url" className="flex items-center gap-2">
+                  <Link className="h-4 w-4" />
+                  Image URL
+                </TabsTrigger>
+                <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Upload File
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="url" className="space-y-2">
+                <Input
+                  id="thumbnail"
+                  name="thumbnail"
+                  value={form.thumbnail}
+                  onChange={handleInputChange}
+                  placeholder="Enter thumbnail image URL (optional)"
+                  type="url"
+                />
+                <p className="text-xs text-gray-500">
+                  Enter a URL to an image file.
+                </p>
+              </TabsContent>
+
+              <TabsContent value="upload" className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="cursor-pointer"
+                    disabled={isUploadingImage}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Maximum file size: 500MB. Supported formats: JPG, PNG, GIF,
+                  WebP.
+                </p>
+                {isUploadingImage && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Uploading image...</span>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            {form.thumbnail && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-600">Preview:</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setForm(prev => ({ ...prev, thumbnail: '' }))
+                    }
+                    className="h-6 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+                <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
+                  <img
+                    src={form.thumbnail}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-cover"
+                    onError={e => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div
+                    className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
+                    style={{ display: 'none' }}
+                  >
+                    Invalid image URL
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           {error && (
             <div className="text-sm text-red-600 py-2 bg-red-50 rounded-md px-3">
@@ -287,6 +463,17 @@ export function CreateModuleDialog({
             </Button>
           </div>
         </form>
+
+        {/* Image Editor Modal */}
+        {selectedImageFile && (
+          <ImageEditor
+            isOpen={showImageEditor}
+            onClose={handleImageEditorClose}
+            imageFile={selectedImageFile}
+            onSave={handleImageEditorSave}
+            title="Edit Thumbnail Image"
+          />
+        )}
       </div>
     </div>
   );

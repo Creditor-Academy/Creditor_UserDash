@@ -4,9 +4,17 @@ import {
   createAIModulesAndLessons,
 } from '../../services/courseService';
 import { createCourseNotification } from '@/services/notificationService';
-import { generateCourseImage } from '@/services/aiCourseService';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Link, Upload, Loader2, X } from 'lucide-react';
+import ImageEditor from '@lessonbuilder/components/blocks/MediaBlocks/ImageEditor';
+import { uploadImage } from '@/services/imageUploadService';
+import { useToast } from '@/hooks/use-toast';
 
 const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
+  const { toast } = useToast();
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -21,98 +29,94 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
   });
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeThumbnailTab, setActiveThumbnailTab] = useState('upload'); // "upload" or "ai"
-  const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [aiImageGenerating, setAiImageGenerating] = useState(false);
-  const [aiImageError, setAiImageError] = useState('');
-  const [dragActive, setDragActive] = useState(false);
+
+  // Image editor and upload state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleInputChange = e => {
     const { name, value, type, checked } = e.target;
-    if (name === 'thumbnail' && type === 'url') {
-      setForm(prev => ({ ...prev, thumbnail: value }));
-    } else if (type === 'checkbox') {
+    if (type === 'checkbox') {
       setForm(prev => ({ ...prev, [name]: checked }));
     } else {
       setForm(prev => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleThumbnailTabChange = tab => {
-    setActiveThumbnailTab(tab);
-  };
+  // Handle file selection for thumbnail
+  const handleFileSelect = e => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleAiImagePromptChange = e => {
-    setAiImagePrompt(e.target.value);
-  };
-
-  const generateAiThumbnail = async () => {
-    if (!form.title.trim() && !aiImagePrompt.trim()) {
-      setAiImageError('Please enter a course title or image prompt');
+    // Check file size (500MB limit)
+    const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+    if (file.size > maxSize) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select an image under 500MB.',
+        variant: 'destructive',
+      });
       return;
     }
 
-    setAiImageGenerating(true);
-    setAiImageError('');
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Please select an image file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSelectedImageFile(file);
+    setShowImageEditor(true);
+  };
+
+  // Handle image save from editor
+  const handleImageEditorSave = async editedFile => {
+    setShowImageEditor(false);
+    setIsUploadingImage(true);
 
     try {
-      // Create a more descriptive prompt based on course title if no prompt is provided
-      const prompt =
-        aiImagePrompt.trim() ||
-        `Professional course thumbnail for "${form.title}" - educational, modern, clean design`;
-
-      const response = await generateCourseImage(prompt, {
-        style: 'realistic',
-        size: '1024x1024',
+      // Use the same upload service as ModuleLessonsView
+      const uploadResult = await uploadImage(editedFile, {
+        folder: 'course-thumbnails',
+        public: true,
       });
 
-      if (response.success) {
-        setForm(prev => ({ ...prev, thumbnail: response.data.url }));
-        setAiImageError('');
-        // Show success message
-        alert('AI thumbnail generated successfully!');
+      if (uploadResult.success && uploadResult.imageUrl) {
+        setForm(prev => ({
+          ...prev,
+          thumbnail: uploadResult.imageUrl,
+        }));
+
+        toast({
+          title: 'Success',
+          description: 'Image uploaded successfully!',
+        });
       } else {
-        setAiImageError(response.error || 'Failed to generate AI image');
+        throw new Error('Upload failed - no image URL returned');
       }
     } catch (error) {
-      setAiImageError('Failed to generate AI image: ' + error.message);
-      // Log detailed error for debugging
-      console.error('AI thumbnail generation error details:', {
-        message: error.message,
-        stack: error.stack,
-        prompt:
-          aiImagePrompt.trim() ||
-          `Professional course thumbnail for "${form.title}" - educational, modern, clean design`,
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Upload Failed',
+        description:
+          error.message || 'Failed to upload image. Please try again.',
+        variant: 'destructive',
       });
     } finally {
-      setAiImageGenerating(false);
+      setIsUploadingImage(false);
+      setSelectedImageFile(null);
     }
   };
 
-  // Drag and drop handlers
-  const handleDrag = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      // For now, we'll just show an alert since we don't have actual file upload implemented
-      // In a real implementation, you would upload the file to a server and get a URL back
-      alert(
-        'File upload functionality would be implemented here. In a real application, this would upload the image and return a URL.'
-      );
-      console.log('File dropped:', e.dataTransfer.files[0]);
-    }
+  // Handle closing image editor
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setSelectedImageFile(null);
   };
 
   // Generate AI modules and lessons
@@ -186,8 +190,8 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
             const localNotification = {
               id: `local-course-${courseId}-${now.getTime()}`,
               type: 'course',
-              title: useAI ? 'AI Course Created' : 'New Course Available',
-              message: `"${form.title}" has been published and is now available${useAI ? ' with AI-generated content' : ''}`,
+              title: 'New Course Available',
+              message: `"${form.title}" has been published and is now available`,
               created_at: now.toISOString(),
               read: false,
               courseId: courseId,
@@ -221,10 +225,8 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           requireFinalQuiz: true,
           thumbnail: '',
         });
-        // Reset thumbnail tab state
-        setActiveThumbnailTab('upload');
-        setAiImagePrompt('');
-        setAiImageError('');
+        setSelectedImageFile(null);
+        setShowImageEditor(false);
       } else {
         setFormError(response.message || 'Failed to create course');
         // Show error to user
@@ -385,183 +387,91 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
             </label>
           </div>
 
-          {/* Thumbnail Section with Tabs */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Course Thumbnail
-            </label>
+          {/* Thumbnail Section */}
+          <div className="space-y-2">
+            <Label>Thumbnail Image</Label>
+            <Tabs defaultValue="url" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="url" className="flex items-center gap-2">
+                  <Link className="h-4 w-4" />
+                  Image URL
+                </TabsTrigger>
+                <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Upload File
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Tab Navigation */}
-            <div className="flex border-b border-gray-200 mb-3">
-              <button
-                type="button"
-                className={`py-2 px-4 text-sm font-medium ${
-                  activeThumbnailTab === 'upload'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => handleThumbnailTabChange('upload')}
-              >
-                Upload Image
-              </button>
-              <button
-                type="button"
-                className={`py-2 px-4 text-sm font-medium ${
-                  activeThumbnailTab === 'ai'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => handleThumbnailTabChange('ai')}
-              >
-                Generate with AI
-              </button>
-            </div>
-
-            {/* Tab Content */}
-            {activeThumbnailTab === 'upload' ? (
-              <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                  dragActive
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={() =>
-                  document.getElementById('thumbnail-upload').click()
-                }
-              >
-                <input
-                  id="thumbnail-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/png, image/jpeg"
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      // For now, we'll just show an alert since we don't have actual file upload implemented
-                      // In a real implementation, you would upload the file to a server and get a URL back
-                      alert(
-                        'File upload functionality would be implemented here. In a real application, this would upload the image and return a URL.'
-                      );
-                    }
-                  }}
+              <TabsContent value="url" className="space-y-2">
+                <Input
+                  id="thumbnail"
+                  name="thumbnail"
+                  value={form.thumbnail}
+                  onChange={handleInputChange}
+                  placeholder="Enter thumbnail image URL (optional)"
+                  type="url"
                 />
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <p className="mt-2 text-sm text-gray-600">
-                  <span className="font-medium text-blue-600 hover:text-blue-500">
-                    Drag & drop an image or click to browse
-                  </span>
+                <p className="text-xs text-gray-500">
+                  Enter a URL to an image file.
                 </p>
-                <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+              </TabsContent>
 
-                <div className="mt-4">
-                  <input
-                    type="url"
-                    name="thumbnail"
-                    value={form.thumbnail}
-                    onChange={handleInputChange}
-                    placeholder="Or enter image URL"
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+              <TabsContent value="upload" className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="cursor-pointer"
+                    disabled={isUploadingImage}
                   />
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    AI Image Prompt
-                  </label>
-                  <textarea
-                    value={aiImagePrompt}
-                    onChange={handleAiImagePromptChange}
-                    placeholder={`Describe the image you want to generate for "${form.title || 'your course'}"`}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    rows={3}
-                  />
-                  {!aiImagePrompt && form.title && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Using course title as prompt: "Professional course
-                      thumbnail for "{form.title}" - educational, modern, clean
-                      design"
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={generateAiThumbnail}
-                  disabled={aiImageGenerating}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {aiImageGenerating ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate AI Thumbnail'
-                  )}
-                </button>
-                {aiImageError && (
-                  <div className="text-sm text-red-600">{aiImageError}</div>
+                <p className="text-xs text-gray-500">
+                  Maximum file size: 500MB. Supported formats: JPG, PNG, GIF,
+                  WebP.
+                </p>
+                {isUploadingImage && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Uploading image...</span>
+                  </div>
                 )}
-                <div className="text-xs text-gray-500">
-                  <p>
-                    Tip: Include details like subject matter, style, and mood
-                    for better results.
-                  </p>
-                </div>
-              </div>
-            )}
+              </TabsContent>
+            </Tabs>
 
-            {/* Thumbnail Preview */}
             {form.thumbnail && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  Thumbnail Preview
-                </p>
-                <div className="border rounded-md p-2 bg-gray-50">
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-600">Preview:</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setForm(prev => ({ ...prev, thumbnail: '' }))
+                    }
+                    className="h-6 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+                <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
                   <img
                     src={form.thumbnail}
                     alt="Thumbnail preview"
-                    className="h-40 w-full object-cover rounded-md"
+                    className="w-full h-full object-cover"
                     onError={e => {
                       e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
                     }}
                   />
+                  <div
+                    className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
+                    style={{ display: 'none' }}
+                  >
+                    Invalid image URL
+                  </div>
                 </div>
               </div>
             )}
@@ -587,6 +497,17 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
             </button>
           </div>
         </form>
+
+        {/* Image Editor Modal */}
+        {selectedImageFile && (
+          <ImageEditor
+            isOpen={showImageEditor}
+            onClose={handleImageEditorClose}
+            imageFile={selectedImageFile}
+            onSave={handleImageEditorSave}
+            title="Edit Thumbnail Image"
+          />
+        )}
       </div>
     </div>
   );
