@@ -412,31 +412,79 @@ function generateTextHTML(textType, content = '') {
       return `<h3 class="text-xl font-semibold text-gray-800 leading-snug">${trimmed}</h3>`;
 
     case 'heading_paragraph': {
-      const [headingLine, ...rest] = trimmed.split('\n').filter(Boolean);
-      const body = rest.join('\n').trim() || trimmed;
+      // Handle heading_paragraph with proper heading and content separation
+      const lines = trimmed.split('\n').filter(Boolean);
+      const headingLine = lines[0] || 'Heading';
+      const bodyLines = lines.slice(1);
+
+      // If no separate heading provided, use the first line as heading
+      const body =
+        bodyLines.length > 0
+          ? bodyLines
+              .map(
+                p =>
+                  `<p class="text-base text-gray-700 leading-relaxed mb-3">${p.trim()}</p>`
+              )
+              .join('')
+          : lines.length > 1
+            ? lines
+                .slice(1)
+                .map(
+                  p =>
+                    `<p class="text-base text-gray-700 leading-relaxed mb-3">${p.trim()}</p>`
+                )
+                .join('')
+            : '';
 
       return `<div class="space-y-3">
-        <h2 class="text-2xl font-bold text-gray-900 leading-tight">${
-          headingLine || 'Heading'
-        }</h2>
-        <p class="text-base text-gray-700 leading-relaxed">${body}</p>
+        <h2 class="text-2xl font-bold text-gray-900 leading-tight">${headingLine}</h2>
+        ${body || '<p class="text-base text-gray-700 leading-relaxed">Content goes here...</p>'}
       </div>`;
     }
 
     case 'subheading_paragraph': {
-      const [headingLine, ...rest] = trimmed.split('\n').filter(Boolean);
-      const body = rest.join('\n').trim() || trimmed;
+      // Handle subheading_paragraph with proper subheading and content separation
+      const lines = trimmed.split('\n').filter(Boolean);
+      const subheadingLine = lines[0] || 'Subheading';
+      const bodyLines = lines.slice(1);
+
+      // Preserve line breaks in body content
+      const body =
+        bodyLines.length > 0
+          ? bodyLines
+              .map(
+                p =>
+                  `<p class="text-base text-gray-700 leading-relaxed mb-3">${p.trim()}</p>`
+              )
+              .join('')
+          : lines.length > 1
+            ? lines
+                .slice(1)
+                .map(
+                  p =>
+                    `<p class="text-base text-gray-700 leading-relaxed mb-3">${p.trim()}</p>`
+                )
+                .join('')
+            : '';
 
       return `<div class="space-y-3">
-        <h3 class="text-xl font-semibold text-gray-800 leading-snug">${
-          headingLine || 'Subheading'
-        }</h3>
-        <p class="text-base text-gray-700 leading-relaxed">${body}</p>
+        <h3 class="text-xl font-semibold text-gray-800 leading-snug">${subheadingLine}</h3>
+        ${body || '<p class="text-base text-gray-700 leading-relaxed">Content goes here...</p>'}
       </div>`;
     }
 
     case 'paragraph':
     default:
+      // Preserve line breaks in paragraph content
+      if (trimmed.includes('\n')) {
+        const paragraphs = trimmed.split('\n').filter(p => p.trim());
+        return paragraphs
+          .map(
+            p =>
+              `<p class="text-base text-gray-700 leading-relaxed mb-3">${p.trim()}</p>`
+          )
+          .join('');
+      }
       return `<p class="text-base text-gray-700 leading-relaxed">${trimmed}</p>`;
   }
 }

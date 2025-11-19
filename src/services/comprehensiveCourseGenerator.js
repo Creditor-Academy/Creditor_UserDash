@@ -400,14 +400,36 @@ async function enhanceWithAllVariants(
  */
 async function generateContextualImagePrompts(courseTitle, topicContext) {
   const prompts = [
-    `Professional ${topicContext.imageStyle} illustration showing ${courseTitle} concepts, clean educational design, ${topicContext.domain} theme`,
-    `Infographic style diagram explaining ${courseTitle} fundamentals, modern flat design, educational color scheme`,
-    `3D rendered visualization of ${courseTitle} applications, professional lighting, clean background`,
-    `Vector illustration demonstrating ${courseTitle} workflow, minimalist design, business professional style`,
-    `Educational chart showing ${courseTitle} methodology, clean typography, professional presentation style`,
+    `Realistic, professional photograph-style image showing a real-world scene representing ${courseTitle} concepts, ${topicContext.domain} theme. NO infographics, NO diagrams, NO small text.`,
+    `Realistic, professional photograph-style image of actual objects or scenes related to ${courseTitle} fundamentals. NO infographics, NO diagrams. Clean, realistic visual.`,
+    `Realistic, professional photograph-style image showing real-world applications of ${courseTitle}, professional lighting, clean background. NO infographics, NO diagrams.`,
+    `Realistic, professional photograph-style image demonstrating ${courseTitle} in a real-world setting, minimalist composition. NO infographics, NO diagrams, NO small text.`,
+    `Realistic, professional photograph-style image showing ${courseTitle} methodology in practice, professional presentation style. NO infographics, NO diagrams, NO small text.`,
   ];
 
   return prompts;
+}
+
+/**
+ * Truncate text to max length, preserving words
+ */
+function truncateText(text, maxLength) {
+  if (!text || text.length <= maxLength) return text;
+  const truncated = text.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > 0
+    ? truncated.substring(0, lastSpace) + '...'
+    : truncated + '...';
+}
+
+/**
+ * Truncate prompt to ensure it's under 1000 characters (backend limit)
+ */
+function truncatePrompt(prompt, maxLength = 950) {
+  if (!prompt || prompt.length <= maxLength) return prompt;
+  const truncated = prompt.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated;
 }
 
 /**
@@ -418,28 +440,49 @@ async function generateModuleThumbnailPrompt(
   moduleOverview,
   topicContext
 ) {
-  const prompt = `Professional ${topicContext.imageStyle} thumbnail for module: "${moduleTitle}"
-  
-Content: ${moduleOverview}
-Style: ${topicContext.imageStyle}
-Domain: ${topicContext.field}
+  // Truncate overview to prevent long prompts (max 200 chars for overview)
+  const truncatedOverview = truncateText(moduleOverview || '', 200);
+  const keywords =
+    (topicContext.keywords || []).slice(0, 2).join(' and ') || 'relevant';
 
-Create a thumbnail that represents this module in ${topicContext.domain}.
-Include ${topicContext.keywords.slice(0, 2).join(' and ')} visual elements.
-Professional, educational, suitable for module thumbnail.
+  const prompt = `Create a realistic, professional photograph-style thumbnail image for module: "${moduleTitle}"
+  
+Content: ${truncatedOverview}
+Style: Realistic, photographic, professional
+Domain: ${topicContext.field || 'education'}
+
+Create a realistic thumbnail showing a real-world scene, object, or situation that represents this module in ${topicContext.domain || 'education'}.
+NO infographics, NO diagrams, NO small text labels.
+Just a clean, realistic, professional photograph-style image with minimal or no text.
 16:9 aspect ratio, clean composition, readable at small sizes.`;
 
   try {
     const response = await openAIService.generateText(prompt, {
-      model: 'gpt-4',
-      max_tokens: 200,
+      model: 'gpt-4o-mini',
+      max_tokens: 150, // Reduced to keep prompt shorter
       temperature: 0.7,
+      systemPrompt:
+        'You create realistic, photographic-style image prompts. NO infographics, NO diagrams, NO small text. Only realistic scenes, objects, or situations.',
     });
 
-    return response.trim();
+    let generatedPrompt = response.trim();
+
+    // Ensure the generated prompt emphasizes realistic style
+    if (
+      generatedPrompt &&
+      !generatedPrompt.toLowerCase().includes('realistic') &&
+      !generatedPrompt.toLowerCase().includes('photograph')
+    ) {
+      generatedPrompt = `Realistic, professional photograph-style image: ${generatedPrompt}. NO infographics, NO diagrams, NO small text labels. Clean, realistic visual.`;
+    }
+
+    // Ensure final prompt is under 1000 characters
+    return truncatePrompt(generatedPrompt, 950);
   } catch (error) {
     console.error('Module thumbnail prompt generation failed:', error);
-    return `Professional ${topicContext.imageStyle} showing ${moduleTitle} concepts, clean educational design, ${topicContext.domain} theme, 16:9 thumbnail format`;
+    // Fallback prompt (always under 200 chars)
+    const fallback = `Realistic, professional photograph-style image showing a real-world scene representing ${truncateText(moduleTitle, 50)}. NO infographics, NO diagrams, NO small text. Clean, realistic visual, 16:9 thumbnail format`;
+    return truncatePrompt(fallback, 950);
   }
 }
 
@@ -451,30 +494,53 @@ async function generateLessonThumbnailPrompt(
   lessonSummary,
   topicContext
 ) {
-  const prompt = `Professional ${topicContext.imageStyle} thumbnail for lesson: "${lessonTitle}"
-  
-Content: ${lessonSummary}
-Style: ${topicContext.imageStyle}
-Domain: ${topicContext.field}
+  // Truncate summary to prevent long prompts (max 200 chars for summary)
+  const truncatedSummary = truncateText(lessonSummary || '', 200);
+  const keywords =
+    (topicContext.keywords || []).slice(2, 4).join(' and ') || 'relevant';
 
-Create a thumbnail that represents this specific lesson in ${topicContext.domain}.
-Include ${topicContext.keywords.slice(2, 4).join(' and ')} visual elements.
-Professional, educational, suitable for lesson thumbnail.
+  const prompt = `Create a realistic, professional photograph-style thumbnail image for lesson: "${lessonTitle}"
+  
+Content: ${truncatedSummary}
+Style: Realistic, photographic, professional
+Domain: ${topicContext.field || 'education'}
+
+Create a realistic thumbnail showing a real-world scene, object, or situation that represents this specific lesson in ${topicContext.domain || 'education'}.
+NO infographics, NO diagrams, NO small text labels.
+Just a clean, realistic, professional photograph-style image with minimal or no text.
 16:9 aspect ratio, clean composition, readable at small sizes.`;
 
   try {
     const response = await openAIService.generateText(prompt, {
-      model: 'gpt-4',
-      max_tokens: 200,
+      model: 'gpt-4o-mini',
+      max_tokens: 150, // Reduced to keep prompt shorter
       temperature: 0.7,
+      systemPrompt:
+        'You create realistic, photographic-style image prompts. NO infographics, NO diagrams, NO small text. Only realistic scenes, objects, or situations.',
     });
 
-    return response.trim();
+    let generatedPrompt = response.trim();
+
+    // Ensure the generated prompt emphasizes realistic style
+    if (
+      generatedPrompt &&
+      !generatedPrompt.toLowerCase().includes('realistic') &&
+      !generatedPrompt.toLowerCase().includes('photograph')
+    ) {
+      generatedPrompt = `Realistic, professional photograph-style image: ${generatedPrompt}. NO infographics, NO diagrams, NO small text labels. Clean, realistic visual.`;
+    }
+
+    // Ensure final prompt is under 1000 characters
+    return truncatePrompt(generatedPrompt, 950);
   } catch (error) {
     console.error('Lesson thumbnail prompt generation failed:', error);
-    return `Professional ${topicContext.imageStyle} showing ${lessonTitle} concepts, clean educational design, ${topicContext.domain} theme, 16:9 thumbnail format`;
+    // Fallback prompt (always under 200 chars)
+    const fallback = `Realistic, professional photograph-style image showing a real-world scene representing ${truncateText(lessonTitle, 50)}. NO infographics, NO diagrams, NO small text. Clean, realistic visual, 16:9 thumbnail format`;
+    return truncatePrompt(fallback, 950);
   }
 }
+
+export { generateModuleThumbnailPrompt, generateLessonThumbnailPrompt };
 
 export default {
   generateComprehensiveCourse,

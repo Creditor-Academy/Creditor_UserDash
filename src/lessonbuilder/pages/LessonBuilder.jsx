@@ -398,8 +398,8 @@ function LessonBuilder() {
     }
 
     // Close the Content Library sidebar after block is selected
+    // NOTE: Don't reset insertionPosition here - let each component reset it after using it
     setShowContentLibrarySidebar(false);
-    setInsertionPosition(null);
 
     // Go directly to manual creation since we removed the dialog
     handleManualCreation(blockType);
@@ -2281,14 +2281,18 @@ function LessonBuilder() {
                                               hasDefaultContent:
                                                 !!block.defaultContent
                                                   ?.imageUrl,
+                                              hasHtmlCss: !!block.html_css,
                                               title: block.title,
                                               alignment: block.alignment,
                                               layout: block.layout,
                                             }
                                           );
+                                          // Render if has imageUrl OR html_css (for AI-generated images)
                                           return (
                                             block.imageUrl ||
-                                            block.defaultContent?.imageUrl
+                                            block.defaultContent?.imageUrl ||
+                                            (block.html_css &&
+                                              block.html_css.trim())
                                           );
                                         })() && (
                                           <>
@@ -2531,6 +2535,22 @@ function LessonBuilder() {
                                             ) : (
                                               /* Display Mode */
                                               (() => {
+                                                // If html_css exists (AI-generated), use it directly
+                                                if (
+                                                  block.html_css &&
+                                                  block.html_css.trim()
+                                                ) {
+                                                  return (
+                                                    <div
+                                                      className="max-w-none"
+                                                      dangerouslySetInnerHTML={{
+                                                        __html: block.html_css,
+                                                      }}
+                                                    />
+                                                  );
+                                                }
+
+                                                // Otherwise, use the standard rendering logic
                                                 const rawCaptionHtml =
                                                   (block.text &&
                                                     block.text.toString()) ||

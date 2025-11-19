@@ -494,13 +494,24 @@ const ImageBlockComponent = forwardRef(
               );
             }
 
-            return {
+            const finalBlock = {
               ...updatedBlock,
               isEditing: false,
               html_css: htmlContent,
               imageDescription: captionPlainText,
               details: updatedDetails,
             };
+
+            // Also update lessonContent if it exists
+            if (onImageUpdate && contentBlocks.find(b => b.id === blockId)) {
+              // Call parent's handleImageUpdate to sync with lessonContent
+              const currentBlock = contentBlocks.find(b => b.id === blockId);
+              if (currentBlock) {
+                onImageUpdate(finalBlock, currentBlock);
+              }
+            }
+
+            return finalBlock;
           }
           return { ...block, isEditing: false };
         })
