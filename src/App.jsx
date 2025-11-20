@@ -102,6 +102,7 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import TermsAndConditions from '@/pages/TermCondition';
 import ReturnRefund from '@/pages/ReturnRefund';
 import MembershipTnC from '@/pages/MembershipTnC';
+import MembershipEnrollment from '@/pages/MembershipEnrollment';
 import ContactSection from '@/components/ContactSection';
 import AddUsersPage from '@/pages/AddUsersPage';
 import AICourseCreator from '@/pages/AICourseCreator';
@@ -357,6 +358,10 @@ function App() {
                 }
               >
                 <Route index element={<Dashboard />} />
+                <Route
+                  path="membership/enroll"
+                  element={<MembershipEnrollment />}
+                />
                 <Route path="upcoming-courses" element={<UpcomingCourses />} />
 
                 {/* Course related routes */}

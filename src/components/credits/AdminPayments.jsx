@@ -61,7 +61,7 @@ const AdminPayments = () => {
   const itemsPerPage = 5;
   const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
-  const [grantCreditsAmount, setGrantCreditsAmount] = useState(10);
+  const [grantCreditsAmount, setGrantCreditsAmount] = useState('');
   const [userDetailModal, setUserDetailModal] = useState({
     open: false,
     user: null,
@@ -1809,6 +1809,7 @@ const AdminPayments = () => {
                     if (selectedUserIds.length === 0) {
                       return;
                     }
+                    setGrantCreditsAmount('');
                     setGrantModal({ open: true });
                   }}
                   className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
@@ -2194,9 +2195,7 @@ const AdminPayments = () => {
                 </label>
                 <input
                   value={grantCreditsAmount}
-                  onChange={e =>
-                    setGrantCreditsAmount(parseInt(e.target.value || '0', 10))
-                  }
+                  onChange={e => setGrantCreditsAmount(e.target.value)}
                   type="number"
                   min="1"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4"
@@ -2221,13 +2220,22 @@ const AdminPayments = () => {
                       if (isGranting) return;
                       try {
                         setGrantMessage('');
+                        const creditsValue = Number(grantCreditsAmount);
+                        if (
+                          !Number.isFinite(creditsValue) ||
+                          creditsValue < 1
+                        ) {
+                          setGrantMessage('Enter at least 1 credit.');
+                          setIsGranting(false);
+                          return;
+                        }
                         setIsGranting(true);
                         // Call backend to grant credits
                         await api.post(
                           '/payment-order/admin/credits/grant',
                           {
                             userIds: selectedUserIds,
-                            credits: grantCreditsAmount,
+                            credits: creditsValue,
                           },
                           { withCredentials: true }
                         );
@@ -2239,7 +2247,7 @@ const AdminPayments = () => {
                                   ...u,
                                   credits:
                                     (Number(u.credits) || 0) +
-                                    (Number(grantCreditsAmount) || 0),
+                                    (Number(creditsValue) || 0),
                                 }
                               : u
                           )
@@ -2248,13 +2256,14 @@ const AdminPayments = () => {
                           debouncedRefreshBalance();
                         } catch {}
                         setGrantMessage(
-                          `Granted ${grantCreditsAmount} credits to ${selectedUserIds.length} user(s).`
+                          `Granted ${creditsValue} credits to ${selectedUserIds.length} user(s).`
                         );
                         // Optionally clear selection
                         setSelectedUserIds([]);
                         // Close after brief delay
                         setTimeout(() => {
                           setGrantModal({ open: false });
+                          setGrantCreditsAmount('');
                           setGrantMessage('');
                         }, 800);
                       } catch (e) {
@@ -2374,7 +2383,8 @@ const AdminPayments = () => {
             </div>
           )}
 
-          {userDetailModal.open && userDetailModal.user && (
+          {/* User credit modal disabled for now */}
+          {false && userDetailModal.open && userDetailModal.user && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div
                 className="absolute inset-0 bg-black/30"

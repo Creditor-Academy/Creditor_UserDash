@@ -843,10 +843,32 @@ const ModuleLessonsView = () => {
   };
 
   const handleAddScorm = async () => {
-    if (!scormLesson || !scormUrl.trim()) {
+    if (!scormLesson) {
       toast({
-        title: 'SCORM URL Required',
-        description: 'Please enter a SCORM package URL before proceeding.',
+        title: 'Select a Lesson',
+        description: 'Please select a lesson before adding SCORM package.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if at least one field is provided
+    if (!scormUrl.trim() && !scormFile) {
+      toast({
+        title: 'SCORM Required',
+        description:
+          'Please either upload a SCORM package or provide a SCORM URL.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // If file is selected but URL is not set yet, user needs to upload first
+    if (scormFile && !scormUrl.trim()) {
+      toast({
+        title: 'Upload Required',
+        description:
+          'Please upload the SCORM package first, or provide a URL directly.',
         variant: 'destructive',
       });
       return;
@@ -1635,7 +1657,8 @@ const ModuleLessonsView = () => {
                 : 'Add SCORM Package'}
             </DialogTitle>
             <DialogDescription>
-              Provide the SCORM package URL to attach it to this lesson.
+              Upload a SCORM package file or provide a SCORM package URL to
+              attach it to this lesson.
             </DialogDescription>
           </DialogHeader>
 
@@ -1696,7 +1719,7 @@ const ModuleLessonsView = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="scorm-file">Upload SCORM Package *</Label>
+              <Label htmlFor="scorm-file">Upload SCORM Package</Label>
               <Input
                 id="scorm-file"
                 type="file"
@@ -1770,15 +1793,19 @@ const ModuleLessonsView = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="scorm-url">SCORM URL *</Label>
+              <Label htmlFor="scorm-url">SCORM URL</Label>
               <Input
                 id="scorm-url"
                 type="url"
                 placeholder="https://example.com/path/to/scorm-package"
                 value={scormUrl}
                 onChange={e => setScormUrl(e.target.value)}
-                required
+                disabled={isUploadingScorm}
               />
+              <p className="text-xs text-gray-500">
+                Enter a direct URL to a SCORM package hosted on the cloud, or
+                upload a file above.
+              </p>
             </div>
           </div>
 
@@ -1792,7 +1819,11 @@ const ModuleLessonsView = () => {
             </Button>
             <Button
               onClick={handleAddScorm}
-              disabled={!scormUrl.trim() || isAddingScorm}
+              disabled={
+                (!scormUrl.trim() && !scormFile) ||
+                isAddingScorm ||
+                isUploadingScorm
+              }
             >
               {isAddingScorm ? (
                 <>
