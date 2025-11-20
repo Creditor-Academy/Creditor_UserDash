@@ -88,7 +88,10 @@ const useLessonLoader = ({
                     id: b.block_id || `block_${i + 1}`,
                     block_id: b.block_id || `block_${i + 1}`,
                     type: b.type,
-                    order: i + 1,
+                    order:
+                      b.order !== undefined && b.order !== null
+                        ? b.order
+                        : i + 1,
                     html_css: b.html_css || '',
                     details: b.details || {},
                     isEditing: false,
@@ -522,7 +525,10 @@ const useLessonLoader = ({
                     id: b.block_id || `block_${i + 1}`,
                     block_id: b.block_id || `block_${i + 1}`,
                     type: b.type,
-                    order: i + 1,
+                    order:
+                      b.order !== undefined && b.order !== null
+                        ? b.order
+                        : i + 1,
                     html_css: b.html_css || '',
                     details: b.details || {},
                     isEditing: false,

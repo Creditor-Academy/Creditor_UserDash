@@ -205,25 +205,53 @@ ${JSON.stringify(userPayload, null, 2)}`;
         return;
       }
 
+      // Helper function to safely convert to string
+      const toString = value => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') {
+          // If it's an object, try to extract meaningful text
+          if (Array.isArray(value)) {
+            return value
+              .map(item =>
+                typeof item === 'string' ? item : JSON.stringify(item)
+              )
+              .join(', ');
+          }
+          // Try common object properties
+          if (value.text) return String(value.text);
+          if (value.content) return String(value.content);
+          if (value.description) return String(value.description);
+          if (value.value) return String(value.value);
+          // Last resort: stringify but remove quotes
+          return JSON.stringify(value).replace(/^"|"$/g, '');
+        }
+        return String(value);
+      };
+
       setCourseData(prev => ({
         ...prev,
         blueprintCoursePurpose:
-          enhanced.coursePurpose || prev.blueprintCoursePurpose,
+          toString(enhanced.coursePurpose) || prev.blueprintCoursePurpose,
         blueprintLearnerProfile:
-          enhanced.targetLearnerProfile || prev.blueprintLearnerProfile,
+          toString(enhanced.targetLearnerProfile) ||
+          prev.blueprintLearnerProfile,
         blueprintLearningConstraints:
-          enhanced.learningConstraints || prev.blueprintLearningConstraints,
+          toString(enhanced.learningConstraints) ||
+          prev.blueprintLearningConstraints,
         blueprintComplianceRequirements:
-          enhanced.complianceRequirements ||
+          toString(enhanced.complianceRequirements) ||
           prev.blueprintComplianceRequirements,
         blueprintPriorKnowledge:
-          enhanced.priorKnowledge || prev.blueprintPriorKnowledge,
+          toString(enhanced.priorKnowledge) || prev.blueprintPriorKnowledge,
         blueprintCourseStructure:
-          enhanced.courseStructure || prev.blueprintCourseStructure,
+          toString(enhanced.courseStructure) || prev.blueprintCourseStructure,
         blueprintSuccessMeasurement:
-          enhanced.successMeasurement || prev.blueprintSuccessMeasurement,
+          toString(enhanced.successMeasurement) ||
+          prev.blueprintSuccessMeasurement,
         blueprintRequiredResources:
-          enhanced.requiredResources || prev.blueprintRequiredResources,
+          toString(enhanced.requiredResources) ||
+          prev.blueprintRequiredResources,
       }));
 
       setHasEnhancedBlueprint(true);
@@ -446,6 +474,27 @@ ${JSON.stringify(userPayload, null, 2)}`;
     setBlueprintError('');
 
     try {
+      // Auto-enhance blueprint inputs (1.1-1.8) if they exist
+      const hasBlueprintInputs = [
+        courseData.blueprintCoursePurpose,
+        courseData.blueprintLearnerProfile,
+        courseData.blueprintLearningConstraints,
+        courseData.blueprintComplianceRequirements,
+        courseData.blueprintPriorKnowledge,
+        courseData.blueprintCourseStructure,
+        courseData.blueprintSuccessMeasurement,
+        courseData.blueprintRequiredResources,
+      ].some(value => value && value.trim().length > 0);
+
+      if (hasBlueprintInputs && !hasEnhancedBlueprint) {
+        // Auto-enhance blueprint inputs before generating
+        await handleEnhanceBlueprintInputs();
+      }
+
+      // Get module and lesson counts (default to 1 if not specified)
+      const moduleCount = courseData.moduleCount || 1;
+      const lessonsPerModule = courseData.lessonsPerModule || 1;
+
       const blueprintInput = {
         courseTitle,
         subjectDomain: courseData.subject || courseData.targetAudience,
@@ -469,6 +518,10 @@ ${JSON.stringify(userPayload, null, 2)}`;
         courseStructure: courseData.blueprintCourseStructure,
         successMeasurement: courseData.blueprintSuccessMeasurement,
         requiredResources: courseData.blueprintRequiredResources,
+        // Add target structure to explicitly control module/lesson count
+        targetStructure: `${moduleCount} module${moduleCount !== 1 ? 's' : ''}, ${moduleCount * lessonsPerModule} lesson${moduleCount * lessonsPerModule !== 1 ? 's' : ''}, ${lessonsPerModule} lesson${lessonsPerModule !== 1 ? 's' : ''} per module`,
+        moduleCount,
+        lessonsPerModule,
       };
 
       const result =
@@ -925,8 +978,82 @@ ${JSON.stringify(userPayload, null, 2)}`;
           'Course module content';
 
         try {
-          const moduleThumbnail =
+          let moduleThumbnail =
             moduleData.thumbnail || moduleData.module_thumbnail_url;
+
+          // Generate thumbnail if "yes" is selected and thumbnail doesn't exist
+          if (
+            generateThumbnails === 'yes' &&
+            (!moduleThumbnail || moduleThumbnail.trim() === '')
+          ) {
+            try {
+              addStreamingMessage(
+                `🎨 Generating thumbnail for ${moduleTitle}...`,
+                'ai'
+              );
+              const { generateModuleThumbnailPrompt } = await import(
+                '@/services/comprehensiveCourseGenerator'
+              );
+              const { detectTopicContext } = await import(
+                '@/services/comprehensiveShowcaseLesson'
+              );
+              const openAIService = (await import('@/services/openAIService'))
+                .default;
+
+              const topicContext = detectTopicContext
+                ? detectTopicContext(courseTitle)
+                : {
+                    imageStyle: 'modern',
+                    domain: 'education',
+                    field: courseData.subject || 'general',
+                    keywords: [],
+                  };
+              let thumbnailPrompt = await generateModuleThumbnailPrompt(
+                moduleTitle,
+                moduleDescription,
+                topicContext
+              );
+
+              // Safety check: Ensure prompt is under 1000 characters (backend limit)
+              if (thumbnailPrompt && thumbnailPrompt.length > 950) {
+                thumbnailPrompt = thumbnailPrompt.substring(0, 950).trim();
+                console.warn(
+                  `⚠️ Truncated module thumbnail prompt to ${thumbnailPrompt.length} characters`
+                );
+              }
+
+              const imageResult = await openAIService.generateImage(
+                thumbnailPrompt,
+                {
+                  size: '1024x1024',
+                  quality: 'standard',
+                  uploadToS3: true,
+                  folder: 'ai-thumbnails/modules',
+                }
+              );
+
+              if (imageResult?.success) {
+                const imageUrl =
+                  imageResult.data?.url ||
+                  imageResult.url ||
+                  imageResult.data?.imageUrl ||
+                  imageResult.imageUrl;
+                if (imageUrl) {
+                  moduleThumbnail = imageUrl;
+                  console.log(
+                    `✅ Generated module thumbnail: ${moduleThumbnail}`
+                  );
+                }
+              }
+            } catch (thumbError) {
+              console.warn(
+                `⚠️ Failed to generate module thumbnail:`,
+                thumbError
+              );
+              // Continue without thumbnail
+            }
+          }
+
           const modulePayload = {
             title: moduleTitle,
             description: moduleDescription,
@@ -1004,8 +1131,82 @@ ${JSON.stringify(userPayload, null, 2)}`;
             'Lesson content';
 
           try {
-            const lessonThumbnail =
+            let lessonThumbnail =
               lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+
+            // Generate thumbnail if "yes" is selected and thumbnail doesn't exist
+            if (
+              generateThumbnails === 'yes' &&
+              (!lessonThumbnail || lessonThumbnail.trim() === '')
+            ) {
+              try {
+                addStreamingMessage(
+                  `🎨 Generating thumbnail for ${lessonTitle}...`,
+                  'ai'
+                );
+                const { generateLessonThumbnailPrompt } = await import(
+                  '@/services/comprehensiveCourseGenerator'
+                );
+                const { detectTopicContext } = await import(
+                  '@/services/comprehensiveShowcaseLesson'
+                );
+                const openAIService = (await import('@/services/openAIService'))
+                  .default;
+
+                const topicContext = detectTopicContext
+                  ? detectTopicContext(courseTitle)
+                  : {
+                      imageStyle: 'modern',
+                      domain: 'education',
+                      field: courseData.subject || 'general',
+                      keywords: [],
+                    };
+                let thumbnailPrompt = await generateLessonThumbnailPrompt(
+                  lessonTitle,
+                  lessonDescription,
+                  topicContext
+                );
+
+                // Safety check: Ensure prompt is under 1000 characters (backend limit)
+                if (thumbnailPrompt && thumbnailPrompt.length > 950) {
+                  thumbnailPrompt = thumbnailPrompt.substring(0, 950).trim();
+                  console.warn(
+                    `⚠️ Truncated lesson thumbnail prompt to ${thumbnailPrompt.length} characters`
+                  );
+                }
+
+                const imageResult = await openAIService.generateImage(
+                  thumbnailPrompt,
+                  {
+                    size: '1024x1024',
+                    quality: 'standard',
+                    uploadToS3: true,
+                    folder: 'ai-thumbnails/lessons',
+                  }
+                );
+
+                if (imageResult?.success) {
+                  const imageUrl =
+                    imageResult.data?.url ||
+                    imageResult.url ||
+                    imageResult.data?.imageUrl ||
+                    imageResult.imageUrl;
+                  if (imageUrl) {
+                    lessonThumbnail = imageUrl;
+                    console.log(
+                      `✅ Generated lesson thumbnail: ${lessonThumbnail}`
+                    );
+                  }
+                }
+              } catch (thumbError) {
+                console.warn(
+                  `⚠️ Failed to generate lesson thumbnail:`,
+                  thumbError
+                );
+                // Continue without thumbnail
+              }
+            }
+
             const lessonPayload = {
               title: lessonTitle,
               description: lessonDescription,
@@ -1104,6 +1305,27 @@ ${JSON.stringify(userPayload, null, 2)}`;
           : 0;
       let currentProgress = contentStartProgress;
 
+      // Helper function to safely convert blueprint fields to strings
+      const safeBlueprintString = value => {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') {
+          if (Array.isArray(value)) {
+            return value
+              .map(item =>
+                typeof item === 'string' ? item : JSON.stringify(item)
+              )
+              .join(', ');
+          }
+          if (value.text) return String(value.text);
+          if (value.content) return String(value.content);
+          if (value.description) return String(value.description);
+          if (value.value) return String(value.value);
+          return JSON.stringify(value).replace(/^"|"$/g, '');
+        }
+        return String(value);
+      };
+
       // Course-level context for AI
       const aiCourseContext = {
         title: courseTitle,
@@ -1113,14 +1335,28 @@ ${JSON.stringify(userPayload, null, 2)}`;
         targetAudience: courseData.targetAudience,
         learningOutcomes: courseData.learningOutcomes,
         blueprint: {
-          coursePurpose: courseData.blueprintCoursePurpose,
-          learnerProfile: courseData.blueprintLearnerProfile,
-          learningConstraints: courseData.blueprintLearningConstraints,
-          complianceRequirements: courseData.blueprintComplianceRequirements,
-          priorKnowledge: courseData.blueprintPriorKnowledge,
-          courseStructure: courseData.blueprintCourseStructure,
-          successMeasurement: courseData.blueprintSuccessMeasurement,
-          requiredResources: courseData.blueprintRequiredResources,
+          coursePurpose: safeBlueprintString(courseData.blueprintCoursePurpose),
+          learnerProfile: safeBlueprintString(
+            courseData.blueprintLearnerProfile
+          ),
+          learningConstraints: safeBlueprintString(
+            courseData.blueprintLearningConstraints
+          ),
+          complianceRequirements: safeBlueprintString(
+            courseData.blueprintComplianceRequirements
+          ),
+          priorKnowledge: safeBlueprintString(
+            courseData.blueprintPriorKnowledge
+          ),
+          courseStructure: safeBlueprintString(
+            courseData.blueprintCourseStructure
+          ),
+          successMeasurement: safeBlueprintString(
+            courseData.blueprintSuccessMeasurement
+          ),
+          requiredResources: safeBlueprintString(
+            courseData.blueprintRequiredResources
+          ),
         },
       };
 
@@ -1134,7 +1370,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
         };
       } else if (generationMode === 'STANDARD') {
         generationOptions = {
-          useStructuredLessonPlan: true,
+          useBlueprintStructure: true, // Use 15-section blueprint structure
           mode: 'standard',
           includeAssessments: true,
           includeSummary: true,
@@ -1142,17 +1378,20 @@ ${JSON.stringify(userPayload, null, 2)}`;
         };
       } else if (generationMode === 'COMPLETE') {
         generationOptions = {
-          useContentLibrary: true,
+          useBlueprintStructure: true, // Use 15-section blueprint structure
           mode: 'complete',
         };
       } else if (generationMode === 'PREMIUM') {
         generationOptions = {
-          useStructuredLessonPlan: true,
+          useBlueprintStructure: true, // Use 15-section blueprint structure
           mode: 'premium',
           includeImages: true,
         };
       } else {
-        generationOptions = { useContentLibrary: true };
+        generationOptions = {
+          useBlueprintStructure: true, // Default to blueprint structure
+          useContentLibrary: false, // Don't use content library by default
+        };
       }
 
       let firstLessonBlocks = null;
@@ -2360,28 +2599,13 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                       assessments) before building content.
                                     </p>
 
-                                    <div className="flex items-center justify-between mt-2 mb-2">
+                                    <div className="mt-2 mb-2">
                                       <span className="text-xs text-gray-500">
                                         Architect inputs 1.1–1.8 (purpose,
-                                        persona, constraints, etc.)
+                                        persona, constraints, etc.) - Will be
+                                        automatically enhanced when generating
+                                        blueprint
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={handleEnhanceBlueprintInputs}
-                                        disabled={isEnhancingPrompt}
-                                        title="Enhance blueprint inputs"
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                                          isEnhancingPrompt
-                                            ? 'border-purple-300 text-purple-400 bg-purple-50 cursor-not-allowed'
-                                            : 'border-purple-500 text-purple-600 bg-purple-50 hover:bg-purple-100'
-                                        }`}
-                                      >
-                                        {isEnhancingPrompt ? (
-                                          <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                          <Sparkles className="w-3 h-3" />
-                                        )}
-                                      </button>
                                     </div>
 
                                     {/* Architect inputs 1.1–1.8 */}
@@ -2886,25 +3110,6 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                             <label className="block text-sm font-medium text-gray-700">
                                               AI Image Prompt
                                             </label>
-                                            <Button
-                                              type="button"
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={handleEnhancePrompt}
-                                              disabled={
-                                                isEnhancingPrompt ||
-                                                !aiImagePrompt?.trim()
-                                              }
-                                              title="Enhance AI image prompt"
-                                              className="h-7 text-xs flex items-center gap-1 hover:bg-purple-50 hover:border-purple-300"
-                                            >
-                                              {isEnhancingPrompt ? (
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                              ) : (
-                                                <Wand2 className="w-3 h-3" />
-                                              )}
-                                              Enhance
-                                            </Button>
                                           </div>
                                           <textarea
                                             value={aiImagePrompt}

@@ -29,6 +29,7 @@ import {
   X,
   AlertTriangle,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import AIContentGeneratorDialog from '@lessonbuilder/components/ai/AIContentGeneratorDialog';
 import { contentBlockAIService } from '@lessonbuilder/services/contentBlockAIService';
@@ -185,6 +186,7 @@ function LessonBuilder() {
   // AI Generation state
   const [showAIGeneratorDialog, setShowAIGeneratorDialog] = useState(false);
   const [currentAIBlockType, setCurrentAIBlockType] = useState(null);
+  const [blockToReplace, setBlockToReplace] = useState(null); // Track block being replaced
 
   const listComponentRef = React.useRef();
   const statementComponentRef = React.useRef();
@@ -398,8 +400,8 @@ function LessonBuilder() {
     }
 
     // Close the Content Library sidebar after block is selected
+    // NOTE: Don't reset insertionPosition here - let each component reset it after using it
     setShowContentLibrarySidebar(false);
-    setInsertionPosition(null);
 
     // Go directly to manual creation since we removed the dialog
     handleManualCreation(blockType);
@@ -447,6 +449,7 @@ function LessonBuilder() {
   // Handle AI creation
   const handleAICreation = blockType => {
     setCurrentAIBlockType(blockType);
+    setBlockToReplace(null); // Clear any block to replace when creating new
     setShowAIGeneratorDialog(true);
   };
 
@@ -504,8 +507,89 @@ function LessonBuilder() {
         currentAIBlockType.id
       );
 
-      // Add the block to content
-      if (insertionPosition !== null) {
+      // Calculate order for new block
+      const blocksToUse =
+        lessonContent?.data?.content && lessonContent.data.content.length > 0
+          ? lessonContent.data.content
+          : contentBlocks;
+
+      let calculatedOrder;
+      if (blockToReplace) {
+        // Replacing existing block - preserve its order
+        calculatedOrder = blockToReplace.order;
+        newBlock.order = calculatedOrder;
+        newBlock.id = blockToReplace.id;
+        newBlock.block_id = blockToReplace.block_id || blockToReplace.id;
+      } else if (insertionPosition !== null) {
+        // Inserting at specific position
+        if (blocksToUse.length === 0) {
+          calculatedOrder = 1;
+        } else if (insertionPosition === 0) {
+          const firstBlock = blocksToUse[0];
+          const firstOrder =
+            firstBlock?.order !== undefined && firstBlock.order !== null
+              ? firstBlock.order
+              : 1;
+          calculatedOrder = Math.max(0, firstOrder - 0.5);
+        } else if (insertionPosition >= blocksToUse.length) {
+          const lastBlock = blocksToUse[blocksToUse.length - 1];
+          const lastOrder =
+            lastBlock?.order !== undefined && lastBlock.order !== null
+              ? lastBlock.order
+              : blocksToUse.length;
+          calculatedOrder = lastOrder + 1;
+        } else {
+          const prevBlock = blocksToUse[insertionPosition - 1];
+          const nextBlock = blocksToUse[insertionPosition];
+          const prevOrder =
+            prevBlock?.order !== undefined && prevBlock.order !== null
+              ? prevBlock.order
+              : insertionPosition;
+          const nextOrder =
+            nextBlock?.order !== undefined && nextBlock.order !== null
+              ? nextBlock.order
+              : insertionPosition + 1;
+          calculatedOrder = (prevOrder + nextOrder) / 2;
+        }
+        newBlock.order = calculatedOrder;
+      } else {
+        // Adding at the end
+        if (blocksToUse.length === 0) {
+          calculatedOrder = 1;
+        } else {
+          const lastBlock = blocksToUse[blocksToUse.length - 1];
+          const lastOrder =
+            lastBlock?.order !== undefined && lastBlock.order !== null
+              ? lastBlock.order
+              : blocksToUse.length;
+          calculatedOrder = lastOrder + 1;
+        }
+        newBlock.order = calculatedOrder;
+      }
+
+      // Replace existing block or add new one
+      if (blockToReplace) {
+        // Replace the existing block
+        setContentBlocks(prev =>
+          prev.map(block => (block.id === blockToReplace.id ? newBlock : block))
+        );
+
+        if (lessonContent?.data?.content) {
+          setLessonContent(prev => ({
+            ...prev,
+            data: {
+              ...prev.data,
+              content: prev.data.content.map(block =>
+                (block.block_id || block.id) ===
+                (blockToReplace.block_id || blockToReplace.id)
+                  ? { ...newBlock, block_id: block.block_id || block.id }
+                  : block
+              ),
+            },
+          }));
+        }
+        setBlockToReplace(null);
+      } else if (insertionPosition !== null) {
         const updatedBlocks = [...contentBlocks];
         updatedBlocks.splice(insertionPosition, 0, newBlock);
         setContentBlocks(updatedBlocks);
@@ -1298,8 +1382,23 @@ function LessonBuilder() {
                             ? lessonContent.data.content
                             : contentBlocks;
 
+                        // Sort blocks by order to preserve 10-section structure
+                        const sortedBlocks = [...blocksToRender].sort(
+                          (a, b) => {
+                            const orderA =
+                              a.order !== undefined && a.order !== null
+                                ? a.order
+                                : 999999;
+                            const orderB =
+                              b.order !== undefined && b.order !== null
+                                ? b.order
+                                : 999999;
+                            return orderA - orderB;
+                          }
+                        );
+
                         // Filter out empty blocks that create white blocks
-                        const filteredBlocks = blocksToRender.filter(block => {
+                        const filteredBlocks = sortedBlocks.filter(block => {
                           // Skip empty text blocks
                           if (block.type === 'text') {
                             const htmlCss = (block.html_css || '').trim();
@@ -1421,25 +1520,51 @@ function LessonBuilder() {
                                   >
                                     <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                       {!block.isEditing && (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                          onClick={() => {
-                                            // Always use handleEditBlock for proper type detection
-                                            if (
-                                              block.type === 'image' &&
-                                              block.layout
-                                            ) {
-                                              toggleImageBlockEditing(block.id);
-                                            } else {
-                                              handleEditBlock(block.id);
-                                            }
-                                          }}
-                                          title={`Edit ${block.type}`}
-                                        >
-                                          <Pencil className="h-4 w-4" />
-                                        </Button>
+                                        <>
+                                          {/* AI Generate Button for Individual Block */}
+                                          {contentBlockTypes.find(
+                                            bt => bt.id === block.type
+                                          )?.supportsAI && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-purple-100"
+                                              onClick={() => {
+                                                setCurrentAIBlockType(
+                                                  contentBlockTypes.find(
+                                                    bt => bt.id === block.type
+                                                  )
+                                                );
+                                                setBlockToReplace(block); // Set block to replace
+                                                setShowAIGeneratorDialog(true);
+                                              }}
+                                              title={`Regenerate ${block.type} with AI`}
+                                            >
+                                              <Sparkles className="h-4 w-4 text-purple-600" />
+                                            </Button>
+                                          )}
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                            onClick={() => {
+                                              // Always use handleEditBlock for proper type detection
+                                              if (
+                                                block.type === 'image' &&
+                                                block.layout
+                                              ) {
+                                                toggleImageBlockEditing(
+                                                  block.id
+                                                );
+                                              } else {
+                                                handleEditBlock(block.id);
+                                              }
+                                            }}
+                                            title={`Edit ${block.type}`}
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        </>
                                       )}
                                       <Button
                                         variant="ghost"
@@ -2291,14 +2416,18 @@ function LessonBuilder() {
                                               hasDefaultContent:
                                                 !!block.defaultContent
                                                   ?.imageUrl,
+                                              hasHtmlCss: !!block.html_css,
                                               title: block.title,
                                               alignment: block.alignment,
                                               layout: block.layout,
                                             }
                                           );
+                                          // Render if has imageUrl OR html_css (for AI-generated images)
                                           return (
                                             block.imageUrl ||
-                                            block.defaultContent?.imageUrl
+                                            block.defaultContent?.imageUrl ||
+                                            (block.html_css &&
+                                              block.html_css.trim())
                                           );
                                         })() && (
                                           <>
@@ -2541,6 +2670,22 @@ function LessonBuilder() {
                                             ) : (
                                               /* Display Mode */
                                               (() => {
+                                                // If html_css exists (AI-generated), use it directly
+                                                if (
+                                                  block.html_css &&
+                                                  block.html_css.trim()
+                                                ) {
+                                                  return (
+                                                    <div
+                                                      className="max-w-none"
+                                                      dangerouslySetInnerHTML={{
+                                                        __html: block.html_css,
+                                                      }}
+                                                    />
+                                                  );
+                                                }
+
+                                                // Otherwise, use the standard rendering logic
                                                 const rawCaptionHtml =
                                                   (block.text &&
                                                     block.text.toString()) ||

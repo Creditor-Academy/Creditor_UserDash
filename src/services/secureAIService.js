@@ -725,6 +725,18 @@ class SecureAIService {
           blueprintInput?.targetAudience || blueprintInput?.audience || '',
         priorKnowledge: blueprintInput?.priorKnowledge || null,
         rawInput: blueprintInput || null,
+        // Pass extended inputs
+        coursePurpose: blueprintInput?.coursePurpose,
+        targetLearnerProfile: blueprintInput?.targetLearnerProfile,
+        learningConstraints: blueprintInput?.learningConstraints,
+        complianceRequirements: blueprintInput?.complianceRequirements,
+        priorKnowledgeExtra: blueprintInput?.priorKnowledgeExtra,
+        courseStructure: blueprintInput?.courseStructure,
+        successMeasurement: blueprintInput?.successMeasurement,
+        requiredResources: blueprintInput?.requiredResources,
+        targetStructure: blueprintInput?.targetStructure,
+        moduleCount: blueprintInput?.moduleCount,
+        lessonsPerModule: blueprintInput?.lessonsPerModule,
       };
 
       const response = await this.makeRequestWithRetry(
