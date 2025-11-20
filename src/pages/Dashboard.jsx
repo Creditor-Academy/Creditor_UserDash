@@ -1034,6 +1034,86 @@ export function Dashboard() {
                 <DashboardAnnouncements />
               </div> */}
 
+              {/* Important Updates Section */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-5 w-5 text-emerald-600" />
+                    <h3 className="text-lg font-bold text-gray-800">
+                      Important Updates
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Stay informed with the latest from Creditor Academy. For
+                    prompt resolution of any concerns, connect with our
+                    dedicated leads below.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {/* Athena LMS and Login Issues */}
+                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-indigo-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <MonitorPlay className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-base font-semibold text-gray-900 mb-1">
+                          Athena LMS and Login Issues
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          If you're experiencing challenges with Athena LMS
+                          access or login, reach out to our Platform Lead for
+                          expert assistance.
+                        </p>
+                        <Button
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto"
+                          onClick={() =>
+                            window.open(
+                              'https://calendly.com/hashmi-creditoracademy',
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }
+                        >
+                          Schedule Now
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payments, Credits, and Debits Issues */}
+                  <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-emerald-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-base font-semibold text-gray-900 mb-1">
+                          Payments, Credits, and Debits Issues
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          For any queries or issues related to payments,
+                          credits, or debits, consult our Payment Lead to ensure
+                          smooth and accurate handling.
+                        </p>
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto"
+                          onClick={() =>
+                            window.open(
+                              'https://calendly.com/mausam-creditoracademy',
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }
+                        >
+                          Schedule Now
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Calendar */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -1084,10 +1164,14 @@ export function Dashboard() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">
-                      Services
+                      Creditor Academy Services
                     </h2>
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      Use credits to book consultations and website packs
+                    <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+                      At Creditor Academy, we offer a comprehensive suite of
+                      professional services designed to empower businesses and
+                      individuals with tailored solutions. Explore our key
+                      offerings below and schedule a consultation to get
+                      started.
                     </p>
                   </div>
                 </div>
@@ -1131,54 +1215,7 @@ export function Dashboard() {
                 >
                   {/* Panel: Services */}
                   <div className="w-1/2 pr-0 md:pr-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Consultation */}
-                      <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-emerald-200">
-                        {/* decorative glows */}
-                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-emerald-300/30 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-emerald-200/30 blur-3xl" />
-                        {/* illustration */}
-                        <img
-                          src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/consult.png"
-                          alt="consultation"
-                          loading="lazy"
-                          className="pointer-events-none absolute -right-3 bottom-0 w-44 opacity-35 mix-blend-multiply transition-opacity duration-300 group-hover:opacity-50"
-                        />
-                        <div className="relative z-10 flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shadow text-white ring-4 ring-white/60">
-                            <Video size={20} />
-                          </div>
-                          <div className="flex-1 min-w-0 pr-24 sm:pr-28 md:pr-40">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                                Live guidance
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mt-2">
-                              Consultation
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Book a live session using your credits and get
-                              expert guidance.
-                            </p>
-                            <div className="mt-4 flex items-center gap-2">
-                              <Button
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                onClick={() => setShowConsultBooking(true)}
-                              >
-                                Book session
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => setShowConsultInfo(true)}
-                              >
-                                Learn more
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {/* Website Services */}
                       <div className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-blue-200">
                         {/* decorative glows */}
@@ -1191,40 +1228,96 @@ export function Dashboard() {
                           loading="lazy"
                           className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
                         />
-                        <div className="relative z-10 flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow text-white ring-4 ring-white/60">
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
                             <MonitorPlay size={20} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-200">
-                                Digital packs
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mt-2">
-                              Website Services
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Launch or upgrade your site.
-                              <br className="hidden sm:inline" /> Pay with
-                              credits for eligible packs.
-                            </p>
-                            <div className="mt-4 flex items-center gap-2">
-                              <Button
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={() => setShowWebsiteModal(true)}
-                              >
-                                Get started
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                                onClick={() => setShowWebsiteDetails(true)}
-                              >
-                                Learn more
-                              </Button>
-                            </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Website Services
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                            Elevate your online presence with our expert website
+                            design, development, and maintenance solutions.
+                            Whether you're launching a new site or optimizing an
+                            existing one, we deliver user-friendly, responsive,
+                            and high-performing websites that drive results.
+                          </p>
+                          <Button
+                            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                            onClick={() => setShowConsultBooking(true)}
+                          >
+                            Schedule Now
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Digital Marketing and SEO Services */}
+                      <div className="group relative overflow-hidden rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-purple-200">
+                        {/* decorative glows */}
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-purple-300/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-purple-200/30 blur-3xl" />
+                        {/* illustration */}
+                        <img
+                          src="/Creditor_academy.png"
+                          alt="digital marketing services"
+                          loading="lazy"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                        />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
+                            <Target size={20} />
                           </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Digital Marketing and SEO Services
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                            Boost your visibility and growth with our strategic
+                            digital marketing and SEO expertise. From targeted
+                            campaigns and content creation to advanced search
+                            engine optimization, we help you attract, engage,
+                            and convert your audience effectively.
+                          </p>
+                          <Button
+                            className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+                            onClick={() => setShowConsultBooking(true)}
+                          >
+                            Schedule Now
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Recruitment and Staffing Services */}
+                      <div className="group relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-orange-200">
+                        {/* decorative glows */}
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-orange-300/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-orange-200/30 blur-3xl" />
+                        {/* illustration */}
+                        <img
+                          src="/Creditor_academy.png"
+                          alt="recruitment services"
+                          loading="lazy"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                        />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="w-12 h-12 rounded-xl bg-orange-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
+                            <GraduationCap size={20} />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Recruitment and Staffing Services (Including
+                            Payroll)
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                            Streamline your talent acquisition with our
+                            end-to-end recruitment, staffing, and payroll
+                            management services. We connect you with top-tier
+                            professionals while handling compliance, onboarding,
+                            and seamless payroll processing for hassle-free
+                            operations.
+                          </p>
+                          <Button
+                            className="bg-orange-600 hover:bg-orange-700 text-white w-full"
+                            onClick={() => setShowConsultBooking(true)}
+                          >
+                            Schedule Now
+                          </Button>
                         </div>
                       </div>
                     </div>
