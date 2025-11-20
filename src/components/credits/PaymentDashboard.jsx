@@ -223,12 +223,13 @@ const PaymentDashboard = () => {
           u.membershipLabel === 'Expiring Soon') ||
         (filterStatus === 'expired' && u.membershipLabel === 'Expired');
       let creditsOk = true;
-      if (filterCredits === 'zero') creditsOk = (Number(u.credits) || 0) === 0;
-      else if (filterCredits === 'low')
-        creditsOk =
-          (Number(u.credits) || 0) > 0 && (Number(u.credits) || 0) < 100;
-      else if (filterCredits === 'high')
-        creditsOk = (Number(u.credits) || 0) >= 1000;
+      const v = Number(u.credits) || 0;
+      if (filterCredits === 'zero') creditsOk = v === 0;
+      else if (filterCredits === 'low') creditsOk = v > 0 && v < 100;
+      else if (filterCredits === 'high') creditsOk = v >= 1000;
+      else if (filterCredits === 'red') creditsOk = v < 500;
+      else if (filterCredits === 'yellow') creditsOk = v >= 500 && v < 1000;
+      else if (filterCredits === 'green') creditsOk = v >= 1000;
       return matches && statusOk && creditsOk;
     });
     const weight = { Active: 0, 'Expiring Soon': 1, Expired: 2 };
@@ -280,6 +281,36 @@ const PaymentDashboard = () => {
       </div>
 
       <div className="rounded-2xl border bg-white shadow-sm">
+        <div className="border-b px-4 py-3">
+          <div className="flex items-center gap-3">
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search users by name, email, or ID"
+              className="flex-1 min-w-[220px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+            />
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="text-sm rounded-md border px-2 py-2 bg-white"
+            >
+              <option value="all">All Memberships</option>
+              <option value="active">Active</option>
+              <option value="expiring">Expiring Soon</option>
+              <option value="expired">Expired</option>
+            </select>
+            <select
+              value={filterCredits}
+              onChange={e => setFilterCredits(e.target.value)}
+              className="text-sm rounded-md border px-2 py-2 bg-white"
+            >
+              <option value="all">All Credits</option>
+              <option value="red">Red (&lt; 500)</option>
+              <option value="yellow">Yellow (&gt; 500 & ≤ 999)</option>
+              <option value="green">Green (≥ 1000)</option>
+            </select>
+          </div>
+        </div>
         <div className="max-h-[70vh] overflow-y-auto p-4">
           {loading && (
             <div className="p-6 text-center text-gray-600">Loading…</div>
