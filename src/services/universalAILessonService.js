@@ -2793,15 +2793,59 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       // Handle cases where JSON might be wrapped in markdown code blocks or have extra text
       let jsonString = quizText.trim();
 
-      // Remove markdown code blocks if present
-      jsonString = jsonString.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-      jsonString = jsonString.replace(/```\s*/g, '');
+      // Remove markdown code blocks if present (handle multiple formats)
+      jsonString = jsonString
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .replace(/^```/gm, '')
+        .replace(/```$/gm, '');
 
-      // Try to extract JSON array
-      const jsonArrayMatch = jsonString.match(/\[[\s\S]*\]/);
+      // Remove any leading/trailing text that's not JSON
+      // Try to extract JSON array - be more aggressive
+      let jsonArrayMatch = jsonString.match(/\[[\s\S]*\]/);
+
+      // If no array found, try to find JSON object
+      if (!jsonArrayMatch) {
+        jsonArrayMatch = jsonString.match(/\{[\s\S]*\}/);
+      }
+
+      // If still not found, try parsing the entire string
+      if (!jsonArrayMatch) {
+        try {
+          const directParse = JSON.parse(jsonString);
+          if (Array.isArray(directParse)) {
+            jsonArrayMatch = [jsonString];
+          }
+        } catch (e) {
+          // Continue with regex matching
+        }
+      }
+
       if (jsonArrayMatch) {
-        const parsed = JSON.parse(jsonArrayMatch[0]);
-        if (Array.isArray(parsed)) {
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonArrayMatch[0]);
+        } catch (parseError) {
+          // Try to fix common JSON issues
+          let fixedJson = jsonArrayMatch[0]
+            // Fix trailing commas
+            .replace(/,\s*\]/g, ']')
+            .replace(/,\s*\}/g, '}')
+            // Fix single quotes to double quotes
+            .replace(/'/g, '"')
+            // Fix unquoted keys
+            .replace(/(\w+):/g, '"$1":');
+
+          try {
+            parsed = JSON.parse(fixedJson);
+          } catch (e2) {
+            console.error('Failed to parse quiz JSON after fixes:', e2);
+            // Continue to text parsing fallback
+            parsed = null;
+          }
+        }
+
+        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           // Format: [{question, options, correctAnswer, explanation}, ...]
           return parsed
             .map(item => {
@@ -2870,6 +2914,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         }
       }
     } catch (e) {
+      console.error('Error parsing quiz questions:', e);
       // Not JSON, continue with text parsing
     }
 
@@ -5164,16 +5209,74 @@ Return ONLY the JSON array, nothing else.`;
         interactiveBlock.html_css = this.convertBlockToHTML(interactiveBlock);
         blocks.push(interactiveBlock);
       } else {
-        // Fallback to text block
-        const parsedPractice = this.parseMarkdownToHTML(practiceText);
-        blocks.push({
-          id: `practice-${Date.now()}`,
-          type: 'text',
-          textType: 'paragraph',
-          content: parsedPractice,
-          order: blockOrder++,
-          isAIGenerated: true,
-        });
+        // Check if the text is raw JSON - if so, show error message instead
+        const trimmedText = practiceText.trim();
+        const looksLikeJson =
+          trimmedText.startsWith('[') || trimmedText.startsWith('{');
+
+        if (looksLikeJson) {
+          // Try one more time with more aggressive parsing
+          try {
+            const lastAttempt = this.parseQuizQuestions(practiceText);
+            if (lastAttempt.length > 0) {
+              const interactiveBlock = {
+                id: `practice-quiz-${Date.now()}`,
+                type: 'interactive',
+                content: JSON.stringify({
+                  questions: lastAttempt,
+                  type: 'quiz',
+                  title: `Practice: ${lessonTitle}`,
+                }),
+                order: blockOrder++,
+                isAIGenerated: true,
+                metadata: {
+                  variant: 'quiz',
+                  questionCount: lastAttempt.length,
+                },
+              };
+              interactiveBlock.html_css =
+                this.convertBlockToHTML(interactiveBlock);
+              blocks.push(interactiveBlock);
+            } else {
+              // Show user-friendly error message instead of raw JSON
+              blocks.push({
+                id: `practice-error-${Date.now()}`,
+                type: 'text',
+                textType: 'paragraph',
+                content: `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                  <p class="text-yellow-800 font-medium">Practice Application</p>
+                  <p class="text-yellow-700 text-sm mt-2">Unable to parse practice questions. Please try regenerating this section or manually add practice questions.</p>
+                </div>`,
+                order: blockOrder++,
+                isAIGenerated: true,
+              });
+            }
+          } catch (e) {
+            // Show user-friendly error message
+            blocks.push({
+              id: `practice-error-${Date.now()}`,
+              type: 'text',
+              textType: 'paragraph',
+              content: `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <p class="text-yellow-800 font-medium">Practice Application</p>
+                <p class="text-yellow-700 text-sm mt-2">Unable to parse practice questions. Please try regenerating this section or manually add practice questions.</p>
+              </div>`,
+              order: blockOrder++,
+              isAIGenerated: true,
+            });
+          }
+        } else {
+          // Fallback to text block (not JSON)
+          const parsedPractice = this.parseMarkdownToHTML(practiceText);
+          blocks.push({
+            id: `practice-${Date.now()}`,
+            type: 'text',
+            textType: 'paragraph',
+            content: parsedPractice,
+            order: blockOrder++,
+            isAIGenerated: true,
+          });
+        }
       }
 
       // Add supporting blocks
