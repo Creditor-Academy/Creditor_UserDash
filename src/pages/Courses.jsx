@@ -48,7 +48,6 @@ export function Courses() {
   const [accessibleCourseIds, setAccessibleCourseIds] = useState(new Set()); // Holds all accessible course IDs (from full purchase or module purchase)
   const [catalogs, setCatalogs] = useState([]);
   const [catalogCoursesMap, setCatalogCoursesMap] = useState({});
-  const [expandedCatalogId, setExpandedCatalogId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -183,33 +182,25 @@ export function Courses() {
     return catalogGroups;
   };
 
-  // Auto-expand first catalog when data is loaded
-  useEffect(() => {
-    if (loading || catalogs.length === 0) return;
-
-    const catalogGroups = getCoursesByCatalog();
-    const firstCatalogId = Object.keys(catalogGroups)[0];
-
-    if (firstCatalogId && expandedCatalogId === null) {
-      setExpandedCatalogId(firstCatalogId);
-    }
-  }, [loading, catalogs, catalogCoursesMap, accessibleCourseIds]);
-
   // Shimmer skeleton component for loading state
   const CourseCardSkeleton = () => (
-    <Card className="overflow-hidden h-full flex flex-col">
-      <div className="aspect-video relative overflow-hidden bg-gray-200 animate-shimmer"></div>
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="h-6 bg-gray-200 rounded-md mb-2 animate-shimmer"></div>
-        <div className="h-5 bg-gray-200 rounded-md w-3/4 mb-2 animate-shimmer"></div>
-      </CardHeader>
-      <CardContent className="flex-1">
-        <div className="h-4 bg-gray-200 rounded-md w-24 animate-shimmer"></div>
-      </CardContent>
-      <CardFooter className="pt-2 flex-shrink-0">
+    <div className="group flex flex-col border border-gray-200 rounded-2xl bg-white shadow-md overflow-hidden h-full">
+      <div className="relative h-48 overflow-hidden bg-gray-200 animate-shimmer"></div>
+      <div className="p-6 flex flex-col flex-1">
+        <div className="flex-1">
+          <div className="h-6 bg-gray-200 rounded-md mb-3 w-3/4 animate-shimmer"></div>
+          <div className="h-4 bg-gray-200 rounded-md w-full mb-2 animate-shimmer"></div>
+          <div className="h-4 bg-gray-200 rounded-md w-full mb-2 animate-shimmer"></div>
+          <div className="h-4 bg-gray-200 rounded-md w-5/6 animate-shimmer"></div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="h-4 bg-gray-200 rounded-md w-1/2 animate-shimmer"></div>
+        </div>
+      </div>
+      <div className="p-6 pt-0">
         <div className="h-10 bg-gray-200 rounded-md w-full animate-shimmer"></div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 
   if (loading) {
@@ -217,7 +208,7 @@ export function Courses() {
       <div className="flex flex-col min-h-screen">
         <main className="flex-1">
           <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <h1 className="text-2xl sm:text-3xl font-bold">My Learning</h1>
               <div className="relative flex-1 sm:flex-none sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -229,13 +220,9 @@ export function Courses() {
                 />
               </div>
             </div>
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(3)].map((_, index) => (
-                <Card key={index} className="overflow-hidden">
-                  <div className="p-6 bg-gray-100 animate-shimmer">
-                    <div className="h-7 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </Card>
+                <CourseCardSkeleton key={index} />
               ))}
             </div>
           </div>
@@ -282,9 +269,9 @@ export function Courses() {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {catalogEntries.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="col-span-full text-center py-12">
                 <h3 className="text-lg font-medium">
                   Your learning journey begins here
                 </h3>
@@ -297,147 +284,62 @@ export function Courses() {
               </div>
             ) : (
               catalogEntries.map(({ catalog, courses: catalogCourses }) => {
-                const isExpanded = expandedCatalogId === catalog.id;
                 const accessibleCount = catalogCourses.filter(
                   c => c.isAccessible
                 ).length;
                 const totalCount = catalogCourses.length;
 
                 return (
-                  <div key={catalog.id}>
-                    <Card className="overflow-hidden border border-gray-200 shadow-sm">
-                      <div
-                        className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-colors"
-                        onClick={() =>
-                          setExpandedCatalogId(isExpanded ? null : catalog.id)
+                  <Link
+                    key={catalog.id}
+                    to={`/dashboard/catalog/${catalog.id}`}
+                    className="group flex flex-col border border-gray-200 rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden h-full hover:border-blue-200 hover:scale-[1.02]"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={
+                          catalog.thumbnail ||
+                          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
                         }
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
-                              <ShoppingBag size={24} />
-                            </div>
-                            <div>
-                              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                                {catalog.name || 'Catalog'}
-                              </h2>
-                              <p className="text-sm text-gray-600 mt-1 line-clamp-1">
-                                {catalog.description || ''}
-                              </p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-blue-100 text-blue-700"
-                                >
-                                  {accessibleCount} of {totalCount} courses
-                                  accessible
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isExpanded ? (
-                              <ChevronDown className="h-5 w-5 text-gray-600" />
-                            ) : (
-                              <ChevronRight className="h-5 w-5 text-gray-600" />
-                            )}
-                          </div>
+                        alt={catalog.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    </div>
+                    <div className="p-6 flex flex-col flex-1">
+                      <div className="flex-1">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                          {catalog.name}
+                        </h2>
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+                          {catalog.description}
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span className="flex items-center gap-1.5">
+                            <BookOpen
+                              size={14}
+                              className="text-indigo-500 shrink-0"
+                            />
+                            {totalCount}{' '}
+                            {totalCount === 1 ? 'course' : 'courses'}
+                          </span>
+                          <span className="flex items-center gap-1.5 font-medium text-green-600">
+                            <Layers
+                              size={14}
+                              className="text-green-500 shrink-0"
+                            />
+                            {accessibleCount} accessible
+                          </span>
                         </div>
                       </div>
-
-                      {isExpanded && (
-                        <div className="p-4 sm:p-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            {catalogCourses.map(course => {
-                              const courseId = getCanonicalCourseId(course);
-                              return (
-                                <div key={courseId} className="relative">
-                                  <Card
-                                    className={`overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col ${
-                                      course.isLocked
-                                        ? 'opacity-60 border-gray-300'
-                                        : 'border-gray-200'
-                                    }`}
-                                  >
-                                    <div className="aspect-video relative overflow-hidden">
-                                      <img
-                                        src={
-                                          course.image ||
-                                          course.thumbnail ||
-                                          'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
-                                        }
-                                        alt={course.title}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      {course.isLocked && (
-                                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                          <div className="text-white text-center">
-                                            <Lock className="w-8 h-8 mx-auto mb-2" />
-                                            <p className="text-sm font-medium">
-                                              Locked
-                                            </p>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <CardHeader className="pb-3 flex-shrink-0">
-                                      <CardTitle className="text-base sm:text-lg line-clamp-2">
-                                        {course.title}
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 flex-1">
-                                      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-1">
-                                          <BookOpen
-                                            size={12}
-                                            className="sm:w-3.5 sm:h-3.5"
-                                          />
-                                          <span>
-                                            {course.modulesCount ||
-                                              course._count?.modules ||
-                                              0}{' '}
-                                            modules
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </CardContent>
-                                    <CardFooter className="pt-2 flex-shrink-0">
-                                      {course.isLocked ? (
-                                        <Button
-                                          variant="outline"
-                                          className="w-full text-sm sm:text-base"
-                                          asChild
-                                        >
-                                          <Link
-                                            to={`/dashboard/catalog/${catalog.id}`}
-                                          >
-                                            <Lock size={16} className="mr-2" />
-                                            View in Catalog
-                                          </Link>
-                                        </Button>
-                                      ) : (
-                                        <Link
-                                          to={`/dashboard/courses/${courseId}/modules`}
-                                          className="w-full"
-                                        >
-                                          <Button
-                                            variant="default"
-                                            className="w-full text-sm sm:text-base"
-                                          >
-                                            Continue Learning
-                                          </Button>
-                                        </Link>
-                                      )}
-                                    </CardFooter>
-                                  </Card>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  </div>
+                    </div>
+                    <div className="p-6 pt-0">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        View Catalog
+                      </Button>
+                    </div>
+                  </Link>
                 );
               })
             )}
