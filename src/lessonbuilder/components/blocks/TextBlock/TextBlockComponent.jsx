@@ -211,25 +211,46 @@ const TextBlockComponent = ({
 
       // Properly detect and set the text type
       let detectedTextType = block.textType || 'paragraph';
+      const htmlContent = block.html_css || block.content || '';
 
-      // If textType is not set or unreliable, detect from HTML content
-      if (!block.textType || block.textType === 'heading') {
-        const htmlContent = block.html_css || block.content || '';
-
-        // Check for master heading first (has gradient background)
+      // ALWAYS check for master heading first, regardless of existing textType
+      // This is critical for AI-generated content where textType might not be set correctly
+      if (
+        htmlContent.includes('linear-gradient') ||
+        htmlContent.includes('bg-gradient-to-r') ||
+        htmlContent.includes('gradient')
+      ) {
+        // Check if it's a master heading (has gradient and heading structure)
         if (
-          htmlContent.includes('linear-gradient') &&
-          htmlContent.includes('<h1')
+          htmlContent.includes('<h1') ||
+          htmlContent.includes('text-3xl') ||
+          htmlContent.includes('text-4xl') ||
+          htmlContent.includes('font-extrabold')
         ) {
           detectedTextType = 'master_heading';
-        } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
-          detectedTextType = 'heading_paragraph';
-        } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
-          detectedTextType = 'subheading_paragraph';
-        } else if (htmlContent.includes('<h1')) {
-          detectedTextType = 'heading';
-        } else if (htmlContent.includes('<h2')) {
-          detectedTextType = 'subheading';
+        }
+      }
+
+      // If textType is not set or unreliable, detect from HTML content
+      if (
+        !block.textType ||
+        block.textType === 'heading' ||
+        block.textType === 'paragraph'
+      ) {
+        // Only do additional detection if we haven't already detected master_heading
+        if (detectedTextType !== 'master_heading') {
+          if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+            detectedTextType = 'heading_paragraph';
+          } else if (
+            htmlContent.includes('<h2') &&
+            htmlContent.includes('<p')
+          ) {
+            detectedTextType = 'subheading_paragraph';
+          } else if (htmlContent.includes('<h1')) {
+            detectedTextType = 'heading';
+          } else if (htmlContent.includes('<h2')) {
+            detectedTextType = 'subheading';
+          }
         }
       }
 
@@ -322,27 +343,46 @@ const TextBlockComponent = ({
               setEditorHtml('Master Heading');
             }
 
-            // Detect gradient from existing content
-            const gradientDiv = tempDiv.querySelector(
-              'div[style*="linear-gradient"]'
-            );
-            if (gradientDiv) {
-              const style = gradientDiv.getAttribute('style') || '';
-              // Try to match with our gradient options
-              const matchedGradient = gradientOptions.find(option =>
-                style.includes(
-                  option.gradient
-                    .replace('linear-gradient(', '')
-                    .replace(')', '')
-                )
-              );
-              if (matchedGradient) {
-                setMasterHeadingGradient(matchedGradient.id);
-              } else {
-                setMasterHeadingGradient('gradient1'); // Default fallback
-              }
+            // Detect gradient from existing content or block property
+            // First check if block has gradient property (most reliable)
+            if (block.gradient) {
+              setMasterHeadingGradient(block.gradient);
             } else {
-              setMasterHeadingGradient('gradient1'); // Default
+              // Fallback: detect from HTML content
+              const gradientDiv = tempDiv.querySelector(
+                'div[class*="bg-gradient-to-r"], div[style*="linear-gradient"], div[style*="gradient"]'
+              );
+              if (gradientDiv) {
+                const style = gradientDiv.getAttribute('style') || '';
+                const classes = gradientDiv.getAttribute('class') || '';
+
+                // Try to match with our gradient options by class name
+                const matchedGradient = gradientOptions.find(option => {
+                  const gradientClass = option.preview || '';
+                  return (
+                    classes.includes(gradientClass) ||
+                    style.includes(
+                      option.gradient
+                        .replace('linear-gradient(', '')
+                        .replace(')', '')
+                    )
+                  );
+                });
+
+                if (matchedGradient) {
+                  setMasterHeadingGradient(matchedGradient.id);
+                } else {
+                  // Try to match by gradient ID in class names
+                  const gradientIdMatch = classes.match(/gradient([1-6])/);
+                  if (gradientIdMatch) {
+                    setMasterHeadingGradient(`gradient${gradientIdMatch[1]}`);
+                  } else {
+                    setMasterHeadingGradient('gradient1'); // Default fallback
+                  }
+                }
+              } else {
+                setMasterHeadingGradient('gradient1'); // Default
+              }
             }
           } else {
             setEditorHtml(htmlContent || 'Master Heading');
@@ -450,15 +490,33 @@ const TextBlockComponent = ({
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
         let effectiveTextType = currentTextType || blockToUpdate.textType;
 
-        // Double-check for master heading if textType seems wrong
-        if (effectiveTextType === 'heading' && blockToUpdate.html_css) {
-          const htmlContent = blockToUpdate.html_css || '';
+        // ALWAYS double-check for master heading to prevent it from being saved as normal text
+        // This is critical for AI-generated content
+        const htmlContentCheck =
+          blockToUpdate.html_css || blockToUpdate.content || '';
+        if (
+          htmlContentCheck.includes('linear-gradient') ||
+          htmlContentCheck.includes('bg-gradient-to-r') ||
+          htmlContentCheck.includes('gradient')
+        ) {
+          // If it has gradient styling, it should be master_heading
           if (
-            htmlContent.includes('linear-gradient') &&
-            htmlContent.includes('<h1')
+            htmlContentCheck.includes('<h1') ||
+            htmlContentCheck.includes('text-3xl') ||
+            htmlContentCheck.includes('text-4xl') ||
+            htmlContentCheck.includes('font-extrabold') ||
+            blockToUpdate.gradient // Also check if gradient property exists
           ) {
             effectiveTextType = 'master_heading';
           }
+        }
+
+        // Also check if the original block had master_heading type
+        if (
+          blockToUpdate.textType === 'master_heading' ||
+          blockToUpdate.text_type === 'master_heading'
+        ) {
+          effectiveTextType = 'master_heading';
         }
 
         // Always use consistent HTML generation for all text types to avoid double-update issues
@@ -810,7 +868,22 @@ const TextBlockComponent = ({
             );
           }
 
-          updatedContent = `<div style="background: ${selectedGradient.gradient}; padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
+          // Use the proper master heading format with Tailwind classes matching the original structure
+          const gradientClassMap = {
+            gradient1:
+              'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500',
+            gradient2:
+              'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500',
+            gradient3: 'bg-gradient-to-r from-green-500 to-blue-500',
+            gradient4: 'bg-gradient-to-r from-orange-500 to-red-500',
+            gradient5: 'bg-gradient-to-r from-pink-500 to-purple-500',
+            gradient6: 'bg-gradient-to-r from-teal-500 to-cyan-500',
+          };
+          const gradientClass =
+            gradientClassMap[masterHeadingGradient] ||
+            gradientClassMap['gradient1'];
+
+          updatedContent = `<div class="rounded-xl p-6 text-white font-extrabold text-3xl md:text-4xl leading-tight tracking-tight text-center ${gradientClass}">${styledContent}</div>`;
         } else {
           // For paragraph and other single content blocks - preserve alignment
           let styledContent = editorHtml || 'Enter your content here...';
@@ -892,6 +965,11 @@ const TextBlockComponent = ({
                         : block.subheadingBgColor,
                     updatedAt: new Date().toISOString(),
                     textType: effectiveTextType || block.textType,
+                    // Preserve gradient for master headings
+                    gradient:
+                      effectiveTextType === 'master_heading'
+                        ? masterHeadingGradient || block.gradient || 'gradient1'
+                        : block.gradient,
                   }
                 : block
             );
@@ -932,6 +1010,13 @@ const TextBlockComponent = ({
                           : block.subheadingBgColor,
                       updatedAt: new Date().toISOString(),
                       textType: effectiveTextType || block.textType,
+                      // Preserve gradient for master headings
+                      gradient:
+                        effectiveTextType === 'master_heading'
+                          ? masterHeadingGradient ||
+                            block.gradient ||
+                            'gradient1'
+                          : block.gradient,
                     }
                   : block
               ),

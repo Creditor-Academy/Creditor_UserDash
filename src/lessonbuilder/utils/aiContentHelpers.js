@@ -222,19 +222,100 @@ export function getCourseContext(lessonData, lessonContent) {
 }
 
 /**
+ * Auto-detect block type from content structure
+ */
+function detectBlockTypeFromContent(aiResponse, requestedBlockType) {
+  // If blockType is explicitly set and valid, use it
+  if (requestedBlockType && requestedBlockType !== 'text') {
+    return requestedBlockType;
+  }
+
+  const content = aiResponse.content || '';
+
+  // Check for table structure (JSON with headers and data)
+  if (typeof content === 'string') {
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object') {
+        // Check if it's a table structure
+        if (
+          parsed.headers &&
+          Array.isArray(parsed.headers) &&
+          parsed.data &&
+          Array.isArray(parsed.data)
+        ) {
+          return 'tables';
+        }
+        // Check if it's a list structure
+        if (parsed.items && Array.isArray(parsed.items)) {
+          return 'list';
+        }
+        // Check if it's a quote structure
+        if (parsed.quote || parsed.text || parsed.author) {
+          return 'quote';
+        }
+      }
+    } catch (e) {
+      // Not JSON, continue checking
+    }
+  } else if (content && typeof content === 'object') {
+    // Check if it's a table structure (object)
+    if (
+      content.headers &&
+      Array.isArray(content.headers) &&
+      content.data &&
+      Array.isArray(content.data)
+    ) {
+      return 'tables';
+    }
+    // Check if it's a list structure
+    if (content.items && Array.isArray(content.items)) {
+      return 'list';
+    }
+    // Check if it's a quote structure
+    if (content.quote || content.text || content.author) {
+      return 'quote';
+    }
+  }
+
+  // Check for image content
+  if (
+    aiResponse.imageUrl ||
+    aiResponse.url ||
+    (content &&
+      typeof content === 'object' &&
+      (content.imageUrl || content.url))
+  ) {
+    return 'image';
+  }
+
+  // Default to requested type or text
+  return requestedBlockType || 'text';
+}
+
+/**
  * Format AI-generated content to match block structure
  */
 export function formatAIContentForBlock(aiResponse, blockType) {
   const blockId = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // Auto-detect block type from content if not explicitly set or if it's text
+  const detectedBlockType = detectBlockTypeFromContent(aiResponse, blockType);
+
+  // Use detected type if it's more specific than the requested type
+  const finalBlockType =
+    detectedBlockType !== 'text' && blockType === 'text'
+      ? detectedBlockType
+      : blockType || detectedBlockType;
+
   const baseBlock = {
     id: blockId,
     block_id: blockId,
-    type: blockType,
+    type: finalBlockType,
     order: Date.now(),
   };
 
-  switch (blockType) {
+  switch (finalBlockType) {
     case 'text': {
       const textType =
         aiResponse.textType ||
@@ -298,18 +379,111 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         listType: aiResponse.listType,
         content: aiResponse.content,
         items: listContent.items,
-        html_css: generateListHTML(listContent),
+        html_css: generateListHTML(listContent, aiResponse.listType),
       };
     }
 
     case 'tables':
+      // Parse table content and generate HTML
+      let tableHtml = '';
+      try {
+        const tableData =
+          typeof aiResponse.content === 'string'
+            ? JSON.parse(aiResponse.content)
+            : aiResponse.content;
+
+        const templateId = aiResponse.templateId || 'responsive_table';
+
+        // Generate HTML using the same logic as TableComponent
+        if (templateId === 'two_columns' || templateId === 'three_columns') {
+          const colClass =
+            tableData.columns === 2
+              ? 'md:grid-cols-2'
+              : tableData.columns === 3
+                ? 'md:grid-cols-3'
+                : `md:grid-cols-${tableData.columns || 2}`;
+          tableHtml = `
+            <div class="grid ${colClass} gap-8">
+              ${(tableData.data && tableData.data[0]
+                ? tableData.data[0]
+                : tableData.headers || []
+              )
+                .map(
+                  (content, index) => `
+              <div class="group relative p-6 rounded-lg border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 min-h-fit">
+                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-lg"></div>
+                <div class="flex items-start mb-2">
+                  <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                  <h3 class="font-bold text-lg text-gray-900 break-words leading-tight">${tableData.headers && tableData.headers[index] ? tableData.headers[index] : `Column ${index + 1}`}</h3>
+                </div>
+                <div class="text-gray-700 leading-relaxed text-base break-words whitespace-pre-wrap overflow-wrap-anywhere">${content || ''}</div>
+              </div>
+            `
+                )
+                .join('')}
+            </div>
+          `;
+        } else {
+          tableHtml = `
+            <div class="relative">
+              <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm table-scrollbar">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                      ${(tableData.headers || [])
+                        .map(
+                          (header, index) => `
+                        <th class="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top min-w-[150px] max-w-[300px]">
+                          <div class="flex items-start">
+                            <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                            <span class="break-words leading-tight">${header}</span>
+                          </div>
+                        </th>
+                      `
+                        )
+                        .join('')}
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-100">
+                    ${(tableData.data || [])
+                      .map(
+                        (row, rowIndex) => `
+                      <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'}">
+                        ${(row || [])
+                          .map(
+                            (cell, cellIndex) => `
+                          <td class="px-6 py-4 text-gray-800 border-r border-gray-100 last:border-r-0 align-top min-w-[150px] max-w-[300px]">
+                            <div class="font-medium text-sm break-words whitespace-pre-wrap leading-relaxed">${cell || ''}</div>
+                          </td>
+                        `
+                          )
+                          .join('')}
+                      </tr>
+                    `
+                      )
+                      .join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+      } catch (e) {
+        console.error('Error generating table HTML:', e);
+        tableHtml = `<div class="p-4 border border-gray-200 rounded-lg bg-gray-50"><p class="text-gray-500 text-sm">Table content</p></div>`;
+      }
+
       return {
         ...baseBlock,
+        type: 'table', // Always use 'table' (singular) for consistency
         textType: 'table',
-        tableType: aiResponse.templateId,
-        templateId: aiResponse.templateId,
-        content: aiResponse.content,
-        html_css: '', // Will be generated by TableComponent
+        tableType: aiResponse.templateId || 'responsive_table',
+        templateId: aiResponse.templateId || 'responsive_table',
+        content:
+          typeof aiResponse.content === 'string'
+            ? aiResponse.content
+            : JSON.stringify(aiResponse.content),
+        html_css: tableHtml, // Generate HTML immediately
       };
 
     case 'interactive':
@@ -399,7 +573,16 @@ export function formatAIContentForBlock(aiResponse, blockType) {
     }
 
     default:
-      return baseBlock;
+      // For unknown block types, try to preserve the type and content
+      devLogger.warn(`Unknown block type: ${finalBlockType}, preserving as-is`);
+      return {
+        ...baseBlock,
+        content:
+          typeof aiResponse.content === 'string'
+            ? aiResponse.content
+            : JSON.stringify(aiResponse.content || {}),
+        html_css: aiResponse.html_css || '',
+      };
   }
 }
 
@@ -648,9 +831,126 @@ function generateQuoteHTML(quoteData, templateId) {
 /**
  * Generate HTML for list blocks
  */
-function generateListHTML(listContent) {
-  const items = listContent.items.map(item => `<li>${item}</li>`).join('\n');
-  return `<ul class="list-disc pl-6 space-y-2">\n${items}\n</ul>`;
+// Generate styled HTML for list blocks to match template previews
+function generateListHTML(listContent = {}, listType = 'bulleted') {
+  const items = Array.isArray(listContent.items) ? listContent.items : [];
+  const numberingStyle = listContent.numberingStyle || 'decimal';
+
+  // Helper for numbering symbols used in fancy template
+  const getNumbering = (index, style) => {
+    const num = index + 1;
+    switch (style) {
+      case 'upper-roman':
+        return toRoman(num).toUpperCase();
+      case 'lower-roman':
+        return toRoman(num).toLowerCase();
+      case 'upper-alpha':
+        return String.fromCharCode(64 + num);
+      case 'lower-alpha':
+        return String.fromCharCode(96 + num);
+      default:
+        return num.toString();
+    }
+  };
+
+  const toRoman = num => {
+    const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+    const symbols = [
+      'M',
+      'CM',
+      'D',
+      'CD',
+      'C',
+      'XC',
+      'L',
+      'XL',
+      'X',
+      'IX',
+      'V',
+      'IV',
+      'I',
+    ];
+    let result = '';
+    for (let i = 0; i < values.length; i++) {
+      while (num >= values[i]) {
+        result += symbols[i];
+        num -= values[i];
+      }
+    }
+    return result;
+  };
+
+  if (listType === 'numbered') {
+    return `
+      <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
+        <ol class="space-y-4 list-none">
+          ${items
+            .map(
+              (item, index) => `
+            <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-orange-300/50 hover:shadow-md transition-all duration-200">
+              <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                ${getNumbering(index, numberingStyle)}
+              </div>
+              <div class="flex-1 text-gray-800 leading-relaxed">
+                ${item}
+              </div>
+            </li>
+          `
+            )
+            .join('')}
+        </ol>
+      </div>
+    `;
+  }
+
+  if (listType === 'checkbox') {
+    return `
+      <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
+        <div class="space-y-4">
+          ${items
+            .map(
+              (item, index) => `
+            <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+              <div class="flex-shrink-0 mt-1">
+                <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center">
+                  <span class="w-3 h-3 bg-pink-500 rounded-sm opacity-0"></span>
+                </div>
+              </div>
+              <div class="checkbox-text flex-1 text-gray-800 leading-relaxed">
+                ${item}
+              </div>
+            </div>
+          `
+            )
+            .join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Default bulleted list with fancy bullets
+  const getBullet = () => {
+    return `<div class="flex-shrink-0 mt-2 w-3 h-3 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 shadow"></div>`;
+  };
+
+  return `
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+      <ul class="space-y-4 list-none">
+        ${items
+          .map(
+            item => `
+          <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-blue-300/50 hover:shadow-md transition-all duration-200">
+            ${getBullet()}
+            <div class="flex-1 text-gray-800 leading-relaxed">
+              ${item}
+            </div>
+          </li>
+        `
+          )
+          .join('')}
+      </ul>
+    </div>
+  `;
 }
 
 /**

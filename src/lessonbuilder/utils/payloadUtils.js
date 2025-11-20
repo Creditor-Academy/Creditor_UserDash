@@ -254,10 +254,42 @@ export const convertBlocksToHtml = blocks => {
         html = block.html_css;
       } else {
         try {
-          const listContent = JSON.parse(block.content || '{}');
+          // Robustly extract list content supporting multiple block shapes
+          let listContent = {};
+
+          // 1. Attempt to parse JSON content if provided as string
+          if (typeof block.content === 'string') {
+            try {
+              listContent = JSON.parse(block.content);
+            } catch {
+              // 2. Fallback: treat newline-separated string as list items
+              listContent = {
+                items: block.content
+                  .split('\n')
+                  .map(i => i.trim())
+                  .filter(Boolean),
+              };
+            }
+          } else if (
+            typeof block.content === 'object' &&
+            block.content !== null
+          ) {
+            // Content already provided as object
+            listContent = block.content;
+          }
+
+          // 3. Merge with explicit props that may exist on the block itself
           const listType = listContent.listType || block.listType || 'bulleted';
-          const items = listContent.items || [];
+          let items = listContent.items || block.items || [];
           const checkedItems = listContent.checkedItems || {};
+
+          // 4. Ensure items is an array after all fallbacks
+          if (typeof items === 'string') {
+            items = items
+              .split('\n')
+              .map(i => i.trim())
+              .filter(Boolean);
+          }
 
           if (listType === 'numbered') {
             html = `

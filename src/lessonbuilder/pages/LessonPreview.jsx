@@ -560,8 +560,48 @@ const LessonPreview = () => {
         completed: false,
       };
 
+      // CRITICAL: Ensure list blocks are NEVER added to headingSections
+      // Check if block is actually a list (even if incorrectly typed)
+      const isListBlock =
+        block.type === 'list' ||
+        block.listType ||
+        block.list_type ||
+        block.details?.listType ||
+        block.details?.list_type ||
+        (() => {
+          // Check content structure for list indicators
+          const content = block.content || block.details?.content || '';
+          if (typeof content === 'string') {
+            try {
+              const parsed = JSON.parse(content);
+              return (
+                parsed &&
+                typeof parsed === 'object' &&
+                parsed.items &&
+                Array.isArray(parsed.items)
+              );
+            } catch (e) {
+              // Not JSON, check for list HTML patterns
+              return (
+                content.includes('<ol') ||
+                content.includes('<ul') ||
+                content.includes('list-decimal') ||
+                content.includes('list-disc') ||
+                content.includes('numbered-list') ||
+                content.includes('bulleted-list')
+              );
+            }
+          }
+          return (
+            content &&
+            typeof content === 'object' &&
+            content.items &&
+            Array.isArray(content.items)
+          );
+        })();
+
       // Handle different block types based on your API structure
-      if (block.type === 'text') {
+      if (block.type === 'text' && !isListBlock) {
         // Check if it's a heading type - check both textType and text_type fields
         const textType = block.textType || block.text_type;
         // Extract content from multiple possible locations
@@ -574,8 +614,22 @@ const LessonPreview = () => {
           block.title ||
           '';
 
-        // Only show master_heading in sidebar
-        if (textType === 'master_heading') {
+        // CRITICAL: Only show master_heading in sidebar - NEVER list items or numbered content
+        // Additional validation to prevent numbered list items from being treated as headings
+        const isNumberedListItem = /^\d+[\.)]\s+/.test(
+          content.replace(/<[^>]*>/g, '').trim()
+        );
+        const isListContent =
+          content.includes('<li') ||
+          content.includes('<ol') ||
+          content.includes('<ul') ||
+          content.includes('list-item');
+
+        if (
+          textType === 'master_heading' &&
+          !isNumberedListItem &&
+          !isListContent
+        ) {
           // Extract heading text from html_css field for master headings
           let headingText = '';
 
@@ -604,11 +658,30 @@ const LessonPreview = () => {
             }
           );
 
-          headingSections.push({
-            ...blockData,
-            title: headingText,
-            type: 'heading',
-          });
+          // Final validation: Ensure this is NOT a list item or numbered content
+          const cleanHeadingText = headingText.replace(/<[^>]*>/g, '').trim();
+          const isNumberedContent = /^\d+[\.)]\s+/.test(cleanHeadingText);
+          const looksLikeListItem =
+            cleanHeadingText.length < 100 &&
+            (cleanHeadingText.match(/^\d+[\.)]/) ||
+              cleanHeadingText.startsWith('•') ||
+              cleanHeadingText.startsWith('-'));
+
+          // Only add to headingSections if it's a genuine master heading
+          if (!isNumberedContent && !looksLikeListItem) {
+            headingSections.push({
+              ...blockData,
+              title: headingText,
+              type: 'heading',
+            });
+          } else {
+            devLogger.warn('Skipping numbered/list content from outline:', {
+              blockId,
+              headingText: cleanHeadingText,
+              isNumberedContent,
+              looksLikeListItem,
+            });
+          }
         }
 
         // Add to all content (check for duplicates)
@@ -764,7 +837,9 @@ const LessonPreview = () => {
           quoteType: quoteType,
           htmlCss: block.html_css || '',
         });
-      } else if (block.type === 'list') {
+      } else if (block.type === 'list' || isListBlock) {
+        // CRITICAL: List blocks should NEVER be added to headingSections
+        // They should only appear in allContent for rendering
         allContent.push({
           ...blockData,
           type: 'list',
@@ -773,6 +848,7 @@ const LessonPreview = () => {
             block.listType ||
             block.list_type ||
             block.details?.listType ||
+            block.details?.list_type ||
             'bulleted',
           htmlCss: block.html_css || '',
         });
@@ -847,15 +923,29 @@ const LessonPreview = () => {
         });
       } else {
         // Handle other block types - add all blocks to content
+        // CRITICAL: Check if this is actually a list block that was incorrectly typed
+        const mightBeList =
+          isListBlock ||
+          (block.content &&
+            typeof block.content === 'string' &&
+            (block.content.includes('<ol') ||
+              block.content.includes('<ul') ||
+              block.content.includes('list-decimal') ||
+              block.content.includes('list-disc')));
+
         allContent.push({
           ...blockData,
-          type: block.type || 'text',
+          type: mightBeList ? 'list' : block.type || 'text',
           content: block.content || block.details?.content || '',
-          textType:
-            block.textType ||
-            block.text_type ||
-            block.statement_type ||
-            'paragraph',
+          textType: mightBeList
+            ? undefined
+            : block.textType ||
+              block.text_type ||
+              block.statement_type ||
+              'paragraph',
+          listType: mightBeList
+            ? block.listType || block.list_type || 'bulleted'
+            : undefined,
           htmlCss: block.html_css || '',
         });
       }

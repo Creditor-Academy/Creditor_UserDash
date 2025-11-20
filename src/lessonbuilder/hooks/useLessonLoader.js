@@ -142,10 +142,38 @@ const useLessonLoader = ({
                       html_css: b.html_css || '',
                     };
                   }
-                  if (b.type === 'table') {
+                  // Auto-detect table blocks even if type is wrong
+                  const isTableContent = (() => {
+                    const content = b.details?.content || b.content || '';
+                    if (typeof content === 'string') {
+                      try {
+                        const parsed = JSON.parse(content);
+                        return (
+                          parsed &&
+                          typeof parsed === 'object' &&
+                          parsed.headers &&
+                          Array.isArray(parsed.headers) &&
+                          parsed.data &&
+                          Array.isArray(parsed.data)
+                        );
+                      } catch (e) {
+                        return false;
+                      }
+                    }
+                    return (
+                      content &&
+                      typeof content === 'object' &&
+                      content.headers &&
+                      Array.isArray(content.headers) &&
+                      content.data &&
+                      Array.isArray(content.data)
+                    );
+                  })();
+
+                  if (b.type === 'table' || isTableContent) {
                     return {
                       ...base,
-                      type: 'table',
+                      type: 'table', // Always use 'table' (singular)
                       title: b.details?.title || 'Table',
                       tableType:
                         b.details?.table_type ||
@@ -159,6 +187,7 @@ const useLessonLoader = ({
                         'two_columns',
                       content: b.details?.content || b.content || '',
                       html_css: b.html_css || '',
+                      textType: 'table',
                     };
                   }
                   if (b.type === 'quote') {
@@ -581,10 +610,38 @@ const useLessonLoader = ({
                       html_css: b.html_css || '',
                     };
                   }
-                  if (b.type === 'table') {
+                  // Auto-detect table blocks even if type is wrong
+                  const isTableContent = (() => {
+                    const content = b.details?.content || b.content || '';
+                    if (typeof content === 'string') {
+                      try {
+                        const parsed = JSON.parse(content);
+                        return (
+                          parsed &&
+                          typeof parsed === 'object' &&
+                          parsed.headers &&
+                          Array.isArray(parsed.headers) &&
+                          parsed.data &&
+                          Array.isArray(parsed.data)
+                        );
+                      } catch (e) {
+                        return false;
+                      }
+                    }
+                    return (
+                      content &&
+                      typeof content === 'object' &&
+                      content.headers &&
+                      Array.isArray(content.headers) &&
+                      content.data &&
+                      Array.isArray(content.data)
+                    );
+                  })();
+
+                  if (b.type === 'table' || isTableContent) {
                     return {
                       ...base,
-                      type: 'table',
+                      type: 'table', // Always use 'table' (singular)
                       title: b.details?.title || 'Table',
                       tableType:
                         b.details?.table_type ||
@@ -598,6 +655,7 @@ const useLessonLoader = ({
                         'two_columns',
                       content: b.details?.content || b.content || '',
                       html_css: b.html_css || '',
+                      textType: 'table',
                     };
                   }
                   if (b.type === 'quote') {

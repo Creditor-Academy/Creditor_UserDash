@@ -501,11 +501,21 @@ function LessonBuilder() {
 
       devLogger.debug('✅ AI generated:', aiResponse);
 
+      // Ensure block type is correct - handle 'tables' vs 'table' inconsistency
+      let blockTypeToUse = currentAIBlockType.id;
+      if (blockTypeToUse === 'tables') {
+        blockTypeToUse = 'tables'; // Keep as 'tables' for formatAIContentForBlock which handles it
+      }
+
       // Format the AI response to match block structure
-      const newBlock = formatAIContentForBlock(
-        aiResponse,
-        currentAIBlockType.id
-      );
+      const newBlock = formatAIContentForBlock(aiResponse, blockTypeToUse);
+
+      // Ensure the block type is correctly set (formatAIContentForBlock may auto-detect)
+      devLogger.debug('📦 Formatted block:', {
+        originalBlockType: blockTypeToUse,
+        finalBlockType: newBlock.type,
+        blockId: newBlock.id,
+      });
 
       // Calculate order for new block
       const blocksToUse =
@@ -567,6 +577,17 @@ function LessonBuilder() {
         newBlock.order = calculatedOrder;
       }
 
+      // Ensure unique block ID to prevent duplicates
+      const existingIds = new Set(
+        blocksToUse.map(b => b.id || b.block_id).filter(Boolean)
+      );
+      if (existingIds.has(newBlock.id || newBlock.block_id)) {
+        // Generate a new unique ID if duplicate
+        newBlock.id = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        newBlock.block_id = newBlock.id;
+        devLogger.warn('Generated new ID for duplicate block:', newBlock.id);
+      }
+
       // Replace existing block or add new one
       if (blockToReplace) {
         // Replace the existing block
@@ -575,27 +596,53 @@ function LessonBuilder() {
         );
 
         if (lessonContent?.data?.content) {
-          setLessonContent(prev => ({
-            ...prev,
-            data: {
-              ...prev.data,
-              content: prev.data.content.map(block =>
-                (block.block_id || block.id) ===
-                (blockToReplace.block_id || blockToReplace.id)
-                  ? { ...newBlock, block_id: block.block_id || block.id }
-                  : block
-              ),
-            },
-          }));
+          setLessonContent(prev => {
+            const existingIds = new Set(
+              prev.data.content.map(b => b.id || b.block_id).filter(Boolean)
+            );
+            // Ensure new block has unique ID
+            if (existingIds.has(newBlock.id || newBlock.block_id)) {
+              newBlock.id = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              newBlock.block_id = newBlock.id;
+            }
+            return {
+              ...prev,
+              data: {
+                ...prev.data,
+                content: prev.data.content.map(block =>
+                  (block.block_id || block.id) ===
+                  (blockToReplace.block_id || blockToReplace.id)
+                    ? { ...newBlock, block_id: block.block_id || block.id }
+                    : block
+                ),
+              },
+            };
+          });
         }
         setBlockToReplace(null);
       } else if (insertionPosition !== null) {
+        // Check for duplicates before inserting
         const updatedBlocks = [...contentBlocks];
-        updatedBlocks.splice(insertionPosition, 0, newBlock);
-        setContentBlocks(updatedBlocks);
+        const duplicateIndex = updatedBlocks.findIndex(
+          b => (b.id || b.block_id) === (newBlock.id || newBlock.block_id)
+        );
+        if (duplicateIndex === -1) {
+          updatedBlocks.splice(insertionPosition, 0, newBlock);
+          setContentBlocks(updatedBlocks);
+        } else {
+          devLogger.warn('Skipping duplicate block insertion');
+        }
         setInsertionPosition(null);
       } else {
-        setContentBlocks(prev => [...prev, newBlock]);
+        // Check for duplicates before adding
+        const hasDuplicate = contentBlocks.some(
+          b => (b.id || b.block_id) === (newBlock.id || newBlock.block_id)
+        );
+        if (!hasDuplicate) {
+          setContentBlocks(prev => [...prev, newBlock]);
+        } else {
+          devLogger.warn('Skipping duplicate block addition');
+        }
       }
 
       setHasUnsavedChanges(true);
@@ -1076,13 +1123,12 @@ function LessonBuilder() {
         <div
           className="fixed transition-all duration-500 ease-in-out"
           style={{
-            left: showContentLibrarySidebar
-              ? sidebarCollapsed
-                ? 'calc(4.5rem + 18rem)'
-                : 'calc(17rem + 18rem)'
-              : sidebarCollapsed
-                ? '4.5rem'
-                : '17rem',
+            left: (() => {
+              // Ensure consistent calculation to prevent blank spaces
+              const sidebarWidth = showContentLibrarySidebar ? 18 : 0;
+              const mainSidebarWidth = sidebarCollapsed ? 4.5 : 17;
+              return `${mainSidebarWidth + sidebarWidth}rem`;
+            })(),
             right: 0,
             top: '4rem',
             bottom: 0,
@@ -1093,13 +1139,12 @@ function LessonBuilder() {
           <div
             className="fixed top-16 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm px-4 py-4 z-30 transition-all duration-500 ease-in-out"
             style={{
-              left: showContentLibrarySidebar
-                ? sidebarCollapsed
-                  ? 'calc(4.5rem + 18rem)'
-                  : 'calc(17rem + 18rem)'
-                : sidebarCollapsed
-                  ? '4.5rem'
-                  : '17rem',
+              left: (() => {
+                // Ensure consistent calculation to prevent blank spaces
+                const sidebarWidth = showContentLibrarySidebar ? 18 : 0;
+                const mainSidebarWidth = sidebarCollapsed ? 4.5 : 17;
+                return `${mainSidebarWidth + sidebarWidth}rem`;
+              })(),
             }}
           >
             <div className="w-full px-4 flex items-center justify-between">
@@ -1382,20 +1427,40 @@ function LessonBuilder() {
                             ? lessonContent.data.content
                             : contentBlocks;
 
-                        // Sort blocks by order to preserve 10-section structure
-                        const sortedBlocks = [...blocksToRender].sort(
-                          (a, b) => {
-                            const orderA =
-                              a.order !== undefined && a.order !== null
-                                ? a.order
-                                : 999999;
-                            const orderB =
-                              b.order !== undefined && b.order !== null
-                                ? b.order
-                                : 999999;
-                            return orderA - orderB;
+                        // Remove duplicate blocks based on ID to prevent outline issues
+                        const seenBlockIds = new Set();
+                        const uniqueBlocks = blocksToRender.filter(block => {
+                          const blockId = block.id || block.block_id;
+                          if (!blockId) return true; // Keep blocks without IDs
+                          if (seenBlockIds.has(blockId)) {
+                            devLogger.warn(
+                              'Filtering duplicate block:',
+                              blockId
+                            );
+                            return false;
                           }
-                        );
+                          seenBlockIds.add(blockId);
+                          return true;
+                        });
+
+                        // Sort blocks by order to preserve 10-section structure
+                        const sortedBlocks = [...uniqueBlocks].sort((a, b) => {
+                          const orderA =
+                            a.order !== undefined && a.order !== null
+                              ? a.order
+                              : 999999;
+                          const orderB =
+                            b.order !== undefined && b.order !== null
+                              ? b.order
+                              : 999999;
+                          // If orders are equal, maintain original order
+                          if (orderA === orderB) {
+                            const indexA = blocksToRender.indexOf(a);
+                            const indexB = blocksToRender.indexOf(b);
+                            return indexA - indexB;
+                          }
+                          return orderA - orderB;
+                        });
 
                         // Filter out empty blocks that create white blocks
                         const filteredBlocks = sortedBlocks.filter(block => {
@@ -2237,7 +2302,8 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'table' && (
+                                      {(block.type === 'table' ||
+                                        block.type === 'tables') && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">

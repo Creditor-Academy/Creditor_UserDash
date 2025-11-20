@@ -114,6 +114,9 @@ COURSE CONTEXT:
   /**
    * Clean markdown formatting from AI-generated content
    */
+  /*
+   * Remove common markdown artefacts from AI responses and return plain text
+   */
   cleanMarkdown(text) {
     if (!text || typeof text !== 'string') return text;
 
@@ -143,6 +146,36 @@ COURSE CONTEXT:
     cleaned = cleaned.trim();
 
     return cleaned;
+  }
+
+  /**
+   * Safely parse AI JSON responses that may contain markdown code fences
+   */
+  safeParseJSON(text) {
+    if (!text || typeof text !== 'string') {
+      throw new Error('Empty response');
+    }
+
+    // Remove common markdown fences like ```json ... ``` or ```
+    let cleaned = text
+      .replace(/```json[\r\n]*/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
+    // Attempt direct parse first
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      // Extract first '{' and last '}' segment and try again
+      const first = cleaned.indexOf('{');
+      const last = cleaned.lastIndexOf('}');
+      if (first !== -1 && last !== -1 && last > first) {
+        const candidate = cleaned.substring(first, last + 1);
+        return JSON.parse(candidate);
+      }
+      // If still fails, throw original error
+      throw new SyntaxError('Unable to parse AI JSON response');
+    }
   }
 
   /**
@@ -232,7 +265,7 @@ ${templateId === 'quote_carousel' ? 'Generate 3 different related quotes in an a
 Return ONLY valid JSON, no other text.`;
 
     const response = await this.callOpenAI(prompt, 400);
-    const quoteData = JSON.parse(response);
+    const quoteData = this.safeParseJSON(response);
 
     return {
       type: 'quote',
@@ -264,11 +297,16 @@ Return JSON format:
 Return ONLY valid JSON, no other text.`;
 
     const response = await this.callOpenAI(prompt, 600);
-    const listData = JSON.parse(response);
+    const listData = this.safeParseJSON(response);
 
     return {
       type: 'list',
-      listType: templateId === 'checklist' ? 'checklist' : 'bulleted',
+      listType:
+        templateId === 'numbered'
+          ? 'numbered'
+          : templateId === 'checklist' || templateId === 'checkbox'
+            ? 'checkbox'
+            : 'bulleted',
       content: JSON.stringify({
         items: listData.items,
         numberingStyle: 'decimal',
@@ -305,7 +343,7 @@ Each cell should contain 5-30 words of relevant content.
 Return ONLY valid JSON, no other text.`;
 
     const response = await this.callOpenAI(prompt, 800);
-    const tableData = JSON.parse(response);
+    const tableData = this.safeParseJSON(response);
 
     return {
       type: 'table',
@@ -369,7 +407,7 @@ For process (generate 3-5 steps):
 Return ONLY valid JSON, no other text.`;
 
     const response = await this.callOpenAI(prompt, 1000);
-    const interactiveData = JSON.parse(response);
+    const interactiveData = this.safeParseJSON(response);
 
     return {
       type: 'interactive',
