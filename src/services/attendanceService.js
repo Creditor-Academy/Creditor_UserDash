@@ -100,7 +100,79 @@ export async function getEventAttendance(eventId) {
   }
 }
 
+/**
+ * Fetch all attendance records for the current user
+ * @returns {Promise<Object>} Response data containing attendance records and statistics
+ */
+export async function getUserAttendance() {
+  try {
+    const response = await api.get('/api/user/attendance', {
+      withCredentials: true,
+    });
+    
+    if (!response.data) {
+      throw new Error('No data received from server');
+    }
+    
+    // Handle the successResponse format from backend
+    // Backend returns: { code: 200, data: { attendance: [], statistics: {} }, success: true, message: "..." }
+    console.log('Raw API Response:', response.data); // Debug log
+    
+    if (!response.data) {
+      throw new Error('Invalid response structure');
+    }
+    
+    // Backend response structure: { code: 200, data: { attendance: [], statistics: {} }, success: true, message: "..." }
+    // Check if response has the nested structure with code and data
+    if (response.data.code !== undefined && response.data.data) {
+      // Extract the nested data object: { attendance: [], statistics: {} }
+      const extractedData = response.data.data;
+      console.log('Extracted nested data:', extractedData); // Debug log
+      
+      // Validate that we have the expected structure
+      if (extractedData && (extractedData.attendance !== undefined || extractedData.statistics !== undefined)) {
+        return extractedData;
+      }
+    }
+    
+    // If response.data has attendance/statistics directly (fallback)
+    if (response.data.attendance !== undefined || response.data.statistics !== undefined) {
+      console.log('Using direct data structure'); // Debug log
+      return response.data;
+    }
+    
+    // If response.data.success and has nested data (another fallback)
+    if (response.data.success && response.data.data) {
+      console.log('Using success.data structure'); // Debug log
+      return response.data.data;
+    }
+    
+    // Final fallback
+    console.warn('Unexpected response structure, returning raw data'); // Debug log
+    return response.data || response;
+  } catch (error) {
+    console.error('Error fetching user attendance:', error);
+    
+    // Handle specific error cases
+    if (error.response?.status === 401) {
+      throw new Error('Please log in to view attendance');
+    }
+    
+    if (error.response?.status === 403) {
+      throw new Error('You do not have permission to view attendance');
+    }
+    
+    if (error.response?.status === 404) {
+      throw new Error('Attendance data not found');
+    }
+    
+    // Generic error message
+    throw new Error(error.response?.data?.message || 'Failed to fetch attendance data. Please try again.');
+  }
+}
+
 export default {
   markEventAttendance,
-  getEventAttendance
+  getEventAttendance,
+  getUserAttendance
 };
