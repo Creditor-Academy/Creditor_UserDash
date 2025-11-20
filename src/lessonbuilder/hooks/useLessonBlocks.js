@@ -1773,7 +1773,34 @@ const useLessonBlocks = ({
 
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
-      setCurrentTextType(block.textType || 'paragraph');
+
+      // Detect master_heading from HTML content if textType is not set correctly
+      let detectedType = block.textType || 'paragraph';
+      const htmlContent = block.html_css || block.content || '';
+
+      // Check for master heading (has gradient background)
+      if (
+        (htmlContent.includes('linear-gradient') ||
+          htmlContent.includes('bg-gradient-to-r') ||
+          htmlContent.includes('gradient')) &&
+        (htmlContent.includes('<h1') ||
+          htmlContent.includes('text-3xl') ||
+          htmlContent.includes('text-4xl') ||
+          htmlContent.includes('font-extrabold') ||
+          block.gradient)
+      ) {
+        detectedType = 'master_heading';
+      }
+
+      // Also check if textType or text_type is explicitly master_heading
+      if (
+        block.textType === 'master_heading' ||
+        block.text_type === 'master_heading'
+      ) {
+        detectedType = 'master_heading';
+      }
+
+      setCurrentTextType(detectedType);
       setShowTextEditorDialog(true);
       return;
     } else if (block.type === 'table') {
