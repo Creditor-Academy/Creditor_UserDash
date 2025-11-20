@@ -301,6 +301,14 @@ function App() {
                 }
               />
               <Route
+                path="/instructor/payment-dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/instructor/courses/:courseId/modules"
                 element={
                   <ProtectedRoute>

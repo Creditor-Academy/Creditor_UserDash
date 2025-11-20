@@ -11,6 +11,7 @@ import AddGroups from './AddGroups';
 import SupportTickets from './Support';
 import Resources from '@/components/Resources';
 import AdminPayments from '@/components/credits/AdminPayments';
+import PaymentDashboard from '@/components/credits/PaymentDashboard';
 import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import Sidebar from '@/components/layout/Sidebar';
@@ -57,6 +58,7 @@ const InstructorPage = () => {
     if (path.includes('/support-tickets')) return 'tickets';
     if (path.includes('/assets')) return 'resources';
     if (path.includes('/payments')) return 'payments';
+    if (path.includes('/payment-dashboard')) return 'paymentDashboard';
     return 'course'; // default
   };
 
@@ -254,6 +256,21 @@ const InstructorPage = () => {
             <FaCreditCard /> Payments
           </button>
           <button
+            onClick={() =>
+              handleNavigation(
+                'paymentDashboard',
+                '/instructor/payment-dashboard'
+              )
+            }
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === 'paymentDashboard'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <FaCreditCard /> Payment Dashboard
+          </button>
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'analytics'
@@ -413,6 +430,11 @@ const InstructorPage = () => {
             {activeTab === 'payments' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AdminPayments />
+              </section>
+            )}
+            {activeTab === 'paymentDashboard' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <PaymentDashboard />
               </section>
             )}
             {activeTab === 'analytics' && (
