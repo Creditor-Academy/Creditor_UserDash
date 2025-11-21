@@ -23,11 +23,22 @@ export async function markEventAttendance(eventId) {
     console.error('Error marking attendance:', error);
 
     // Handle specific error cases
-    if (
-      error.response?.status === 500 &&
-      error.response?.data?.message?.includes('Already marked')
-    ) {
-      throw new Error('Attendance for this event has already been marked');
+    const errorMessage =
+      error.response?.data?.errorMessage || error.response?.data?.message || '';
+    const isAlreadyMarked =
+      errorMessage.toLowerCase().includes('already marked') ||
+      errorMessage
+        .toLowerCase()
+        .includes('attendance for this event already marked');
+
+    if (error.response?.status === 500 && isAlreadyMarked) {
+      // Return the full error response so the component can show the exact message
+      const errorToThrow = new Error(
+        errorMessage || 'Attendance for this event has already been marked'
+      );
+      errorToThrow.isAlreadyMarked = true;
+      errorToThrow.responseData = error.response?.data;
+      throw errorToThrow;
     }
 
     if (error.response?.status === 401) {
@@ -45,10 +56,11 @@ export async function markEventAttendance(eventId) {
     }
 
     // Generic error message
-    throw new Error(
-      error.response?.data?.message ||
-        'Failed to mark attendance. Please try again.'
+    const genericError = new Error(
+      errorMessage || 'Failed to mark attendance. Please try again.'
     );
+    genericError.responseData = error.response?.data;
+    throw genericError;
   }
 }
 
