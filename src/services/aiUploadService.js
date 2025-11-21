@@ -8,8 +8,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 const AI_UPLOAD_API = `${API_BASE}/api/ai/upload-resource`;
 
 /**
- * Upload AI-generated image from URL to S3
- * Used when AI generates an image and we need to store it permanently
+ * Upload AI-generated image from URL to S3 via backend API
+ * Uses backend endpoint to avoid CORS issues when downloading from OpenAI
  * @param {string} imageUrl - The AI-generated image URL (temporary)
  * @param {Object} options - Upload options
  * @returns {Promise<Object>} Upload response with S3 URL
@@ -17,59 +17,65 @@ const AI_UPLOAD_API = `${API_BASE}/api/ai/upload-resource`;
 export async function uploadAIGeneratedImage(imageUrl, options = {}) {
   try {
     console.log(
-      '🤖 Uploading AI-generated image to S3 via generic resource upload:',
+      '🤖 Uploading AI-generated image to S3 via backend API:',
       imageUrl
     );
 
-    // 1) Download the AI image from the provided URL
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to download AI image (status ${response.status})`
-      );
+    // Use backend API endpoint to avoid CORS issues
+    // Backend downloads the image server-side and uploads to S3
+    // Route is registered as /api/ai-upload/upload-ai-image
+    const response = await api.post(
+      '/api/ai-upload/upload-ai-image',
+      {
+        imageUrl: imageUrl,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 60000, // 60 second timeout
+      }
+    );
+
+    console.log('✅ Backend AI image upload response:', response.data);
+
+    // Extract S3 URL from response
+    const s3Url = response.data?.url || response.data?.data?.url;
+
+    if (!s3Url) {
+      throw new Error('No S3 URL returned from backend');
     }
 
-    const blob = await response.blob();
-    const fileName =
-      options.fileName ||
-      `ai-generated-${Date.now()}.${blob.type?.includes('png') ? 'png' : 'jpg'}`;
-    const fileType = blob.type || 'image/png';
-
-    // 2) Wrap the blob in a File and upload using the standard S3 image upload
-    const file = new File([blob], fileName, { type: fileType });
-
-    const uploadResult = await uploadImage(file, {
-      folder: options.folder || 'ai-lesson-images',
-      public: options.public ?? true,
-      type: 'image',
-    });
-
-    const finalUrl = uploadResult.imageUrl;
-
-    console.log('✅ AI image uploaded successfully to S3:', finalUrl);
+    console.log('✅ AI image uploaded successfully to S3:', s3Url);
 
     return {
       success: true,
-      imageUrl: finalUrl,
-      s3Url: finalUrl,
-      message: uploadResult.message || 'AI image uploaded successfully',
+      imageUrl: s3Url,
+      s3Url: s3Url,
+      message: response.data?.message || 'AI image uploaded successfully to S3',
       uploadedToS3: true,
-      source: 'ai-generated',
+      source: 'ai-generated-backend',
     };
   } catch (error) {
-    console.error('❌ Error uploading AI-generated image:', error);
+    console.error('❌ Error uploading AI-generated image via backend:', error);
+
+    // Enhanced error handling
+    const errorMessage =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      'AI image upload failed';
 
     // Fallback: return the original URL so callers can still use the
-    // temporary AI URL even if S3 upload fails. The content library
-    // service will handle this gracefully.
+    // temporary AI URL even if S3 upload fails
     return {
       success: false,
       imageUrl: imageUrl,
       s3Url: imageUrl,
-      message:
-        error.message || 'AI image upload failed, using original image URL',
+      message: errorMessage,
       uploadedToS3: false,
       source: 'ai-generated-fallback',
+      error: errorMessage,
     };
   }
 }

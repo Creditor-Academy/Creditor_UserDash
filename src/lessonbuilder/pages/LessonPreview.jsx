@@ -634,13 +634,63 @@ const LessonPreview = () => {
           let headingText = '';
 
           // First try to get text from html_css field (where master heading content is stored)
+          // CRITICAL: Extract only h1 text content, not all HTML content
           if (block.html_css) {
-            headingText = block.html_css.replace(/<[^>]*>/g, '').trim();
+            try {
+              // Create a temporary DOM element to parse HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = block.html_css;
+
+              // Try to find h1 element first (most specific)
+              const h1Element = tempDiv.querySelector('h1');
+              if (h1Element) {
+                headingText = (
+                  h1Element.textContent ||
+                  h1Element.innerText ||
+                  ''
+                ).trim();
+              } else {
+                // Fallback: if no h1, try to extract from first text node
+                // This handles cases where h1 might be nested or styled differently
+                const textContent =
+                  tempDiv.textContent || tempDiv.innerText || '';
+                headingText = textContent.trim();
+
+                // If extracted text is too long (likely contains other content),
+                // try to get first line or first 100 chars
+                if (headingText.length > 100) {
+                  const firstLine = headingText.split('\n')[0].trim();
+                  headingText =
+                    firstLine.length > 0
+                      ? firstLine
+                      : headingText.substring(0, 100).trim();
+                }
+              }
+            } catch (error) {
+              devLogger.warn('Error parsing master heading HTML:', error);
+              // Fallback to simple tag stripping
+              headingText = block.html_css.replace(/<[^>]*>/g, '').trim();
+            }
           }
 
           // Fallback to content field if html_css doesn't have text
           if (!headingText && content) {
-            headingText = content.replace(/<[^>]*>/g, '').trim();
+            try {
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = content;
+              const h1Element = tempDiv.querySelector('h1');
+              if (h1Element) {
+                headingText = (
+                  h1Element.textContent ||
+                  h1Element.innerText ||
+                  ''
+                ).trim();
+              } else {
+                headingText = content.replace(/<[^>]*>/g, '').trim();
+              }
+            } catch (error) {
+              headingText = content.replace(/<[^>]*>/g, '').trim();
+            }
           }
 
           // Final fallback to section number
@@ -667,8 +717,23 @@ const LessonPreview = () => {
               cleanHeadingText.startsWith('•') ||
               cleanHeadingText.startsWith('-'));
 
+          // CRITICAL: Additional validation - ensure master heading text is not from another block
+          // Master headings should be short, descriptive titles, not long content
+          const isTooLong = cleanHeadingText.length > 150;
+          const hasMultipleLines = cleanHeadingText.includes('\n');
+          const hasMultipleSentences =
+            (cleanHeadingText.match(/[.!?]/g) || []).length > 1;
+
           // Only add to headingSections if it's a genuine master heading
-          if (!isNumberedContent && !looksLikeListItem) {
+          // Additional checks to prevent content from other blocks being treated as master headings
+          const isValidMasterHeading =
+            !isNumberedContent &&
+            !looksLikeListItem &&
+            !isTooLong &&
+            !hasMultipleLines &&
+            !hasMultipleSentences;
+
+          if (isValidMasterHeading) {
             headingSections.push({
               ...blockData,
               title: headingText,

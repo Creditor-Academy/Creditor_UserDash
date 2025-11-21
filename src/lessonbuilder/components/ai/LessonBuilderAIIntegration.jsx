@@ -66,7 +66,7 @@ const LessonBuilderAIIntegration = ({
         onContentGenerated={handleAIContentGenerated}
         variant="outline"
         size="sm"
-        className="flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+        className="flex items-center gap-1 text-cyan-600 border-cyan-200 hover:bg-cyan-50"
         buttonText="Generate AI Content"
         showIcon={true}
       />

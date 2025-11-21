@@ -3192,7 +3192,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                         startInlineGeneration();
                                       }}
                                       disabled={isGenerating}
-                                      className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold shadow-lg hover:shadow-xl transition-all text-base sm:text-lg flex items-center justify-center gap-2"
+                                      className="w-full py-4 px-6 bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 hover:from-cyan-500 hover:via-sky-600 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all text-base sm:text-lg flex items-center justify-center gap-2"
                                     >
                                       <Sparkles className="w-5 h-5 flex-shrink-0" />
                                       <span className="whitespace-normal text-center leading-tight">

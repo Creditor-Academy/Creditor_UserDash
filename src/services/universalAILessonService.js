@@ -1562,6 +1562,16 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
 
     let html = String(text);
 
+    // Strip fenced code blocks markers like ``` or ```markdown while
+    // keeping their inner text. For course content we usually don't
+    // want to render literal backticks or language hints around the
+    // content (e.g. ```markdown ... ```), we just want the text.
+    html = html
+      // Opening fences with optional language label
+      .replace(/```[a-zA-Z0-9_-]*\s*/g, '')
+      // Closing fences
+      .replace(/```/g, '');
+
     // Escape existing HTML to prevent double-encoding
     // But preserve if already HTML
     if (
@@ -2800,6 +2810,9 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         .replace(/^```/gm, '')
         .replace(/```$/gm, '');
 
+      // Normalize smart quotes to standard quotes to avoid JSON parse issues
+      jsonString = jsonString.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+
       // Remove any leading/trailing text that's not JSON
       // Try to extract JSON array - be more aggressive
       let jsonArrayMatch = jsonString.match(/\[[\s\S]*\]/);
@@ -2828,20 +2841,47 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         } catch (parseError) {
           // Try to fix common JSON issues
           let fixedJson = jsonArrayMatch[0]
-            // Fix trailing commas
+            // Fix trailing commas like [1, 2, 3,] or { "a": 1, }
             .replace(/,\s*\]/g, ']')
             .replace(/,\s*\}/g, '}')
             // Fix single quotes to double quotes
-            .replace(/'/g, '"')
-            // Fix unquoted keys
-            .replace(/(\w+):/g, '"$1":');
+            .replace(/'/g, '"');
+
+          // Fix unquoted keys only when they look like real JSON keys
+          // (at object/array boundaries) to avoid touching values like
+          // "Option A: Explanation" inside strings.
+          fixedJson = fixedJson.replace(
+            /([\{,]\s*)([a-zA-Z0-9_]+)\s*:/g,
+            (match, prefix, key) => `${prefix}"${key}":`
+          );
 
           try {
             parsed = JSON.parse(fixedJson);
           } catch (e2) {
-            console.error('Failed to parse quiz JSON after fixes:', e2);
-            // Continue to text parsing fallback
-            parsed = null;
+            // As a last resort, attempt to parse individual objects so that
+            // a single malformed comma or bracket does not discard all
+            // otherwise valid questions.
+            console.warn(
+              '⚠️ Could not parse full quiz JSON, attempting object-by-object recovery.'
+            );
+
+            const objectMatches = fixedJson.match(/\{[\s\S]*?\}/g);
+            if (objectMatches && objectMatches.length > 0) {
+              const recovered = [];
+
+              for (const objStr of objectMatches) {
+                try {
+                  const q = JSON.parse(objStr);
+                  recovered.push(q);
+                } catch (e3) {
+                  // Skip invalid fragments and continue
+                }
+              }
+
+              parsed = recovered.length > 0 ? recovered : null;
+            } else {
+              parsed = null;
+            }
           }
         }
 
@@ -4999,6 +5039,11 @@ Format: One visual description per line. Return 1-3 descriptions.`;
 - Convert theory to actionable steps
 - Use clear, action-oriented language
 
+IMPORTANT:
+- Focus ONLY on practical steps for this specific lesson topic.
+- Do NOT output the generic lesson outline (e.g., "Introduction", "Learning Objectives", "Prior Knowledge", etc.).
+- Each step should directly help the learner apply "${lessonTitle}" in practice.
+
 Format as numbered steps, each 1-3 lines. Return 5-10 steps.`;
 
       const stepsPrompt = this.buildAdvancedPrompt(
@@ -5020,10 +5065,18 @@ Format as numbered steps, each 1-3 lines. Return 5-10 steps.`;
         .map(step => step.replace(/^\d+\.?\s*/, '').trim())
         .filter(step => step.length > 0 && step.length < 200); // 1-3 lines max
 
-      const finalStepsContent =
-        stepsList.length > 0
-          ? stepsList.join('\n')
-          : `Step 1: Begin with the basics\nStep 2: Apply the concepts\nStep 3: Practice and refine`;
+      // Keep steps as an explicit array so that editors can treat each step
+      // as a separate item instead of a single long string. Also keep the
+      // original joined content for backwards compatibility with any logic
+      // that expects a newline-delimited string.
+      const defaultSteps = [
+        'Begin with the basics',
+        'Apply the core concepts to simple examples',
+        'Practice and refine your understanding with problems',
+      ];
+
+      const stepsItems = stepsList.length > 0 ? stepsList : defaultSteps;
+      const finalStepsContent = stepsItems.join('\n');
       const stepsQualityScore = this.scoreContentQuality(
         finalStepsContent,
         'steps'
@@ -5032,6 +5085,10 @@ Format as numbered steps, each 1-3 lines. Return 5-10 steps.`;
         id: `steps-${Date.now()}`,
         type: 'list',
         listType: 'numbered',
+        // Provide both items and content; content is kept for legacy
+        // consumers, while items gives the lesson builder a clean array
+        // of step strings to render and edit.
+        items: stepsItems,
         content: finalStepsContent,
         order: blockOrder++,
         isAIGenerated: true,

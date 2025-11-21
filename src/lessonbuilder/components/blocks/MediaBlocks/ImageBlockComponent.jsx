@@ -37,6 +37,7 @@ const ImageBlockComponent = forwardRef(
       setImageUploading,
       contentBlocks,
       setContentBlocks,
+      lessonContent,
       onAICreation,
     },
     ref
@@ -124,25 +125,268 @@ const ImageBlockComponent = forwardRef(
       saveImageTemplateChanges,
       handleInlineImageFileUpload,
       handleEditImage: blockId => {
-        const block = contentBlocks.find(b => b.id === blockId);
-        if (block) {
-          setCurrentBlock(block);
-          setImageTitle(block.imageTitle);
-          setImageDescription(block.imageDescription || '');
-          setImageFile(block.imageFile);
-          setImagePreview(block.imageUrl);
-          setImageTemplateText(block.text || block.details?.caption || '');
+        devLogger.debug('🔍 handleEditImage called with blockId:', blockId);
+        devLogger.debug('🔍 contentBlocks length:', contentBlocks.length);
+        devLogger.debug('🔍 lessonContent exists:', !!lessonContent);
+        devLogger.debug(
+          '🔍 lessonContent.data.content length:',
+          lessonContent?.data?.content?.length || 0
+        );
 
-          // Set appropriate alignment based on layout
-          const blockAlignment = block.alignment || 'left';
-          if (block.layout === 'side-by-side') {
-            setImageAlignment(blockAlignment);
-          } else {
-            setStandaloneImageAlignment(blockAlignment);
+        // Find block from both contentBlocks and lessonContent
+        let block = contentBlocks.find(b => {
+          const matches = b.id === blockId || b.block_id === blockId;
+          if (matches) {
+            devLogger.debug('✅ Found block in contentBlocks:', {
+              id: b.id,
+              block_id: b.block_id,
+              type: b.type,
+              hasImageUrl: !!b.imageUrl,
+              hasDetails: !!b.details,
+            });
           }
+          return matches;
+        });
 
-          setShowImageDialog(true);
+        // If not found, try to get from lessonContent (for AI-generated blocks from course creation)
+        if (!block && lessonContent?.data?.content) {
+          block = lessonContent.data.content.find(b => {
+            const matches = (b.block_id || b.id) === blockId;
+            if (matches) {
+              devLogger.debug('✅ Found block in lessonContent:', {
+                id: b.id,
+                block_id: b.block_id,
+                type: b.type,
+                hasImageUrl: !!b.imageUrl,
+                hasDetails: !!b.details,
+                detailsKeys: b.details ? Object.keys(b.details) : [],
+              });
+            }
+            return matches;
+          });
         }
+
+        if (!block) {
+          devLogger.error('❌ Block not found for editing:', {
+            blockId,
+            contentBlocksIds: contentBlocks.map(b => b.id || b.block_id),
+            lessonContentIds:
+              lessonContent?.data?.content?.map(b => b.block_id || b.id) || [],
+          });
+          toast.error('Block not found. Please try again.');
+          return;
+        }
+
+        devLogger.debug('📝 Editing image block - FULL BLOCK DATA:', {
+          blockId,
+          blockType: block.type,
+          hasImageUrl: !!block.imageUrl,
+          imageUrl: block.imageUrl,
+          hasDetails: !!block.details,
+          detailsKeys: block.details ? Object.keys(block.details) : [],
+          detailsImageUrl: block.details?.image_url,
+          hasHtmlCss: !!block.html_css,
+          htmlCssLength: block.html_css?.length || 0,
+          hasContent: !!block.content,
+          contentType: typeof block.content,
+          allBlockKeys: Object.keys(block),
+        });
+
+        setCurrentBlock(block);
+
+        // Extract image URL from multiple possible locations (for AI-generated blocks)
+        const imageUrl =
+          block.imageUrl ||
+          block.details?.image_url ||
+          block.content?.imageUrl ||
+          block.content?.url ||
+          (() => {
+            // Last resort: extract from html_css img src
+            if (block.html_css) {
+              try {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = block.html_css;
+                const img = tempDiv.querySelector('img');
+                return img?.src || img?.getAttribute('src') || '';
+              } catch (e) {
+                return '';
+              }
+            }
+            return '';
+          })();
+
+        // Extract image title from multiple possible locations
+        const imageTitle =
+          block.imageTitle ||
+          block.details?.alt_text ||
+          block.content?.imageTitle ||
+          block.title ||
+          '';
+
+        // Extract description/caption from multiple possible locations
+        const imageDescription =
+          block.imageDescription ||
+          block.details?.caption ||
+          block.content?.caption ||
+          block.content?.captionText ||
+          '';
+
+        // Extract text/caption HTML from multiple possible locations
+        let imageText =
+          block.text ||
+          block.details?.caption_html ||
+          block.content?.captionHtml ||
+          block.content?.text ||
+          '';
+
+        // CRITICAL: If text is empty but we have html_css, extract text from HTML
+        // This handles AI-generated blocks from course creation
+        if (!imageText && block.html_css) {
+          try {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = block.html_css;
+
+            const layout = block.layout || block.details?.layout;
+            const isSideBySide =
+              layout === 'side-by-side' ||
+              block.html_css.includes('side-by-side') ||
+              block.html_css.includes('grid md:grid-cols-2');
+            const isOverlay =
+              layout === 'overlay' ||
+              block.html_css.includes('overlay') ||
+              block.html_css.includes('absolute inset-0');
+
+            if (isSideBySide) {
+              // For side-by-side: find the text div (the one without img)
+              const allDivs = tempDiv.querySelectorAll('div[class*="order-"]');
+              let textDiv = null;
+
+              for (const div of allDivs) {
+                if (!div.querySelector('img')) {
+                  textDiv = div;
+                  break;
+                }
+              }
+
+              if (textDiv) {
+                imageText = textDiv.innerHTML.trim();
+              } else {
+                // Fallback: get all text content, remove image alt
+                const img = tempDiv.querySelector('img');
+                const imgAlt = img?.alt || '';
+                const allText = tempDiv.textContent || tempDiv.innerText || '';
+                imageText = allText.replace(imgAlt, '').trim();
+              }
+            } else if (isOverlay) {
+              // For overlay: find text in absolute positioned div
+              const overlayDiv = tempDiv.querySelector(
+                '[class*="absolute"], .text-white'
+              );
+              if (overlayDiv) {
+                imageText = overlayDiv.innerHTML.trim();
+              } else {
+                // Fallback: get text from any div with white text
+                const whiteTextDiv = Array.from(
+                  tempDiv.querySelectorAll('div')
+                ).find(
+                  d =>
+                    d.classList.contains('text-white') ||
+                    getComputedStyle(d).color.includes('rgb(255')
+                );
+                if (whiteTextDiv) {
+                  imageText = whiteTextDiv.innerHTML.trim();
+                }
+              }
+            } else {
+              // For centered or other layouts: extract any text content
+              const img = tempDiv.querySelector('img');
+              if (img) {
+                // Remove the img element and get remaining HTML
+                const clone = tempDiv.cloneNode(true);
+                clone.querySelector('img')?.remove();
+                imageText = clone.innerHTML.trim();
+              }
+            }
+
+            // If still no text, try to get from caption paragraph
+            if (!imageText) {
+              const captionP = tempDiv.querySelector('p');
+              if (captionP) {
+                imageText = captionP.innerHTML.trim();
+              }
+            }
+          } catch (error) {
+            devLogger.warn('Failed to extract text from HTML:', error);
+          }
+        }
+
+        // Also check if description exists but text doesn't - use description as fallback
+        if (!imageText && imageDescription) {
+          imageText = `<p>${imageDescription}</p>`;
+        }
+
+        devLogger.debug('Extracted image block data:', {
+          imageUrl,
+          imageTitle,
+          imageDescription,
+          imageTextLength: imageText?.length || 0,
+          hasImageUrl: !!imageUrl,
+          hasImageText: !!imageText,
+        });
+
+        setImageTitle(imageTitle);
+        setImageDescription(imageDescription);
+        setImageFile(block.imageFile);
+        setImagePreview(imageUrl); // CRITICAL: Set preview with the extracted URL
+        setImageTemplateText(imageText);
+
+        // Set appropriate alignment and layout based on block structure
+        const blockLayout = block.layout || block.details?.layout || 'centered';
+        const blockAlignment =
+          block.alignment || block.details?.alignment || 'left';
+
+        // Detect layout from html_css if not explicitly set
+        let detectedLayout = blockLayout;
+        if (block.html_css && !blockLayout) {
+          if (
+            block.html_css.includes('side-by-side') ||
+            block.html_css.includes('grid md:grid-cols-2')
+          ) {
+            detectedLayout = 'side-by-side';
+          } else if (
+            block.html_css.includes('overlay') ||
+            block.html_css.includes('absolute inset-0')
+          ) {
+            detectedLayout = 'overlay';
+          } else if (
+            block.html_css.includes('full-width') ||
+            block.html_css.includes('w-full h-')
+          ) {
+            detectedLayout = 'full-width';
+          }
+        }
+
+        // Set layout state if needed
+        if (detectedLayout === 'side-by-side') {
+          setImageAlignment(blockAlignment);
+        } else {
+          setStandaloneImageAlignment(blockAlignment);
+        }
+
+        // Update current block with detected layout
+        setCurrentBlock(prev =>
+          prev ? { ...prev, layout: detectedLayout } : null
+        );
+
+        devLogger.debug('Loading image block for editing:', {
+          blockId,
+          imageUrl,
+          imageTitle,
+          imageDescription,
+          layout: block.layout || block.details?.layout,
+        });
+
+        setShowImageDialog(true);
       },
     }));
 
@@ -983,9 +1227,11 @@ const ImageBlockComponent = forwardRef(
 
         {/* Image Dialog */}
         <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>
-          <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add Image</DialogTitle>
+              <DialogTitle>
+                {editingImageBlock ? 'Edit Image' : 'Add Image'}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -1102,6 +1348,57 @@ const ImageBlockComponent = forwardRef(
                   </div>
                 </div>
               </div>
+
+              {/* S3 URL Display (when editing existing image with S3 URL) */}
+              {(() => {
+                // Get the actual S3 URL from currentBlock or imagePreview
+                const s3Url =
+                  currentBlock?.imageUrl ||
+                  currentBlock?.details?.image_url ||
+                  currentBlock?.uploadedImageData?.imageUrl ||
+                  imagePreview ||
+                  '';
+
+                // Check if it's an S3 URL
+                const isS3Url =
+                  s3Url &&
+                  (s3Url.includes('s3.amazonaws.com') ||
+                    s3Url.includes('.s3.') ||
+                    s3Url.includes('amazonaws.com'));
+
+                // Show S3 URL field if we have a currentBlock (editing) and it's an S3 URL
+                return currentBlock && isS3Url ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      S3 Image URL
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={s3Url}
+                        readOnly
+                        className="w-full p-2 border rounded bg-gray-50 text-sm font-mono text-gray-700 pr-20 break-all"
+                        placeholder="S3 URL will appear here after upload"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(s3Url);
+                          toast.success('S3 URL copied to clipboard!');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This image is stored on AWS S3. The URL above is the
+                      permanent link.
+                    </p>
+                  </div>
+                ) : null;
+              })()}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Image File <span className="text-red-500">*</span>

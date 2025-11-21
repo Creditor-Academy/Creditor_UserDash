@@ -490,33 +490,45 @@ const TextBlockComponent = ({
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
         let effectiveTextType = currentTextType || blockToUpdate.textType;
 
+        // CRITICAL: Only preserve master_heading type if the block was originally a master heading
+        // This prevents other blocks from being incorrectly identified as master headings
+        const wasMasterHeading =
+          blockToUpdate.textType === 'master_heading' ||
+          blockToUpdate.text_type === 'master_heading' ||
+          blockToUpdate.gradient; // gradient property is a strong indicator
+
         // ALWAYS double-check for master heading to prevent it from being saved as normal text
         // This is critical for AI-generated content
-        const htmlContentCheck =
-          blockToUpdate.html_css || blockToUpdate.content || '';
-        if (
-          htmlContentCheck.includes('linear-gradient') ||
-          htmlContentCheck.includes('bg-gradient-to-r') ||
-          htmlContentCheck.includes('gradient')
-        ) {
-          // If it has gradient styling, it should be master_heading
+        if (wasMasterHeading) {
+          const htmlContentCheck =
+            blockToUpdate.html_css || blockToUpdate.content || '';
           if (
-            htmlContentCheck.includes('<h1') ||
-            htmlContentCheck.includes('text-3xl') ||
-            htmlContentCheck.includes('text-4xl') ||
-            htmlContentCheck.includes('font-extrabold') ||
-            blockToUpdate.gradient // Also check if gradient property exists
+            htmlContentCheck.includes('linear-gradient') ||
+            htmlContentCheck.includes('bg-gradient-to-r') ||
+            htmlContentCheck.includes('gradient') ||
+            blockToUpdate.gradient
           ) {
+            // If it was originally a master heading and has gradient styling, keep it as master_heading
+            effectiveTextType = 'master_heading';
+          } else {
+            // If it was a master heading but lost its gradient, still preserve the type
             effectiveTextType = 'master_heading';
           }
-        }
-
-        // Also check if the original block had master_heading type
-        if (
-          blockToUpdate.textType === 'master_heading' ||
-          blockToUpdate.text_type === 'master_heading'
-        ) {
-          effectiveTextType = 'master_heading';
+        } else {
+          // If it was NOT originally a master heading, NEVER change it to master_heading
+          // This prevents accidental conversion of regular blocks to master headings
+          if (effectiveTextType === 'master_heading') {
+            // Revert to the original type or detect a more appropriate type
+            effectiveTextType =
+              blockToUpdate.textType || currentTextType || 'paragraph';
+            devLogger.warn(
+              'Prevented non-master-heading block from being saved as master_heading',
+              {
+                blockId: currentTextBlockId,
+                originalType: blockToUpdate.textType,
+              }
+            );
+          }
         }
 
         // Always use consistent HTML generation for all text types to avoid double-update issues

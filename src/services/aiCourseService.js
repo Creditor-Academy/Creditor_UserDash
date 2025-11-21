@@ -2436,7 +2436,7 @@ Format as JSON:
 
     // 9. TABLE BLOCK - Comparison or Summary Table
     contentBlocks.push({
-      type: 'tables',
+      type: 'table', // Use singular to match backend and most frontend code
       block_id: `ai_summary_table_${lessonId}`,
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">

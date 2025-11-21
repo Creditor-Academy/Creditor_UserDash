@@ -11,7 +11,8 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       id: 'ai',
       title: 'AI Course',
       icon: Sparkles,
-      color: 'bg-purple-500 hover:bg-purple-600',
+      color:
+        'bg-gradient-to-br from-cyan-400/90 via-sky-500/90 to-blue-600/90 hover:from-cyan-300 hover:via-sky-400 hover:to-blue-500 border border-cyan-200/70 shadow-lg shadow-cyan-200/60 backdrop-blur-md',
     },
     {
       id: 'blank',
