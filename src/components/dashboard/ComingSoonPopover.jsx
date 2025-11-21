@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
 function ComingSoonPopover() {
   const [visible, setVisible] = useState(false);
@@ -7,19 +7,19 @@ function ComingSoonPopover() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const features = [
-   
     {
-      title: "Progress Bar",
-      description: "We’re launching progress bars to help users track their learning journey and stay motivated.",
+      title: 'Progress Bar',
+      description:
+        'We’re launching progress bars to help users track their learning journey and stay motivated.',
       tags: [
-        { label: "Progress", color: "green" },
-        { label: "Learning", color: "purple" },
-        { label: "Motivation", color: "blue" }
+        { label: 'Progress', color: 'green' },
+        { label: 'Learning', color: 'purple' },
+        { label: 'Motivation', color: 'blue' },
       ],
-      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/progress+bar+banner.png",
-    }
+      banner:
+        'https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/progress+bar+banner.png',
+    },
   ];
-  
 
   useEffect(() => {
     const onScroll = () => {
@@ -32,25 +32,25 @@ function ComingSoonPopover() {
       }
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     // Trigger once in case page already scrolled
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
     if (!visible || dismissed) return;
-    
+
     // Change feature every 5 seconds
     const interval = setInterval(() => {
       setIsTransitioning(true);
       setTimeout(() => {
-        setCurrentFeature((prev) => (prev + 1) % features.length);
+        setCurrentFeature(prev => (prev + 1) % features.length);
         // slight timeout to allow DOM to update before fading in
         setTimeout(() => setIsTransitioning(false), 20);
       }, 250);
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [visible, dismissed, features.length]);
 
@@ -66,38 +66,44 @@ function ComingSoonPopover() {
   return (
     <div
       className={
-        "fixed right-4 md:right-6 bottom-6 z-50 transition-all duration-500 " +
-        (visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0 pointer-events-none")
+        'fixed right-4 md:right-6 bottom-6 z-50 transition-all duration-500 ' +
+        (visible
+          ? 'translate-y-0 opacity-100'
+          : 'translate-y-6 opacity-0 pointer-events-none')
       }
       role="dialog"
       aria-live="polite"
       aria-label="Coming soon notification"
     >
       <div className="w-[300px] rounded-2xl shadow-2xl border border-gray-200 bg-white/95 backdrop-blur-sm overflow-hidden">
-        <div className={`relative h-28 transition-all duration-500 ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
+        <div
+          className={`relative h-28 transition-all duration-500 ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}
+        >
           <img
             src={feature.banner}
             alt={`${feature.title} preview`}
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          
 
           <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] font-medium text-white">
-            <span className="inline-block w-2 h-2 bg-emerald-300 rounded-full animate-pulse" /> {feature.badge}
+            <span className="inline-block w-2 h-2 bg-emerald-300 rounded-full animate-pulse" />{' '}
+            {feature.badge}
           </span>
         </div>
 
         <div className="p-4">
-          <div className={`transition-all duration-500 ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
-            <h3 className="text-base font-semibold text-gray-900 mb-1">{feature.title}</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              {feature.description}
-            </p>
+          <div
+            className={`transition-all duration-500 ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}
+          >
+            <h3 className="text-base font-semibold text-gray-900 mb-1">
+              {feature.title}
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">{feature.description}</p>
 
             <div className="flex flex-wrap gap-2 mb-4">
               {feature.tags.map((tag, index) => (
-                <span 
+                <span
                   key={index}
                   className={`px-2.5 py-1 text-[11px] font-medium rounded-full bg-${tag.color}-50 text-${tag.color}-700 border border-${tag.color}-100`}
                 >

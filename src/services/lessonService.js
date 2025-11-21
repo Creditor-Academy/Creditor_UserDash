@@ -1,4 +1,5 @@
 // Lesson Service for handling lesson-related API calls
+import { getAuthHeader } from './authHeader';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -30,7 +31,9 @@ export async function uploadLesson(moduleId, file) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to upload lesson: ${response.status}`);
+      throw new Error(
+        errorData.message || `Failed to upload lesson: ${response.status}`
+      );
     }
 
     const data = await response.json();
@@ -48,15 +51,21 @@ export async function uploadLesson(moduleId, file) {
  */
 export async function getLessonContent(moduleId) {
   try {
-    const response = await fetch(`${API_BASE}/api/lessons/${moduleId}/content`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${API_BASE}/api/lessons/${moduleId}/content`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch lesson content: ${response.status}`);
+      throw new Error(
+        errorData.message ||
+          `Failed to fetch lesson content: ${response.status}`
+      );
     }
 
     const data = await response.json();
@@ -82,7 +91,9 @@ export async function deleteLesson(moduleId) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to delete lesson: ${response.status}`);
+      throw new Error(
+        errorData.message || `Failed to delete lesson: ${response.status}`
+      );
     }
 
     const data = await response.json();
@@ -100,15 +111,21 @@ export async function deleteLesson(moduleId) {
  */
 export async function getLessonPreviewUrl(moduleId) {
   try {
-    const response = await fetch(`${API_BASE}/api/lessons/${moduleId}/preview`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${API_BASE}/api/lessons/${moduleId}/preview`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch lesson preview: ${response.status}`);
+      throw new Error(
+        errorData.message ||
+          `Failed to fetch lesson preview: ${response.status}`
+      );
     }
 
     const data = await response.json();
@@ -127,16 +144,22 @@ export async function getLessonPreviewUrl(moduleId) {
  */
 export async function updateLessonMetadata(moduleId, metadata) {
   try {
-    const response = await fetch(`${API_BASE}/api/lessons/${moduleId}/metadata`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      body: JSON.stringify(metadata),
-    });
+    const response = await fetch(
+      `${API_BASE}/api/lessons/${moduleId}/metadata`,
+      {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(metadata),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to update lesson metadata: ${response.status}`);
+      throw new Error(
+        errorData.message ||
+          `Failed to update lesson metadata: ${response.status}`
+      );
     }
 
     const data = await response.json();
@@ -145,6 +168,19 @@ export async function updateLessonMetadata(moduleId, metadata) {
     console.error('Error updating lesson metadata:', error);
     throw error;
   }
+}
+
+// Example usage in a fetch call:
+export async function someApiFunction() {
+  const response = await fetch(`${API_BASE}/api/someEndpoint`, {
+    method: 'GET', // or 'POST', etc.
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+  // ...existing code...
 }
 
 export default {

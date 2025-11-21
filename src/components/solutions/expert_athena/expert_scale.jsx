@@ -1,7 +1,7 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
-import Scorm from "../../../assets/Scorm.png";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Check } from 'lucide-react';
+import Scorm from '../../../assets/Scorm.png';
 
 export default function ExpertScale() {
   return (
@@ -23,32 +23,40 @@ export default function ExpertScale() {
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal mb-5 leading-tight">
-              Your expertise is worth{" "}
-              <span className="block">more</span>
+              Your expertise is worth <span className="block">more</span>
             </h1>
 
             {/* Description */}
             <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">
-              Take your business to new heights. Athena LMS was built to help experts like you scale revenue and increase your impact.
+              Take your business to new heights. Athena LMS was built to help
+              experts like you scale revenue and increase your impact.
             </p>
 
             {/* Bullet Points */}
             <div className="space-y-3 mb-6">
               <div className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span className="text-sm text-gray-300">Streamline your tech stack</span>
+                <span className="text-sm text-gray-300">
+                  Streamline your tech stack
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span className="text-sm text-gray-300">Automate payments and taxes</span>
+                <span className="text-sm text-gray-300">
+                  Automate payments and taxes
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span className="text-sm text-gray-300">Offer engaging learning experiences</span>
+                <span className="text-sm text-gray-300">
+                  Offer engaging learning experiences
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-white flex-shrink-0" />
-                <span className="text-sm text-gray-300">Build a loyal community of customers</span>
+                <span className="text-sm text-gray-300">
+                  Build a loyal community of customers
+                </span>
               </div>
             </div>
 
@@ -58,7 +66,7 @@ export default function ExpertScale() {
                 Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
-              
+
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent hover:bg-white/10 text-white text-sm font-semibold rounded-full border-2 border-yellow-400 hover:border-yellow-300 transition-all duration-300">
                 Talk to sales
                 <ArrowRight className="w-4 h-4" />
@@ -75,9 +83,9 @@ export default function ExpertScale() {
             className="relative"
           >
             <div className="relative shadow-2xl overflow-hidden aspect-square w-full max-w-2xl mx-auto">
-              <img 
-                src={Scorm} 
-                alt="Athena LMS Course Dashboard" 
+              <img
+                src={Scorm}
+                alt="Athena LMS Course Dashboard"
                 className="w-full h-full object-contain"
               />
             </div>
@@ -90,4 +98,3 @@ export default function ExpertScale() {
     </section>
   );
 }
-

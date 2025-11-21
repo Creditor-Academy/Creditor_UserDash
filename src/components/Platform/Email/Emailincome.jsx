@@ -1,6 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mic, Image as ImageIcon, Sparkles, Settings, Zap, ShoppingCart, Workflow } from 'lucide-react';
+import {
+  Mic,
+  Image as ImageIcon,
+  Sparkles,
+  Settings,
+  Zap,
+  ShoppingCart,
+  Workflow,
+} from 'lucide-react';
 
 const sections = [
   {
@@ -63,8 +71,9 @@ export default function Emailincome() {
             From inbox to income
           </h2>
           <p className="text-sm sm:text-base text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Turning email subscribers into paying customers has never been easier. Athena email automation
-            tools help you engage and convert your audience without complicating your workflow.
+            Turning email subscribers into paying customers has never been
+            easier. Athena email automation tools help you engage and convert
+            your audience without complicating your workflow.
           </p>
         </motion.div>
 
@@ -82,7 +91,9 @@ export default function Emailincome() {
               }`}
             >
               {/* Content Side */}
-              <div className={`${item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'} flex flex-col justify-center`}>
+              <div
+                className={`${item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'} flex flex-col justify-center`}
+              >
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-normal text-gray-100 mb-4 leading-tight">
                   {item.title}
                 </h3>
@@ -92,7 +103,9 @@ export default function Emailincome() {
               </div>
 
               {/* Visual Side */}
-              <div className={`${item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
+              <div
+                className={`${item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'}`}
+              >
                 <motion.div
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.3 }}
@@ -107,42 +120,66 @@ export default function Emailincome() {
                         <div className="h-2 w-4/6 bg-gray-300 rounded mb-2" />
                         <div className="h-2 w-1/2 bg-gray-300 rounded" />
                       </div>
-                      <div className="absolute right-4 top-10 bg-orange-500 text-white text-[10px] px-2 py-1 rounded shadow">Draft your email flow</div>
+                      <div className="absolute right-4 top-10 bg-orange-500 text-white text-[10px] px-2 py-1 rounded shadow">
+                        Draft your email flow
+                      </div>
                     </div>
                   )}
 
                   {item.type === 'abandonedCart' && (
                     <div className="relative z-10 bg-white/95 rounded-md p-3 shadow-xl w-[320px]">
-                      <div className="text-[11px] text-gray-800 mb-2 font-medium flex items-center gap-2"><ShoppingCart className="w-3 h-3" /> Abandoned cart</div>
+                      <div className="text-[11px] text-gray-800 mb-2 font-medium flex items-center gap-2">
+                        <ShoppingCart className="w-3 h-3" /> Abandoned cart
+                      </div>
                       <div className="bg-gray-200 h-1.5 w-3/4 rounded mb-2"></div>
                       <div className="bg-gray-200 h-1.5 w-1/2 rounded mb-3"></div>
-                      <div className="border rounded p-3 text-center text-[11px] font-semibold">Reminder email preview</div>
+                      <div className="border rounded p-3 text-center text-[11px] font-semibold">
+                        Reminder email preview
+                      </div>
                     </div>
                   )}
 
                   {item.type === 'sequences' && (
                     <div className="relative z-10 bg-white rounded-md p-4 shadow-xl w-[340px]">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="text-[11px] font-semibold text-gray-900">Trigger</div>
+                        <div className="text-[11px] font-semibold text-gray-900">
+                          Trigger
+                        </div>
                         <Zap className="w-4 h-4 text-gray-700" />
                       </div>
                       <div className="space-y-2">
-                        <div className="bg-gray-200 rounded p-2 text-[11px]">Send welcome email</div>
-                        <div className="bg-gray-200 rounded p-2 text-[11px]">Delay 1 day</div>
-                        <div className="bg-gray-200 rounded p-2 text-[11px]">Send course tips</div>
-                        <div className="bg-gray-200 rounded p-2 text-[11px]">Delay 3 days</div>
-                        <div className="bg-gray-200 rounded p-2 text-[11px]">Upsell offer</div>
+                        <div className="bg-gray-200 rounded p-2 text-[11px]">
+                          Send welcome email
+                        </div>
+                        <div className="bg-gray-200 rounded p-2 text-[11px]">
+                          Delay 1 day
+                        </div>
+                        <div className="bg-gray-200 rounded p-2 text-[11px]">
+                          Send course tips
+                        </div>
+                        <div className="bg-gray-200 rounded p-2 text-[11px]">
+                          Delay 3 days
+                        </div>
+                        <div className="bg-gray-200 rounded p-2 text-[11px]">
+                          Upsell offer
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {item.type === 'integrations' && (
                     <div className="relative z-10 bg-white rounded-md p-4 shadow-xl w-[360px] flex items-center justify-between">
-                      <div className="text-[12px] font-semibold flex items-center gap-2"><Workflow className="w-4 h-4" /> Integrations</div>
+                      <div className="text-[12px] font-semibold flex items-center gap-2">
+                        <Workflow className="w-4 h-4" /> Integrations
+                      </div>
                       <div className="flex items-center gap-3">
-                        <div className="px-3 py-2 bg-gray-100 rounded">Zapier</div>
+                        <div className="px-3 py-2 bg-gray-100 rounded">
+                          Zapier
+                        </div>
                         <div className="px-3 py-2 bg-gray-100 rounded">KR</div>
-                        <div className="px-3 py-2 bg-gray-100 rounded">Mailchimp</div>
+                        <div className="px-3 py-2 bg-gray-100 rounded">
+                          Mailchimp
+                        </div>
                       </div>
                     </div>
                   )}

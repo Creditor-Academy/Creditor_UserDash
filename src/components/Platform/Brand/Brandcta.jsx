@@ -1,7 +1,7 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
-import team from "../../../assets/Brandmobile.jpg";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Check } from 'lucide-react';
+import team from '../../../assets/Brandmobile.jpg';
 
 export default function AnalyticsCta() {
   return (
@@ -23,16 +23,10 @@ export default function AnalyticsCta() {
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal mb-5 leading-tight">
-            Ready to grow
-             <span className="block">revenue with a</span>
-                 <span className="block">mobile app?</span>
-             
-             
-              
+              Ready to grow
+              <span className="block">revenue with a</span>
+              <span className="block">mobile app?</span>
             </h1>
-
-
-           
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -40,7 +34,7 @@ export default function AnalyticsCta() {
                 Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
-              
+
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent hover:bg-white/10 text-white text-sm font-semibold rounded-full border-2 border-yellow-400 hover:border-yellow-300 transition-all duration-300">
                 Talk to sales
                 <ArrowRight className="w-4 h-4" />
@@ -57,9 +51,9 @@ export default function AnalyticsCta() {
             className="relative"
           >
             <div className="relative shadow-2xl overflow-hidden aspect-square w-full max-w-2xl mx-auto">
-              <img 
-                src={team} 
-                alt="Athena LMS Course Dashboard" 
+              <img
+                src={team}
+                alt="Athena LMS Course Dashboard"
                 className="w-full h-full object-contain"
               />
             </div>
@@ -72,4 +66,3 @@ export default function AnalyticsCta() {
     </section>
   );
 }
-

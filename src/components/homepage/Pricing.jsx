@@ -9,93 +9,127 @@ const Pricing = () => {
 
   const plans = [
     {
-      name: "Starter",
-      target: "Best for: Solo creators, tutors, and small teams. Launch Mode — Start simple, grow fast.",
-      price: "$7", // isAnnual ? "$74" : "$7",
-      originalPrice: "$99", // isAnnual ? "$99" : "$99",
-      savings: "", // isAnnual ? "Save $300" : "",
-      period: " per user/month",
-      billingNote: "monthly billing",
+      name: 'Starter',
+      target:
+        'Best for: Solo creators, tutors, and small teams. Launch Mode — Start simple, grow fast.',
+      price: '$7', // isAnnual ? "$74" : "$7",
+      originalPrice: '$99', // isAnnual ? "$99" : "$99",
+      savings: '', // isAnnual ? "Save $300" : "",
+      period: ' per user/month',
+      billingNote: 'monthly billing',
       features: [
-        { text: "10GB of storage", info: false },
-        { text: "100 AI credits per month", info: false },
-        { text: "Unlimited SCORM packages", info: false },
-        { text: "Immersive reader modules", info: false },
-        { text: "Access to AI-generated course assets", info: false },
-        { text: "Full LMS dashboard + analytics", info: false },
-        { text: "Perfect entry plan for testing your first courses", info: false },
-        { text: "Add-on flexibility (extra GB or AI credits)", info: false }
+        { text: '10GB of storage', info: false },
+        { text: '100 AI credits per month', info: false },
+        { text: 'Unlimited SCORM packages', info: false },
+        { text: 'Immersive reader modules', info: false },
+        { text: 'Access to AI-generated course assets', info: false },
+        { text: 'Full LMS dashboard + analytics', info: false },
+        {
+          text: 'Perfect entry plan for testing your first courses',
+          info: false,
+        },
+        { text: 'Add-on flexibility (extra GB or AI credits)', info: false },
       ],
-      sectionHeader: "Starter Includes:",
-      cta: "Join Now",
+      sectionHeader: 'Starter Includes:',
+      cta: 'Join Now',
+      link: 'https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8',
       popular: false,
-      buttonStyle: "white"
+      buttonStyle: 'white',
     },
     {
-      name: "Growth",
-      target: "Best for: Growing academies and scaling organizations. Growth Mode — Build for scale, More tools, more reach, same simplicity.",
-      price: "$14", // isAnnual ? "$149" : "$14",
-      originalPrice: "$189", // isAnnual ? "$189" : "$189",
-      savings: "", // isAnnual ? "Save $600" : "",
-      period: " per user/month",
-      billingNote: "monthly billing",
+      name: 'Growth',
+      target:
+        'Best for: Growing academies and scaling organizations. Growth Mode — Build for scale, More tools, more reach, same simplicity.',
+      price: '$14', // isAnnual ? "$149" : "$14",
+      originalPrice: '$189', // isAnnual ? "$189" : "$189",
+      savings: '', // isAnnual ? "Save $600" : "",
+      period: ' per user/month',
+      billingNote: 'monthly billing',
       features: [
-        { text: "50GB of storage", info: false },
-        { text: "300 AI credits per month", info: false },
-        { text: "Build dozens of SCORM modules with AI", info: false },
-        { text: "Hundreds of immersive reader texts", info: false },
-        { text: "Image-rich, AI-assisted course creation", info: false },
-        { text: "Better per-user value and bundled resources", info: false }
+        { text: '50GB of storage', info: false },
+        { text: '300 AI credits per month', info: false },
+        { text: 'Build dozens of SCORM modules with AI', info: false },
+        { text: 'Hundreds of immersive reader texts', info: false },
+        { text: 'Image-rich, AI-assisted course creation', info: false },
+        { text: 'Better per-user value and bundled resources', info: false },
       ],
-      sectionHeader: "Growth Includes:",
-      cta: "Join Now",
+      sectionHeader: 'Growth Includes:',
+      cta: 'Join Now',
       popular: true,
-      featured: "Most Popular!",
-      buttonStyle: "blue"
+      link: 'https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2',
+      featured: 'Most Popular!',
+      buttonStyle: 'blue',
     },
     {
-      name: "ATHENA",
-      nameHighlight: "Enterprise",
-      target: "Best for: Large organizations, universities, and corporate training networks. Enterprise Mode — Predictable scale, premium support.",
+      name: 'ATHENA',
+      nameHighlight: 'Enterprise',
+      target:
+        'Best for: Large organizations, universities, and corporate training networks. Enterprise Mode — Predictable scale, premium support.',
       isPlusCard: true,
       features: [
-        { text: "Fully tailored learning infrastructure built around your organization's goals", info: false },
-        { text: "Scalable user capacity for thousands of learners across departments", info: false },
-        { text: "Pooled storage and AI credits designed to match enterprise-scale operations", info: false },
-        { text: "Custom white-label branding with domain and identity integration", info: false },
-        { text: "Advanced API, SSO, and automation capabilities", info: false },
-        { text: "Compliance-ready architecture with guaranteed uptime and dedicated support", info: false },
-        { text: "Personalized onboarding, account management, and staff training", info: false },
-        { text: "Volume pricing and partnership options for global teams", info: false }
+        {
+          text: "Fully tailored learning infrastructure built around your organization's goals",
+          info: false,
+        },
+        {
+          text: 'Scalable user capacity for thousands of learners across departments',
+          info: false,
+        },
+        {
+          text: 'Pooled storage and AI credits designed to match enterprise-scale operations',
+          info: false,
+        },
+        {
+          text: 'Custom white-label branding with domain and identity integration',
+          info: false,
+        },
+        { text: 'Advanced API, SSO, and automation capabilities', info: false },
+        {
+          text: 'Compliance-ready architecture with guaranteed uptime and dedicated support',
+          info: false,
+        },
+        {
+          text: 'Personalized onboarding, account management, and staff training',
+          info: false,
+        },
+        {
+          text: 'Volume pricing and partnership options for global teams',
+          info: false,
+        },
       ],
-      sectionHeader: "ATHENA Enterprise Includes:",
-      cta: "Contact Sales",
+      sectionHeader: 'ATHENA Enterprise Includes:',
+      cta: 'Contact Sales',
       popular: false,
-      buttonStyle: "white",
-      bgGray: false
-    }
+      buttonStyle: 'white',
+      bgGray: false,
+    },
   ];
 
   // Slider functions for mobile
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % plans.length);
+    setCurrentSlide(prev => (prev + 1) % plans.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + plans.length) % plans.length);
+    setCurrentSlide(prev => (prev - 1 + plans.length) % plans.length);
   };
 
-  const goToSlide = (index) => {
+  const goToSlide = index => {
     setCurrentSlide(index);
   };
 
   return (
-    <section id="pricing-section" className="py-20 px-4 relative overflow-hidden" style={{
-      background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
-    }}>
+    <section
+      id="pricing-section"
+      className="py-20 px-4 relative overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
+      }}
+    >
       {/* Background Elements */}
       <div className="absolute inset-0">
-        <motion.div 
+        <motion.div
           className="absolute top-10 right-10 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
@@ -104,10 +138,10 @@ const Pricing = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
-        <motion.div 
+        <motion.div
           className="absolute bottom-10 left-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"
           animate={{
             scale: [1.2, 1, 1.2],
@@ -116,8 +150,8 @@ const Pricing = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
+            ease: 'easeInOut',
+            delay: 1,
           }}
         />
       </div>
@@ -131,12 +165,19 @@ const Pricing = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-4 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+          <h2
+            className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-4 leading-tight"
+            style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+          >
             Scalable solutions to drive business growth
           </h2>
-          
-          <p className="text-lg text-white max-w-3xl mx-auto mb-8 font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-            Athena LMS plans give experts, academies, and companies the tools and features they need to grow their business end-to-end.
+
+          <p
+            className="text-lg text-white max-w-3xl mx-auto mb-8 font-normal"
+            style={{ fontFamily: 'Arial, sans-serif' }}
+          >
+            Athena LMS plans give experts, academies, and companies the tools
+            and features they need to grow their business end-to-end.
           </p>
 
           {/* Billing Toggle
@@ -171,30 +212,35 @@ const Pricing = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
-              whileHover={{ 
+              whileHover={{
                 y: -8,
-                transition: { duration: 0.3, ease: "easeOut" }
+                transition: { duration: 0.3, ease: 'easeOut' },
               }}
               className="relative group"
             >
               {/* Card */}
-              <div className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
-                plan.popular 
-                  ? 'border-4 border-yellow-400 shadow-2xl' 
-                  : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
-              } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}>
-                
+              <div
+                className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
+                  plan.popular
+                    ? 'border-4 border-yellow-400 shadow-2xl'
+                    : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
+                } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}
+              >
                 {/* Popular Header - Only on featured plan */}
                 {plan.popular && plan.featured && (
-                  <div className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black" style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' }}>
+                  <div
+                    className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                    }}
+                  >
                     {plan.featured}
                   </div>
                 )}
 
                 {/* Alignment Spacer for non-popular cards */}
-                {!plan.popular && (
-                  <div className="h-14" />
-                )}
+                {!plan.popular && <div className="h-14" />}
 
                 {/* Card Content */}
                 <div className="p-6 flex-1 flex flex-col">
@@ -244,24 +290,29 @@ const Pricing = () => {
                       </p>
                     </div>
                   )}
-                  
-                  {plan.isPlusCard && (
-                    <div className="mb-3 h-[80px]" />
-                  )}
+
+                  {plan.isPlusCard && <div className="mb-3 h-[80px]" />}
 
                   {/* CTA Button */}
                   <div className="mb-6">
-                    <button className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 ${
-                      plan.buttonStyle === 'yellow'
-                        ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}>
+                    <a
+                      href={plan.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 text-center ${
+                        plan.buttonStyle === 'yellow'
+                          ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
                       {plan.cta} →
-                    </button>
+                    </a>
                   </div>
 
                   {/* Features Section */}
-                  <div className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}>
+                  <div
+                    className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}
+                  >
                     <h4 className="font-bold text-gray-900 mb-4 text-base">
                       {plan.sectionHeader}
                     </h4>
@@ -294,7 +345,7 @@ const Pricing = () => {
           >
             <ChevronLeft className="w-8 h-8 text-white" />
           </button>
-          
+
           <button
             onClick={nextSlide}
             className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center hover:opacity-70 transition-opacity duration-200 z-10 -mr-12"
@@ -305,7 +356,7 @@ const Pricing = () => {
 
           {/* Slider Container */}
           <div className="relative overflow-hidden">
-            <div 
+            <div
               ref={sliderRef}
               className="flex transition-transform duration-300 ease-in-out"
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -318,30 +369,35 @@ const Pricing = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                     viewport={{ once: true }}
-                    whileHover={{ 
+                    whileHover={{
                       y: -8,
-                      transition: { duration: 0.3, ease: "easeOut" }
+                      transition: { duration: 0.3, ease: 'easeOut' },
                     }}
                     className="relative group"
                   >
                     {/* Card */}
-                    <div className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
-                      plan.popular 
-                        ? 'border-4 border-yellow-400 shadow-2xl' 
-                        : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
-                    } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}>
-                      
+                    <div
+                      className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
+                        plan.popular
+                          ? 'border-4 border-yellow-400 shadow-2xl'
+                          : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
+                      } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}
+                    >
                       {/* Popular Header - Only on featured plan */}
                       {plan.popular && plan.featured && (
-                        <div className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black" style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' }}>
+                        <div
+                          className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                          }}
+                        >
                           {plan.featured}
                         </div>
                       )}
 
                       {/* Alignment Spacer for non-popular cards */}
-                      {!plan.popular && (
-                        <div className="h-14" />
-                      )}
+                      {!plan.popular && <div className="h-14" />}
 
                       {/* Card Content */}
                       <div className="p-6 flex-1 flex flex-col">
@@ -376,24 +432,26 @@ const Pricing = () => {
                             </p>
                           </div>
                         )}
-                        
-                        {plan.isPlusCard && (
-                          <div className="mb-3 h-[80px]" />
-                        )}
+
+                        {plan.isPlusCard && <div className="mb-3 h-[80px]" />}
 
                         {/* CTA Button */}
                         <div className="mb-6">
-                          <button className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 ${
-                            plan.buttonStyle === 'yellow'
-                              ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}>
+                          <button
+                            className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 ${
+                              plan.buttonStyle === 'yellow'
+                                ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                          >
                             {plan.cta} →
                           </button>
                         </div>
 
                         {/* Features Section */}
-                        <div className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}>
+                        <div
+                          className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}
+                        >
                           <h4 className="font-bold text-gray-900 mb-4 text-base">
                             {plan.sectionHeader}
                           </h4>
@@ -425,8 +483,8 @@ const Pricing = () => {
                 key={index}
                 onClick={() => goToSlide(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                  index === currentSlide 
-                    ? 'bg-white scale-125' 
+                  index === currentSlide
+                    ? 'bg-white scale-125'
                     : 'bg-white/50 hover:bg-white/70'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
@@ -444,7 +502,8 @@ const Pricing = () => {
           className="text-center mt-4"
         >
           <p className="text-base text-white">
-            All prices are in USD and charged per site with applicable taxes added at checkout.
+            All prices are in USD and charged per site with applicable taxes
+            added at checkout.
           </p>
         </motion.div>
       </div>

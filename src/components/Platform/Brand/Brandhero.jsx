@@ -1,6 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, X, Play, ArrowUpRight, FileText, Video } from 'lucide-react';
+import {
+  ArrowRight,
+  X,
+  Play,
+  ArrowUpRight,
+  FileText,
+  Video,
+} from 'lucide-react';
 import teamImage from '../../../assets/teamm.jpg';
 
 const Brandhero = () => {
@@ -23,9 +30,13 @@ const Brandhero = () => {
           >
             {/* Breadcrumb/Navigation */}
             <div className="flex items-center gap-3 text-sm text-gray-600 mb-8">
-              <span className="font-medium hover:text-gray-900 cursor-pointer transition">Features</span>
+              <span className="font-medium hover:text-gray-900 cursor-pointer transition">
+                Features
+              </span>
               <span className="text-gray-400">|</span>
-              <span className="font-semibold text-gray-900">Branded Mobile</span>
+              <span className="font-semibold text-gray-900">
+                Branded Mobile
+              </span>
             </div>
 
             {/* Main Heading */}
@@ -35,7 +46,10 @@ const Brandhero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Make it easy for customers to access your content anywhere, anytime, with a branded mobile app on Athena. Better outcomes, more engaged learners — all powered by a brand they know and trust: yours.
+              Make it easy for customers to access your content anywhere,
+              anytime, with a branded mobile app on Athena. Better outcomes,
+              more engaged learners — all powered by a brand they know and
+              trust: yours.
             </p>
 
             {/* CTA Buttons */}
@@ -62,16 +76,31 @@ const Brandhero = () => {
               <div className="relative w-full max-w-[600px] aspect-[4/3] bg-[#c24f0a] flex items-center justify-center overflow-hidden shadow-2xl rounded-lg">
                 {/* Radiating lines from top-left */}
                 <div className="absolute inset-0">
-                  <svg className="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+                  <svg
+                    className="w-full h-full"
+                    viewBox="0 0 800 600"
+                    preserveAspectRatio="xMidYMid slice"
+                  >
                     {[...Array(48)].map((_, i) => {
                       const angle = (i * 360) / 48 - 45; // Start from top-left
                       const x1 = 0;
                       const y1 = 0;
                       const length = 1200;
-                      const x2 = x1 + Math.cos((angle * Math.PI) / 180) * length;
-                      const y2 = y1 + Math.sin((angle * Math.PI) / 180) * length;
+                      const x2 =
+                        x1 + Math.cos((angle * Math.PI) / 180) * length;
+                      const y2 =
+                        y1 + Math.sin((angle * Math.PI) / 180) * length;
                       return (
-                        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#ffedd5" strokeWidth="1.2" opacity="0.5" />
+                        <line
+                          key={i}
+                          x1={x1}
+                          y1={y1}
+                          x2={x2}
+                          y2={y2}
+                          stroke="#ffedd5"
+                          strokeWidth="1.2"
+                          opacity="0.5"
+                        />
                       );
                     })}
                   </svg>
@@ -86,21 +115,28 @@ const Brandhero = () => {
 
                   {/* Header Image */}
                   <div className="w-full h-32 bg-gray-200 overflow-hidden">
-                    <img 
-                      src={teamImage} 
-                      alt="Team collaboration" 
+                    <img
+                      src={teamImage}
+                      alt="Team collaboration"
                       className="w-full h-full object-cover"
                     />
                   </div>
 
                   {/* Course Details */}
                   <div className="px-3 py-2">
-                    <h3 className="text-sm font-bold text-gray-900 mb-1">Strategic Planning</h3>
-                    <p className="text-[10px] text-gray-600 mb-2">50% completed • 16 lessons</p>
-                    
+                    <h3 className="text-sm font-bold text-gray-900 mb-1">
+                      Strategic Planning
+                    </h3>
+                    <p className="text-[10px] text-gray-600 mb-2">
+                      50% completed • 16 lessons
+                    </p>
+
                     {/* Progress Bar */}
                     <div className="w-full bg-gray-200 rounded-full h-1 mb-2">
-                      <div className="bg-green-600 h-1 rounded-full" style={{ width: '50%' }}></div>
+                      <div
+                        className="bg-green-600 h-1 rounded-full"
+                        style={{ width: '50%' }}
+                      ></div>
                     </div>
 
                     {/* Action Buttons */}
@@ -117,7 +153,9 @@ const Brandhero = () => {
 
                     {/* Course Content List */}
                     <div className="border-t border-gray-200 pt-2">
-                      <h4 className="text-[10px] font-semibold text-gray-900 mb-2">Chapter 1: Introduction to Planning</h4>
+                      <h4 className="text-[10px] font-semibold text-gray-900 mb-2">
+                        Chapter 1: Introduction to Planning
+                      </h4>
                       <div className="space-y-1.5">
                         {/* List Item 1 */}
                         <div className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-gray-50 rounded-lg px-1.5 -mx-1.5 bg-white border border-gray-100">
@@ -130,7 +168,9 @@ const Brandhero = () => {
                             <FileText className="w-3.5 h-3.5 text-green-600" />
                           </div>
                           <div className="flex-1">
-                            <div className="text-[10px] font-medium text-gray-900">Course overview</div>
+                            <div className="text-[10px] font-medium text-gray-900">
+                              Course overview
+                            </div>
                             <div className="text-[9px] text-gray-500">Text</div>
                           </div>
                           <ArrowRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -147,8 +187,12 @@ const Brandhero = () => {
                             <Video className="w-3.5 h-3.5 text-green-600" />
                           </div>
                           <div className="flex-1">
-                            <div className="text-[10px] font-medium text-gray-900">Course overview</div>
-                            <div className="text-[9px] text-gray-500">Video</div>
+                            <div className="text-[10px] font-medium text-gray-900">
+                              Course overview
+                            </div>
+                            <div className="text-[9px] text-gray-500">
+                              Video
+                            </div>
                           </div>
                           <ArrowRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                         </div>
@@ -164,7 +208,9 @@ const Brandhero = () => {
                             <FileText className="w-3.5 h-3.5 text-green-600" />
                           </div>
                           <div className="flex-1">
-                            <div className="text-[10px] font-medium text-gray-900">Examples of great gesture</div>
+                            <div className="text-[10px] font-medium text-gray-900">
+                              Examples of great gesture
+                            </div>
                           </div>
                           <ArrowRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                         </div>
@@ -182,4 +228,3 @@ const Brandhero = () => {
 };
 
 export default Brandhero;
-

@@ -5,34 +5,40 @@ const Communityplus = () => {
   const features = [
     {
       id: 1,
-      title: "Course and community connection",
-      description: "A linked-user experience lets your customers switch between courses and communities easily."
+      title: 'Course and community connection',
+      description:
+        'A linked-user experience lets your customers switch between courses and communities easily.',
     },
     {
       id: 2,
-      title: "Profiles",
-      description: "Personalize the experience and help learners connect with member profiles and @mentions."
+      title: 'Profiles',
+      description:
+        'Personalize the experience and help learners connect with member profiles and @mentions.',
     },
     {
       id: 3,
-      title: "Notifications",
-      description: "Keep your customers informed and updated with mobile and desktop push and in-app notifications."
+      title: 'Notifications',
+      description:
+        'Keep your customers informed and updated with mobile and desktop push and in-app notifications.',
     },
     {
       id: 4,
-      title: "Reactions and threads",
-      description: "Members can react and respond directly to comments in a thread, preserving context and continuity."
+      title: 'Reactions and threads',
+      description:
+        'Members can react and respond directly to comments in a thread, preserving context and continuity.',
     },
     {
       id: 5,
-      title: "Community analytics",
-      description: "Track your members and identify the most active participants so you can reach out and engage ambassadors."
+      title: 'Community analytics',
+      description:
+        'Track your members and identify the most active participants so you can reach out and engage ambassadors.',
     },
     {
       id: 6,
-      title: "Communities on mobile",
-      description: "With push notifications, on-the-go access and activity feeds, customers can always stay connected."
-    }
+      title: 'Communities on mobile',
+      description:
+        'With push notifications, on-the-go access and activity feeds, customers can always stay connected.',
+    },
   ];
 
   return (
@@ -59,7 +65,9 @@ const Communityplus = () => {
 
           {/* Description */}
           <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Offer communal learning at its best. Do it with an interactive and<br />community-first integrated post, learning content.
+            Offer communal learning at its best. Do it with an interactive and
+            <br />
+            community-first integrated post, learning content.
           </p>
         </motion.div>
 
@@ -73,7 +81,10 @@ const Communityplus = () => {
         >
           {/* Outer blur box */}
           <div className="relative w-full max-w-5xl mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl">
-            <div className="relative w-full overflow-hidden shadow-xl" style={{ paddingBottom: '56.25%' }}>
+            <div
+              className="relative w-full overflow-hidden shadow-xl"
+              style={{ paddingBottom: '56.25%' }}
+            >
               {/* Video iframe */}
               <iframe
                 src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview"
@@ -105,10 +116,13 @@ const Communityplus = () => {
             >
               <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
                 {/* Title */}
-                <h3 className="text-2xl lg:text-3xl font-normal text-white leading-relaxed" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                <h3
+                  className="text-2xl lg:text-3xl font-normal text-white leading-relaxed"
+                  style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                >
                   {feature.title}
                 </h3>
-                
+
                 {/* Description */}
                 <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
                   {feature.description}
@@ -123,4 +137,3 @@ const Communityplus = () => {
 };
 
 export default Communityplus;
-

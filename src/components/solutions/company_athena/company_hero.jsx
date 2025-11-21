@@ -1,8 +1,8 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import TeamImage from "../../../assets/teamm.jpg";
-import AnalyticsImage from "../../../assets/analytics.webp";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import TeamImage from '../../../assets/teamm.jpg';
+import AnalyticsImage from '../../../assets/analytics.webp';
 
 export default function CompanyHero() {
   return (
@@ -29,7 +29,9 @@ export default function CompanyHero() {
 
             {/* Description */}
             <p className="text-base lg:text-lg text-gray-700 mb-8 leading-relaxed">
-              Built for scale, designed to remove complexity. Athena's learning commerce platform is your path to continued revenue growth and the end of operational bottlenecks.
+              Built for scale, designed to remove complexity. Athena's learning
+              commerce platform is your path to continued revenue growth and the
+              end of operational bottlenecks.
             </p>
 
             {/* CTA Buttons */}
@@ -38,7 +40,7 @@ export default function CompanyHero() {
                 Talk to sales
                 <ArrowRight className="w-5 h-5" />
               </button>
-              
+
               <button className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-transparent hover:bg-gray-100 text-gray-900 font-semibold rounded-full border-2 border-gray-900 hover:border-gray-700 transition-all duration-300">
                 Watch a demo
                 <ArrowRight className="w-5 h-5" />
@@ -57,37 +59,81 @@ export default function CompanyHero() {
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               {/* Background Team Image */}
               <div className="relative">
-                <img 
-                  src={TeamImage} 
-                  alt="Team collaboration" 
+                <img
+                  src={TeamImage}
+                  alt="Team collaboration"
                   className="w-full h-auto object-cover rounded-2xl"
                 />
-                
+
                 {/* Revenue Chart Overlay */}
                 <div className="absolute bottom-3 left-3 w-60">
                   <div className="bg-white/95 backdrop-blur-sm rounded-md shadow-lg p-2">
                     {/* Chart Header */}
                     <div className="flex items-center justify-between mb-1.5">
                       <div>
-                        <h3 className="text-[10px] font-semibold text-gray-900">Revenue Over Time</h3>
+                        <h3 className="text-[10px] font-semibold text-gray-900">
+                          Revenue Over Time
+                        </h3>
                         <p className="text-[8px] text-gray-600">Last 6 weeks</p>
                       </div>
                       <button className="p-0.5 hover:bg-gray-100 rounded transition-colors">
-                        <svg className="w-2.5 h-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-2.5 h-2.5 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </button>
                     </div>
 
                     {/* Simple Line Chart */}
                     <div className="mb-1.5">
-                      <svg className="w-full h-14" viewBox="0 0 400 100" preserveAspectRatio="none">
+                      <svg
+                        className="w-full h-14"
+                        viewBox="0 0 400 100"
+                        preserveAspectRatio="none"
+                      >
                         {/* Grid lines */}
-                        <line x1="0" y1="20" x2="400" y2="20" stroke="#e5e7eb" strokeWidth="1" />
-                        <line x1="0" y1="40" x2="400" y2="40" stroke="#e5e7eb" strokeWidth="1" />
-                        <line x1="0" y1="60" x2="400" y2="60" stroke="#e5e7eb" strokeWidth="1" />
-                        <line x1="0" y1="80" x2="400" y2="80" stroke="#e5e7eb" strokeWidth="1" />
-                        
+                        <line
+                          x1="0"
+                          y1="20"
+                          x2="400"
+                          y2="20"
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                        />
+                        <line
+                          x1="0"
+                          y1="40"
+                          x2="400"
+                          y2="40"
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                        />
+                        <line
+                          x1="0"
+                          y1="60"
+                          x2="400"
+                          y2="60"
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                        />
+                        <line
+                          x1="0"
+                          y1="80"
+                          x2="400"
+                          y2="80"
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                        />
+
                         {/* Revenue line */}
                         <path
                           d="M 0,90 L 80,75 L 160,70 L 240,50 L 320,35 L 400,20"
@@ -97,22 +143,28 @@ export default function CompanyHero() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
-                        
+
                         {/* Area under curve */}
                         <path
                           d="M 0,90 L 80,75 L 160,70 L 240,50 L 320,35 L 400,20 L 400,100 L 0,100 Z"
                           fill="url(#gradient)"
                           opacity="0.1"
                         />
-                        
+
                         <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <linearGradient
+                            id="gradient"
+                            x1="0%"
+                            y1="0%"
+                            x2="0%"
+                            y2="100%"
+                          >
                             <stop offset="0%" stopColor="#111827" />
                             <stop offset="100%" stopColor="#ffffff" />
                           </linearGradient>
                         </defs>
                       </svg>
-                      
+
                       {/* X-axis labels */}
                       <div className="flex justify-between text-[8px] text-gray-500 mt-1">
                         <span>Oct. 13</span>
@@ -136,4 +188,3 @@ export default function CompanyHero() {
     </section>
   );
 }
-

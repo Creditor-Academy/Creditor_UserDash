@@ -8,7 +8,8 @@ const RevenueCTA = () => {
           Ready to Accelerate Your Revenue?
         </h2>
         <p className="text-xl text-blue-100 mb-8">
-          Join hundreds of businesses that have transformed their revenue growth with our proven strategies
+          Join hundreds of businesses that have transformed their revenue growth
+          with our proven strategies
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg">
@@ -27,4 +28,3 @@ const RevenueCTA = () => {
 };
 
 export default RevenueCTA;
-

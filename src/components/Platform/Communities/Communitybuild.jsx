@@ -1,55 +1,72 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Video, TrendingUp, MessageCircle, Lock, Shield, Pin, BarChart3 } from 'lucide-react';
+import {
+  Mail,
+  Video,
+  TrendingUp,
+  MessageCircle,
+  Lock,
+  Shield,
+  Pin,
+  BarChart3,
+} from 'lucide-react';
 
 const Communitybuild = () => {
   const features = [
     {
       id: 1,
-      title: "Weekly digests",
-      description: "Keep your members engaged and connected with an automated weekly email.",
+      title: 'Weekly digests',
+      description:
+        'Keep your members engaged and connected with an automated weekly email.',
       icon: Mail,
     },
     {
       id: 2,
-      title: "Private spaces",
-      description: "Host spaces open to all members or kept private for select groups. Members can connect in more focused, meaningful ways.",
+      title: 'Private spaces',
+      description:
+        'Host spaces open to all members or kept private for select groups. Members can connect in more focused, meaningful ways.',
       icon: Lock,
     },
     {
       id: 3,
-      title: "Live events",
-      description: "Let members connect in real time. Offer dynamic learning experiences like workshops, Q&As, office hours, coaching, and more.",
+      title: 'Live events',
+      description:
+        'Let members connect in real time. Offer dynamic learning experiences like workshops, Q&As, office hours, coaching, and more.',
       icon: Video,
     },
     {
       id: 4,
-      title: "Community moderation",
-      description: "Fuel steady engagement and consistent activity by empowering your team with a Community Moderator Role.",
+      title: 'Community moderation',
+      description:
+        'Fuel steady engagement and consistent activity by empowering your team with a Community Moderator Role.',
       icon: Shield,
     },
     {
       id: 5,
-      title: "Trending posts",
-      description: "Push notifications alert your audience to trending posts so they can jump back in and take part in the discussion — no matter where they are.",
+      title: 'Trending posts',
+      description:
+        'Push notifications alert your audience to trending posts so they can jump back in and take part in the discussion — no matter where they are.',
       icon: TrendingUp,
     },
     {
       id: 6,
-      title: "Pinned posts and announcements",
-      description: "Help members stay informed on shared goals, prompts, and important community updates.",
+      title: 'Pinned posts and announcements',
+      description:
+        'Help members stay informed on shared goals, prompts, and important community updates.',
       icon: Pin,
     },
     {
       id: 7,
-      title: "Direct Messaging",
-      description: "Boost engagement and build stronger member relationships with direct messaging, providing private, real-time communication right inside your community.",
+      title: 'Direct Messaging',
+      description:
+        'Boost engagement and build stronger member relationships with direct messaging, providing private, real-time communication right inside your community.',
       icon: MessageCircle,
     },
     {
       id: 8,
-      title: "Community analytics",
-      description: "Track your members and identify the most active participants so you can reach out and engage ambassadors.",
+      title: 'Community analytics',
+      description:
+        'Track your members and identify the most active participants so you can reach out and engage ambassadors.',
       icon: BarChart3,
     },
   ];
@@ -75,7 +92,8 @@ const Communitybuild = () => {
             Build around the needs of your members
           </h2>
           <p className="text-base sm:text-lg text-gray-200 max-w-4xl mx-auto leading-relaxed">
-            Customize your community with learners in mind. Keep connecting with customers in a way that feels authentic to your business.
+            Customize your community with learners in mind. Keep connecting with
+            customers in a way that feels authentic to your business.
           </p>
         </motion.div>
 
@@ -93,10 +111,13 @@ const Communitybuild = () => {
               <div className="relative pb-8 border-b border-white/20">
                 <div className="flex items-start justify-between gap-6 mb-4">
                   {/* Title */}
-                  <h3 className="text-2xl font-normal text-white leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                  <h3
+                    className="text-2xl font-normal text-white leading-tight"
+                    style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                  >
                     {feature.title}
                   </h3>
-                  
+
                   {/* Icon */}
                   <div className="flex-shrink-0 w-14 h-14 bg-blue-700/50 rounded-lg flex items-center justify-center group-hover:bg-blue-600/50 transition-colors duration-300">
                     <feature.icon className="w-6 h-6 text-white" />
@@ -117,4 +138,3 @@ const Communitybuild = () => {
 };
 
 export default Communitybuild;
-
