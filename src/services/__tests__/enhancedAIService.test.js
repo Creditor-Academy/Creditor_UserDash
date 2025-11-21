@@ -1,28 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock the openAIService dependency
-vi.mock('../openAIService', () => ({
-  default: {
-    generateText: vi.fn().mockResolvedValue('Generated text'),
-    generateStructured: vi.fn().mockResolvedValue({ success: true, data: {} }),
-    generateCourseOutline: vi
-      .fn()
-      .mockResolvedValue({ success: true, data: {} }),
-    generateCourseImage: vi
-      .fn()
-      .mockResolvedValue({ success: true, data: { url: 'test-url' } }),
-    generateLessonContent: vi
-      .fn()
-      .mockResolvedValue('Generated lesson content'),
-    isAvailable: vi.fn().mockReturnValue(true),
-  },
+// Mock the secureAIService dependency
+const mockSecureAIService = {
+  generateText: vi.fn().mockResolvedValue('Generated text'),
+  generateStructured: vi.fn().mockResolvedValue({ success: true, data: {} }),
+  generateCourseOutline: vi.fn().mockResolvedValue({ success: true, data: {} }),
+  generateCourseImage: vi
+    .fn()
+    .mockResolvedValue({ success: true, data: { url: 'test-url' } }),
+  generateLessonContent: vi.fn().mockResolvedValue('Generated lesson content'),
+  isAvailable: vi.fn().mockResolvedValue(true), // This is async
+};
+
+vi.mock('../secureAIService', () => ({
+  default: mockSecureAIService,
 }));
 
 describe('EnhancedAIService', () => {
   let service;
 
   beforeEach(async () => {
+    // Reset all mocks before each test
     vi.clearAllMocks();
+
+    // Reset mock implementations to defaults
+    mockSecureAIService.generateText.mockResolvedValue('Generated text');
+    mockSecureAIService.generateStructured.mockResolvedValue({
+      success: true,
+      data: {},
+    });
+    mockSecureAIService.generateCourseOutline.mockResolvedValue({
+      success: true,
+      data: {},
+    });
+    mockSecureAIService.generateCourseImage.mockResolvedValue({
+      success: true,
+      data: { url: 'test-url' },
+    });
+    mockSecureAIService.generateLessonContent.mockResolvedValue(
+      'Generated lesson content'
+    );
+    mockSecureAIService.isAvailable.mockResolvedValue(true);
 
     // Import the singleton instance
     const module = await import('../enhancedAIService.js');
@@ -35,8 +53,9 @@ describe('EnhancedAIService', () => {
       expect(service.openai).toBeDefined();
     });
 
-    it('has OpenAI service available', () => {
-      expect(service.isAvailable()).toBe(true);
+    it('has OpenAI service available', async () => {
+      const available = await service.isAvailable();
+      expect(available).toBe(true);
     });
   });
 
@@ -51,7 +70,9 @@ describe('EnhancedAIService', () => {
     });
 
     it('handles text generation errors', async () => {
-      service.openai.generateText.mockRejectedValue(new Error('API Error'));
+      mockSecureAIService.generateText.mockRejectedValue(
+        new Error('API Error')
+      );
 
       await expect(service.generateText('Test prompt')).rejects.toThrow(
         'Text generation failed: API Error'
@@ -74,7 +95,7 @@ describe('EnhancedAIService', () => {
     });
 
     it('handles structured generation errors', async () => {
-      service.openai.generateStructured.mockRejectedValue(
+      mockSecureAIService.generateStructured.mockRejectedValue(
         new Error('API Error')
       );
 
@@ -96,7 +117,7 @@ describe('EnhancedAIService', () => {
     });
 
     it('handles course outline generation errors', async () => {
-      service.openai.generateCourseOutline.mockRejectedValue(
+      mockSecureAIService.generateCourseOutline.mockRejectedValue(
         new Error('API Error')
       );
 
@@ -121,7 +142,7 @@ describe('EnhancedAIService', () => {
     });
 
     it('handles image generation errors', async () => {
-      service.openai.generateCourseImage.mockRejectedValue(
+      mockSecureAIService.generateCourseImage.mockRejectedValue(
         new Error('API Error')
       );
 
@@ -157,7 +178,7 @@ describe('EnhancedAIService', () => {
 
     it('handles lesson content generation errors', async () => {
       const error = new Error('API Error');
-      service.openai.generateLessonContent.mockRejectedValue(error);
+      mockSecureAIService.generateLessonContent.mockRejectedValue(error);
 
       await expect(service.generateLessonContent({}, {}, {})).rejects.toThrow(
         error

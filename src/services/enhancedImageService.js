@@ -35,7 +35,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           });
           console.log('📤 Uploading blob-based image to S3...');
         } else if (imageResult.data.url) {
-          // Convert URL to blob then to file for upload (Deep AI, etc.)
+          // Convert URL to blob then to file for upload (OpenAI/HuggingFace images)
           console.log('📤 Converting URL-based image to file for S3 upload...');
           const response = await fetch(imageResult.data.url);
           if (response.ok) {
@@ -132,7 +132,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
                   s3Url: uploadResult.imageUrl,
                   fileName: uploadResult.fileName,
                   fileSize: uploadResult.fileSize,
-                  provider: 'deepai-legacy',
+                  provider: 'openai-legacy',
                   uploaded: true,
                   uploadedToS3: true,
                   createdAt: new Date().toISOString(),
@@ -242,7 +242,7 @@ export async function testImageProviders() {
     const legacyResult = await aiService.generateCourseImage(testPrompt);
     results.legacyService = {
       available: legacyResult.success,
-      provider: 'deepai',
+      provider: 'openai',
       error: legacyResult.success ? null : legacyResult.error,
     };
   } catch (error) {

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import universalAILessonService from '@/services/universalAILessonService';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const UniversalAIContentButton = ({
   lessonData,
@@ -53,7 +54,7 @@ const UniversalAIContentButton = ({
   const generateAIContent = async () => {
     setIsGenerating(true);
     try {
-      console.log('🎯 Starting Universal AI Content Generation...');
+      devLogger.debug('🎯 Starting Universal AI Content Generation...');
 
       // Generate content using universal service
       const generatedBlocks =
@@ -64,7 +65,7 @@ const UniversalAIContentButton = ({
           generationOptions
         );
 
-      console.log('✅ Generated blocks:', generatedBlocks);
+      devLogger.debug('✅ Generated blocks:', generatedBlocks);
 
       // If lesson has an ID, save directly to lesson
       if (lessonData?.id) {
@@ -83,7 +84,7 @@ const UniversalAIContentButton = ({
             onContentGenerated(generatedBlocks);
           }
         } catch (saveError) {
-          console.warn(
+          devLogger.warn(
             'Could not save directly to lesson, passing to parent:',
             saveError
           );
@@ -107,7 +108,7 @@ const UniversalAIContentButton = ({
 
       setShowAIModal(false);
     } catch (error) {
-      console.error('❌ Universal AI generation failed:', error);
+      devLogger.error('❌ Universal AI generation failed:', error);
       toast.error('Failed to generate AI content. Please try again.');
     } finally {
       setIsGenerating(false);

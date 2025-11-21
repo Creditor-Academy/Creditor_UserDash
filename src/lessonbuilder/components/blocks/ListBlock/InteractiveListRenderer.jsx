@@ -1,16 +1,17 @@
 import React from 'react';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 // Interactive List Renderer Component for checkbox lists
 const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
   const containerRef = React.useRef(null);
 
   React.useEffect(() => {
-    console.log(
+    devLogger.debug(
       'InteractiveListRenderer useEffect triggered for block:',
       block.id
     );
     if (!containerRef.current) {
-      console.log('No containerRef.current found');
+      devLogger.debug('No containerRef.current found');
       return;
     }
 
@@ -18,7 +19,7 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
       e.preventDefault();
       e.stopPropagation();
 
-      console.log('Checkbox click detected:', e.target);
+      devLogger.debug('Checkbox click detected:', e.target);
 
       // Find the checkbox container - could be the clicked element or a parent
       let checkboxContainer = e.target.closest('.checkbox-container');
@@ -32,7 +33,7 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
       }
 
       if (!checkboxContainer) {
-        console.log('No checkbox-container found');
+        devLogger.debug('No checkbox-container found');
         return;
       }
 
@@ -42,7 +43,7 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
         checkboxContainer.querySelector('.checkbox-visual');
       const textElement = checkboxContainer.querySelector('.flex-1');
 
-      console.log('Checkbox elements found:', {
+      devLogger.debug('Checkbox elements found:', {
         itemIndex,
         hiddenCheckbox: !!hiddenCheckbox,
         visualCheckbox: !!visualCheckbox,
@@ -67,7 +68,7 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
           }
         }
 
-        console.log('Calling onCheckboxToggle:', {
+        devLogger.debug('Calling onCheckboxToggle:', {
           blockId: block.id || block.block_id,
           itemIndex,
           newChecked,
@@ -85,18 +86,18 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
     const checkboxWrappers =
       containerRef.current.querySelectorAll('.checkbox-wrapper');
 
-    console.log('Found checkbox containers:', checkboxContainers.length);
-    console.log('Found checkbox wrappers:', checkboxWrappers.length);
+    devLogger.debug('Found checkbox containers:', checkboxContainers.length);
+    devLogger.debug('Found checkbox wrappers:', checkboxWrappers.length);
 
     // Add listeners to containers
     checkboxContainers.forEach((container, index) => {
-      console.log(`Adding listener to container ${index}:`, container);
+      devLogger.debug(`Adding listener to container ${index}:`, container);
       container.addEventListener('click', handleCheckboxClick);
     });
 
     // Add listeners to wrappers for more precise clicking
     checkboxWrappers.forEach((wrapper, index) => {
-      console.log(`Adding listener to wrapper ${index}:`, wrapper);
+      devLogger.debug(`Adding listener to wrapper ${index}:`, wrapper);
       wrapper.addEventListener('click', handleCheckboxClick);
     });
 
@@ -111,7 +112,7 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
     };
   }, [block.html_css, onCheckboxToggle, block.id, block.block_id]);
 
-  console.log(
+  devLogger.debug(
     'InteractiveListRenderer rendering with HTML:',
     block.html_css?.substring(0, 200)
   );

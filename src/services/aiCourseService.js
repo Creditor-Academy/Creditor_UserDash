@@ -391,9 +391,13 @@ export async function createCompleteAICourse(courseData) {
           order: i + 1,
           estimated_duration: 60,
           module_status: 'PUBLISHED',
-          thumbnail: validatedThumbnail,
           price: 0, // Backend expects number, matching manual creation
         };
+
+        // Only include thumbnail if it has a valid value
+        if (validatedThumbnail && validatedThumbnail.trim() !== '') {
+          modulePayload.thumbnail = validatedThumbnail;
+        }
 
         console.log(
           '📋 Module payload being sent:',
@@ -508,8 +512,15 @@ export async function createCompleteAICourse(courseData) {
               status: 'PUBLISHED',
               content: lessonData.content || '',
               duration: lessonData.duration || '15 min',
-              thumbnail: validatedLessonThumbnail,
             };
+
+            // Only include thumbnail if it has a valid value
+            if (
+              validatedLessonThumbnail &&
+              validatedLessonThumbnail.trim() !== ''
+            ) {
+              lessonPayload.thumbnail = validatedLessonThumbnail;
+            }
 
             // Use enhanced API client instead of fetch for better error handling
             const response = await fetch(
@@ -1063,7 +1074,7 @@ ${content}`;
     let summary;
     try {
       summary = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 300,
         temperature: 0.3,
       });
@@ -1120,7 +1131,7 @@ Provide a clear, educational answer that would be helpful for a student learning
     let answer;
     try {
       answer = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 500,
         temperature: 0.5,
       });
@@ -1173,7 +1184,7 @@ Return valid JSON only in this format:
     let qa = [];
     try {
       const response = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 600,
         temperature: 0.5,
       });
@@ -1238,7 +1249,7 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
     } catch {
       const text = await openAIService.generateText(
         `${sysPrompt}\n\n${userPrompt}`,
-        { model: 'gpt-3.5-turbo', maxTokens: 800, temperature: 0.6 }
+        { model: 'gpt-4o-mini', maxTokens: 800, temperature: 0.6 }
       );
       const jsonMatch =
         typeof text === 'string' ? text.match(/\{[\s\S]*\}/) : null;
@@ -1291,7 +1302,7 @@ export async function generateAssessmentQuestions(
     let questions = [];
     try {
       const text = await openAIService.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         maxTokens: 1000,
         temperature: 0.6,
       });
@@ -1917,9 +1928,9 @@ Format as JSON:
       order: 1,
       estimated_duration: 60,
       module_status: 'PUBLISHED',
-      thumbnail: 'AI generated module thumbnail',
       price: 0,
     };
+    // Note: Thumbnail omitted - will be added separately if needed
 
     const module = await createModule(courseId, moduleData);
     const moduleId = module.data?.id || module.id;

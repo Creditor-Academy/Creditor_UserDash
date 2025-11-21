@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const useLessonAutosave = ({
   lessonId,
@@ -32,11 +33,15 @@ const useLessonAutosave = ({
         }
 
         try {
-          console.log('💾 Auto-save executing for', content.length, 'blocks');
+          devLogger.debug(
+            '💾 Auto-save executing for',
+            content.length,
+            'blocks'
+          );
           setAutoSaveStatus('saving');
           await handleUpdateRef.current();
         } catch (error) {
-          console.error('❌ Auto-save failed:', error);
+          devLogger.error('❌ Auto-save failed:', error);
         }
       }, 2000);
     },
@@ -80,7 +85,7 @@ const useLessonAutosave = ({
         return JSON.stringify(prevBlock) !== JSON.stringify(block);
       });
 
-      console.log('🔄 Auto-save triggered:', {
+      devLogger.debug('🔄 Auto-save triggered:', {
         contentBlocksChanged,
         lessonContentChanged,
         totalBlocks: contentBlocks.length,

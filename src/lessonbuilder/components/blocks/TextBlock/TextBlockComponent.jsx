@@ -16,6 +16,7 @@ import {
   gradientOptions,
 } from '@lessonbuilder/constants/textTypesConfig';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const TextBlockComponent = ({
   showTextTypeSidebar,
@@ -33,6 +34,7 @@ const TextBlockComponent = ({
   insertionPosition,
   setInsertionPosition,
   setSidebarCollapsed,
+  onAICreation,
 }) => {
   // Editor state
   const [editorTitle, setEditorTitle] = useState('');
@@ -102,6 +104,58 @@ const TextBlockComponent = ({
       </div>
     `;
 
+    // Calculate order based on insertion position
+    const blocksToUse =
+      lessonContent?.data?.content && lessonContent.data.content.length > 0
+        ? lessonContent.data.content
+        : contentBlocks;
+
+    let calculatedOrder;
+    if (insertionPosition !== null) {
+      // Inserting at specific position
+      if (blocksToUse.length === 0) {
+        calculatedOrder = 1;
+      } else if (insertionPosition === 0) {
+        const firstBlock = blocksToUse[0];
+        const firstOrder =
+          firstBlock?.order !== undefined && firstBlock.order !== null
+            ? firstBlock.order
+            : 1;
+        calculatedOrder = Math.max(0, firstOrder - 0.5);
+      } else if (insertionPosition >= blocksToUse.length) {
+        const lastBlock = blocksToUse[blocksToUse.length - 1];
+        const lastOrder =
+          lastBlock?.order !== undefined && lastBlock.order !== null
+            ? lastBlock.order
+            : blocksToUse.length;
+        calculatedOrder = lastOrder + 1;
+      } else {
+        const prevBlock = blocksToUse[insertionPosition - 1];
+        const nextBlock = blocksToUse[insertionPosition];
+        const prevOrder =
+          prevBlock?.order !== undefined && prevBlock.order !== null
+            ? prevBlock.order
+            : insertionPosition;
+        const nextOrder =
+          nextBlock?.order !== undefined && nextBlock.order !== null
+            ? nextBlock.order
+            : insertionPosition + 1;
+        calculatedOrder = (prevOrder + nextOrder) / 2;
+      }
+    } else {
+      // Adding at the end
+      if (blocksToUse.length === 0) {
+        calculatedOrder = 1;
+      } else {
+        const lastBlock = blocksToUse[blocksToUse.length - 1];
+        const lastOrder =
+          lastBlock?.order !== undefined && lastBlock.order !== null
+            ? lastBlock.order
+            : blocksToUse.length;
+        calculatedOrder = lastOrder + 1;
+      }
+    }
+
     const newBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
@@ -112,10 +166,7 @@ const TextBlockComponent = ({
       html_css: htmlContent,
       ...(heading !== null && { heading }),
       ...(subheading !== null && { subheading }),
-      order:
-        (lessonContent?.data?.content
-          ? lessonContent.data.content.length
-          : contentBlocks.length) + 1,
+      order: calculatedOrder,
     };
 
     // Check if we're inserting at a specific position
@@ -160,25 +211,46 @@ const TextBlockComponent = ({
 
       // Properly detect and set the text type
       let detectedTextType = block.textType || 'paragraph';
+      const htmlContent = block.html_css || block.content || '';
 
-      // If textType is not set or unreliable, detect from HTML content
-      if (!block.textType || block.textType === 'heading') {
-        const htmlContent = block.html_css || block.content || '';
-
-        // Check for master heading first (has gradient background)
+      // ALWAYS check for master heading first, regardless of existing textType
+      // This is critical for AI-generated content where textType might not be set correctly
+      if (
+        htmlContent.includes('linear-gradient') ||
+        htmlContent.includes('bg-gradient-to-r') ||
+        htmlContent.includes('gradient')
+      ) {
+        // Check if it's a master heading (has gradient and heading structure)
         if (
-          htmlContent.includes('linear-gradient') &&
-          htmlContent.includes('<h1')
+          htmlContent.includes('<h1') ||
+          htmlContent.includes('text-3xl') ||
+          htmlContent.includes('text-4xl') ||
+          htmlContent.includes('font-extrabold')
         ) {
           detectedTextType = 'master_heading';
-        } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
-          detectedTextType = 'heading_paragraph';
-        } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
-          detectedTextType = 'subheading_paragraph';
-        } else if (htmlContent.includes('<h1')) {
-          detectedTextType = 'heading';
-        } else if (htmlContent.includes('<h2')) {
-          detectedTextType = 'subheading';
+        }
+      }
+
+      // If textType is not set or unreliable, detect from HTML content
+      if (
+        !block.textType ||
+        block.textType === 'heading' ||
+        block.textType === 'paragraph'
+      ) {
+        // Only do additional detection if we haven't already detected master_heading
+        if (detectedTextType !== 'master_heading') {
+          if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+            detectedTextType = 'heading_paragraph';
+          } else if (
+            htmlContent.includes('<h2') &&
+            htmlContent.includes('<p')
+          ) {
+            detectedTextType = 'subheading_paragraph';
+          } else if (htmlContent.includes('<h1')) {
+            detectedTextType = 'heading';
+          } else if (htmlContent.includes('<h2')) {
+            detectedTextType = 'subheading';
+          }
         }
       }
 
@@ -271,27 +343,46 @@ const TextBlockComponent = ({
               setEditorHtml('Master Heading');
             }
 
-            // Detect gradient from existing content
-            const gradientDiv = tempDiv.querySelector(
-              'div[style*="linear-gradient"]'
-            );
-            if (gradientDiv) {
-              const style = gradientDiv.getAttribute('style') || '';
-              // Try to match with our gradient options
-              const matchedGradient = gradientOptions.find(option =>
-                style.includes(
-                  option.gradient
-                    .replace('linear-gradient(', '')
-                    .replace(')', '')
-                )
-              );
-              if (matchedGradient) {
-                setMasterHeadingGradient(matchedGradient.id);
-              } else {
-                setMasterHeadingGradient('gradient1'); // Default fallback
-              }
+            // Detect gradient from existing content or block property
+            // First check if block has gradient property (most reliable)
+            if (block.gradient) {
+              setMasterHeadingGradient(block.gradient);
             } else {
-              setMasterHeadingGradient('gradient1'); // Default
+              // Fallback: detect from HTML content
+              const gradientDiv = tempDiv.querySelector(
+                'div[class*="bg-gradient-to-r"], div[style*="linear-gradient"], div[style*="gradient"]'
+              );
+              if (gradientDiv) {
+                const style = gradientDiv.getAttribute('style') || '';
+                const classes = gradientDiv.getAttribute('class') || '';
+
+                // Try to match with our gradient options by class name
+                const matchedGradient = gradientOptions.find(option => {
+                  const gradientClass = option.preview || '';
+                  return (
+                    classes.includes(gradientClass) ||
+                    style.includes(
+                      option.gradient
+                        .replace('linear-gradient(', '')
+                        .replace(')', '')
+                    )
+                  );
+                });
+
+                if (matchedGradient) {
+                  setMasterHeadingGradient(matchedGradient.id);
+                } else {
+                  // Try to match by gradient ID in class names
+                  const gradientIdMatch = classes.match(/gradient([1-6])/);
+                  if (gradientIdMatch) {
+                    setMasterHeadingGradient(`gradient${gradientIdMatch[1]}`);
+                  } else {
+                    setMasterHeadingGradient('gradient1'); // Default fallback
+                  }
+                }
+              } else {
+                setMasterHeadingGradient('gradient1'); // Default
+              }
             }
           } else {
             setEditorHtml(htmlContent || 'Master Heading');
@@ -399,15 +490,33 @@ const TextBlockComponent = ({
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
         let effectiveTextType = currentTextType || blockToUpdate.textType;
 
-        // Double-check for master heading if textType seems wrong
-        if (effectiveTextType === 'heading' && blockToUpdate.html_css) {
-          const htmlContent = blockToUpdate.html_css || '';
+        // ALWAYS double-check for master heading to prevent it from being saved as normal text
+        // This is critical for AI-generated content
+        const htmlContentCheck =
+          blockToUpdate.html_css || blockToUpdate.content || '';
+        if (
+          htmlContentCheck.includes('linear-gradient') ||
+          htmlContentCheck.includes('bg-gradient-to-r') ||
+          htmlContentCheck.includes('gradient')
+        ) {
+          // If it has gradient styling, it should be master_heading
           if (
-            htmlContent.includes('linear-gradient') &&
-            htmlContent.includes('<h1')
+            htmlContentCheck.includes('<h1') ||
+            htmlContentCheck.includes('text-3xl') ||
+            htmlContentCheck.includes('text-4xl') ||
+            htmlContentCheck.includes('font-extrabold') ||
+            blockToUpdate.gradient // Also check if gradient property exists
           ) {
             effectiveTextType = 'master_heading';
           }
+        }
+
+        // Also check if the original block had master_heading type
+        if (
+          blockToUpdate.textType === 'master_heading' ||
+          blockToUpdate.text_type === 'master_heading'
+        ) {
+          effectiveTextType = 'master_heading';
         }
 
         // Always use consistent HTML generation for all text types to avoid double-update issues
@@ -759,7 +868,22 @@ const TextBlockComponent = ({
             );
           }
 
-          updatedContent = `<div style="background: ${selectedGradient.gradient}; padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
+          // Use the proper master heading format with Tailwind classes matching the original structure
+          const gradientClassMap = {
+            gradient1:
+              'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500',
+            gradient2:
+              'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500',
+            gradient3: 'bg-gradient-to-r from-green-500 to-blue-500',
+            gradient4: 'bg-gradient-to-r from-orange-500 to-red-500',
+            gradient5: 'bg-gradient-to-r from-pink-500 to-purple-500',
+            gradient6: 'bg-gradient-to-r from-teal-500 to-cyan-500',
+          };
+          const gradientClass =
+            gradientClassMap[masterHeadingGradient] ||
+            gradientClassMap['gradient1'];
+
+          updatedContent = `<div class="rounded-xl p-6 text-white font-extrabold text-3xl md:text-4xl leading-tight tracking-tight text-center ${gradientClass}">${styledContent}</div>`;
         } else {
           // For paragraph and other single content blocks - preserve alignment
           let styledContent = editorHtml || 'Enter your content here...';
@@ -841,11 +965,16 @@ const TextBlockComponent = ({
                         : block.subheadingBgColor,
                     updatedAt: new Date().toISOString(),
                     textType: effectiveTextType || block.textType,
+                    // Preserve gradient for master headings
+                    gradient:
+                      effectiveTextType === 'master_heading'
+                        ? masterHeadingGradient || block.gradient || 'gradient1'
+                        : block.gradient,
                   }
                 : block
             );
           } catch (error) {
-            console.error('Error updating contentBlocks:', error);
+            devLogger.error('Error updating contentBlocks:', error);
             toast.error('Failed to update content blocks');
             return blocks;
           }
@@ -881,6 +1010,13 @@ const TextBlockComponent = ({
                           : block.subheadingBgColor,
                       updatedAt: new Date().toISOString(),
                       textType: effectiveTextType || block.textType,
+                      // Preserve gradient for master headings
+                      gradient:
+                        effectiveTextType === 'master_heading'
+                          ? masterHeadingGradient ||
+                            block.gradient ||
+                            'gradient1'
+                          : block.gradient,
                     }
                   : block
               ),
@@ -1000,10 +1136,22 @@ const TextBlockComponent = ({
             textTypes.find(t => t.id === effectiveTextTypeForNew)?.style || {},
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          order:
-            (lessonContent?.data?.content
-              ? lessonContent.data.content.length
-              : contentBlocks.length) + 1,
+          order: (() => {
+            const blocksToUse =
+              lessonContent?.data?.content &&
+              lessonContent.data.content.length > 0
+                ? lessonContent.data.content
+                : contentBlocks;
+            if (blocksToUse.length === 0) {
+              return 1;
+            }
+            const lastBlock = blocksToUse[blocksToUse.length - 1];
+            const lastOrder =
+              lastBlock?.order !== undefined && lastBlock.order !== null
+                ? lastBlock.order
+                : blocksToUse.length;
+            return lastOrder + 1;
+          })(),
         };
 
         // If we have existing lesson content, add to that structure
@@ -1026,7 +1174,7 @@ const TextBlockComponent = ({
       // Show success message
       toast.success('Text block updated successfully');
     } catch (error) {
-      console.error('Error in handleTextEditorSave:', error);
+      devLogger.error('Error in handleTextEditorSave:', error);
       toast.error('Failed to save text block. Please try again.');
     }
   };
@@ -1094,6 +1242,70 @@ const TextBlockComponent = ({
             </div>
 
             <div className="p-6 space-y-4">
+              {/* AI Generation Option */}
+              <div
+                onClick={() => {
+                  setShowTextTypeSidebar(false);
+                  // Call the AI creation handler from parent
+                  if (onAICreation) {
+                    onAICreation({ id: 'text', title: 'Text' });
+                  }
+                }}
+                className="p-5 border rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200"
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="text-purple-600 mt-1 group-hover:text-purple-700">
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-purple-900 group-hover:text-purple-900 text-base flex items-center gap-2">
+                      Generate with AI
+                      <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                        Recommended
+                      </span>
+                    </h3>
+                    <p className="text-sm text-purple-700 mt-1">
+                      Describe what you want and let AI create professional text
+                      content instantly
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mini Preview */}
+                <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
+                  <div className="flex items-center gap-2 text-purple-600">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium">
+                      AI-powered content generation
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {textTypes.map(textType => (
                 <div
                   key={textType.id}

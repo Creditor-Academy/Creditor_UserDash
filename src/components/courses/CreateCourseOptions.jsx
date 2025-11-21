@@ -12,35 +12,27 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       title: 'AI Course',
       description: 'Upcoming Feature',
       icon: Sparkles,
-      gradient: 'from-purple-500 to-indigo-600',
-      hoverGradient: 'from-purple-600 to-indigo-700',
-      disabled: true,
-      disabledGradient: 'from-gray-200 to-gray-300',
+      color: 'bg-purple-500 hover:bg-purple-600',
     },
     {
       id: 'blank',
       title: 'Manual Course',
       description: 'Create from scratch',
       icon: PenTool,
-      gradient: 'from-slate-700 to-slate-800',
-      hoverGradient: 'from-slate-800 to-slate-900',
-      disabled: false,
+      color: 'bg-gray-600 hover:bg-gray-700',
     },
   ];
 
   const overlayVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { duration: 0.2 },
-    },
+    visible: { opacity: 1 },
   };
 
   const modalVariants = {
     hidden: {
       opacity: 0,
-      scale: 0.96,
-      y: 10,
+      scale: 0.95,
+      y: 20,
     },
     visible: {
       opacity: 1,
@@ -48,8 +40,8 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       y: 0,
       transition: {
         type: 'spring',
-        stiffness: 400,
-        damping: 25,
+        stiffness: 300,
+        damping: 30,
       },
     },
     exit: {
@@ -68,8 +60,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       opacity: 1,
       y: 0,
       transition: {
-        delay: i * 0.1,
-        duration: 0.3,
+        duration: 0.2,
       },
     }),
   };
@@ -83,7 +74,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
         initial="hidden"
         animate="visible"
         exit="hidden"
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
         onClick={e => {
           // Only close if clicking the backdrop itself
           if (e.target === e.currentTarget) {
@@ -96,7 +87,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden"
+          className="bg-white rounded-xl shadow-2xl max-w-sm w-full"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
@@ -115,46 +106,22 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
               onClick={onClose}
               className="rounded-full hover:bg-gray-100 h-9 w-9 transition-colors"
               aria-label="Close dialog"
+              title="Close course creation options"
             >
               <X className="w-4 h-4 text-gray-500" />
             </Button>
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4">
-              {courseOptions.map((option, index) => (
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {courseOptions.map(option => (
                 <motion.div
                   key={option.id}
-                  custom={index}
-                  variants={optionVariants}
-                  initial="hidden"
-                  animate="visible"
-                  whileHover={
-                    option.disabled
-                      ? {}
-                      : {
-                          scale: 1.03,
-                          y: -2,
-                          transition: { duration: 0.2 },
-                        }
-                  }
-                  whileTap={option.disabled ? {} : { scale: 0.98 }}
-                  className={`
-                    relative rounded-xl p-5 
-                    ${
-                      option.disabled
-                        ? `bg-gradient-to-br ${option.disabledGradient} cursor-not-allowed opacity-60`
-                        : `bg-gradient-to-br ${option.gradient} cursor-pointer shadow-lg hover:shadow-xl`
-                    }
-                    transition-all duration-300 text-white group overflow-hidden
-                  `}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`${option.color} rounded-lg p-4 cursor-pointer transition-all duration-200 text-white text-center group`}
                   onClick={e => {
-                    if (option.disabled) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      return;
-                    }
                     e.preventDefault();
                     e.stopPropagation();
                     onSelectOption(option.id);

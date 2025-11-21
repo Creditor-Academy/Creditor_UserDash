@@ -1,9 +1,16 @@
-// API Key Management Service - OpenAI Only
-// Simplified to handle only OpenAI API keys
+// API Key Management Service - DEPRECATED
+// NOTE: This service is deprecated. All AI operations now go through backend API.
+// No client-side API keys are needed or used.
+// This file is kept for backward compatibility only.
 
 /**
- * OpenAI API Key Manager
- * Provides OpenAI API key management with multiple fallback sources
+ * OpenAI API Key Manager (DEPRECATED)
+ * @deprecated All AI operations now go through backend API - no client-side keys needed
+ *
+ * IMPORTANT: This manager is no longer used. All AI services proxy through:
+ * - backendAIService.js -> Backend API endpoints
+ * - Backend handles OpenAI authentication securely
+ * - No API keys stored or exposed on frontend
  */
 class ApiKeyManager {
   constructor() {
@@ -12,41 +19,19 @@ class ApiKeyManager {
   }
 
   /**
-   * Get OpenAI API key with multiple fallback sources
-   * @returns {string|null} API key or null
+   * Get OpenAI API key with multiple fallback sources (DEPRECATED)
+   * @deprecated No longer used - all AI operations go through backend
+   * @returns {string|null} Always returns null
    */
   getApiKey() {
-    // Check cache first
-    if (this.keyCache.has('openai')) {
-      return this.keyCache.get('openai');
-    }
-
-    let apiKey = null;
-
-    // Try multiple sources in priority order
-    const sources = [
-      () => import.meta.env.VITE_OPENAI_API_KEY,
-      () => localStorage.getItem('openai_api_key'),
-      () => this.fallbackKey,
-    ];
-
-    // Try each source
-    for (const source of sources) {
-      try {
-        const key = source();
-        if (this.isValidKey(key)) {
-          apiKey = key;
-          break;
-        }
-      } catch (error) {
-        // Continue to next source
-      }
-    }
-
-    // Cache the result (even if null)
-    this.keyCache.set('openai', apiKey);
-
-    return apiKey;
+    console.warn(
+      '⚠️ apiKeyManager.getApiKey() is deprecated.\n' +
+        'All AI operations now go through backend API.\n' +
+        'No client-side OpenAI keys are needed or used.'
+    );
+    return null; // Always return null - backend handles authentication
+    // DEPRECATED: Old implementation disabled
+    // All code below is no longer executed
   }
 
   /**
@@ -84,35 +69,35 @@ class ApiKeyManager {
   }
 
   /**
-   * Check OpenAI service availability
+   * Check OpenAI service availability (DEPRECATED)
+   * @deprecated Backend API is always available (if backend is running)
    * @returns {Object} Service status
    */
   getServiceStatus() {
-    const key = this.getApiKey();
+    console.warn(
+      '⚠️ apiKeyManager.getServiceStatus() is deprecated. Check backend API status instead.'
+    );
 
     return {
-      service: 'openai',
-      available: key !== null,
-      hasValidKey: key !== null,
-      status: key !== null ? 'ready' : 'no_key',
+      service: 'backend-proxy',
+      available: true,
+      deprecated: true,
+      message: 'All AI operations go through backend API',
+      status: 'using_backend',
     };
   }
 
   /**
-   * Set OpenAI API key in localStorage
+   * Set OpenAI API key in localStorage (DEPRECATED)
+   * @deprecated Client-side API keys are no longer used
    * @param {string} key - API key
    */
   setApiKey(key) {
-    if (!this.isValidKey(key)) {
-      throw new Error('Invalid OpenAI API key format');
-    }
-
-    localStorage.setItem('openai_api_key', key);
-
-    // Clear cache to force refresh
-    this.clearCache();
-
-    console.log('✅ OpenAI API key saved to localStorage');
+    throw new Error(
+      'Setting client-side API keys is no longer supported.\n' +
+        'All AI operations go through backend API.\n' +
+        'Configure OpenAI keys on your backend server instead.'
+    );
   }
 
   /**
@@ -145,32 +130,21 @@ class ApiKeyManager {
   }
 
   /**
-   * Initialize API key with user prompt if needed
+   * Initialize API key with user prompt if needed (DEPRECATED)
+   * @deprecated No initialization needed - backend handles everything
    * @returns {Promise<Object>} Initialization result
    */
   async initializeKeys() {
-    const status = this.getServiceStatus();
+    console.log(
+      '✅ AI services ready - using backend API proxy\n' +
+        'No client-side API key configuration needed.'
+    );
 
-    if (status.available) {
-      console.log('✅ OpenAI API key is configured and ready');
-      return { success: true, status };
-    }
-
-    console.log('⚠️ OpenAI API key not configured.');
-
-    // In development, optionally prompt for key
-    if (import.meta.env.DEV) {
-      const shouldPrompt = confirm(
-        'OpenAI API key not found. Would you like to configure it now?'
-      );
-
-      if (shouldPrompt) {
-        await this.promptForApiKey();
-        return { success: true, status: this.getServiceStatus() };
-      }
-    }
-
-    return { success: false, status, offline: true };
+    return {
+      success: true,
+      status: this.getServiceStatus(),
+      message: 'Backend API handles all AI operations',
+    };
   }
 }
 

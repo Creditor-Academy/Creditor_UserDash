@@ -1,17 +1,17 @@
 /**
  * Batch Lesson Generator Component
- * Generates multiple lessons simultaneously using LangChain Bytez batch operations
+ * Generates multiple lessons simultaneously using OpenAI/HuggingFace
  */
 
 import React, { useState } from 'react';
-import { langChainBytezService } from '../../services/langchainBytez';
+import secureAIService from '../../services/secureAIService';
 import { Users, CheckCircle, AlertCircle, Clock, Sparkles } from 'lucide-react';
 
-const BatchLessonGenerator = ({ 
-  lessonRequests, 
-  apiKey, 
-  onComplete, 
-  onProgress 
+const BatchLessonGenerator = ({
+  lessonRequests,
+  apiKey,
+  onComplete,
+  onProgress,
 }) => {
   const [batchStatus, setBatchStatus] = useState('idle'); // idle, processing, complete, error
   const [completedLessons, setCompletedLessons] = useState([]);
@@ -26,37 +26,46 @@ const BatchLessonGenerator = ({
     setBatchStatus('processing');
     setCompletedLessons([]);
     setFailedLessons([]);
-    
+
     const startTime = Date.now();
     const timer = setInterval(() => {
       setProcessingTime(Date.now() - startTime);
     }, 100);
 
     try {
-      // Use batch generation for efficiency
-      const results = await langChainBytezService.batchGenerateLessons(
-        lessonRequests,
-        apiKey
+      // Generate lessons in parallel using OpenAI/HuggingFace
+      const results = await Promise.all(
+        lessonRequests.map(async request => {
+          try {
+            const prompt = `Create a comprehensive lesson for: ${request.lessonTitle}\n\nModule: ${request.moduleTitle}\n\nDescription: ${request.description || ''}`;
+            const content = await secureAIService.generateText(prompt, {
+              maxTokens: 2000,
+            });
+            return { content, error: null };
+          } catch (error) {
+            return { content: null, error: error.message };
+          }
+        })
       );
 
       clearInterval(timer);
-      
+
       const completed = [];
       const failed = [];
 
       results.forEach((result, index) => {
         const request = lessonRequests[index];
-        
+
         if (result.error) {
           failed.push({
             ...request,
-            error: result.error
+            error: result.error,
           });
         } else {
           completed.push({
             ...request,
             content: result.content,
-            generatedAt: new Date().toISOString()
+            generatedAt: new Date().toISOString(),
           });
         }
       });
@@ -64,13 +73,12 @@ const BatchLessonGenerator = ({
       setCompletedLessons(completed);
       setFailedLessons(failed);
       setBatchStatus('complete');
-      
+
       onComplete?.({
         completed,
         failed,
-        totalTime: Date.now() - startTime
+        totalTime: Date.now() - startTime,
       });
-
     } catch (error) {
       clearInterval(timer);
       setBatchStatus('error');
@@ -78,11 +86,11 @@ const BatchLessonGenerator = ({
     }
   };
 
-  const formatTime = (ms) => {
+  const formatTime = ms => {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    
+
     if (minutes > 0) {
       return `${minutes}m ${remainingSeconds}s`;
     }
@@ -108,11 +116,15 @@ const BatchLessonGenerator = ({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${getStatusColor()}-100`}>
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${getStatusColor()}-100`}
+            >
               <Users className={`w-5 h-5 text-${getStatusColor()}-600`} />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Batch Lesson Generator</h3>
+              <h3 className="font-semibold text-gray-900">
+                Batch Lesson Generator
+              </h3>
               <p className="text-sm text-gray-600">
                 {lessonRequests?.length || 0} lessons queued
               </p>
@@ -136,7 +148,9 @@ const BatchLessonGenerator = ({
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center gap-2 text-blue-700">
               <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <span className="font-medium">Processing {lessonRequests.length} lessons...</span>
+              <span className="font-medium">
+                Processing {lessonRequests.length} lessons...
+              </span>
             </div>
             <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
               <Clock className="w-4 h-4" />
@@ -152,21 +166,28 @@ const BatchLessonGenerator = ({
           <h4 className="font-medium text-gray-900 mb-3">Lesson Queue</h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {lessonRequests.map((request, index) => {
-              const isCompleted = completedLessons.some(l => 
-                l.lessonTitle === request.lessonTitle && l.moduleTitle === request.moduleTitle
+              const isCompleted = completedLessons.some(
+                l =>
+                  l.lessonTitle === request.lessonTitle &&
+                  l.moduleTitle === request.moduleTitle
               );
-              const isFailed = failedLessons.some(l => 
-                l.lessonTitle === request.lessonTitle && l.moduleTitle === request.moduleTitle
+              const isFailed = failedLessons.some(
+                l =>
+                  l.lessonTitle === request.lessonTitle &&
+                  l.moduleTitle === request.moduleTitle
               );
 
               return (
-                <div 
+                <div
                   key={index}
                   className={`p-3 rounded-lg border ${
-                    isCompleted ? 'bg-green-50 border-green-200' :
-                    isFailed ? 'bg-red-50 border-red-200' :
-                    batchStatus === 'processing' ? 'bg-blue-50 border-blue-200' :
-                    'bg-gray-50 border-gray-200'
+                    isCompleted
+                      ? 'bg-green-50 border-green-200'
+                      : isFailed
+                        ? 'bg-red-50 border-red-200'
+                        : batchStatus === 'processing'
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-gray-50 border-gray-200'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -178,13 +199,19 @@ const BatchLessonGenerator = ({
                         Module: {request.moduleTitle}
                       </p>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      {isCompleted && <CheckCircle className="w-4 h-4 text-green-600" />}
-                      {isFailed && <AlertCircle className="w-4 h-4 text-red-600" />}
-                      {batchStatus === 'processing' && !isCompleted && !isFailed && (
-                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      {isCompleted && (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
                       )}
+                      {isFailed && (
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      {batchStatus === 'processing' &&
+                        !isCompleted &&
+                        !isFailed && (
+                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        )}
                     </div>
                   </div>
                 </div>
@@ -205,7 +232,9 @@ const BatchLessonGenerator = ({
                   <p className="font-semibold text-green-900">
                     {completedLessons.length} Completed
                   </p>
-                  <p className="text-sm text-green-700">Successfully generated</p>
+                  <p className="text-sm text-green-700">
+                    Successfully generated
+                  </p>
                 </div>
               </div>
             </div>

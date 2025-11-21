@@ -142,6 +142,7 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
+                title="Close AI Course Builder"
                 className="text-white hover:bg-white/20 rounded-full h-8 w-8"
               >
                 <X className="w-5 h-5" />

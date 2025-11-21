@@ -18,6 +18,7 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const ImageEditor = ({
   isOpen,
@@ -402,7 +403,7 @@ const ImageEditor = ({
       const handle = getHandleAt(mousePos.x, mousePos.y);
 
       if (handle) {
-        console.log('Mouse down on:', handle);
+        devLogger.debug('Mouse down on:', handle);
         setIsDragging(true);
         setDragType(handle);
         setDragStart(mousePos);
@@ -484,7 +485,7 @@ const ImageEditor = ({
       const deltaX = mousePos.x - dragStart.x;
       const deltaY = mousePos.y - dragStart.y;
 
-      console.log('Mouse move - delta:', deltaX, deltaY, 'type:', dragType);
+      devLogger.debug('Mouse move - delta:', deltaX, deltaY, 'type:', dragType);
 
       // Convert canvas coordinates to image coordinates
       const canvasElement = canvasRef.current;
@@ -504,7 +505,7 @@ const ImageEditor = ({
             0,
             Math.min(image.height - prev.height, prev.y + deltaY * scaleY)
           );
-          console.log('Moving crop area:', {
+          devLogger.debug('Moving crop area:', {
             x: newX,
             y: newY,
             width: prev.width,
@@ -598,7 +599,7 @@ const ImageEditor = ({
               break;
           }
 
-          console.log('Resizing crop area:', {
+          devLogger.debug('Resizing crop area:', {
             x: newX,
             y: newY,
             width: newWidth,
@@ -615,7 +616,7 @@ const ImageEditor = ({
 
   const handleMouseUp = useCallback(e => {
     e.preventDefault();
-    console.log('Mouse up');
+    devLogger.debug('Mouse up');
     setIsDragging(false);
     setDragType('move');
 
@@ -627,12 +628,12 @@ const ImageEditor = ({
   }, []);
 
   const rotateLeft = () => {
-    console.log('Rotate left');
+    devLogger.debug('Rotate left');
     setRotation(prev => prev - 90);
   };
 
   const rotateRight = () => {
-    console.log('Rotate right');
+    devLogger.debug('Rotate right');
     setRotation(prev => prev + 90);
   };
 
@@ -703,7 +704,7 @@ const ImageEditor = ({
         0.9
       );
     } catch (error) {
-      console.error('Error processing image:', error);
+      devLogger.error('Error processing image:', error);
       toast.error('Failed to process image. Please try again.');
       setIsProcessing(false);
     }

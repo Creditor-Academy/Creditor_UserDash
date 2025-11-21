@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 import { Youtube, Loader2 } from 'lucide-react';
 
 const YouTubeComponent = ({
@@ -130,7 +131,7 @@ const YouTubeComponent = ({
           : 'YouTube video added successfully!'
       );
     } catch (error) {
-      console.error('Error saving YouTube video:', error);
+      devLogger.error('Error saving YouTube video:', error);
       toast.error('Failed to save YouTube video. Please try again.');
     } finally {
       setIsProcessing(false);

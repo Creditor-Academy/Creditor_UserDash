@@ -17,6 +17,196 @@ class ContentLibraryAIService {
   }
 
   /**
+   * Get section focus based on lesson structure
+   */
+  getSectionFocus(sectionNumber, lessonTitle) {
+    const focuses = [
+      'Introduction and Overview',
+      'Core Concepts and Definitions',
+      'Key Principles and Theory',
+      'Practical Applications',
+      'Advanced Techniques',
+      'Real-World Examples',
+      'Best Practices and Tips',
+      'Common Challenges and Solutions',
+      'Summary and Review',
+      'Next Steps and Resources',
+    ];
+    return focuses[sectionNumber - 1] || 'Additional Topics';
+  }
+
+  /**
+   * Generate simplified lesson content: 10x (Master Heading + Description + Divider)
+   * Used for quick course creation with progress display
+   */
+  async generateSimpleLessonContent(
+    lessonTitle,
+    moduleTitle,
+    courseTitle,
+    onProgress
+  ) {
+    console.log(
+      '🎯 Generating simplified lesson: 10x (Heading + Description + Divider)'
+    );
+
+    const blocks = [];
+    let order = 0;
+
+    try {
+      // Generate 10 sets of Master Heading + Description + Divider
+      for (let i = 0; i < 10; i++) {
+        const topicNumber = i + 1;
+        const randomGradient =
+          gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
+
+        // Topic prompt for OpenAI - more specific to avoid repetition
+        const topicPrompt = `Generate a unique, concise topic title (3-5 words) for section ${topicNumber} of 10 in a lesson about "${lessonTitle}". 
+        Section ${topicNumber} focus: ${this.getSectionFocus(topicNumber, lessonTitle)}
+        Return ONLY the title text, no quotes, no numbering, no extra formatting.`;
+        const topicTitle = await this.generateAIContent(topicPrompt, 10);
+
+        // 1. Master Heading with gradient and html_css
+        const gradientStyle =
+          randomGradient.gradient ||
+          'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        const headingBlock = {
+          id: `heading-${topicNumber}-${Date.now()}-${Math.random()}`,
+          type: 'text',
+          textType: 'master_heading',
+          content: topicTitle,
+          gradient: randomGradient.id,
+          html_css: `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 24px 0; color: white; background: ${gradientStyle}; padding: 20px; border-radius: 8px; text-align: center;">${topicTitle}</h1>`,
+          order: order++,
+          metadata: {
+            variant: 'master_heading',
+            gradient: randomGradient.name,
+            section: topicNumber,
+          },
+        };
+        blocks.push(headingBlock);
+
+        // Notify progress
+        if (onProgress) {
+          onProgress({
+            blockType: 'Master Heading',
+            content: topicTitle,
+            gradient: randomGradient.name,
+            section: topicNumber,
+            totalSections: 10,
+          });
+        }
+
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 2. Detailed Educational Description
+        const descPrompt = `You are creating educational content for a professional online course.
+        
+        Course: "${courseTitle}"
+        Module: "${moduleTitle}"  
+        Lesson: "${lessonTitle}"
+        
+        For Section ${topicNumber}: "${topicTitle}" (Focus: ${this.getSectionFocus(topicNumber, lessonTitle)})
+        
+        Write a comprehensive 3-4 sentence educational description that:
+        - Explains what students will learn in this specific section
+        - Relates it to the overall lesson and module objectives
+        - Uses professional, engaging language
+        - Provides concrete learning outcomes or examples
+        - Avoids generic phrases like "getting started" or "provides an introduction"
+        
+        Write ONLY the description text, no quotes, no titles.`;
+        const description = await this.generateAIContent(descPrompt, 120);
+
+        const descBlock = {
+          id: `desc-${topicNumber}-${Date.now()}-${Math.random()}`,
+          type: 'text',
+          textType: 'paragraph',
+          content: description,
+          order: order++,
+          metadata: {
+            variant: 'description',
+            section: topicNumber,
+          },
+        };
+        blocks.push(descBlock);
+
+        // Notify progress
+        if (onProgress) {
+          onProgress({
+            blockType: 'Description',
+            content: description.substring(0, 50) + '...',
+            section: topicNumber,
+            totalSections: 10,
+          });
+        }
+
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 3. Continue Divider - clickable button between sections
+        const dividerBlock = {
+          id: `divider-${topicNumber}-${Date.now()}-${Math.random()}`,
+          type: 'divider',
+          subtype: 'continue',
+          content: 'CONTINUE',
+          html_css: `<div style="width: 100%; padding: 24px 0;">
+        <div style="background-color: #2563eb; color: white; text-align: center; padding: 16px 32px; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; cursor: pointer; transition: background-color 0.2s; border: none;" onmouseover="this.style.backgroundColor='#1d4ed8'" onmouseout="this.style.backgroundColor='#2563eb'">
+          CONTINUE
+        </div>
+      </div>`,
+          order: order++,
+          metadata: {
+            variant: 'continue',
+            section: topicNumber,
+          },
+        };
+        blocks.push(dividerBlock);
+
+        // Notify progress
+        if (onProgress) {
+          onProgress({
+            blockType: 'Continue Button',
+            content: 'CONTINUE',
+            section: topicNumber,
+            totalSections: 10,
+          });
+        }
+
+        // Small delay before next section
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Add final "COMPLETE" continue divider
+      const completeDivider = {
+        id: `divider-complete-${Date.now()}-${Math.random()}`,
+        type: 'divider',
+        subtype: 'continue',
+        content: 'LESSON COMPLETE',
+        html_css: `<div style="width: 100%; padding: 24px 0;">
+        <div style="background-color: #10b981; color: white; text-align: center; padding: 16px 32px; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; cursor: pointer; transition: background-color 0.2s; border: none;">
+          LESSON COMPLETE
+        </div>
+      </div>`,
+        order: order++,
+        metadata: {
+          variant: 'continue',
+          type: 'completion',
+        },
+      };
+      blocks.push(completeDivider);
+
+      console.log(
+        `✅ Generated ${blocks.length} content blocks (10 sections + completion divider)`
+      );
+      return blocks;
+    } catch (error) {
+      console.error('❌ Error generating simplified content:', error);
+      return this.generateFallbackContent(lessonTitle);
+    }
+  }
+
+  /**
    * Generate comprehensive lesson using ALL content library variants
    */
   async generateComprehensiveLessonContent(
@@ -429,8 +619,14 @@ class ContentLibraryAIService {
 
       // openAIService.generateText returns a string directly
       if (typeof result === 'string' && result.trim()) {
-        console.log(`✅ AI content generated: ${result.substring(0, 50)}...`);
-        return result.trim();
+        // Remove surrounding quotes if present
+        let cleanedResult = result.trim();
+        cleanedResult = cleanedResult.replace(/^["'](.+)["']$/, '$1');
+
+        console.log(
+          `✅ AI content generated: ${cleanedResult.substring(0, 50)}...`
+        );
+        return cleanedResult;
       }
 
       console.warn('⚠️ AI content generation returned empty result');

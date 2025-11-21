@@ -273,4 +273,20 @@
       transform: translate(0px, 0px) scale(1);
     }
   }
+
+  /* Lesson block enter animation */
+  .animate-block-enter {
+    animation: block-enter 0.22s ease-out;
+  }
+
+  @keyframes block-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
 }

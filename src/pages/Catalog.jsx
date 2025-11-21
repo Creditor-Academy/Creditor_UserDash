@@ -16,10 +16,7 @@ import {
 import { Link } from 'react-router-dom';
 import { fetchAllCatalogs as fetchAllCatalogsPrimary } from '@/services/catalogService';
 import { fetchUserCourses } from '@/services/courseService';
-import {
-  getCatalogCourses,
-  fetchAllCatalogs as fetchAllCatalogsFallback,
-} from '@/services/instructorCatalogService';
+import { getCatalogCourses } from '@/services/instructorCatalogService';
 import { getUnlockedModulesByUser } from '@/services/modulesService';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import { useCredits } from '@/contexts/CreditsContext';
@@ -55,22 +52,8 @@ export function CatalogPage() {
     const fetchCatalogs = async () => {
       try {
         setLoading(true);
-        let data = [];
-        try {
-          data = await fetchAllCatalogsPrimary();
-        } catch (primaryErr) {
-          // swallow and try fallback
-        }
-        if (!Array.isArray(data) || data.length === 0) {
-          try {
-            data = await fetchAllCatalogsFallback();
-          } catch (fallbackErr) {
-            // if fallback also fails, rethrow to trigger error UI
-            throw fallbackErr;
-          }
-        }
-        // Use the courseCount already set in fetchAllCatalogs; fallback may not include counts
-        setCatalogs(data || []);
+        const data = await fetchAllCatalogsPrimary();
+        setCatalogs(Array.isArray(data) ? data : []);
         // Preload catalog courses for buy-logic
         try {
           const entries = await Promise.all(

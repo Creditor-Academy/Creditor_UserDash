@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const getImageCaptionHtml = block => {
   const captionHtml = (
@@ -229,10 +230,10 @@ const LessonPreview = () => {
   useEffect(() => {
     // Process carousel navigation functions (based on quotes carousel logic)
     window.processCarouselPrev = button => {
-      console.log('Process Carousel Prev clicked');
+      devLogger.debug('Process Carousel Prev clicked');
       const carousel = button.closest('.process-carousel');
       if (!carousel) {
-        console.log('No process carousel found for prev button');
+        devLogger.debug('No process carousel found for prev button');
         return;
       }
 
@@ -240,7 +241,7 @@ const LessonPreview = () => {
       const dots = carousel.querySelectorAll('.process-carousel-dot');
       let currentIndex = parseInt(carousel.dataset.current || '0');
 
-      console.log(
+      devLogger.debug(
         'Process carousel prev - current index:',
         currentIndex,
         'total slides:',
@@ -251,10 +252,10 @@ const LessonPreview = () => {
     };
 
     window.processCarouselNext = button => {
-      console.log('Process Carousel Next clicked');
+      devLogger.debug('Process Carousel Next clicked');
       const carousel = button.closest('.process-carousel');
       if (!carousel) {
-        console.log('No process carousel found for next button');
+        devLogger.debug('No process carousel found for next button');
         return;
       }
 
@@ -262,7 +263,7 @@ const LessonPreview = () => {
       const dots = carousel.querySelectorAll('.process-carousel-dot');
       let currentIndex = parseInt(carousel.dataset.current || '0');
 
-      console.log(
+      devLogger.debug(
         'Process carousel next - current index:',
         currentIndex,
         'total slides:',
@@ -273,17 +274,17 @@ const LessonPreview = () => {
     };
 
     window.processCarouselGoTo = (button, index) => {
-      console.log('Process Carousel GoTo clicked');
+      devLogger.debug('Process Carousel GoTo clicked');
       const carousel = button.closest('.process-carousel');
       if (!carousel) {
-        console.log('No process carousel found for goTo button');
+        devLogger.debug('No process carousel found for goTo button');
         return;
       }
 
       const slides = carousel.querySelectorAll('.process-step');
       const dots = carousel.querySelectorAll('.process-carousel-dot');
 
-      console.log(
+      devLogger.debug(
         'Process carousel goTo - target index:',
         index,
         'total slides:',
@@ -399,7 +400,7 @@ const LessonPreview = () => {
       }
 
       const responseData = await response.json();
-      console.log('Fetched lesson data:', responseData);
+      devLogger.debug('Fetched lesson data:', responseData);
 
       // Extract the actual data from the API response
       const data = responseData.data || responseData;
@@ -442,7 +443,7 @@ const LessonPreview = () => {
         setCurrentSection(parsedContent.headingSections[0].id);
       }
     } catch (err) {
-      console.error('Error fetching lesson content:', err);
+      devLogger.error('Error fetching lesson content:', err);
       setError(err.message);
       toast({
         title: 'Error',
@@ -459,8 +460,8 @@ const LessonPreview = () => {
     const headingSections = [];
 
     if (!content || !Array.isArray(content)) {
-      console.log('Content is not an array or is empty:', content);
-      console.log('Final parsed content result:', {
+      devLogger.debug('Content is not an array or is empty:', content);
+      devLogger.debug('Final parsed content result:', {
         totalAllContent: allContent.length,
         youtubeInAllContent: allContent.filter(
           block => block.type === 'youtube'
@@ -473,7 +474,7 @@ const LessonPreview = () => {
       return { allContent, headingSections };
     }
 
-    console.log('Parsing lesson content:', {
+    devLogger.debug('Parsing lesson content:', {
       totalBlocks: content.length,
       textBlocks: content.filter(block => block.type === 'text').length,
       masterHeadingBlocks: content.filter(
@@ -510,7 +511,7 @@ const LessonPreview = () => {
     });
 
     if (duplicateBlocks.length > 0) {
-      console.warn('Found duplicate blocks:', duplicateBlocks);
+      devLogger.warn('Found duplicate blocks:', duplicateBlocks);
     }
 
     // Filter out duplicate blocks based on ID
@@ -522,7 +523,7 @@ const LessonPreview = () => {
       const isDuplicate = firstIndex !== index;
 
       if (isDuplicate) {
-        console.warn('Found duplicate block:', {
+        devLogger.warn('Found duplicate block:', {
           blockId,
           type: block.type,
           index,
@@ -534,7 +535,7 @@ const LessonPreview = () => {
     });
 
     if (uniqueContent.length !== content.length) {
-      console.warn(
+      devLogger.warn(
         `Filtered out ${content.length - uniqueContent.length} duplicate blocks`
       );
     }
@@ -543,7 +544,7 @@ const LessonPreview = () => {
     const processedIds = new Set();
 
     uniqueContent.forEach((block, index) => {
-      console.log(`Processing block ${index}:`, {
+      devLogger.debug(`Processing block ${index}:`, {
         type: block.type,
         textType: block.textType,
         text_type: block.text_type,
@@ -559,8 +560,48 @@ const LessonPreview = () => {
         completed: false,
       };
 
+      // CRITICAL: Ensure list blocks are NEVER added to headingSections
+      // Check if block is actually a list (even if incorrectly typed)
+      const isListBlock =
+        block.type === 'list' ||
+        block.listType ||
+        block.list_type ||
+        block.details?.listType ||
+        block.details?.list_type ||
+        (() => {
+          // Check content structure for list indicators
+          const content = block.content || block.details?.content || '';
+          if (typeof content === 'string') {
+            try {
+              const parsed = JSON.parse(content);
+              return (
+                parsed &&
+                typeof parsed === 'object' &&
+                parsed.items &&
+                Array.isArray(parsed.items)
+              );
+            } catch (e) {
+              // Not JSON, check for list HTML patterns
+              return (
+                content.includes('<ol') ||
+                content.includes('<ul') ||
+                content.includes('list-decimal') ||
+                content.includes('list-disc') ||
+                content.includes('numbered-list') ||
+                content.includes('bulleted-list')
+              );
+            }
+          }
+          return (
+            content &&
+            typeof content === 'object' &&
+            content.items &&
+            Array.isArray(content.items)
+          );
+        })();
+
       // Handle different block types based on your API structure
-      if (block.type === 'text') {
+      if (block.type === 'text' && !isListBlock) {
         // Check if it's a heading type - check both textType and text_type fields
         const textType = block.textType || block.text_type;
         // Extract content from multiple possible locations
@@ -573,8 +614,22 @@ const LessonPreview = () => {
           block.title ||
           '';
 
-        // Only show master_heading in sidebar
-        if (textType === 'master_heading') {
+        // CRITICAL: Only show master_heading in sidebar - NEVER list items or numbered content
+        // Additional validation to prevent numbered list items from being treated as headings
+        const isNumberedListItem = /^\d+[\.)]\s+/.test(
+          content.replace(/<[^>]*>/g, '').trim()
+        );
+        const isListContent =
+          content.includes('<li') ||
+          content.includes('<ol') ||
+          content.includes('<ul') ||
+          content.includes('list-item');
+
+        if (
+          textType === 'master_heading' &&
+          !isNumberedListItem &&
+          !isListContent
+        ) {
           // Extract heading text from html_css field for master headings
           let headingText = '';
 
@@ -593,18 +648,40 @@ const LessonPreview = () => {
             headingText = `Section ${index + 1}`;
           }
 
-          console.log(`Found master heading ${headingSections.length + 1}:`, {
-            blockId: blockId,
-            title: headingText,
-            index: index,
-            textType: textType,
-          });
+          devLogger.debug(
+            `Found master heading ${headingSections.length + 1}:`,
+            {
+              blockId: blockId,
+              title: headingText,
+              index: index,
+              textType: textType,
+            }
+          );
 
-          headingSections.push({
-            ...blockData,
-            title: headingText,
-            type: 'heading',
-          });
+          // Final validation: Ensure this is NOT a list item or numbered content
+          const cleanHeadingText = headingText.replace(/<[^>]*>/g, '').trim();
+          const isNumberedContent = /^\d+[\.)]\s+/.test(cleanHeadingText);
+          const looksLikeListItem =
+            cleanHeadingText.length < 100 &&
+            (cleanHeadingText.match(/^\d+[\.)]/) ||
+              cleanHeadingText.startsWith('•') ||
+              cleanHeadingText.startsWith('-'));
+
+          // Only add to headingSections if it's a genuine master heading
+          if (!isNumberedContent && !looksLikeListItem) {
+            headingSections.push({
+              ...blockData,
+              title: headingText,
+              type: 'heading',
+            });
+          } else {
+            devLogger.warn('Skipping numbered/list content from outline:', {
+              blockId,
+              headingText: cleanHeadingText,
+              isNumberedContent,
+              looksLikeListItem,
+            });
+          }
         }
 
         // Add to all content (check for duplicates)
@@ -619,7 +696,7 @@ const LessonPreview = () => {
           });
           processedIds.add(blockId);
         } else {
-          console.warn('Skipping duplicate text block:', blockId);
+          devLogger.warn('Skipping duplicate text block:', blockId);
         }
       } else if (block.type === 'statement') {
         // Handle statement blocks
@@ -760,7 +837,9 @@ const LessonPreview = () => {
           quoteType: quoteType,
           htmlCss: block.html_css || '',
         });
-      } else if (block.type === 'list') {
+      } else if (block.type === 'list' || isListBlock) {
+        // CRITICAL: List blocks should NEVER be added to headingSections
+        // They should only appear in allContent for rendering
         allContent.push({
           ...blockData,
           type: 'list',
@@ -769,6 +848,7 @@ const LessonPreview = () => {
             block.listType ||
             block.list_type ||
             block.details?.listType ||
+            block.details?.list_type ||
             'bulleted',
           htmlCss: block.html_css || '',
         });
@@ -843,21 +923,35 @@ const LessonPreview = () => {
         });
       } else {
         // Handle other block types - add all blocks to content
+        // CRITICAL: Check if this is actually a list block that was incorrectly typed
+        const mightBeList =
+          isListBlock ||
+          (block.content &&
+            typeof block.content === 'string' &&
+            (block.content.includes('<ol') ||
+              block.content.includes('<ul') ||
+              block.content.includes('list-decimal') ||
+              block.content.includes('list-disc')));
+
         allContent.push({
           ...blockData,
-          type: block.type || 'text',
+          type: mightBeList ? 'list' : block.type || 'text',
           content: block.content || block.details?.content || '',
-          textType:
-            block.textType ||
-            block.text_type ||
-            block.statement_type ||
-            'paragraph',
+          textType: mightBeList
+            ? undefined
+            : block.textType ||
+              block.text_type ||
+              block.statement_type ||
+              'paragraph',
+          listType: mightBeList
+            ? block.listType || block.list_type || 'bulleted'
+            : undefined,
           htmlCss: block.html_css || '',
         });
       }
     });
 
-    console.log('Final parsed content result:', {
+    devLogger.debug('Final parsed content result:', {
       totalAllContent: allContent.length,
       totalHeadingSections: headingSections.length,
       headingSectionTitles: headingSections.map(h => h.title),
@@ -979,10 +1073,10 @@ const LessonPreview = () => {
   useEffect(() => {
     // Global carousel navigation functions
     window.carouselPrev = button => {
-      console.log('Carousel Prev clicked');
+      devLogger.debug('Carousel Prev clicked');
       const carousel = button.closest('[class*="quote-carousel"]');
       if (!carousel) {
-        console.log('No carousel found for prev button');
+        devLogger.debug('No carousel found for prev button');
         return;
       }
 
@@ -990,7 +1084,7 @@ const LessonPreview = () => {
       const dots = carousel.querySelectorAll('.carousel-dot');
       let currentIndex = parseInt(carousel.dataset.current || '0');
 
-      console.log(
+      devLogger.debug(
         'Carousel prev - current index:',
         currentIndex,
         'total slides:',
@@ -1001,10 +1095,10 @@ const LessonPreview = () => {
     };
 
     window.carouselNext = button => {
-      console.log('Carousel Next clicked');
+      devLogger.debug('Carousel Next clicked');
       const carousel = button.closest('[class*="quote-carousel"]');
       if (!carousel) {
-        console.log('No carousel found for next button');
+        devLogger.debug('No carousel found for next button');
         return;
       }
 
@@ -1012,7 +1106,7 @@ const LessonPreview = () => {
       const dots = carousel.querySelectorAll('.carousel-dot');
       let currentIndex = parseInt(carousel.dataset.current || '0');
 
-      console.log(
+      devLogger.debug(
         'Carousel next - current index:',
         currentIndex,
         'total slides:',
@@ -1023,17 +1117,17 @@ const LessonPreview = () => {
     };
 
     window.carouselGoTo = (button, index) => {
-      console.log('Carousel GoTo clicked, index:', index);
+      devLogger.debug('Carousel GoTo clicked, index:', index);
       const carousel = button.closest('[class*="quote-carousel"]');
       if (!carousel) {
-        console.log('No carousel found for goTo button');
+        devLogger.debug('No carousel found for goTo button');
         return;
       }
 
       const slides = carousel.querySelectorAll('.quote-slide');
       const dots = carousel.querySelectorAll('.carousel-dot');
 
-      console.log(
+      devLogger.debug(
         'Carousel goTo - target index:',
         index,
         'total slides:',
@@ -1113,7 +1207,7 @@ const LessonPreview = () => {
       const timer = setTimeout(() => {
         // Re-setup carousel functions for any new carousels
         if (window.carouselPrev && window.carouselNext && window.carouselGoTo) {
-          console.log('Carousel functions are available');
+          devLogger.debug('Carousel functions are available');
         }
       }, 100);
 
@@ -1621,7 +1715,7 @@ const LessonPreview = () => {
                 {lessonData.allContent && lessonData.allContent.length > 0 ? (
                   lessonData.allContent.map((block, index) => {
                     if (block.type === 'youtube') {
-                      console.log(`Rendering YouTube block ${index}:`, {
+                      devLogger.debug(`Rendering YouTube block ${index}:`, {
                         id: block.id,
                         index,
                         totalBlocks: lessonData.allContent.length,
@@ -1640,7 +1734,7 @@ const LessonPreview = () => {
                     if (index < visibleStart || index >= visibleEnd)
                       return null;
                     if (block.type !== 'youtube') {
-                      console.log(`Rendering block ${index}:`, block);
+                      devLogger.debug(`Rendering block ${index}:`, block);
                     }
                     return (
                       <div
@@ -1790,7 +1884,7 @@ const LessonPreview = () => {
                         {block.type === 'video' && (
                           <>
                             {(() => {
-                              console.log(
+                              devLogger.debug(
                                 'Rendering video block in LessonPreview:',
                                 {
                                   id: block.id,
@@ -1915,7 +2009,7 @@ const LessonPreview = () => {
                         {block.type === 'youtube' && (
                           <>
                             {(() => {
-                              console.log(
+                              devLogger.debug(
                                 'Rendering YouTube block in LessonPreview:',
                                 {
                                   id: block.id,
@@ -1986,7 +2080,7 @@ const LessonPreview = () => {
                           <>
                             {(() => {
                               // Debug logging for quote blocks
-                              console.log('Rendering quote block:', {
+                              devLogger.debug('Rendering quote block:', {
                                 id: block.id,
                                 quoteType: block.quoteType,
                                 hasHtmlCss: !!block.htmlCss,

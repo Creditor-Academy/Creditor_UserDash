@@ -1,4 +1,5 @@
 import React from 'react';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 class LessonBuilderErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,7 +12,7 @@ class LessonBuilderErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('LessonBuilder Error:', error, errorInfo);
+    devLogger.error('LessonBuilder Error:', error, errorInfo);
   }
 
   render() {
