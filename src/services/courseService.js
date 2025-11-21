@@ -991,7 +991,7 @@ export async function updateModule(courseId, moduleId, moduleData) {
   const response = await fetch(
     `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/update`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader(),

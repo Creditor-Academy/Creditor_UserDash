@@ -101,6 +101,12 @@ export function CourseView() {
   const [courseDetails, setCourseDetails] = useState(null);
   const [modules, setModules] = useState([]);
   const [filteredModules, setFilteredModules] = useState([]);
+  const [bookSmartModules, setBookSmartModules] = useState([]);
+  const [streetSmartModules, setStreetSmartModules] = useState([]);
+  const [filteredBookSmartModules, setFilteredBookSmartModules] = useState([]);
+  const [filteredStreetSmartModules, setFilteredStreetSmartModules] = useState(
+    []
+  );
   const [error, setError] = useState('');
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -122,9 +128,6 @@ export function CourseView() {
   const [modulesWithLessons, setModulesWithLessons] = useState(new Set());
   const [loadingLessonCounts, setLoadingLessonCounts] = useState(false);
 
-  // Accordion expansion control for Book/Street sections
-  const [expandedSection, setExpandedSection] = useState(null); // null | 'book' | 'street'
-
   // Course purchase states
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] =
     useState(false);
@@ -141,74 +144,8 @@ export function CourseView() {
   const [selectedModuleForSequential, setSelectedModuleForSequential] =
     useState(null);
 
-  // View mode and street modules state
+  // View mode state for Book Smart / Street Smart
   const [viewMode, setViewMode] = useState('book');
-  const [streetModules, setStreetModules] = useState([]);
-  const [streetLoading, setStreetLoading] = useState(false);
-  const [streetError, setStreetError] = useState('');
-  const [isEnrolledRecording, setIsEnrolledRecording] = useState(false);
-
-  // Mapping of supported courses to their recordings course IDs (Street Smart)
-  // Source IDs from components/dashboard/ClassRecording.jsx
-  const RECORDING_COURSE_IDS = {
-    becomePrivate: 'a188173c-23a6-4cb7-9653-6a1a809e9914',
-    operatePrivate: '7b798545-6f5f-4028-9b1e-e18c7d2b4c47',
-    businessCredit: '199e328d-8366-4af1-9582-9ea545f8b59e',
-    privateMerchant: 'd8e2e17f-af91-46e3-9a81-6e5b0214bc5e',
-    sovereignty101: 'd5330607-9a45-4298-8ead-976dd8810283',
-    remedy: '814b3edf-86da-4b0d-bb8c-8a6da2d9b4df', // I Want Remedy Now recording course ID
-  };
-
-  // Check if current course is a recording course
-  const isRecordingCourse = title => {
-    const t = (title || '').toLowerCase();
-    return t.includes('recording') || t.includes('recordings');
-  };
-
-  // Determine if current course is one of the eligible courses (with recording course IDs)
-  // But exclude recording courses themselves
-  const isEligibleForTwoModes = title => {
-    if (isRecordingCourse(title)) return false; // Don't show Book Smart/Street Smart in recording courses
-
-    const t = (title || '').toLowerCase();
-    // More specific matching to avoid catching courses like "Tier 1: Optimizing Your Business Credit Profile"
-    return [
-      'become private', // Exact main course
-      'sovereignty 101', // Exact main course
-      'sov 101', // Exact main course
-      'operate private', // Exact main course
-      'business credit', // Only if it's the main "Business Credit" course, not sub-courses
-      'i want remedy now', // Exact main course
-      'private merchant', // Exact main course
-    ].some(k => {
-      // For "business credit", be more specific to avoid sub-courses like "Tier 1: Optimizing Your Business Credit Profile"
-      if (k === 'business credit') {
-        return (
-          t.includes('business credit') &&
-          !t.includes('tier') &&
-          !t.includes('optimizing') &&
-          !t.includes('profile')
-        );
-      }
-      return t.includes(k);
-    });
-  };
-
-  // Get recording course id for the matching title
-  const getRecordingCourseIdForTitle = title => {
-    const t = (title || '').toLowerCase();
-    if (t.includes('become private')) return RECORDING_COURSE_IDS.becomePrivate;
-    if (t.includes('operate private'))
-      return RECORDING_COURSE_IDS.operatePrivate;
-    if (t.includes('business credit'))
-      return RECORDING_COURSE_IDS.businessCredit;
-    if (t.includes('private merchant'))
-      return RECORDING_COURSE_IDS.privateMerchant;
-    if (t.includes('sovereignty 101') || t.includes('sov 101'))
-      return RECORDING_COURSE_IDS.sovereignty101;
-    if (t.includes('i want remedy now')) return RECORDING_COURSE_IDS.remedy;
-    return null;
-  };
 
   // Initialize unlocked modules from backend for this user
   useEffect(() => {
@@ -235,7 +172,6 @@ export function CourseView() {
   useEffect(() => {
     const completedIds = new Set();
 
-    // Check main course modules
     if (modules && modules.length > 0) {
       modules.forEach(module => {
         if (
@@ -249,22 +185,8 @@ export function CourseView() {
       });
     }
 
-    // Check Street Smart modules
-    if (streetModules && streetModules.length > 0) {
-      streetModules.forEach(module => {
-        if (
-          module.user_module_progress &&
-          Array.isArray(module.user_module_progress) &&
-          module.user_module_progress.length > 0 &&
-          module.user_module_progress[0].completed === true
-        ) {
-          completedIds.add(String(module.id));
-        }
-      });
-    }
-
     setCompletedModuleIds(completedIds);
-  }, [modules, streetModules]);
+  }, [modules]);
 
   const getStableRandomPrice = moduleObj => {
     const input = String(moduleObj?.id || '');
@@ -460,43 +382,6 @@ export function CourseView() {
         enrolled
       );
       setIsEnrolled(enrolled);
-
-      // Check recording course enrollment
-      try {
-        if (courseDetails?.title) {
-          const recId = getRecordingCourseIdForTitle(courseDetails.title);
-          console.log(
-            `[CourseView] Recording course ID for ${courseDetails.title}:`,
-            recId
-          );
-          if (recId) {
-            const recEnrolled = userCourses.some(c => {
-              const cId = c.id?.toString?.() || c.id?.toString();
-              const recIdStr = recId.toString();
-              const match = cId === recIdStr;
-              console.log(
-                `[CourseView] Recording enrollment check - course.id: ${cId}, recordingId: ${recIdStr}, match: ${match}`
-              );
-              return match;
-            });
-            console.log(
-              `[CourseView] Is user enrolled in recording course ${recId}:`,
-              recEnrolled
-            );
-            setIsEnrolledRecording(recEnrolled);
-          } else {
-            console.log(
-              `[CourseView] No recording course ID found for ${courseDetails.title}`
-            );
-            setIsEnrolledRecording(false);
-          }
-        } else {
-          setIsEnrolledRecording(false);
-        }
-      } catch (e) {
-        console.error(`[CourseView] Error checking recording enrollment:`, e);
-        setIsEnrolledRecording(false);
-      }
     } catch (error) {
       console.error('Failed to check enrollment status:', error);
       setIsEnrolled(false);
@@ -524,36 +409,58 @@ export function CourseView() {
           `[CourseView] Total modules: ${modulesData.length}, Published modules: ${publishedModules.length}`
         );
 
-        // Sort modules to move "Why You Must Exit the LLC/Corporation Structure" to the top
-        const sortedModules = publishedModules.sort((a, b) => {
-          const aTitle = (a.title || a.name || '').toLowerCase();
-          const bTitle = (b.title || b.name || '').toLowerCase();
+        // Sort function to move "Why You Must Exit the LLC/Corporation Structure" to the top
+        const sortModules = modules => {
+          return modules.sort((a, b) => {
+            const aTitle = (a.title || a.name || '').toLowerCase();
+            const bTitle = (b.title || b.name || '').toLowerCase();
 
-          // Check if module is the intro module
-          const aIsIntro =
-            aTitle.includes('why you must exit') &&
-            (aTitle.includes('llc') || aTitle.includes('corporation')) &&
-            aTitle.includes('structure');
-          const bIsIntro =
-            bTitle.includes('why you must exit') &&
-            (bTitle.includes('llc') || bTitle.includes('corporation')) &&
-            bTitle.includes('structure');
+            // Check if module is the intro module
+            const aIsIntro =
+              aTitle.includes('why you must exit') &&
+              (aTitle.includes('llc') || aTitle.includes('corporation')) &&
+              aTitle.includes('structure');
+            const bIsIntro =
+              bTitle.includes('why you must exit') &&
+              (bTitle.includes('llc') || bTitle.includes('corporation')) &&
+              bTitle.includes('structure');
 
-          // Move intro module to top
-          if (aIsIntro && !bIsIntro) return -1;
-          if (!aIsIntro && bIsIntro) return 1;
+            // Move intro module to top
+            if (aIsIntro && !bIsIntro) return -1;
+            if (!aIsIntro && bIsIntro) return 1;
 
-          // For other modules, maintain original order by order property
-          const aOrder = Number(a.order) || 0;
-          const bOrder = Number(b.order) || 0;
-          return aOrder - bOrder;
-        });
+            // For other modules, maintain original order by order property
+            const aOrder = Number(a.order) || 0;
+            const bOrder = Number(b.order) || 0;
+            return aOrder - bOrder;
+          });
+        };
 
-        setModules(sortedModules);
-        setFilteredModules(sortedModules);
+        // Separate modules by category
+        const bookSmart = publishedModules.filter(
+          module => module.category === 'BOOK_SMART'
+        );
+        const streetSmart = publishedModules.filter(
+          module => module.category === 'STREET_SMART'
+        );
+
+        // Sort each category
+        const sortedBookSmart = sortModules([...bookSmart]);
+        const sortedStreetSmart = sortModules([...streetSmart]);
+
+        // Set all modules (for backward compatibility)
+        const allModules = [...sortedBookSmart, ...sortedStreetSmart];
+        setModules(allModules);
+        setFilteredModules(allModules);
+
+        // Set category-specific modules
+        setBookSmartModules(sortedBookSmart);
+        setStreetSmartModules(sortedStreetSmart);
+        setFilteredBookSmartModules(sortedBookSmart);
+        setFilteredStreetSmartModules(sortedStreetSmart);
 
         // Calculate total duration from published modules only
-        const total = sortedModules.reduce((sum, module) => {
+        const total = allModules.reduce((sum, module) => {
           const duration = parseInt(module.estimated_duration) || 0;
           return sum + duration;
         }, 0);
@@ -569,46 +476,11 @@ export function CourseView() {
     if (courseId) fetchData();
   }, [courseId]);
 
-  // Load Street Smart modules only for eligible courses
-  useEffect(() => {
-    const loadStreetSmart = async () => {
-      if (!courseDetails) return;
-      if (!isEligibleForTwoModes(courseDetails.title)) return;
-      const recordingCourseId = getRecordingCourseIdForTitle(
-        courseDetails.title
-      );
-      if (!recordingCourseId) {
-        setStreetModules([]);
-        setStreetError('');
-        return;
-      }
-      setStreetLoading(true);
-      setStreetError('');
-      try {
-        const recMods = await fetchCourseModules(recordingCourseId);
-        const published = (Array.isArray(recMods) ? recMods : []).filter(m => {
-          const status = (m.module_status || m.status || '')
-            .toString()
-            .toUpperCase();
-          return status === 'PUBLISHED' || m.published === true;
-        });
-        setStreetModules(published);
-        // Refresh enrollment status after loading Street Smart modules
-        await checkEnrollmentStatus();
-      } catch (e) {
-        setStreetError('Failed to load recordings');
-        setStreetModules([]);
-      } finally {
-        setStreetLoading(false);
-      }
-    };
-    loadStreetSmart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courseDetails?.title]);
-
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredModules(modules);
+      setFilteredBookSmartModules(bookSmartModules);
+      setFilteredStreetSmartModules(streetSmartModules);
     } else {
       const filtered = modules.filter(
         module =>
@@ -616,8 +488,22 @@ export function CourseView() {
           module.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredModules(filtered);
+
+      const filteredBook = bookSmartModules.filter(
+        module =>
+          module.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          module.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredBookSmartModules(filteredBook);
+
+      const filteredStreet = streetSmartModules.filter(
+        module =>
+          module.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          module.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredStreetSmartModules(filteredStreet);
     }
-  }, [searchQuery, modules]);
+  }, [searchQuery, modules, bookSmartModules, streetSmartModules]);
 
   // Check enrollment status when component mounts or userProfile/courseId changes
   useEffect(() => {
@@ -673,53 +559,6 @@ export function CourseView() {
 
     checkModulesForLessons();
   }, [modules, courseId]);
-
-  // Also check Street Smart modules for lessons
-  useEffect(() => {
-    const checkStreetModulesForLessons = async () => {
-      if (!streetModules || streetModules.length === 0) return;
-
-      const recordingCourseId = getRecordingCourseIdForTitle(
-        courseDetails?.title
-      );
-      if (!recordingCourseId) return;
-
-      const modulesWithLessonsSet = new Set(modulesWithLessons);
-
-      try {
-        const lessonCheckPromises = streetModules.map(async module => {
-          try {
-            const response = await axios.get(
-              `${import.meta.env.VITE_API_BASE_URL}/api/course/${recordingCourseId}/modules/${module.id}/lesson/all-lessons`,
-              {
-                headers: getAuthHeader(),
-                withCredentials: true,
-              }
-            );
-
-            const lessonsData = response.data?.data || response.data || [];
-            const lessons = Array.isArray(lessonsData) ? lessonsData : [];
-
-            if (lessons.length > 0) {
-              modulesWithLessonsSet.add(String(module.id));
-            }
-          } catch (err) {
-            console.log(
-              `Could not fetch lessons for street module ${module.id}:`,
-              err.message
-            );
-          }
-        });
-
-        await Promise.all(lessonCheckPromises);
-        setModulesWithLessons(modulesWithLessonsSet);
-      } catch (error) {
-        console.error('Error checking street modules for lessons:', error);
-      }
-    };
-
-    checkStreetModulesForLessons();
-  }, [streetModules, courseDetails?.title]);
 
   // Shimmer skeleton components for loading state
   const ModuleCardSkeleton = () => (
@@ -910,6 +749,210 @@ export function CourseView() {
     return `${hours} hr ${remainingMinutes} min`;
   };
 
+  // Helper function to render a module card
+  const renderModuleCard = module => {
+    const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
+    const isLocked = !hasAccess;
+    const modulePrice =
+      Number(module.price) > 0
+        ? Number(module.price)
+        : getStableRandomPrice(module);
+
+    // Sequential unlock: allow only the first module or next after highest unlocked
+    // Check within the same category
+    let canUnlockInOrder = false;
+    if (isLocked) {
+      // Get modules of the same category
+      const categoryModules =
+        module.category === 'BOOK_SMART'
+          ? bookSmartModules
+          : module.category === 'STREET_SMART'
+            ? streetSmartModules
+            : modules;
+
+      const allOrders = categoryModules
+        .map(m => Number(m.order) || 0)
+        .filter(n => n > 0);
+      const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
+      const unlockedOrders = new Set(
+        categoryModules
+          .filter(m => unlockedIds.has(String(m.id)))
+          .map(m => Number(m.order) || 0)
+      );
+      const highestUnlocked = unlockedOrders.size
+        ? Math.max(...Array.from(unlockedOrders))
+        : null;
+      const currentOrder = Number(module.order) || 0;
+      if (highestUnlocked == null) {
+        canUnlockInOrder = currentOrder === minOrder;
+      } else {
+        canUnlockInOrder = currentOrder === highestUnlocked + 1;
+      }
+    }
+
+    return (
+      <div key={module.id} className="module-card h-full">
+        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+          <div className="aspect-video relative overflow-hidden">
+            <img
+              src={
+                module.thumbnail ||
+                'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+              }
+              alt={module.title}
+              className="w-full h-full object-cover"
+            />
+            {/* Lock overlay for locked modules */}
+            {isLocked && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-800">
+                    Locked
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Fixed height for content area, flex-grow to fill space */}
+          <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
+            <CardHeader className="pb-2 px-0 pt-0">
+              <CardTitle className="text-lg line-clamp-2 min-h-[56px]">
+                {module.title}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">
+                {module.description}
+              </p>
+            </CardHeader>
+          </div>
+          {/* Footer always at the bottom */}
+          <div className="mt-auto px-6 pb-4">
+            <CardFooter className="p-0 flex flex-col gap-2">
+              {hasAccess && modulesWithLessons.has(String(module.id)) ? (
+                <Link
+                  to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`}
+                  className="w-full"
+                >
+                  <Button className="w-full">
+                    <Play size={16} className="mr-2" />
+                    View Lessons
+                  </Button>
+                </Link>
+              ) : !modulesWithLessons.has(String(module.id)) ? (
+                <Button
+                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
+                  disabled
+                >
+                  <Clock size={16} className="mr-2" />
+                  <span className="font-medium">Upcoming Module</span>
+                </Button>
+              ) : isFromFreeCatalog(courseDetails) ? (
+                <Button
+                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
+                  disabled
+                >
+                  <Clock size={16} className="mr-2" />
+                  <span className="font-medium">
+                    {(() => {
+                      const courseTitle = (
+                        courseDetails?.title || ''
+                      ).toLowerCase();
+                      const isClassRecording = [
+                        'class recording',
+                        'class recordings',
+                        'course recording',
+                        'course recordings',
+                        'recordings',
+                        'recording',
+                      ].some(keyword => courseTitle.includes(keyword));
+                      return isClassRecording
+                        ? 'Upcoming Recording'
+                        : 'Upcoming Course';
+                    })()}
+                  </span>
+                </Button>
+              ) : (
+                (() => {
+                  const t = (courseDetails?.title || '').toLowerCase();
+                  const isMasterClassCourse = [
+                    'formation of business trust',
+                    'tier 1: optimizing your business credit profile',
+                    'business trust',
+                    'credit optimization',
+                  ].some(name => t.includes(name));
+
+                  const isFreeCourse = [
+                    'roadmap',
+                    'road map',
+                    'roadmap series',
+                    'road map series',
+                    'passive income',
+                    'start your passive income',
+                  ].some(name => t.includes(name));
+
+                  if (isMasterClassCourse || isFreeCourse) {
+                    return (
+                      <div className="w-full flex flex-col gap-2">
+                        <Button
+                          className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
+                          disabled
+                        >
+                          <Clock size={16} className="mr-2" />
+                          <span className="font-medium">Upcoming</span>
+                        </Button>
+                      </div>
+                    );
+                  }
+                  return null;
+                })() || (
+                  <div className="w-full flex flex-col gap-2">
+                    <Button
+                      className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
+                      onClick={() => {
+                        if (!modulePrice || modulePrice <= 0) return;
+                        if (!canUnlockInOrder) {
+                          handleSequentialUnlockClick(module);
+                          return;
+                        }
+                        if (balance < modulePrice) {
+                          setCreditsModalOpen(true);
+                          return;
+                        }
+                        setConfirmUnlock({ open: true, module });
+                      }}
+                      disabled={!modulePrice || unlockingId === module.id}
+                    >
+                      {unlockingId === module.id ? (
+                        <>
+                          <Clock size={16} className="mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Unlock size={16} className="mr-2" />
+                          Unlock for {modulePrice} credits
+                        </>
+                      )}
+                    </Button>
+                    {balance < modulePrice && canUnlockInOrder && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setCreditsModalOpen(true)}
+                      >
+                        Buy credits
+                      </Button>
+                    )}
+                  </div>
+                )
+              )}
+            </CardFooter>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <main className="flex-1">
@@ -1005,135 +1048,109 @@ export function CourseView() {
                       )}
                     </div>
 
-                    {/* Course Purchase Section (Book Smart only) */}
-                    {viewMode === 'book' &&
-                      !isEnrolled &&
-                      canBuyCourse(courseDetails) && (
-                        <div className="mt-6 pt-6 border-t border-gray-100">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-green-500 rounded-lg shadow-md">
-                                <ShoppingCart className="h-5 w-5 text-white" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-700">
-                                  Course Price
-                                </p>
-                                <p className="text-lg font-bold text-green-600">
-                                  <CoursePriceDisplay course={courseDetails} />
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              onClick={() =>
-                                handleBuyCourseClick(courseDetails)
-                              }
-                              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
-                            >
-                              <Unlock className="h-4 w-4 mr-2" />
-                              Buy Course
-                            </Button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Buying this course will unlock all {modules.length}{' '}
-                            modules at once.
-                          </p>
-                        </div>
-                      )}
-
-                    {/* Street Smart instructor enrollment note (no payments) */}
-                    {viewMode === 'street' && (
+                    {/* Course Purchase Section */}
+                    {!isEnrolled && canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
-                        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="p-2 bg-blue-500 rounded-lg shadow-md">
-                            <BookOpen className="h-5 w-5 text-white" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                              <ShoppingCart className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Course Price
+                              </p>
+                              <p className="text-lg font-bold text-green-600">
+                                <CoursePriceDisplay course={courseDetails} />
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-blue-800">
-                              Instructor Enrollment
-                            </p>
-                            <p className="text-xs text-blue-600 mt-1">
-                              Street Smart recordings are available via
-                              instructor enrollment only.
-                            </p>
-                          </div>
+                          <Button
+                            onClick={() => handleBuyCourseClick(courseDetails)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                          >
+                            <Unlock className="h-4 w-4 mr-2" />
+                            Buy Course
+                          </Button>
                         </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Buying this course will unlock all {modules.length}{' '}
+                          modules at once.
+                        </p>
                       </div>
                     )}
 
-                    {/* Course Not Available Message (Book Smart) */}
-                    {viewMode === 'book' &&
-                      !isEnrolled &&
-                      !canBuyCourse(courseDetails) && (
-                        <div className="mt-6 pt-6 border-t border-gray-100">
-                          {(() => {
-                            const title = (
-                              courseDetails?.title || ''
-                            ).toLowerCase();
-                            const isClassRecording = [
-                              'class recording',
-                              'class recordings',
-                              'course recording',
-                              'course recordings',
-                              'recordings',
-                              'recording',
-                            ].some(k => title.includes(k));
-                            const isMasterClassCourse = [
-                              'formation of business trust',
-                              'tier 1: optimizing your business credit profile',
-                              'business trust',
-                              'credit optimization',
-                            ].some(name => title.includes(name));
-                            if (
-                              isFromFreeCatalog(courseDetails) ||
-                              isMasterClassCourse
-                            ) {
-                              return (
-                                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <div className="p-2 bg-blue-500 rounded-lg shadow-md">
-                                    <BookOpen className="h-5 w-5 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-blue-800">
-                                      {isClassRecording
-                                        ? 'Class Recording - Instructor Enrollment'
-                                        : isMasterClassCourse
-                                          ? 'Master Class - Instructor Enrollment'
-                                          : 'Free Course - Instructor Enrollment'}
-                                    </p>
-                                    <p className="text-xs text-blue-600 mt-1">
-                                      {isClassRecording
-                                        ? 'This is a class recording. Your instructor will enroll you in this course.'
-                                        : isMasterClassCourse
-                                          ? 'This is part of Master Class. Your instructor will enroll you in this course.'
-                                          : 'This is a free course. Your instructor will enroll you in this course.'}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            }
+                    {/* Course Not Available Message */}
+                    {!isEnrolled && !canBuyCourse(courseDetails) && (
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        {(() => {
+                          const title = (
+                            courseDetails?.title || ''
+                          ).toLowerCase();
+                          const isClassRecording = [
+                            'class recording',
+                            'class recordings',
+                            'course recording',
+                            'course recordings',
+                            'recordings',
+                            'recording',
+                          ].some(k => title.includes(k));
+                          const isMasterClassCourse = [
+                            'formation of business trust',
+                            'tier 1: optimizing your business credit profile',
+                            'business trust',
+                            'credit optimization',
+                          ].some(name => title.includes(name));
+                          if (
+                            isFromFreeCatalog(courseDetails) ||
+                            isMasterClassCourse
+                          ) {
                             return (
-                              <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                              <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="p-2 bg-blue-500 rounded-lg shadow-md">
                                   <BookOpen className="h-5 w-5 text-white" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-green-800">
-                                    {isMasterClassCourse
-                                      ? 'Master Class - Instructor Enrollment'
-                                      : 'Continue Your Learning Journey'}
+                                  <p className="text-sm font-medium text-blue-800">
+                                    {isClassRecording
+                                      ? 'Class Recording - Instructor Enrollment'
+                                      : isMasterClassCourse
+                                        ? 'Master Class - Instructor Enrollment'
+                                        : 'Free Course - Instructor Enrollment'}
                                   </p>
-                                  <p className="text-xs text-green-600 mt-1">
-                                    {isMasterClassCourse
-                                      ? 'This is part of Master Class. Your instructor will enroll you in this course.'
-                                      : "You've already started this course with individual lessons! Keep building your knowledge by purchasing more lessons."}
+                                  <p className="text-xs text-blue-600 mt-1">
+                                    {isClassRecording
+                                      ? 'This is a class recording. Your instructor will enroll you in this course.'
+                                      : isMasterClassCourse
+                                        ? 'This is part of Master Class. Your instructor will enroll you in this course.'
+                                        : 'This is a free course. Your instructor will enroll you in this course.'}
                                   </p>
                                 </div>
                               </div>
                             );
-                          })()}
-                        </div>
-                      )}
+                          }
+                          return (
+                            <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                                <BookOpen className="h-5 w-5 text-white" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  {isMasterClassCourse
+                                    ? 'Master Class - Instructor Enrollment'
+                                    : 'Continue Your Learning Journey'}
+                                </p>
+                                <p className="text-xs text-green-600 mt-1">
+                                  {isMasterClassCourse
+                                    ? 'This is part of Master Class. Your instructor will enroll you in this course.'
+                                    : "You've already started this course with individual lessons! Keep building your knowledge by purchasing more lessons."}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1144,9 +1161,7 @@ export function CourseView() {
             <div className="flex items-center gap-3">
               <Clock className="text-muted-foreground" size={20} />
               <span className="font-medium">Total Modules:</span>
-              <span className="font-mono text-lg">
-                {viewMode === 'street' ? streetModules.length : modules.length}
-              </span>
+              <span className="font-mono text-lg">{modules.length}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -1162,1000 +1177,182 @@ export function CourseView() {
             </div>
           </div>
 
-          {/* Module list for courses with Book Smart/Street Smart modes */}
-          {isEligibleForTwoModes(courseDetails?.title) && (
-            <div className="mb-4">
-              {filteredModules.length === 0 ? (
-                <div className="text-center py-12">
-                  <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No modules found</h3>
-                  <p className="text-muted-foreground mt-1">
-                    {searchQuery
-                      ? 'Try adjusting your search query'
-                      : "This course doesn't have any modules yet"}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredModules.map(module => {
-                    const isContentAvailable = !!module.resource_url;
-                    const hasAccess =
-                      isEnrolled || unlockedIds.has(String(module.id));
-                    const isLocked = !hasAccess;
-                    const modulePrice =
-                      Number(module.price) > 0
-                        ? Number(module.price)
-                        : getStableRandomPrice(module);
-
-                    // Sequential unlock: allow only the first module or next after highest unlocked
-                    let canUnlockInOrder = false;
-                    if (isLocked) {
-                      const allOrders = modules
-                        .map(m => Number(m.order) || 0)
-                        .filter(n => n > 0);
-                      const minOrder = allOrders.length
-                        ? Math.min(...allOrders)
-                        : 1;
-                      const unlockedOrders = new Set(
-                        modules
-                          .filter(m => unlockedIds.has(m.id))
-                          .map(m => Number(m.order) || 0)
-                      );
-                      const highestUnlocked = unlockedOrders.size
-                        ? Math.max(...Array.from(unlockedOrders))
-                        : null;
-                      const currentOrder = Number(module.order) || 0;
-                      if (highestUnlocked == null) {
-                        canUnlockInOrder = currentOrder === minOrder;
-                      } else {
-                        canUnlockInOrder = currentOrder === highestUnlocked + 1;
-                      }
-                    }
-
-                    return (
-                      <div key={module.id} className="module-card h-full">
-                        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                          <div className="aspect-video relative overflow-hidden">
-                            <img
-                              src={
-                                module.thumbnail ||
-                                'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
-                              }
-                              alt={module.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {/* Lock overlay for locked modules */}
-                            {isLocked && (
-                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
-                                  <Lock className="w-5 h-5 text-gray-700" />
-                                  <span className="text-sm font-medium text-gray-800">
-                                    Locked
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          {/* Fixed height for content area, flex-grow to fill space */}
-                          <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                            <CardHeader className="pb-2 px-0 pt-0">
-                              <CardTitle className="text-lg line-clamp-2 min-h-[56px]">
-                                {module.title}
-                              </CardTitle>
-                              <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">
-                                {module.description}
-                              </p>
-                            </CardHeader>
-                            <CardContent className="space-y-3 px-0 pt-0 pb-0">
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <BookOpen size={14} />
-                                  <span>
-                                    {(() => {
-                                      const title = (
-                                        module.title ||
-                                        module.name ||
-                                        ''
-                                      ).toLowerCase();
-                                      const isIntroModule =
-                                        title.includes('why you must exit') &&
-                                        (title.includes('llc') ||
-                                          title.includes('corporation')) &&
-                                        title.includes('structure');
-                                      return isIntroModule
-                                        ? 'Intro Module'
-                                        : `Order: ${module.order || 'N/A'}`;
-                                    })()}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock size={14} />
-                                  <span>
-                                    {module.estimated_duration || 0} min
-                                  </span>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </div>
-                          {/* Footer always at the bottom */}
-                          <div className="mt-auto px-6 pb-4">
-                            <CardFooter className="p-0 flex flex-col gap-2">
-                              {hasAccess &&
-                              modulesWithLessons.has(String(module.id)) ? (
-                                <>
-                                  <Link
-                                    to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`}
-                                    className="w-full"
-                                  >
-                                    <Button className="w-full">
-                                      <Play size={16} className="mr-2" />
-                                      View Lessons
-                                    </Button>
-                                  </Link>
-                                  <Link
-                                    to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`}
-                                    className="w-full"
-                                  >
-                                    <Button
-                                      variant="outline"
-                                      className="w-full"
-                                    >
-                                      <FileText size={16} className="mr-2" />
-                                      View Assessment
-                                    </Button>
-                                  </Link>
-                                  {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
-                                  {!completedModuleIds.has(
-                                    String(module.id)
-                                  ) ? (
-                                    <Button
-                                      variant="secondary"
-                                      className="w-full disabled:opacity-60"
-                                      disabled={markingCompleteIds.has(
-                                        String(module.id)
-                                      )}
-                                      onClick={async () => {
-                                        const idStr = String(module.id);
-                                        if (!courseId || !module?.id) return;
-                                        // Prevent duplicate clicks
-                                        if (markingCompleteIds.has(idStr))
-                                          return;
-                                        setMarkingCompleteIds(prev => {
-                                          const next = new Set(prev);
-                                          next.add(idStr);
-                                          return next;
-                                        });
-                                        try {
-                                          await api.post(
-                                            `/api/course/${courseId}/modules/${module.id}/mark-complete`
-                                          );
-                                          setCompletedModuleIds(prev => {
-                                            const next = new Set(prev);
-                                            next.add(idStr);
-                                            return next;
-                                          });
-                                        } catch (err) {
-                                          console.error(
-                                            'Failed to mark module as complete',
-                                            err
-                                          );
-                                        } finally {
-                                          setMarkingCompleteIds(prev => {
-                                            const next = new Set(prev);
-                                            next.delete(idStr);
-                                            return next;
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      {markingCompleteIds.has(String(module.id))
-                                        ? 'Marking...'
-                                        : 'Mark as Complete'}
-                                    </Button>
-                                  ) : (
-                                    <div className="w-full flex items-center justify-center">
-                                      <Badge className="px-3 py-1">
-                                        Completed
-                                      </Badge>
-                                    </div>
-                                  )}
-                                </>
-                              ) : !modulesWithLessons.has(String(module.id)) ? (
-                                <Button
-                                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                  disabled
-                                >
-                                  <Clock size={16} className="mr-2" />
-                                  <span className="font-medium">
-                                    Upcoming Module
-                                  </span>
-                                </Button>
-                              ) : isFromFreeCatalog(courseDetails) ? (
-                                <Button
-                                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                  disabled
-                                >
-                                  <Clock size={16} className="mr-2" />
-                                  <span className="font-medium">
-                                    {(() => {
-                                      const courseTitle = (
-                                        courseDetails?.title || ''
-                                      ).toLowerCase();
-                                      const isClassRecording = [
-                                        'class recording',
-                                        'class recordings',
-                                        'course recording',
-                                        'course recordings',
-                                        'recordings',
-                                        'recording',
-                                      ].some(keyword =>
-                                        courseTitle.includes(keyword)
-                                      );
-                                      return isClassRecording
-                                        ? 'Upcoming Recording'
-                                        : 'Upcoming Course';
-                                    })()}
-                                  </span>
-                                </Button>
-                              ) : (
-                                (() => {
-                                  const t = (
-                                    courseDetails?.title || ''
-                                  ).toLowerCase();
-                                  const isMasterClassCourse = [
-                                    'formation of business trust',
-                                    'tier 1: optimizing your business credit profile',
-                                    'business trust',
-                                    'credit optimization',
-                                  ].some(name => t.includes(name));
-
-                                  const isFreeCourse = [
-                                    'roadmap',
-                                    'road map',
-                                    'roadmap series',
-                                    'road map series',
-                                    'passive income',
-                                    'start your passive income',
-                                  ].some(name => t.includes(name));
-
-                                  if (isMasterClassCourse || isFreeCourse) {
-                                    return (
-                                      <div className="w-full flex flex-col gap-2">
-                                        <Button
-                                          className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                          disabled
-                                        >
-                                          <Clock size={16} className="mr-2" />
-                                          <span className="font-medium">
-                                            Upcoming
-                                          </span>
-                                        </Button>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })() || (
-                                  <div className="w-full flex flex-col gap-2">
-                                    <Button
-                                      className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
-                                      onClick={() => {
-                                        if (!modulePrice || modulePrice <= 0)
-                                          return;
-                                        if (!canUnlockInOrder) {
-                                          handleSequentialUnlockClick(module);
-                                          return;
-                                        }
-                                        if (balance < modulePrice) {
-                                          setCreditsModalOpen(true);
-                                          return;
-                                        }
-                                        setConfirmUnlock({
-                                          open: true,
-                                          module,
-                                        });
-                                      }}
-                                      disabled={
-                                        !modulePrice ||
-                                        unlockingId === module.id
-                                      }
-                                    >
-                                      {unlockingId === module.id ? (
-                                        <>
-                                          <Clock
-                                            size={16}
-                                            className="mr-2 animate-spin"
-                                          />
-                                          Processing...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Unlock size={16} className="mr-2" />
-                                          Unlock for {modulePrice} credits
-                                        </>
-                                      )}
-                                    </Button>
-                                    {balance < modulePrice &&
-                                      canUnlockInOrder && (
-                                        <Button
-                                          variant="outline"
-                                          className="w-full"
-                                          onClick={() =>
-                                            setCreditsModalOpen(true)
-                                          }
-                                        >
-                                          Buy credits
-                                        </Button>
-                                      )}
-                                  </div>
-                                )
-                              )}
-                            </CardFooter>
-                          </div>
-                        </Card>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Street Smart */}
-              <div
-                className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
-                  viewMode === 'street'
-                    ? 'bg-purple-100 border-purple-300 shadow-lg'
-                    : 'bg-purple-50 border-purple-200 hover:shadow-md'
-                }`}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="p-4 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg">
-                        <Play className="h-7 w-7 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900">
-                            Street Smart
-                          </h3>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
-                              viewMode === 'street'
-                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                                : 'bg-gray-100 text-gray-600 border border-gray-200'
-                            }`}
-                          >
-                            <span
-                              className={`w-2 h-2 rounded-full ${viewMode === 'street' ? 'bg-purple-500' : 'bg-gray-400'}`}
-                            ></span>
-                            Recorded
-                          </span>
-                        </div>
-                        <p className="text-gray-600 mb-4">
-                          Recorded lessons for this course
-                        </p>
-
-                        <div className="flex items-center gap-8">
-                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
-                            <BookOpen className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-700">
-                              {streetModules.length} modules
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
-                            <Clock className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-700">
-                              {Math.round(
-                                (streetModules.reduce(
-                                  (total, module) =>
-                                    total + (parseInt(module.duration) || 60),
-                                  0
-                                ) /
-                                  60) *
-                                  10
-                              ) / 10}{' '}
-                              hr
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+          {/* Book Smart and Street Smart UI Sections */}
+          <div className="space-y-3 mb-8">
+            {/* Book Smart Section - Only show "coming soon" if no published BOOK_SMART modules */}
+            {bookSmartModules.length === 0 ? (
+              <div className="mb-6">
+                <div className="rounded-2xl border border-blue-100 bg-white shadow-sm px-5 py-4 flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <h4 className="text-base font-semibold text-gray-900">
+                        Book Smart modules are coming soon
+                      </h4>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        Coming Soon
+                      </span>
                     </div>
-                    <ChevronDown className={`h-5 w-5 text-gray-400 mt-1`} />
+                    <p className="text-sm text-gray-600 mt-1">
+                      We are finalizing the guided Book Smart lessons to ensure
+                      you get the most comprehensive learning experience. Please
+                      check back shortly.
+                    </p>
                   </div>
                 </div>
               </div>
-              {streetLoading ? (
-                <div className="text-center py-12">
-                  <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
-                  <h3 className="text-lg font-medium">Loading recordings...</h3>
-                </div>
-              ) : streetError ? (
-                <div className="text-center py-12">
-                  <h3 className="text-lg font-medium">{streetError}</h3>
-                  <p className="text-muted-foreground mt-1">
-                    Please try again later.
-                  </p>
-                </div>
-              ) : streetModules.length === 0 ? (
-                <div className="text-center py-12">
-                  <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No recordings found</h3>
-                  <p className="text-muted-foreground mt-1">
-                    Recordings may not be available yet for this course.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {streetModules
-                    .filter(
-                      m =>
-                        (m.title || '')
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                        (m.description || '')
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                    )
-                    .map(module => {
-                      const isContentAvailable = !!module.resource_url;
-                      const hasAccessRecording =
-                        isEnrolledRecording ||
-                        unlockedIds.has(String(module.id));
-                      const isLockedRecording = !hasAccessRecording;
-                      const modulePrice =
-                        Number(module.price) > 0
-                          ? Number(module.price)
-                          : getStableRandomPrice(module);
-                      const recordingCourseId = getRecordingCourseIdForTitle(
-                        courseDetails?.title
-                      );
-
-                      // Debug logging for Street Smart access
-                      console.log(
-                        `[Street Smart] Module ${module.id}: isEnrolledRecording=${isEnrolledRecording}, unlockedIds.has=${unlockedIds.has(String(module.id))}, hasAccessRecording=${hasAccessRecording}`
-                      );
-                      return (
-                        <div key={module.id} className="module-card h-full">
-                          <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                            <div className="aspect-video relative overflow-hidden">
-                              <img
-                                src={
-                                  module.thumbnail ||
-                                  'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
-                                }
-                                alt={module.title}
-                                className="w-full h-full object-cover"
-                              />
-                              {isLockedRecording && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                  <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
-                                    <Lock className="w-5 h-5 text-gray-700" />
-                                    <span className="text-sm font-medium text-gray-800">
-                                      Locked
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                              <CardHeader className="pb-2 px-0 pt-0">
-                                <CardTitle className="text-lg line-clamp-2 min-h-[56px]">
-                                  {module.title}
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">
-                                  {module.description}
-                                </p>
-                                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <BookOpen className="w-3 h-3" />
-                                    <span>
-                                      {(() => {
-                                        const title = (
-                                          module.title ||
-                                          module.name ||
-                                          ''
-                                        ).toLowerCase();
-                                        const isIntroModule =
-                                          title.includes('why you must exit') &&
-                                          (title.includes('llc') ||
-                                            title.includes('corporation')) &&
-                                          title.includes('structure');
-                                        return isIntroModule
-                                          ? 'Intro Module'
-                                          : `Order: ${module.order || module.sequence || 1}`;
-                                      })()}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{module.duration || '60'} min</span>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                            </div>
-                            <div className="mt-auto px-6 pb-4">
-                              <CardFooter className="p-0 flex flex-col gap-2">
-                                {hasAccessRecording &&
-                                modulesWithLessons.has(String(module.id)) ? (
-                                  <>
-                                    <Link
-                                      to={`/dashboard/courses/${recordingCourseId}/modules/${module.id}/lessons`}
-                                      className="w-full"
-                                    >
-                                      <Button className="w-full">
-                                        <Play size={16} className="mr-2" />
-                                        View Lessons
-                                      </Button>
-                                    </Link>
-                                    <Link
-                                      to={`/dashboard/courses/${recordingCourseId}/modules/${module.id}/assessments`}
-                                      className="w-full"
-                                    >
-                                      <Button
-                                        variant="outline"
-                                        className="w-full"
-                                      >
-                                        <FileText size={16} className="mr-2" />
-                                        View Assessment
-                                      </Button>
-                                    </Link>
-                                    {/* Mark as Complete - show when enrolled in the recording course OR when user has individual module access */}
-                                    {!completedModuleIds.has(
-                                      String(module.id)
-                                    ) ? (
-                                      <Button
-                                        variant="secondary"
-                                        className="w-full disabled:opacity-60"
-                                        disabled={markingCompleteIds.has(
-                                          String(module.id)
-                                        )}
-                                        onClick={async () => {
-                                          const idStr = String(module.id);
-                                          if (!recordingCourseId || !module?.id)
-                                            return;
-                                          // Prevent duplicate clicks
-                                          if (markingCompleteIds.has(idStr))
-                                            return;
-                                          setMarkingCompleteIds(prev => {
-                                            const next = new Set(prev);
-                                            next.add(idStr);
-                                            return next;
-                                          });
-                                          try {
-                                            await api.post(
-                                              `/api/course/${recordingCourseId}/modules/${module.id}/mark-complete`
-                                            );
-                                            setCompletedModuleIds(prev => {
-                                              const next = new Set(prev);
-                                              next.add(idStr);
-                                              return next;
-                                            });
-                                          } catch (err) {
-                                            console.error(
-                                              'Failed to mark module as complete',
-                                              err
-                                            );
-                                          } finally {
-                                            setMarkingCompleteIds(prev => {
-                                              const next = new Set(prev);
-                                              next.delete(idStr);
-                                              return next;
-                                            });
-                                          }
-                                        }}
-                                      >
-                                        {markingCompleteIds.has(
-                                          String(module.id)
-                                        )
-                                          ? 'Marking...'
-                                          : 'Mark as Complete'}
-                                      </Button>
-                                    ) : (
-                                      <div className="w-full flex items-center justify-center">
-                                        <Badge className="px-3 py-1">
-                                          Completed
-                                        </Badge>
-                                      </div>
-                                    )}
-                                  </>
-                                ) : !modulesWithLessons.has(
-                                    String(module.id)
-                                  ) ? (
-                                  <Button
-                                    className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                    disabled
-                                  >
-                                    <Clock size={16} className="mr-2" />
-                                    <span className="font-medium">
-                                      Upcoming Recording
-                                    </span>
-                                  </Button>
-                                ) : (
-                                  <div className="w-full flex flex-col gap-2">
-                                    <Button
-                                      className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
-                                      onClick={() => {
-                                        if (!modulePrice || modulePrice <= 0)
-                                          return;
-                                        if (balance < modulePrice) {
-                                          setCreditsModalOpen(true);
-                                          return;
-                                        }
-                                        setConfirmUnlock({
-                                          open: true,
-                                          module,
-                                        });
-                                      }}
-                                      disabled={
-                                        !modulePrice ||
-                                        unlockingId === module.id
-                                      }
-                                    >
-                                      {unlockingId === module.id ? (
-                                        <>
-                                          <Clock
-                                            size={16}
-                                            className="mr-2 animate-spin"
-                                          />
-                                          Processing...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Unlock size={16} className="mr-2" />
-                                          Unlock recording for {
-                                            modulePrice
-                                          }{' '}
-                                          credits
-                                        </>
-                                      )}
-                                    </Button>
-                                    {balance < modulePrice && (
-                                      <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() =>
-                                          setCreditsModalOpen(true)
-                                        }
-                                      >
-                                        Buy credits
-                                      </Button>
-                                    )}
-                                  </div>
-                                )}
-                              </CardFooter>
-                            </div>
-                          </Card>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* For non-eligible courses, show normal module grid without Book/Street headers */}
-          {!isEligibleForTwoModes(courseDetails?.title) &&
-            (filteredModules.length === 0 ? (
-              <div className="text-center py-12">
-                <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No modules found</h3>
-                <p className="text-muted-foreground mt-1">
-                  {searchQuery
-                    ? 'Try adjusting your search query'
-                    : "This course doesn't have any modules yet"}
-                </p>
-              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredModules.map(module => {
-                  const isContentAvailable = !!module.resource_url;
-                  const hasAccess =
-                    isEnrolled || unlockedIds.has(String(module.id));
-                  const isLocked = !hasAccess;
-                  const modulePrice =
-                    Number(module.price) > 0
-                      ? Number(module.price)
-                      : getStableRandomPrice(module);
+              <>
+                <div className="w-full rounded-2xl border-2 bg-blue-100 border-blue-300 shadow-lg transition-all duration-200">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4 flex-1">
+                        <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg">
+                          <BookOpen className="h-7 w-7 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-xl font-bold text-gray-900">
+                              Book Smart
+                            </h3>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                              Guided
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mb-4">
+                            Interactive guided lessons for this course
+                          </p>
 
-                  // Sequential unlock: allow only the first module or next after highest unlocked
-                  let canUnlockInOrder = false;
-                  if (isLocked) {
-                    const allOrders = modules
-                      .map(m => Number(m.order) || 0)
-                      .filter(n => n > 0);
-                    const minOrder = allOrders.length
-                      ? Math.min(...allOrders)
-                      : 1;
-                    const unlockedOrders = new Set(
-                      modules
-                        .filter(m => unlockedIds.has(m.id))
-                        .map(m => Number(m.order) || 0)
-                    );
-                    const highestUnlocked = unlockedOrders.size
-                      ? Math.max(...Array.from(unlockedOrders))
-                      : null;
-                    const currentOrder = Number(module.order) || 0;
-                    if (highestUnlocked == null) {
-                      canUnlockInOrder = currentOrder === minOrder;
-                    } else {
-                      canUnlockInOrder = currentOrder === highestUnlocked + 1;
-                    }
-                  }
-
-                  return (
-                    <div key={module.id} className="module-card h-full">
-                      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                        <div className="aspect-video relative overflow-hidden">
-                          <img
-                            src={
-                              module.thumbnail ||
-                              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
-                            }
-                            alt={module.title}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Lock overlay for locked modules */}
-                          {isLocked && (
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                              <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
-                                <Lock className="w-5 h-5 text-gray-700" />
-                                <span className="text-sm font-medium text-gray-800">
-                                  Locked
-                                </span>
-                              </div>
+                          <div className="flex items-center gap-8">
+                            <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
+                              <BookOpen className="w-4 h-4 text-blue-600" />
+                              <span className="text-sm font-semibold text-gray-700">
+                                {filteredBookSmartModules.length} modules
+                              </span>
                             </div>
-                          )}
-                        </div>
-                        {/* Fixed height for content area, flex-grow to fill space */}
-                        <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                          <CardHeader className="pb-2 px-0 pt-0">
-                            <CardTitle className="text-lg line-clamp-2 min-h-[56px]">
-                              {module.title}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">
-                              {module.description}
-                            </p>
-                          </CardHeader>
-                          <CardContent className="space-y-3 px-0 pt-0 pb-0">
-                            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <BookOpen size={14} />
-                                <span>
-                                  {(() => {
-                                    const title = (
-                                      module.title ||
-                                      module.name ||
-                                      ''
-                                    ).toLowerCase();
-                                    const isIntroModule =
-                                      title.includes('why you must exit') &&
-                                      (title.includes('llc') ||
-                                        title.includes('corporation')) &&
-                                      title.includes('structure');
-                                    return isIntroModule
-                                      ? 'Intro Module'
-                                      : `Order: ${module.order || 'N/A'}`;
-                                  })()}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock size={14} />
-                                <span>
-                                  {module.estimated_duration || 0} min
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
+                              <Clock className="w-4 h-4 text-blue-600" />
+                              <span className="text-sm font-semibold text-gray-700">
+                                {Math.round(
+                                  (filteredBookSmartModules.reduce(
+                                    (total, module) =>
+                                      total +
+                                      (parseInt(module.estimated_duration) ||
+                                        60),
+                                    0
+                                  ) /
+                                    60) *
+                                    10
+                                ) / 10}{' '}
+                                hr
+                              </span>
                             </div>
-                          </CardContent>
+                          </div>
                         </div>
-                        {/* Footer always at the bottom */}
-                        <div className="mt-auto px-6 pb-4">
-                          <CardFooter className="p-0 flex flex-col gap-2">
-                            {hasAccess &&
-                            modulesWithLessons.has(String(module.id)) ? (
-                              <>
-                                <Link
-                                  to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`}
-                                  className="w-full"
-                                >
-                                  <Button className="w-full">
-                                    <Play size={16} className="mr-2" />
-                                    View Lessons
-                                  </Button>
-                                </Link>
-                                <Link
-                                  to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`}
-                                  className="w-full"
-                                >
-                                  <Button variant="outline" className="w-full">
-                                    <FileText size={16} className="mr-2" />
-                                    View Assessment
-                                  </Button>
-                                </Link>
-                                {/* Mark as Complete button */}
-                                {!completedModuleIds.has(String(module.id)) ? (
-                                  <Button
-                                    variant="secondary"
-                                    className="w-full disabled:opacity-60"
-                                    disabled={markingCompleteIds.has(
-                                      String(module.id)
-                                    )}
-                                    onClick={async () => {
-                                      const idStr = String(module.id);
-                                      if (!courseId || !module?.id) return;
-                                      // Prevent duplicate clicks
-                                      if (markingCompleteIds.has(idStr)) return;
-                                      setMarkingCompleteIds(prev => {
-                                        const next = new Set(prev);
-                                        next.add(idStr);
-                                        return next;
-                                      });
-                                      try {
-                                        await api.post(
-                                          `/api/course/${courseId}/modules/${module.id}/mark-complete`
-                                        );
-                                        setCompletedModuleIds(prev => {
-                                          const next = new Set(prev);
-                                          next.add(idStr);
-                                          return next;
-                                        });
-                                      } catch (err) {
-                                        console.error(
-                                          'Failed to mark module as complete',
-                                          err
-                                        );
-                                      } finally {
-                                        setMarkingCompleteIds(prev => {
-                                          const next = new Set(prev);
-                                          next.delete(idStr);
-                                          return next;
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    {markingCompleteIds.has(String(module.id))
-                                      ? 'Marking...'
-                                      : 'Mark as Complete'}
-                                  </Button>
-                                ) : (
-                                  <div className="w-full flex items-center justify-center">
-                                    <Badge className="px-3 py-1">
-                                      Completed
-                                    </Badge>
-                                  </div>
-                                )}
-                              </>
-                            ) : !modulesWithLessons.has(String(module.id)) ? (
-                              <Button
-                                className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                disabled
-                              >
-                                <Clock size={16} className="mr-2" />
-                                <span className="font-medium">
-                                  Upcoming Module
-                                </span>
-                              </Button>
-                            ) : isFromFreeCatalog(courseDetails) ? (
-                              <Button
-                                className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                disabled
-                              >
-                                <Clock size={16} className="mr-2" />
-                                <span className="font-medium">
-                                  {(() => {
-                                    const courseTitle = (
-                                      courseDetails?.title || ''
-                                    ).toLowerCase();
-                                    const isClassRecording = [
-                                      'class recording',
-                                      'class recordings',
-                                      'course recording',
-                                      'course recordings',
-                                      'recordings',
-                                      'recording',
-                                    ].some(keyword =>
-                                      courseTitle.includes(keyword)
-                                    );
-                                    return isClassRecording
-                                      ? 'Upcoming Recording'
-                                      : 'Upcoming Course';
-                                  })()}
-                                </span>
-                              </Button>
-                            ) : (
-                              (() => {
-                                const t = (
-                                  courseDetails?.title || ''
-                                ).toLowerCase();
-                                const isMasterClassCourse = [
-                                  'formation of business trust',
-                                  'tier 1: optimizing your business credit profile',
-                                  'business trust',
-                                  'credit optimization',
-                                ].some(name => t.includes(name));
-
-                                const isFreeCourse = [
-                                  'roadmap',
-                                  'road map',
-                                  'roadmap series',
-                                  'road map series',
-                                  'passive income',
-                                  'start your passive income',
-                                ].some(name => t.includes(name));
-
-                                if (isMasterClassCourse || isFreeCourse) {
-                                  return (
-                                    <div className="w-full flex flex-col gap-2">
-                                      <Button
-                                        className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
-                                        disabled
-                                      >
-                                        <Clock size={16} className="mr-2" />
-                                        <span className="font-medium">
-                                          Upcoming
-                                        </span>
-                                      </Button>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })() || (
-                                <div className="w-full flex flex-col gap-2">
-                                  <Button
-                                    className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
-                                    onClick={() => {
-                                      if (!modulePrice || modulePrice <= 0)
-                                        return;
-                                      if (!canUnlockInOrder) {
-                                        handleSequentialUnlockClick(module);
-                                        return;
-                                      }
-                                      if (balance < modulePrice) {
-                                        setCreditsModalOpen(true);
-                                        return;
-                                      }
-                                      setConfirmUnlock({ open: true, module });
-                                    }}
-                                    disabled={
-                                      !modulePrice || unlockingId === module.id
-                                    }
-                                  >
-                                    {unlockingId === module.id ? (
-                                      <>
-                                        <Clock
-                                          size={16}
-                                          className="mr-2 animate-spin"
-                                        />
-                                        Processing...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Unlock size={16} className="mr-2" />
-                                        Unlock for {modulePrice} credits
-                                      </>
-                                    )}
-                                  </Button>
-                                  {balance < modulePrice &&
-                                    canUnlockInOrder && (
-                                      <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() =>
-                                          setCreditsModalOpen(true)
-                                        }
-                                      >
-                                        Buy credits
-                                      </Button>
-                                    )}
-                                </div>
-                              )
-                            )}
-                          </CardFooter>
-                        </div>
-                      </Card>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  </div>
+                </div>
+                {/* Modules grid - shown below the category container */}
+                {filteredBookSmartModules.length === 0 ? (
+                  <div className="text-center py-8 mt-4">
+                    <Search className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+                    <h3 className="text-base font-medium">No modules found</h3>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      {searchQuery
+                        ? 'No Book Smart modules match your search'
+                        : 'No Book Smart modules available'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    {filteredBookSmartModules.map(module =>
+                      renderModuleCard(module)
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Street Smart Section */}
+            {streetSmartModules.length > 0 && (
+              <>
+                <div className="w-full rounded-2xl border-2 bg-purple-100 border-purple-300 shadow-lg transition-all duration-200">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4 flex-1">
+                        <div className="p-4 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg">
+                          <Play className="h-7 w-7 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-xl font-bold text-gray-900">
+                              Street Smart
+                            </h3>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                              Recorded
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mb-4">
+                            Recorded lessons for this course
+                          </p>
+
+                          <div className="flex items-center gap-8">
+                            <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                              <BookOpen className="w-4 h-4 text-purple-600" />
+                              <span className="text-sm font-semibold text-gray-700">
+                                {filteredStreetSmartModules.length} modules
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                              <Clock className="w-4 h-4 text-purple-600" />
+                              <span className="text-sm font-semibold text-gray-700">
+                                {Math.round(
+                                  (filteredStreetSmartModules.reduce(
+                                    (total, module) =>
+                                      total +
+                                      (parseInt(module.estimated_duration) ||
+                                        60),
+                                    0
+                                  ) /
+                                    60) *
+                                    10
+                                ) / 10}{' '}
+                                hr
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Modules grid - shown below the category container */}
+                {filteredStreetSmartModules.length === 0 ? (
+                  <div className="text-center py-8 mt-4">
+                    <Search className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+                    <h3 className="text-base font-medium">No modules found</h3>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      {searchQuery
+                        ? 'No Street Smart modules match your search'
+                        : 'No Street Smart modules available'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    {filteredStreetSmartModules.map(module =>
+                      renderModuleCard(module)
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </main>
 
@@ -2501,52 +1698,6 @@ export function CourseView() {
                       selectedCourseToBuy.id,
                       selectedCourseToBuy.priceCredits
                     );
-
-                    // Also unlock the Street Smart (recording) course when applicable
-                    try {
-                      if (isEligibleForTwoModes(selectedCourseToBuy.title)) {
-                        const recId = getRecordingCourseIdForTitle(
-                          selectedCourseToBuy.title
-                        );
-                        if (recId) {
-                          await unlockContent('COURSE', recId, 0);
-                          // Frontend guarantee: mark recordings as enrolled to reflect unlocked UI immediately
-                          setIsEnrolledRecording(true);
-                          // Ensure recordings list is loaded so user immediately sees unlocked items
-                          try {
-                            if (!streetModules || streetModules.length === 0) {
-                              const recMods = await fetchCourseModules(recId);
-                              const published = (
-                                Array.isArray(recMods) ? recMods : []
-                              ).filter(m => {
-                                const status = (
-                                  m.module_status ||
-                                  m.status ||
-                                  ''
-                                )
-                                  .toString()
-                                  .toUpperCase();
-                                return (
-                                  status === 'PUBLISHED' || m.published === true
-                                );
-                              });
-                              setStreetModules(published);
-                            }
-                          } catch {}
-                        }
-                      }
-                    } catch (e) {
-                      console.warn(
-                        '[CourseView] Optional recording unlock failed:',
-                        e?.message || e
-                      );
-                      // Even if backend unlock fails, reflect enrollment locally so UI shows access
-                      try {
-                        if (isEligibleForTwoModes(selectedCourseToBuy.title)) {
-                          setIsEnrolledRecording(true);
-                        }
-                      } catch {}
-                    }
 
                     // Refresh balance to show updated credits
                     if (refreshBalance) {

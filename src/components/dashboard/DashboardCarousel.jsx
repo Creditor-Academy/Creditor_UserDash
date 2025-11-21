@@ -20,22 +20,33 @@ const carouselItems = [
     id: 1,
     type: 'image',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/15nov.png',
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/22nov.png',
+    title: 'This Saturday',
     course: '8th Nov',
   },
   {
     id: 2,
-    type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Event3.png",
-    title: "Upcoming Event",
-    course: "Banner 2"
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/22novpart2.png',
+    title: 'Upcoming Event',
+    course: 'Banner 2',
   },
   {
     id: 3,
-    type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Event2.png",
-    title: "Upcoming Event",
-    course: "Banner 3"
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/nonmember.png',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
+  },
+  {
+    id: 3,
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/thanks+giving+(1).png',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
   },
 ];
 
@@ -99,6 +110,8 @@ export function DashboardCarousel() {
         opts={{
           align: 'center',
           loop: true,
+          // Slow down the embla scroll animation for a smoother feel
+          duration: 40,
         }}
         className="w-full relative z-10 px-1"
         setApi={api => {
@@ -146,7 +159,11 @@ export function DashboardCarousel() {
                   ) : (
                     <img
                       src={item.image}
-                      alt={item.title ? `${item.title} – ${item.course || ''}`.trim() : (item.course || 'Banner')}
+                      alt={
+                        item.title
+                          ? `${item.title} – ${item.course || ''}`.trim()
+                          : item.course || 'Banner'
+                      }
                       loading="lazy"
                       draggable={false}
                       referrerPolicy="no-referrer"

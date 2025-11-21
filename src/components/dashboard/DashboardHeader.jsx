@@ -212,8 +212,18 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const refreshNotifications = async () => {
     try {
       const response = await fetchNotifications();
+      console.log('Full notification response:', response);
+      console.log('Response data:', response.data);
+
       // Backend returns: { success: true, notifications: [...] }
-      let notificationsRaw = response.data?.notifications || [];
+      // Handle different possible response structures
+      let notificationsRaw =
+        response.data?.notifications ||
+        response.data?.data?.notifications ||
+        response.data?.data ||
+        (Array.isArray(response.data) ? response.data : []);
+
+      console.log('Parsed notifications raw:', notificationsRaw);
       // Do not show ticket-reply notifications to admins
       if (hasRole && hasRole('admin')) {
         notificationsRaw = notificationsRaw.filter(
@@ -346,11 +356,27 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         setIsSearching(true);
         try {
           const data = await search(searchQuery);
-          setSearchResults(data);
+          // Ensure data has the correct structure
+          if (data && data.results) {
+            setSearchResults(data);
+          } else {
+            // Fallback structure if response doesn't match
+            setSearchResults({
+              results: {
+                courses: [],
+                users: [],
+              },
+            });
+          }
           setShowDropdown(true);
         } catch (error) {
           console.error('Search failed:', error);
-          setSearchResults({ results: { courses: [] } });
+          setSearchResults({
+            results: {
+              courses: [],
+              users: [],
+            },
+          });
           setShowDropdown(true);
         } finally {
           setIsSearching(false);

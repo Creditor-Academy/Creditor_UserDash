@@ -33,6 +33,19 @@ const InstructorCourseModulesPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [moduleToDelete, setModuleToDelete] = useState(null);
 
+  const DEFAULT_MODULE_CATEGORY = 'BOOK_SMART';
+  const normalizeModuleCategory = module => {
+    if (!module || typeof module !== 'object') return module;
+    return {
+      ...module,
+      category: module.category || DEFAULT_MODULE_CATEGORY,
+    };
+  };
+  const normalizeModulesList = modulesArray =>
+    (Array.isArray(modulesArray) ? modulesArray : []).map(
+      normalizeModuleCategory
+    );
+
   useEffect(() => {
     if (!isAllowed) return;
     const init = async () => {
@@ -57,7 +70,7 @@ const InstructorCourseModulesPage = () => {
 
           // Only fetch modules data (1 API call instead of 2)
           const modulesData = await fetchCourseModules(courseId);
-          setModules(Array.isArray(modulesData) ? modulesData : []);
+          setModules(normalizeModulesList(modulesData));
         } else {
           console.log(
             '❌ No navigation state data - falling back to full API calls'
@@ -68,7 +81,7 @@ const InstructorCourseModulesPage = () => {
             fetchCourseModules(courseId),
           ]);
           setCourse(courseData);
-          setModules(Array.isArray(modulesData) ? modulesData : []);
+          setModules(normalizeModulesList(modulesData));
         }
       } catch (err) {
         console.error('Error loading course/modules:', err);
@@ -98,15 +111,54 @@ const InstructorCourseModulesPage = () => {
 
   const handleModuleSaved = async moduleData => {
     try {
+      let savedModule;
       if (moduleDialogMode === 'edit' && editModuleData) {
-        await updateModule(courseId, editModuleData.id, moduleData);
+        savedModule = await updateModule(
+          courseId,
+          editModuleData.id,
+          moduleData
+        );
       } else {
-        await createModule(courseId, moduleData);
+        savedModule = await createModule(courseId, moduleData);
       }
-      const updated = await fetchCourseModules(courseId);
-      setModules(updated || []);
+
+      const normalizedModule = savedModule?.data ?? savedModule;
+      const normalizedId =
+        normalizedModule?.id ??
+        normalizedModule?.module_id ??
+        editModuleData?.id;
+
+      setModules(prevModules => {
+        if (!Array.isArray(prevModules))
+          return normalizedModule
+            ? [normalizeModuleCategory({ ...normalizedModule })]
+            : [];
+
+        if (moduleDialogMode === 'edit' && normalizedId) {
+          return prevModules.map(module =>
+            (module?.id ?? module?.module_id) === normalizedId
+              ? normalizeModuleCategory({ ...module, ...normalizedModule })
+              : module
+          );
+        }
+
+        return normalizedModule
+          ? [...prevModules, normalizeModuleCategory({ ...normalizedModule })]
+          : prevModules;
+      });
+
       setShowCreateModuleDialog(false);
     } catch (err) {
+      console.error(
+        'Failed to save module locally, falling back to refetch:',
+        err
+      );
+      try {
+        const refreshed = await fetchCourseModules(courseId);
+        setModules(Array.isArray(refreshed) ? refreshed : []);
+      } catch (fallbackErr) {
+        console.error('Fallback fetch after save failed:', fallbackErr);
+      }
       alert('Failed to save module: ' + err.message);
     }
   };
@@ -126,7 +178,7 @@ const InstructorCourseModulesPage = () => {
 
       await deleteModule(courseId, moduleToDelete.id, moduleData);
       const updated = await fetchCourseModules(courseId);
-      setModules(updated || []);
+      setModules(normalizeModulesList(updated));
       setShowDeleteConfirm(false);
       setModuleToDelete(null);
     } catch (err) {

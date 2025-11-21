@@ -33,14 +33,13 @@ import { Link } from 'react-router-dom';
 import DashboardCarousel from '@/components/dashboard/DashboardCarousel';
 import DashboardGroup from '@/components/dashboard/DashboardGroup';
 import UpcomingCourses from '@/pages/UpcomingCourses';
-import AthenaUpcomingEvent from '@/pages/AthenaUpcomingEvent';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import DashboardTodo from '@/components/dashboard/DashboardTodo';
 import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import ComingSoonPopover from '@/components/dashboard/ComingSoonPopover';
+import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -694,6 +693,56 @@ export function Dashboard() {
   const visibleCards = isSmallScreen ? 1 : 2;
   const totalCards = userCourses.length;
 
+  const shimmerCardCount = useMemo(() => {
+    const enrolledCount =
+      Number(dashboardData.summary?.allEnrolledCoursesCount) || 0;
+    const baseCount = Math.max(visibleCards, 2);
+    if (enrolledCount > 0) {
+      return Math.max(Math.min(enrolledCount, 4), baseCount);
+    }
+    return baseCount;
+  }, [dashboardData.summary?.allEnrolledCoursesCount, visibleCards]);
+
+  const CourseShimmerCard = () => (
+    <div className="h-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      <div className="aspect-[16/9] relative bg-gray-200 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+      </div>
+      <div className="flex-1 flex flex-col p-4 space-y-4">
+        <div className="space-y-2">
+          <div className="h-5 rounded-md bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-4 rounded-md bg-gray-200 relative overflow-hidden w-3/4">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-4 rounded-md bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <div className="h-4 w-20 rounded-full bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-4 w-16 rounded-full bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-4 w-24 rounded-full bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+        </div>
+        <div className="mt-auto space-y-3">
+          <div className="h-4 w-28 rounded-md bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+          <div className="h-10 rounded-xl bg-gray-200 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const handleScroll = direction => {
     let newIndex = scrollIndex + direction;
     if (newIndex < 0) newIndex = 0;
@@ -714,7 +763,9 @@ export function Dashboard() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          <ComingSoonPopover />
+          <ThanksgivingPromo
+            onExtendMembership={() => setShowCreditsModal(true)}
+          />
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
@@ -872,12 +923,21 @@ export function Dashboard() {
                 </div>
                 {/* Cards Row or Empty State */}
                 {coursesLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-muted-foreground">
-                        Loading courses...
-                      </p>
+                  <div className="relative">
+                    <div
+                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden px-1 custom-horizontal-scroll w-full"
+                      aria-label="Loading your courses"
+                    >
+                      {Array.from({ length: shimmerCardCount }).map(
+                        (_, idx) => (
+                          <div
+                            key={`course-shimmer-${idx}`}
+                            className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
+                          >
+                            <CourseShimmerCard />
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 ) : userCourses && userCourses.length > 0 ? (
@@ -1290,8 +1350,6 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-
-          <AthenaUpcomingEvent />
         </div>
       </main>
       {/* Credits Modal (reused for services top-up) */}
