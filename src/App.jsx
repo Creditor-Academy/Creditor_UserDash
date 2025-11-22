@@ -72,6 +72,7 @@ import Instructorpage from '@/pages/Instructorpage';
 import InstructorCourseModulesPage from '@/pages/InstructorCourseModulesPage';
 import LessonBuilder from '@lessonbuilder/pages/LessonBuilder';
 import LessonPreview from '@lessonbuilder/pages/LessonPreview';
+import LessonListener from '@lessonbuilder/pages/LessonListener';
 import LandingPage from '@/pages/LandingPage';
 import Home from '@/pages/home';
 import About from '@/pages/AboutUsPage/About';
@@ -172,6 +173,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <LessonPreview />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/listener"
+                element={
+                  <ProtectedRoute>
+                    <LessonListener />
                   </ProtectedRoute>
                 }
               />

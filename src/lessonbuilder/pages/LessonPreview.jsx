@@ -17,6 +17,8 @@ import {
   Sparkles,
   Calendar,
   Box,
+  Headphones,
+  Mic,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -119,6 +121,7 @@ const LessonPreview = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const videoRef = useRef(null);
   const [isVideoOutOfView, setIsVideoOutOfView] = useState(false);
+  const [showVoiceOverlay, setShowVoiceOverlay] = useState(false);
 
   useEffect(() => {
     let styleEl = document.getElementById('lesson-preview-image-list-style');
@@ -153,6 +156,20 @@ const LessonPreview = () => {
   useEffect(() => {
     fetchLessonContent();
   }, [lessonId]);
+
+  useEffect(() => {
+    const handleVoiceOverlayVisibility = () => {
+      setShowVoiceOverlay(window.scrollY > 120);
+    };
+
+    window.addEventListener('scroll', handleVoiceOverlayVisibility, {
+      passive: true,
+    });
+    handleVoiceOverlayVisibility();
+
+    return () =>
+      window.removeEventListener('scroll', handleVoiceOverlayVisibility);
+  }, []);
 
   // Scroll spy to update current section based on scroll position
   useEffect(() => {
@@ -975,6 +992,12 @@ const LessonPreview = () => {
     );
   };
 
+  const handleOpenLessonListener = () => {
+    navigate(
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/listener`
+    );
+  };
+
   // Setup carousel functionality for quote carousels
   useEffect(() => {
     // Global carousel navigation functions
@@ -1614,6 +1637,24 @@ const LessonPreview = () => {
             <div
               className={`mx-auto transition-all duration-300 ${sidebarVisible ? 'max-w-4xl' : 'max-w-7xl'}`}
             >
+              <div className="mb-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-5 shadow-sm">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+                      Listen your lesson on our customize voices
+                    </p>
+                    <p className="text-base text-gray-700 mt-1">
+                      Immerse in narrated lessons crafted for clarity and focus.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleOpenLessonListener}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-200"
+                  >
+                    Try now
+                  </Button>
+                </div>
+              </div>
               {/* Display paginated lesson content */}
               <div
                 className={`transition-all duration-300 ${sidebarVisible ? 'space-y-6' : 'space-y-8'}`}
@@ -2294,6 +2335,22 @@ const LessonPreview = () => {
           ></div>
         )}
       </div>
+      {showVoiceOverlay && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button
+            onClick={handleOpenLessonListener}
+            className="group flex h-14 w-14 items-center justify-start overflow-hidden rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/40 transition-all duration-300 hover:w-40"
+            aria-label="Open lesson listener"
+          >
+            <span className="flex h-14 w-14 items-center justify-center">
+              <Mic className="h-5 w-5" />
+            </span>
+            <span className="mr-4 translate-x-4 text-sm font-semibold uppercase tracking-wide opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+              Try now
+            </span>
+          </Button>
+        </div>
+      )}
     </>
   );
 };
