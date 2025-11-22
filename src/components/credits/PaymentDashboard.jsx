@@ -287,6 +287,8 @@ const PaymentDashboard = () => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCredits, setFilterCredits] = useState('all');
+  const [filterDate, setFilterDate] = useState('all');
+  const [filterTxnType, setFilterTxnType] = useState('all');
   const [page, setPage] = useState(1);
   const perPage = 10;
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'history', 'analytics'
@@ -466,6 +468,35 @@ const PaymentDashboard = () => {
     });
     return history.sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [creditHistory, users]);
+
+  const filteredHistory = useMemo(() => {
+    let list = allHistory;
+    if (filterDate !== 'all') {
+      list = list.filter(h => {
+        const user = users.find(u => u.id === h.userId);
+        const d = daysLeft(
+          user?.membership?.expiresAt || user?.membership?.nextBillingDate
+        );
+        if (d == null) return false;
+        if (filterDate === 'red') return d < 5;
+        if (filterDate === 'yellow') return d >= 5 && d < 15;
+        if (filterDate === 'green') return d >= 15;
+        return true;
+      });
+    }
+    if (filterTxnType !== 'all') {
+      list = list.filter(h => h.type === filterTxnType);
+    }
+    const term = search.trim().toLowerCase();
+    if (term) {
+      list = list.filter(
+        h =>
+          (h.userName || '').toLowerCase().includes(term) ||
+          (h.userEmail || '').toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }, [allHistory, filterDate, filterTxnType, users, search]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -742,27 +773,39 @@ const PaymentDashboard = () => {
           {activeTab === 'history' && (
             <div className="max-h-[60vh] overflow-y-auto">
               <div className="mb-4 flex gap-2">
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search users by name, email, or ID"
+                  className="flex-1 min-w-[220px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
                 <select
-                  onChange={e => {
-                    const filter = e.target.value;
-                    // Filter by type if needed
-                  }}
+                  value={filterTxnType}
+                  onChange={e => setFilterTxnType(e.target.value)}
                   className="text-sm rounded-md border px-3 py-2 bg-white"
-                  defaultValue="all"
                 >
                   <option value="all">All Transactions</option>
                   <option value="grant">Grants Only</option>
                   <option value="deduct">Deducts Only</option>
-                  <option value="usage">Usage Only</option>
+                </select>
+                <select
+                  value={filterDate}
+                  onChange={e => setFilterDate(e.target.value)}
+                  className="text-sm rounded-md border px-3 py-2 bg-white"
+                >
+                  <option value="all">All Membership Dates</option>
+                  <option value="red">(Expires in &lt; 5 days)</option>
+                  <option value="yellow">(5 - 15 days)</option>
+                  <option value="green">(≥ 15 days)</option>
                 </select>
               </div>
               <div className="space-y-3">
-                {allHistory.length === 0 ? (
+                {filteredHistory.length === 0 ? (
                   <div className="p-6 text-center text-gray-600">
                     No transaction history
                   </div>
                 ) : (
-                  allHistory.map((h, i) => (
+                  filteredHistory.map((h, i) => (
                     <div
                       key={i}
                       className="rounded-lg border px-4 py-3 hover:bg-gray-50"
