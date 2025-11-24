@@ -441,7 +441,7 @@ const DividerComponent = forwardRef(
 
         {/* Edit Dialog */}
         <Dialog open={showEditDialog} onOpenChange={handleDialogClose}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>
                 Edit{' '}

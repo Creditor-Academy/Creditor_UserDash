@@ -974,7 +974,10 @@ const ListComponent = forwardRef(
 
         {/* List Edit Dialog */}
         <Dialog open={showListEditDialog} onOpenChange={setShowListEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+            aria-describedby={undefined}
+          >
             <DialogHeader>
               <DialogTitle>
                 Edit{' '}

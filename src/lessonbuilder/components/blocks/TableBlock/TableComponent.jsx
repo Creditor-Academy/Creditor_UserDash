@@ -801,7 +801,10 @@ const TableComponent = ({
     if (isLoading) {
       return (
         <Dialog open={true} onOpenChange={onClose}>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex items-center justify-center">
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] flex items-center justify-center"
+            aria-describedby={undefined}
+          >
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading table editor...</p>
@@ -819,6 +822,7 @@ const TableComponent = ({
           className={`max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out transform ${
             isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
           }`}
+          aria-describedby={undefined}
         >
           {/* Fixed Header */}
           <DialogHeader className="flex-shrink-0 sticky top-0 bg-white z-10 border-b border-gray-200 pb-4">

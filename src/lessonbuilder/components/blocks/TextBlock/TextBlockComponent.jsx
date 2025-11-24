@@ -1351,7 +1351,10 @@ const TextBlockComponent = ({
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+          aria-describedby={undefined}
+        >
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {currentTextBlockId ? 'Edit' : 'Add'} Text Block

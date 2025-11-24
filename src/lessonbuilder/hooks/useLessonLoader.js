@@ -410,33 +410,65 @@ const useLessonLoader = ({
                     };
                   }
 
-                  const html = b.html_css || '';
+                  const html = b.html_css || b.content || '';
                   const lowered = html.toLowerCase();
+
+                  // Prefer explicit text type from backend when available
+                  const explicitTextType = b.textType || b.text_type || null;
+
                   const hasH1 = lowered.includes('<h1');
                   const hasH2 = lowered.includes('<h2');
                   const hasP = lowered.includes('<p');
-                  const isMasterHeading =
-                    hasH1 &&
-                    (lowered.includes('linear-gradient') ||
-                      lowered.includes('gradient'));
 
-                  const detectedType = isMasterHeading
-                    ? 'master_heading'
-                    : hasH1 && hasP
-                      ? 'heading_paragraph'
-                      : hasH2 && hasP
-                        ? 'subheading_paragraph'
-                        : hasH1
-                          ? 'heading'
-                          : hasH2
-                            ? 'subheading'
-                            : 'paragraph';
+                  // Detect gradient-based master headings (supports both inline styles and Tailwind classes)
+                  const hasGradient =
+                    lowered.includes('linear-gradient') ||
+                    lowered.includes('bg-gradient-to-r') ||
+                    lowered.includes('gradient');
+
+                  const hasLargeHeadingClasses =
+                    hasH1 ||
+                    lowered.includes('text-3xl') ||
+                    lowered.includes('text-4xl') ||
+                    lowered.includes('font-extrabold');
+
+                  const isMasterHeading =
+                    explicitTextType === 'master_heading' ||
+                    b.gradient ||
+                    (hasGradient && hasLargeHeadingClasses);
+
+                  let detectedType;
+
+                  if (isMasterHeading) {
+                    detectedType = 'master_heading';
+                  } else if (
+                    !explicitTextType ||
+                    explicitTextType === 'heading' ||
+                    explicitTextType === 'paragraph'
+                  ) {
+                    // Only infer complex types when we can't fully trust the stored textType
+                    detectedType =
+                      hasH1 && hasP
+                        ? 'heading_paragraph'
+                        : hasH2 && hasP
+                          ? 'subheading_paragraph'
+                          : hasH1
+                            ? 'heading'
+                            : hasH2
+                              ? 'subheading'
+                              : 'paragraph';
+                  } else {
+                    detectedType = explicitTextType;
+                  }
+
                   return {
                     ...base,
                     type: 'text',
                     title: 'Text Block',
                     textType: detectedType,
                     content: html,
+                    // Preserve gradient so master headings remain identifiable when editing
+                    ...(b.gradient && { gradient: b.gradient }),
                   };
                 });
                 if (mappedEditBlocks.length > 0) {

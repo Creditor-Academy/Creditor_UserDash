@@ -3144,7 +3144,10 @@ const InteractiveComponent = forwardRef(
             }
           }}
         >
-          <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto sm:max-w-5xl !fixed !left-1/2 !top-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
+          <DialogContent
+            className="max-w-5xl max-h-[95vh] overflow-y-auto sm:max-w-5xl !fixed !left-1/2 !top-1/2 !transform !-translate-x-1/2 !-translate-y-1/2"
+            aria-describedby={undefined}
+          >
             {/* Loading overlay */}
             {isImageProcessing && (
               <div className="absolute inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center rounded-lg">
@@ -4394,7 +4397,7 @@ const InteractiveComponent = forwardRef(
 
         {/* Hotspot Edit Dialog */}
         <Dialog open={showHotspotDialog} onOpenChange={setShowHotspotDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Edit Hotspot</DialogTitle>
             </DialogHeader>
