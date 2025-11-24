@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FaSearch,
   FaCoins,
@@ -6,6 +6,7 @@ import {
   FaCreditCard,
   FaHistory,
   FaEye,
+  FaCalendarAlt,
 } from 'react-icons/fa';
 function formatDate(value) {
   try {
@@ -131,18 +132,22 @@ const generateDummyHistory = (userId, userName, userEmail) => {
       credits: 750,
       type: 'Catalog Purchase',
       description: 'Premium Course Access',
+      catalogItem: 'Premium Catalog Bundle',
     },
     {
       date: new Date(now - 12 * 86400000).toISOString(),
       credits: 1000,
       type: 'Consultation',
       description: 'Expert Consultation Session',
+      serviceType: 'Consultation',
+      consultant: 'Dr. Rivera',
     },
     {
       date: new Date(now - 5 * 86400000).toISOString(),
       credits: 500,
       type: 'Lesson Purchase',
       description: 'Advanced Module Unlock',
+      lessonName: 'Advanced Trading Lesson',
     },
   ];
 
@@ -180,6 +185,10 @@ const generateDummyHistory = (userId, userName, userEmail) => {
       credits: u.credits,
       description: u.description,
       usageType: u.type,
+      catalogItem: u.catalogItem,
+      lessonName: u.lessonName,
+      serviceType: u.serviceType,
+      consultant: u.consultant,
     });
   });
 
@@ -287,8 +296,8 @@ const PaymentDashboard = () => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCredits, setFilterCredits] = useState('all');
-  const [filterDate, setFilterDate] = useState('all');
   const [filterTxnType, setFilterTxnType] = useState('all');
+  const [filterDate, setFilterDate] = useState('');
   const [page, setPage] = useState(1);
   const perPage = 10;
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'history', 'analytics'
@@ -296,8 +305,13 @@ const PaymentDashboard = () => {
     open: false,
     user: null,
   });
+  const [userUsageModal, setUserUsageModal] = useState({
+    open: false,
+    user: null,
+  });
   const [changingMembership, setChangingMembership] = useState(null);
   const [creditHistory, setCreditHistory] = useState({}); // userId -> history array
+  const dateInputRef = useRef(null);
 
   // Load dummy data
   useEffect(() => {
@@ -394,10 +408,14 @@ const PaymentDashboard = () => {
     setChangingMembership(null);
   };
 
+  const clearDateFilter = () => {
+    setFilterDate('');
+  };
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, filterStatus, filterCredits]);
+  }, [search, filterStatus, filterCredits, filterTxnType, filterDate]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -471,17 +489,16 @@ const PaymentDashboard = () => {
 
   const filteredHistory = useMemo(() => {
     let list = allHistory;
-    if (filterDate !== 'all') {
+    if (filterDate) {
+      const targetDate = new Date(filterDate);
       list = list.filter(h => {
-        const user = users.find(u => u.id === h.userId);
-        const d = daysLeft(
-          user?.membership?.expiresAt || user?.membership?.nextBillingDate
+        const d = new Date(h.date);
+        if (Number.isNaN(d.getTime())) return false;
+        return (
+          d.getFullYear() === targetDate.getFullYear() &&
+          d.getMonth() === targetDate.getMonth() &&
+          d.getDate() === targetDate.getDate()
         );
-        if (d == null) return false;
-        if (filterDate === 'red') return d < 5;
-        if (filterDate === 'yellow') return d >= 5 && d < 15;
-        if (filterDate === 'green') return d >= 15;
-        return true;
       });
     }
     if (filterTxnType !== 'all') {
@@ -664,6 +681,16 @@ const PaymentDashboard = () => {
                               );
                             })()}
                             <button
+                              onClick={() =>
+                                setUserUsageModal({ open: true, user: u })
+                              }
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border border-blue-100 text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="View Usage Details"
+                            >
+                              <FaClock className="text-sm" />
+                              Usage
+                            </button>
+                            <button
                               onClick={() => {
                                 setUserDetailModal({ open: true, user: u });
                               }}
@@ -772,7 +799,7 @@ const PaymentDashboard = () => {
 
           {activeTab === 'history' && (
             <div className="max-h-[60vh] overflow-y-auto">
-              <div className="mb-4 flex gap-2">
+              <div className="mb-4 flex gap-2 flex-wrap">
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -788,16 +815,51 @@ const PaymentDashboard = () => {
                   <option value="grant">Grants Only</option>
                   <option value="deduct">Deducts Only</option>
                 </select>
-                <select
-                  value={filterDate}
-                  onChange={e => setFilterDate(e.target.value)}
-                  className="text-sm rounded-md border px-3 py-2 bg-white"
-                >
-                  <option value="all">All Membership Dates</option>
-                  <option value="red">(Expires in &lt; 5 days)</option>
-                  <option value="yellow">(5 - 15 days)</option>
-                  <option value="green">(≥ 15 days)</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (dateInputRef.current?.showPicker) {
+                        dateInputRef.current.showPicker();
+                      } else {
+                        dateInputRef.current?.focus();
+                      }
+                    }}
+                    className={`text-sm rounded-md border px-3 py-2 flex items-center gap-2 ${
+                      filterDate
+                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        : 'bg-white text-gray-700'
+                    }`}
+                  >
+                    <FaCalendarAlt
+                      className={
+                        filterDate ? 'text-blue-600' : 'text-gray-500 text-base'
+                      }
+                    />
+                    {filterDate
+                      ? new Date(filterDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : 'Select Date'}
+                  </button>
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={filterDate}
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                    tabIndex={-1}
+                  />
+                  {filterDate && (
+                    <button
+                      onClick={clearDateFilter}
+                      className="text-sm text-gray-500 hover:text-gray-700 underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="space-y-3">
                 {filteredHistory.length === 0 ? (
@@ -1058,8 +1120,191 @@ const PaymentDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* User Usage Modal */}
+      {userUsageModal.open && userUsageModal.user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setUserUsageModal({ open: false, user: null })}
+          />
+          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b flex items-start justify-between">
+              <div>
+                <h4 className="text-xl font-semibold text-gray-900">
+                  Usage details
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {userUsageModal.user.name} · {userUsageModal.user.email}
+                </p>
+              </div>
+              <button
+                onClick={() => setUserUsageModal({ open: false, user: null })}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh] space-y-5">
+              {(() => {
+                const hist = creditHistory[userUsageModal.user.id] || [];
+                const usageList = Array.isArray(hist)
+                  ? hist.filter(h => h.type === 'usage')
+                  : [];
+
+                if (usageList.length === 0) {
+                  return (
+                    <div className="text-center text-gray-600 py-8 border rounded-lg">
+                      No usage records found for this user.
+                    </div>
+                  );
+                }
+
+                const now = new Date();
+                const totalUsageCredits = usageList.reduce(
+                  (sum, item) => sum + Math.abs(item.credits || 0),
+                  0
+                );
+                const usageThisMonth = usageList.reduce((sum, item) => {
+                  const d = new Date(item.date);
+                  return d.getMonth() === now.getMonth() &&
+                    d.getFullYear() === now.getFullYear()
+                    ? sum + Math.abs(item.credits || 0)
+                    : sum;
+                }, 0);
+                const usageByCategory = usageList.reduce((acc, item) => {
+                  const key = item.usageType || 'Other';
+                  acc[key] = (acc[key] || 0) + Math.abs(item.credits || 0);
+                  return acc;
+                }, {});
+
+                const categoryEntries = Object.entries(usageByCategory).sort(
+                  (a, b) => b[1] - a[1]
+                );
+
+                return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                        <div className="text-xs uppercase text-blue-700 font-semibold">
+                          Total Credits Used
+                        </div>
+                        <div className="text-2xl font-bold text-blue-900">
+                          {totalUsageCredits.toLocaleString()}
+                        </div>
+                        <p className="text-xs text-blue-700 mt-1">
+                          Lifetime usage recorded for this user
+                        </p>
+                      </div>
+                      <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
+                        <div className="text-xs uppercase text-amber-700 font-semibold">
+                          Credits used this month
+                        </div>
+                        <div className="text-2xl font-bold text-amber-900">
+                          {usageThisMonth.toLocaleString()}
+                        </div>
+                        <p className="text-xs text-amber-700 mt-1">
+                          {now.toLocaleString('en-US', {
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <div className="border rounded-lg p-4 bg-emerald-50 border-emerald-200">
+                        <div className="text-xs uppercase text-emerald-700 font-semibold">
+                          Top usage category
+                        </div>
+                        <div className="text-lg font-bold text-emerald-900">
+                          {categoryEntries[0]?.[0] || '—'}
+                        </div>
+                        <p className="text-xs text-emerald-700 mt-1">
+                          {categoryEntries[0]
+                            ? `${categoryEntries[0][1].toLocaleString()} credits`
+                            : 'No usage yet'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-lg">
+                      <div className="border-b px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600">
+                        Usage breakdown by category
+                      </div>
+                      <ul className="divide-y">
+                        {categoryEntries.map(([label, total]) => (
+                          <li
+                            key={label}
+                            className="flex items-center justify-between px-4 py-2 text-sm"
+                          >
+                            <span className="font-medium text-gray-900">
+                              {label}
+                            </span>
+                            <span className="text-gray-600">
+                              {total.toLocaleString()} credits
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="min-w-full text-left text-sm">
+                        <thead className="bg-gray-50 text-xs uppercase text-gray-600">
+                          <tr>
+                            <th className="px-4 py-2">Activity</th>
+                            <th className="px-4 py-2">Type</th>
+                            <th className="px-4 py-2">Credits</th>
+                            <th className="px-4 py-2">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {usageList.map((usage, index) => {
+                            const detailLine =
+                              usage.catalogItem ||
+                              usage.lessonName ||
+                              usage.serviceType ||
+                              usage.consultant ||
+                              '';
+                            return (
+                              <tr
+                                key={`${usage.date}-${index}`}
+                                className="bg-white"
+                              >
+                                <td className="px-4 py-3">
+                                  <div className="font-semibold text-gray-900">
+                                    {usage.description || 'Usage'}
+                                  </div>
+                                  {detailLine && (
+                                    <div className="text-xs text-gray-500">
+                                      {detailLine}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                                    {usage.usageType || 'Usage'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 font-semibold text-red-600">
+                                  -{Math.abs(usage.credits || 0)}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-gray-600">
+                                  {formatDate(usage.date)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default PaymeentDashboard;
+export default PaymentDashboard;
