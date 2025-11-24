@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const BANNER_URL =
-  'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Thanks+giving+offer.png';
+  'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Thanks+giving+off.png';
 const STORAGE_KEY = 'thanksgivingPromoClosed';
 
 export default function ThanksgivingPromo({ onExtendMembership }) {
