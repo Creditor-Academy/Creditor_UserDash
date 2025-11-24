@@ -1062,4 +1062,4 @@ const PaymentDashboard = () => {
   );
 };
 
-export default PaymentDashboard;
+export default PaymeentDashboard;
