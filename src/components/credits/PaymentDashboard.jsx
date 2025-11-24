@@ -1049,6 +1049,28 @@ const PaymentDashboard = () => {
                     })()}
                   </div>
                 </div>
+                <div className="border rounded-lg p-3">
+                  <div className="text-sm text-gray-600">Last Paid</div>
+                  <div className="text-lg font-semibold">
+                    {(() => {
+                      const hist = creditHistory[userDetailModal.user.id] || [];
+                      const historyList = Array.isArray(hist) ? hist : [];
+                      const lastGrant = historyList
+                        .filter(h => h.type === 'grant')
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                      return formatDate(lastGrant?.date);
+                    })()}
+                  </div>
+                </div>
+                <div className="border rounded-lg p-3">
+                  <div className="text-sm text-gray-600">Expires</div>
+                  <div className="text-lg font-semibold">
+                    {formatDate(
+                      userDetailModal.user.membership?.expiresAt ||
+                        userDetailModal.user.membership?.nextBillingDate
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <h5 className="font-semibold text-gray-900 mb-3">
