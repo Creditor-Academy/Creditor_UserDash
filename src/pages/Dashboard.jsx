@@ -45,6 +45,7 @@ import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
 import { getCourseTrialStatus } from '../utils/trialUtils';
+import SponsorBannerCarousel from '@/components/sponsorAds/SponsorBannerCarousel';
 import {
   bookConsultation,
   fetchUserConsultations,
@@ -763,6 +764,9 @@ export function Dashboard() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
+          {/* Sponsor Banner Carousel - Top of Dashboard */}
+          <SponsorBannerCarousel />
+
           <ThanksgivingPromo
             onExtendMembership={() => setShowCreditsModal(true)}
           />

@@ -121,6 +121,10 @@ import ExpertAthena from './pages/Expert_athena';
 import RevenueGeneration from './pages/RevenueGeneration';
 import CustomerTraining from './pages/CustomerTraining';
 import LeadGeneration from './pages/LeadGeneration';
+import CreateAdPage from './pages/sponsorAds/CreateAdPage';
+import ManageAdsPage from './pages/sponsorAds/ManageAdsPage';
+import EditAdPage from './pages/sponsorAds/EditAdPage';
+import AnalyticsPage from './pages/sponsorAds/AnalyticsPage';
 import CoursesPage from './pages/Platform/CoursesPage';
 import CommunitiesPage from './pages/Platform/CommunitiesPage';
 import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
@@ -314,6 +318,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AddUsersPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Sponsor Ads routes - nested under InstructorPage */}
+              <Route
+                path="/instructor/sponsor-ads/*"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
                   </ProtectedRoute>
                 }
               />
