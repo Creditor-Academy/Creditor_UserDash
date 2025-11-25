@@ -8,60 +8,84 @@ import {
   TrendingUp,
   BarChart3,
   LineChart,
+  Lock,
 } from 'lucide-react';
 
 const financePathway = [
   {
-    level: 'Beginner',
-    title: 'Personal Finance Basics',
+    level: 'Stage 01',
+    title: 'Master Class Immersion',
     description:
-      'Master the art of budgeting, savings, and money discipline — your foundation for financial success.',
-    courses: [
-      { name: 'Personal Finance Foundations', price: '₹599' },
-      { name: 'Smart Budgeting & Saving Plan', price: '₹499' },
-    ],
-    color: 'from-sky-100 to-blue-50',
+      'Begin with the flagship Master Class and get the strategic context, frameworks, and rituals required for the private journey.',
+    courses: [{ name: 'Master Class', price: 'Included with membership' }],
+    color: 'from-slate-100 to-gray-50',
     icon: BookOpen,
-    outcome: 'Gain control over your money and spending habits.',
+    outcome: 'Build the mindset and core systems before you deploy capital.',
+    access: {
+      label: 'Enter Master Class',
+      href: '/dashboard/courses',
+      locked: false,
+    },
   },
   {
-    level: 'Intermediate',
-    title: 'Investment & Wealth Building',
+    level: 'Stage 02',
+    title: 'Become Private Blueprint',
     description:
-      'Understand equities, mutual funds, and SIPs — create your first diversified investment portfolio.',
-    courses: [
-      { name: 'Investment & Wealth Building', price: '₹1,099' },
-      { name: 'Mutual Fund Strategy Guide', price: '₹899' },
-    ],
-    color: 'from-green-100 to-emerald-50',
+      'Secure your foundation with entity structures, compliant documentation, and the executive playbook to operate privately.',
+    courses: [{ name: 'Become Private', price: 'Program investment: ₹2,999' }],
+    color: 'from-indigo-100 to-blue-50',
     icon: TrendingUp,
-    outcome: 'Start growing your wealth with strategic investments.',
+    outcome: 'Lock in private status and leverage the associated protections.',
+    access: {
+      label: 'Unlock Become Private',
+      href: '/dashboard/catalog',
+      locked: true,
+    },
   },
   {
-    level: 'Advanced',
-    title: 'Financial Analytics & Data Tools',
+    level: 'Stage 03',
+    title: 'Operate Private Systems',
     description:
-      'Analyze financial reports, ROI, and trends using Excel or Power BI to make data-backed decisions.',
-    courses: [
-      { name: 'Financial Analytics with Excel', price: '₹899' },
-      { name: 'Finance Dashboard with Power BI', price: '₹999' },
-    ],
-    color: 'from-yellow-100 to-amber-50',
+      'Deploy operations, payment infrastructure, and risk controls so every department functions with private precision.',
+    courses: [{ name: 'Operate Private', price: 'Program investment: ₹3,999' }],
+    color: 'from-purple-100 to-violet-50',
     icon: BarChart3,
-    outcome: 'Use data to guide smarter financial decisions.',
+    outcome: 'Run daily business activities inside a fortified ecosystem.',
+    access: {
+      label: 'Unlock Operate Private',
+      href: '/dashboard/catalog',
+      locked: true,
+    },
   },
   {
-    level: 'Expert',
-    title: 'AI & Quantitative Finance',
+    level: 'Stage 04',
+    title: 'Financial Freedom Architecture',
     description:
-      'Leverage AI and machine learning to automate trading, risk modeling, and portfolio optimization.',
+      'Engineer wealth velocity with layered credit, alternative banking strategies, and disciplined reinvestment.',
     courses: [
-      { name: 'Data-Driven Investing', price: '₹1,499' },
-      { name: 'AI in Finance', price: '₹1,299' },
+      { name: 'Financial Freedom', price: 'Program investment: ₹4,499' },
     ],
-    color: 'from-indigo-100 to-purple-50',
+    color: 'from-emerald-100 to-green-50',
     icon: LineChart,
-    outcome: 'Design your own algorithmic trading or AI finance models.',
+    outcome: 'Scale responsibly while preserving privacy-first cash flow.',
+    access: {
+      label: 'Unlock Financial Freedom',
+      href: '/dashboard/catalog',
+      locked: true,
+    },
+  },
+  {
+    level: 'Final Review',
+    title: 'Assessment · Am I Eligible for Becoming Private/Credit?',
+    description:
+      'A concierge-led assessment that audits documentation, revenue, personal credit, and entity readiness before acceptance.',
+    courses: [
+      { name: 'Executive Assessment', price: 'Included with consultation' },
+    ],
+    color: 'from-slate-200 to-white',
+    icon: Sparkles,
+    outcome: 'Receive a curated eligibility dossier and next-step timeline.',
+    access: { label: 'Book Assessment', href: '/assessment', locked: true },
   },
 ];
 
@@ -100,6 +124,7 @@ export default function SuccessivePathway() {
           <div className="flex flex-col space-y-20 relative">
             {financePathway.map((stage, i) => {
               const Icon = stage.icon;
+              const isLocked = stage.access?.locked;
               const isLeft = i % 2 === 0;
               const isLast = i === financePathway.length - 1;
 
@@ -124,9 +149,30 @@ export default function SuccessivePathway() {
                         <Icon className="h-5 w-5 text-gray-700" />
                         {stage.level}
                       </div>
-                      <h3 className="mt-3 text-2xl font-semibold text-gray-900">
-                        {stage.title}
-                      </h3>
+                      <div className="mt-3 flex items-center justify-between">
+                        <h3 className="text-2xl font-semibold text-gray-900">
+                          {stage.title}
+                        </h3>
+                        <div
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                            isLocked
+                              ? 'bg-gray-200 text-gray-600'
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}
+                        >
+                          {isLocked ? (
+                            <>
+                              <Lock className="h-3.5 w-3.5" />
+                              Locked
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Unlocked
+                            </>
+                          )}
+                        </div>
+                      </div>
                       <p className="mt-2 text-gray-700 text-sm leading-relaxed">
                         {stage.description}
                       </p>
@@ -157,6 +203,23 @@ export default function SuccessivePathway() {
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
                         {stage.outcome}
                       </div>
+                      <div className="mt-6 flex flex-col gap-3">
+                        {stage.access && !isLocked ? (
+                          <Link
+                            to={stage.access.href}
+                            className="inline-flex items-center justify-center rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800 transition"
+                          >
+                            {stage.access.label}
+                          </Link>
+                        ) : (
+                          <button
+                            className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-gray-500 bg-white/70 border border-gray-200 cursor-not-allowed"
+                            disabled
+                          >
+                            Unlock previous stage to access
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -166,22 +229,6 @@ export default function SuccessivePathway() {
         </section>
 
         {/* CTA */}
-        <section className="rounded-3xl border border-gray-200 bg-white shadow-md p-8 text-center space-y-4">
-          <Sparkles className="mx-auto h-6 w-6 text-gray-500" />
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Start your personalized finance roadmap
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Take a quick skill assessment — we’ll map your exact stage and
-            recommend the perfect finance course to begin with.
-          </p>
-          <Link
-            to="/assessment"
-            className="inline-flex items-center justify-center rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800 transition"
-          >
-            Take Finance Assessment →
-          </Link>
-        </section>
       </div>
     </div>
   );

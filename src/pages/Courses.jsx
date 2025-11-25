@@ -436,10 +436,35 @@ export function Courses() {
               </div>
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white uppercase tracking-[0.2em] shadow"
+                className="
+                bg-slate-900 
+                hover:bg-slate-950 
+                text-white 
+                font-semibold 
+                uppercase 
+                tracking-[0.25em] 
+                shadow-lg 
+                rounded-3xl 
+                px-8 
+                py-4
+                flex
+                items-center
+                justify-center
+                gap-4
+                transition-all
+                hover:-translate-y-1
+                hover:shadow-xl
+                active:scale-[0.98]
+              "
               >
-                <Link to="/dashboard/successive-pathway">
-                  EXPLORE our ai Successive pathway
+                <Link
+                  to="/dashboard/successive-pathway"
+                  className="flex items-center gap-4"
+                >
+                  <span className="text-sm md:text-base font-semibold">
+                    Explore the AI Successive Pathway
+                  </span>
+                  <ChevronRight className="w-5 h-5" />
                 </Link>
               </Button>
             </div>
