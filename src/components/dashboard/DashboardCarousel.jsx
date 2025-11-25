@@ -18,11 +18,35 @@ const carouselItems = [
   // },
   {
     id: 1,
-    type: "image",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/22nov.png",
-    title: "This Saturday",
-    course: "8th Nov",
-    
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/29.png',
+    title: 'This Saturday',
+    course: '8th Nov',
+  },
+  {
+    id: 2,
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/unnamed+(7).webp',
+    title: 'Upcoming Event',
+    course: 'Banner 2',
+  },
+  {
+    id: 3,
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/unnamed+(8).webp',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
+  },
+  {
+    id: 3,
+    type: 'image',
+    image:
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/thanks+giving+(1).png',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
   },
 ];
 

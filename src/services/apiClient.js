@@ -27,6 +27,15 @@ const rateLimiter = {
   },
   checkLimit(endpoint) {
     const now = Date.now();
+
+    // Skip rate limiting for payment endpoints to avoid blocking payment operations
+    if (
+      endpoint &&
+      (endpoint.includes('/payment-order/') || endpoint.includes('/payment/'))
+    ) {
+      return true;
+    }
+
     let limitType = 'default';
 
     // Determine limit type based on endpoint
@@ -125,10 +134,33 @@ function getRetryDelay(retryCount, baseDelay = 1000) {
   return Math.min(delay + jitter, 10000); // Max 10 seconds
 }
 
-function shouldRetry(error, retryCount, maxRetries = 3) {
+function shouldRetry(error, retryCount, maxRetries = 3, url = '') {
   if (retryCount >= maxRetries) return false;
 
   const status = error.response?.status;
+  const errorMessage =
+    error.response?.data?.errorMessage || error.response?.data?.message || '';
+  const errorMessageLower = errorMessage.toLowerCase();
+
+  // Don't retry if error indicates "already marked" or similar business logic errors
+  // These are not transient errors and shouldn't be retried
+  if (
+    errorMessageLower.includes('already marked') ||
+    errorMessageLower.includes('attendance for this event already marked')
+  ) {
+    return false;
+  }
+
+  // Don't retry payment endpoints on client errors (4xx) - let them fail fast
+  // Payment operations should be handled by the component, not retried automatically
+  if (url && (url.includes('/payment-order/') || url.includes('/payment/'))) {
+    // Only retry network errors for payment endpoints, not 4xx or 5xx
+    if (status >= 400) {
+      return false;
+    }
+    // Retry network errors for payments
+    return !status;
+  }
 
   // Don't retry client errors (4xx) except for specific cases
   if (status >= 400 && status < 500) {
@@ -232,8 +264,8 @@ api.interceptors.response.use(
     if (isNetworkError(error)) {
       console.error('[API] Network error detected:', error.message);
 
-      // Retry network errors
-      if (shouldRetry(error, retryCount)) {
+      // Retry network errors (with payment endpoint check)
+      if (shouldRetry(error, retryCount, 3, url)) {
         const delay = getRetryDelay(retryCount);
         console.log(
           `[API] Retrying network request in ${delay}ms (attempt ${retryCount + 1}/${3})`
@@ -257,7 +289,7 @@ api.interceptors.response.use(
         ? parseInt(retryAfter) * 1000
         : getRetryDelay(retryCount, 2000);
 
-      if (shouldRetry(error, retryCount)) {
+      if (shouldRetry(error, retryCount, 3, url)) {
         console.log(
           `[API] Rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${3})`
         );
@@ -274,7 +306,7 @@ api.interceptors.response.use(
     }
 
     // Handle server errors with retry
-    if (status >= 500 && shouldRetry(error, retryCount)) {
+    if (status >= 500 && shouldRetry(error, retryCount, 3, url)) {
       const delay = getRetryDelay(retryCount);
       console.log(
         `[API] Server error (${status}), retrying in ${delay}ms (attempt ${retryCount + 1}/${3})`
@@ -315,11 +347,14 @@ api.interceptors.response.use(
     }
 
     // Handle authentication errors
+    // Only force logout for specific auth-related endpoints, not login attempts or general API calls
     const isAuthError = status === 401 || status === 403;
     if (
       isAuthError &&
       url &&
-      (url.includes('/user/getUserProfile') || url.includes('/auth/logout'))
+      (url.includes('/user/getUserProfile') ||
+        url.includes('/auth/refresh') ||
+        url.includes('/auth/logout'))
     ) {
       console.warn(
         '[Auth] Received',

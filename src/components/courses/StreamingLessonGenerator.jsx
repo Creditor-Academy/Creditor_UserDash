@@ -7,13 +7,13 @@ import React, { useState, useEffect } from 'react';
 import { langChainBytezService } from '../../services/langchainBytez';
 import { Sparkles, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
-const StreamingLessonGenerator = ({ 
-  title, 
-  description, 
-  subject, 
-  apiKey, 
-  onComplete, 
-  onError 
+const StreamingLessonGenerator = ({
+  title,
+  description,
+  subject,
+  apiKey,
+  onComplete,
+  onError,
 }) => {
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -53,7 +53,6 @@ const StreamingLessonGenerator = ({
       setStatus('complete');
       setIsStreaming(false);
       onComplete?.(fullContent);
-
     } catch (error) {
       console.error('Streaming generation failed:', error);
       setStatus('error');
@@ -96,11 +95,13 @@ const StreamingLessonGenerator = ({
           <div className="flex items-center gap-3">
             {getStatusIcon()}
             <div>
-              <h3 className="font-semibold text-gray-900">Streaming Course Generator</h3>
+              <h3 className="font-semibold text-gray-900">
+                Streaming Course Generator
+              </h3>
               <p className="text-sm text-gray-600">{getStatusText()}</p>
             </div>
           </div>
-          
+
           {status === 'idle' && (
             <button
               onClick={startStreaming}
@@ -120,7 +121,7 @@ const StreamingLessonGenerator = ({
               <span>{Math.round(progress)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
@@ -169,7 +170,8 @@ const StreamingLessonGenerator = ({
         <div className="p-4 border-t border-gray-200">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-red-700 text-sm">
-              Failed to generate course content. Please try again or check your API key.
+              Failed to generate course content. Please try again or check your
+              API key.
             </p>
             <button
               onClick={() => {

@@ -563,73 +563,73 @@ const ModuleLessonsView = () => {
     }
   };
 
-  const startScormProgressPolling = lessonId => {
-    if (!lessonId) return;
+  // const startScormProgressPolling = lessonId => {
+  //   if (!lessonId) return;
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  //   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const poll = async () => {
-      try {
-        const response = await axios.get(
-          `${apiBaseUrl}/api/scorm/progress/${lessonId}`,
-          {
-            withCredentials: true,
-            headers: {
-              ...getAuthHeader(),
-            },
-          }
-        );
+  //   const poll = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `${apiBaseUrl}/api/scorm/progress/${lessonId}`,
+  //         {
+  //           withCredentials: true,
+  //           headers: {
+  //             ...getAuthHeader(),
+  //           },
+  //         }
+  //       );
 
-        const payload = response.data?.data || response.data || {};
-        const totalFiles =
-          payload.totalFiles ??
-          payload.total ??
-          payload.total_files ??
-          payload.totalfiles ??
-          null;
-        const uploadedCount =
-          payload.uploadedCount ??
-          payload.uploaded ??
-          payload.uploaded_files ??
-          payload.uploadedcount ??
-          null;
+  //       const payload = response.data?.data || response.data || {};
+  //       const totalFiles =
+  //         payload.totalFiles ??
+  //         payload.total ??
+  //         payload.total_files ??
+  //         payload.totalfiles ??
+  //         null;
+  //       const uploadedCount =
+  //         payload.uploadedCount ??
+  //         payload.uploaded ??
+  //         payload.uploaded_files ??
+  //         payload.uploadedcount ??
+  //         null;
 
-        let percent = payload.percent;
-        if (
-          (percent === undefined || percent === null) &&
-          totalFiles &&
-          totalFiles > 0
-        ) {
-          percent = Math.round(((uploadedCount || 0) / totalFiles) * 100);
-        }
-        if (percent === undefined || percent === null) {
-          percent = 0;
-        }
-        percent = Math.max(0, Math.min(100, percent));
+  //       let percent = payload.percent;
+  //       if (
+  //         (percent === undefined || percent === null) &&
+  //         totalFiles &&
+  //         totalFiles > 0
+  //       ) {
+  //         percent = Math.round(((uploadedCount || 0) / totalFiles) * 100);
+  //       }
+  //       if (percent === undefined || percent === null) {
+  //         percent = 0;
+  //       }
+  //       percent = Math.max(0, Math.min(100, percent));
 
-        setScormServerProgress({
-          percent,
-          uploadedCount,
-          totalFiles,
-          status: payload.status || 'processing',
-        });
+  //       setScormServerProgress({
+  //         percent,
+  //         uploadedCount,
+  //         totalFiles,
+  //         status: payload.status || 'processing',
+  //       });
 
-        if (percent >= 100 || payload.status === 'completed') {
-          stopScormProgressPolling(false);
-        }
-      } catch (error) {
-        if (error.response?.status === 404) {
-          setScormServerProgress(null);
-          return;
-        }
-        console.error('Error fetching SCORM progress:', error);
-      }
-    };
+  //       if (percent >= 100 || payload.status === 'completed') {
+  //         stopScormProgressPolling(false);
+  //       }
+  //     } catch (error) {
+  //       if (error.response?.status === 404) {
+  //         setScormServerProgress(null);
+  //         return;
+  //       }
+  //       console.error('Error fetching SCORM progress:', error);
+  //     }
+  //   };
 
-    stopScormProgressPolling(false);
-    poll();
-    scormProgressIntervalRef.current = setInterval(poll, 1500);
-  };
+  //   stopScormProgressPolling(false);
+  //   poll();
+  //   scormProgressIntervalRef.current = setInterval(poll, 1500);
+  // };
 
   const handleOpenScormDialog = lesson => {
     stopScormProgressPolling(true);
@@ -713,7 +713,7 @@ const ModuleLessonsView = () => {
       setIsUploadingScorm(true);
       setScormUploadProgress(0);
       setScormServerProgress(null);
-      startScormProgressPolling(scormLesson.id);
+      // startScormProgressPolling(scormLesson.id);
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
       const formData = new FormData();
       formData.append('scorm', scormFile);
@@ -844,10 +844,32 @@ const ModuleLessonsView = () => {
   };
 
   const handleAddScorm = async () => {
-    if (!scormLesson || !scormUrl.trim()) {
+    if (!scormLesson) {
       toast({
-        title: 'SCORM URL Required',
-        description: 'Please enter a SCORM package URL before proceeding.',
+        title: 'Select a Lesson',
+        description: 'Please select a lesson before adding SCORM package.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if at least one field is provided
+    if (!scormUrl.trim() && !scormFile) {
+      toast({
+        title: 'SCORM Required',
+        description:
+          'Please either upload a SCORM package or provide a SCORM URL.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // If file is selected but URL is not set yet, user needs to upload first
+    if (scormFile && !scormUrl.trim()) {
+      toast({
+        title: 'Upload Required',
+        description:
+          'Please upload the SCORM package first, or provide a URL directly.',
         variant: 'destructive',
       });
       return;
@@ -1134,29 +1156,7 @@ const ModuleLessonsView = () => {
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Edit</span>
                   </Button>
-                  <UniversalAIContentButton
-                    lessonData={lesson}
-                    moduleData={moduleDetails}
-                    courseData={{ title: 'Course' }} // You can pass actual course data if available
-                    onContentGenerated={blocks => {
-                      console.log(
-                        'AI content generated for lesson:',
-                        lesson.title,
-                        blocks
-                      );
-                      toast({
-                        title: 'Success',
-                        description: `Generated ${blocks.length} content blocks for ${lesson.title}!`,
-                      });
-                      // Optionally refresh the lesson data
-                      fetchModuleLessons();
-                    }}
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 text-purple-600 hover:bg-purple-50 border-purple-200"
-                    buttonText=""
-                    showIcon={true}
-                  />
+
                   <Button
                     variant="outline"
                     size="icon"
@@ -1659,7 +1659,8 @@ const ModuleLessonsView = () => {
                 : 'Add SCORM Package'}
             </DialogTitle>
             <DialogDescription>
-              Provide the SCORM package URL to attach it to this lesson.
+              Upload a SCORM package file or provide a SCORM package URL to
+              attach it to this lesson.
             </DialogDescription>
           </DialogHeader>
 
@@ -1720,7 +1721,7 @@ const ModuleLessonsView = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="scorm-file">Upload SCORM Package *</Label>
+              <Label htmlFor="scorm-file">Upload SCORM Package</Label>
               <Input
                 id="scorm-file"
                 type="file"
@@ -1794,15 +1795,19 @@ const ModuleLessonsView = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="scorm-url">SCORM URL *</Label>
+              <Label htmlFor="scorm-url">SCORM URL</Label>
               <Input
                 id="scorm-url"
                 type="url"
                 placeholder="https://example.com/path/to/scorm-package"
                 value={scormUrl}
                 onChange={e => setScormUrl(e.target.value)}
-                required
+                disabled={isUploadingScorm}
               />
+              <p className="text-xs text-gray-500">
+                Enter a direct URL to a SCORM package hosted on the cloud, or
+                upload a file above.
+              </p>
             </div>
           </div>
 
@@ -1816,7 +1821,11 @@ const ModuleLessonsView = () => {
             </Button>
             <Button
               onClick={handleAddScorm}
-              disabled={!scormUrl.trim() || isAddingScorm}
+              disabled={
+                (!scormUrl.trim() && !scormFile) ||
+                isAddingScorm ||
+                isUploadingScorm
+              }
             >
               {isAddingScorm ? (
                 <>

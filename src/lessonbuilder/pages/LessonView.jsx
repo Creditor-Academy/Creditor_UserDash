@@ -544,7 +544,7 @@ const LessonView = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
+          {/* <div className="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
             <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
               <Clock className="h-4 w-4" />
             </div>
@@ -556,7 +556,7 @@ const LessonView = () => {
                 {moduleDetails?.duration || '0'} hr
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -651,12 +651,19 @@ const LessonView = () => {
                 )} */}
               </CardContent>
 
-              <CardFooter className="pt-0">
+              <CardFooter className="pt-0 flex flex-col gap-2">
                 <Button
                   className="w-full flex items-center justify-center gap-2"
                   onClick={() => handleViewLesson(lesson)}
                 >
                   <Play className="h-4 w-4" /> Start Lesson
+                </Button>
+                <Button
+                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
+                  disabled
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span className="font-medium">Upcoming Assessment</span>
                 </Button>
               </CardFooter>
             </Card>

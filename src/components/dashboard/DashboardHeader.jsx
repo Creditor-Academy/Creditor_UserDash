@@ -356,11 +356,27 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         setIsSearching(true);
         try {
           const data = await search(searchQuery);
-          setSearchResults(data);
+          // Ensure data has the correct structure
+          if (data && data.results) {
+            setSearchResults(data);
+          } else {
+            // Fallback structure if response doesn't match
+            setSearchResults({
+              results: {
+                courses: [],
+                users: [],
+              },
+            });
+          }
           setShowDropdown(true);
         } catch (error) {
           console.error('Search failed:', error);
-          setSearchResults({ results: { courses: [] } });
+          setSearchResults({
+            results: {
+              courses: [],
+              users: [],
+            },
+          });
           setShowDropdown(true);
         } finally {
           setIsSearching(false);
