@@ -138,6 +138,18 @@ function shouldRetry(error, retryCount, maxRetries = 3, url = '') {
   if (retryCount >= maxRetries) return false;
 
   const status = error.response?.status;
+  const errorMessage =
+    error.response?.data?.errorMessage || error.response?.data?.message || '';
+  const errorMessageLower = errorMessage.toLowerCase();
+
+  // Don't retry if error indicates "already marked" or similar business logic errors
+  // These are not transient errors and shouldn't be retried
+  if (
+    errorMessageLower.includes('already marked') ||
+    errorMessageLower.includes('attendance for this event already marked')
+  ) {
+    return false;
+  }
 
   // Don't retry payment endpoints on client errors (4xx) - let them fail fast
   // Payment operations should be handled by the component, not retried automatically

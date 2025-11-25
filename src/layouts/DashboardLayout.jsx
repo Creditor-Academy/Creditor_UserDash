@@ -95,29 +95,21 @@ export function DashboardLayout() {
           </header>
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto overscroll-contain pt-14 sm:pt-16">
-            {isLessonBuilder ? (
-              // Full width for lesson builder - no constraints
-              <div className="w-full h-full">
+            <div className="max-w-7xl mx-auto w-full min-w-0">
+              {showBackButton && (
+                <div className="px-6 pt-6">
+                  <BackButton />
+                </div>
+              )}
+              <motion.main
+                className="p-4 sm:p-5 lg:p-6 pt-3 sm:pt-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
                 <Outlet />
-              </div>
-            ) : (
-              // Normal layout with constraints for other pages
-              <div className="max-w-7xl mx-auto w-full min-w-0">
-                {showBackButton && (
-                  <div className="px-6 pt-6">
-                    <BackButton />
-                  </div>
-                )}
-                <motion.main
-                  className="p-4 sm:p-5 lg:p-6 pt-3 sm:pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                  <Outlet />
-                </motion.main>
-              </div>
-            )}
+              </motion.main>
+            </div>
           </div>
         </div>
       </div>

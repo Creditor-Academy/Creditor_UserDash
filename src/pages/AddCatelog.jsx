@@ -196,15 +196,47 @@ const AddCatelog = () => {
           ...(catalogData.thumbnail && { thumbnail: catalogData.thumbnail }),
         };
         newCatalog = await updateCatalog(editId, essentialCatalogData);
-        setFormSuccess('Catalog updated successfully!');
+
+        // Check if there's a warning about local storage
+        if (newCatalog.warning) {
+          setFormSuccess(`${newCatalog.message} (${newCatalog.warning})`);
+        } else {
+          setFormSuccess('Catalog updated successfully!');
+        }
       } else {
         // Create new catalog
-        newCatalog = await createCatalog(catalogData);
-        const courseMessage =
-          form.courses.length > 0
-            ? ` with ${form.courses.length} course(s)`
-            : '';
-        setFormSuccess(`Catalog created successfully${courseMessage}!`);
+        try {
+          newCatalog = await createCatalog(catalogData);
+
+          // Check if there's a warning about local storage
+          if (newCatalog.warning) {
+            setFormSuccess(`${newCatalog.message} (${newCatalog.warning})`);
+          } else {
+            const courseMessage =
+              form.courses.length > 0
+                ? ` with ${form.courses.length} course(s)`
+                : '';
+            setFormSuccess(`Catalog created successfully${courseMessage}!`);
+          }
+        } catch (createError) {
+          // Provide more specific error messages
+          if (createError.message.includes('500')) {
+            setFormError(
+              'Server error occurred. Your changes have been saved locally. Please try again later or contact support if the issue persists.'
+            );
+          } else if (createError.message.includes('403')) {
+            setFormError(
+              'Permission denied. Your changes have been saved locally.'
+            );
+          } else if (createError.message.includes('network')) {
+            setFormError(
+              'Network error. Please check your internet connection and try again.'
+            );
+          } else {
+            setFormError(`Creation failed: ${createError.message}`);
+          }
+          return; // Exit early to prevent further processing
+        }
       }
       setLastUpdateResponse(newCatalog);
 
@@ -253,7 +285,7 @@ const AddCatelog = () => {
         searchForId(newCatalog);
       }
 
-      // Store the selected courses for later use
+      // Store the selected courses for later use if we need fallback
       const selectedCourses = [...form.courses];
 
       // Handle course associations for updates (existing catalogs)
@@ -303,55 +335,127 @@ const AddCatelog = () => {
       setShowModal(false);
       setEditId(null);
 
-      // Add courses if we have a catalog ID
-      if (selectedCourses.length > 0 && catalogId) {
-        try {
-          // Add a small delay to ensure the catalog is fully created
-          await new Promise(resolve => setTimeout(resolve, 500));
+      // Always try to add courses, even if we don't have a catalog ID initially
+      if (selectedCourses.length > 0) {
+        if (catalogId) {
+          // We have a catalog ID, add courses directly
+          try {
+            // Add a small delay to ensure the catalog is fully created
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-          const addResult = await addCoursesToCatalog(
-            catalogId,
-            selectedCourses
-          );
+            const addResult = await addCoursesToCatalog(
+              catalogId,
+              selectedCourses
+            );
 
-          if (addResult.success) {
-            // Verify the courses were actually added
-            try {
-              await new Promise(resolve => setTimeout(resolve, 300));
-              const verifyCourses = await getCatalogCourses(catalogId);
+            if (addResult.success) {
+              // Verify the courses were actually added
+              try {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                const verifyCourses = await getCatalogCourses(catalogId);
 
-              if (verifyCourses && verifyCourses.length > 0) {
+                if (verifyCourses && verifyCourses.length > 0) {
+                  setFormSuccess(
+                    prev =>
+                      prev +
+                      ` (${verifyCourses.length} courses added successfully)`
+                  );
+                } else {
+                  console.warn('Courses not found in catalog after addition');
+                  setFormSuccess(
+                    prev => prev + ' (Warning: Courses may not have been added)'
+                  );
+                }
+              } catch (verifyError) {
+                console.warn('Could not verify course addition:', verifyError);
                 setFormSuccess(
-                  prev =>
-                    prev +
-                    ` (${verifyCourses.length} courses added successfully)`
-                );
-              } else {
-                console.warn('Courses not found in catalog after addition');
-                setFormSuccess(
-                  prev => prev + ' (Warning: Courses may not have been added)'
+                  prev => prev + ' (Courses added, but verification failed)'
                 );
               }
-            } catch (verifyError) {
-              console.warn('Could not verify course addition:', verifyError);
+            } else {
+              console.warn('Course addition may have failed:', addResult);
               setFormSuccess(
-                prev => prev + ' (Courses added, but verification failed)'
+                prev => prev + ' (Note: Course association may have failed)'
               );
             }
-          } else {
-            console.warn('Course addition may have failed:', addResult);
-            setFormSuccess(
-              prev => prev + ' (Note: Course association may have failed)'
-            );
+          } catch (error) {
+            console.error('Course addition failed:', error);
+            setFormSuccess(prev => prev + ' (Note: Course association failed)');
           }
-        } catch (error) {
-          console.error('Course addition failed:', error);
-          setFormSuccess(prev => prev + ' (Note: Course association failed)');
+        } else {
+          // No catalog ID, try to find it in the updated list
+          // Add delay to ensure catalog is fully created in backend
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          await refreshCatalogsAndCounts();
+
+          if (catalogs && catalogs.length > 0) {
+            // Find the catalog by name more precisely
+            const matchingCatalog = catalogs.find(
+              cat =>
+                cat.name === form.name ||
+                cat.name === catalogData.name ||
+                cat.name === newCatalog.data?.data?.name ||
+                cat.name === newCatalog.data?.name
+            );
+
+            if (matchingCatalog) {
+              const fallbackCatalogId =
+                matchingCatalog.id || matchingCatalog._id;
+
+              if (fallbackCatalogId) {
+                try {
+                  const addResult = await addCoursesToCatalog(
+                    fallbackCatalogId,
+                    selectedCourses
+                  );
+
+                  if (addResult.success) {
+                    // Verify the courses were actually added
+                    try {
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                      const verifyCourses =
+                        await getCatalogCourses(fallbackCatalogId);
+
+                      if (verifyCourses && verifyCourses.length > 0) {
+                        setFormSuccess(
+                          prev =>
+                            prev +
+                            ` (${verifyCourses.length} courses added via fallback)`
+                        );
+                      } else {
+                        setFormSuccess(
+                          prev =>
+                            prev +
+                            ' (Courses added via fallback, but verification failed)'
+                        );
+                      }
+                    } catch (verifyError) {
+                      console.warn(
+                        'Could not verify fallback course addition:',
+                        verifyError
+                      );
+                      setFormSuccess(
+                        prev => prev + ' (Courses added via fallback)'
+                      );
+                    }
+                  } else {
+                    setFormSuccess(
+                      prev => prev + ' (Fallback course addition failed)'
+                    );
+                  }
+                } catch (fallbackError) {
+                  console.error(
+                    'Fallback course addition failed:',
+                    fallbackError
+                  );
+                  setFormSuccess(
+                    prev => prev + ' (Fallback course addition failed)'
+                  );
+                }
+              }
+            }
+          }
         }
-      } else if (selectedCourses.length > 0 && !catalogId) {
-        setFormError(
-          prev => prev + ' Failed to get catalog ID. Courses were not added.'
-        );
       }
 
       // Final refresh to update the UI
@@ -463,8 +567,14 @@ const AddCatelog = () => {
   const confirmDelete = async () => {
     if (!catalogToDelete) return;
     try {
-      await deleteCatalog(catalogToDelete.id);
-      setFormSuccess('Catalog deleted successfully!');
+      const result = await deleteCatalog(catalogToDelete.id);
+
+      // Show appropriate message
+      if (result.warning) {
+        setFormSuccess(`${result.message} (${result.warning})`);
+      } else {
+        setFormSuccess(result.message || 'Catalog deleted successfully!');
+      }
 
       // Refresh catalogs and course counts after successful deletion
       await refreshCatalogsAndCounts();
@@ -538,9 +648,14 @@ const AddCatelog = () => {
                   </h3>
                   <p className="text-sm text-yellow-700 mt-1">
                     You are logged in with role:{' '}
-                    <strong>{userRole || 'user'}</strong>. Contact an
-                    administrator to get instructor or admin permissions for
-                    full functionality.
+                    <strong>{userRole || 'user'}</strong>. Catalog changes will
+                    be saved locally only. Contact an administrator to get
+                    instructor or admin permissions for full functionality.
+                  </p>
+                  <p className="text-sm text-yellow-600 mt-2">
+                    <strong>Note:</strong> When you try to delete or update
+                    catalogs, they will be removed/updated from your local
+                    storage instead of the server.
                   </p>
                 </div>
               </div>
@@ -618,6 +733,13 @@ const AddCatelog = () => {
                 </svg>
                 <div>
                   <p className="text-green-800">{formSuccess}</p>
+                  {formSuccess.includes('locally') && (
+                    <p className="text-green-700 text-sm mt-1">
+                      Your changes have been saved to your browser's local
+                      storage. They will persist until you clear your browser
+                      data.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -804,8 +926,14 @@ const AddCatelog = () => {
               </h3>
               <p className="text-sm text-yellow-700 mt-1">
                 You are logged in with role:{' '}
-                <strong>{userRole || 'user'}</strong>. Contact an administrator
-                to get instructor or admin permissions for full functionality.
+                <strong>{userRole || 'user'}</strong>. Catalog changes will be
+                saved locally only. Contact an administrator to get instructor
+                or admin permissions for full functionality.
+              </p>
+              <p className="text-sm text-yellow-600 mt-2">
+                <strong>Note:</strong> When you try to delete or update
+                catalogs, they will be removed/updated from your local storage
+                instead of the server.
               </p>
             </div>
           </div>
@@ -896,6 +1024,12 @@ const AddCatelog = () => {
             </svg>
             <div>
               <p className="text-green-800">{formSuccess}</p>
+              {formSuccess.includes('locally') && (
+                <p className="text-green-700 text-sm mt-1">
+                  Your changes have been saved to your browser's local storage.
+                  They will persist until you clear your browser data.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -1225,6 +1359,14 @@ const AddCatelog = () => {
                       </svg>
                       <div>
                         <p className="text-red-800 text-sm">{formError}</p>
+                        {!isInstructorOrAdmin() &&
+                          formError.includes('403') && (
+                            <p className="text-red-700 text-xs mt-1">
+                              This error occurs because you don't have
+                              admin/instructor permissions. Your changes are
+                              being saved locally instead.
+                            </p>
+                          )}
                       </div>
                     </div>
                   </div>

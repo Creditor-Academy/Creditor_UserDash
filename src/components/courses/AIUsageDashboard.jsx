@@ -1,31 +1,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Zap, 
-  Crown, 
+import {
+  BarChart3,
+  TrendingUp,
+  Zap,
+  Crown,
   CheckCircle,
   AlertTriangle,
-  Info
+  Info,
 } from 'lucide-react';
 import { useAIFeatureAccess } from './AIFeatureAccess';
 
 const AIUsageDashboard = () => {
-  const { 
-    features, 
-    getTodayUsage, 
-    getUsageLimit, 
-    userPlan, 
-    upgradePlan 
-  } = useAIFeatureAccess();
+  const { features, getTodayUsage, getUsageLimit, userPlan, upgradePlan } =
+    useAIFeatureAccess();
 
   const featureStats = Object.entries(features).map(([key, feature]) => ({
     id: key,
     name: feature.name,
     usage: getTodayUsage(key),
     limit: getUsageLimit(key),
-    enabled: feature.enabled
+    enabled: feature.enabled,
   }));
 
   const totalUsage = featureStats.reduce((sum, stat) => sum + stat.usage, 0);
@@ -34,14 +29,14 @@ const AIUsageDashboard = () => {
 
   const planColors = {
     free: 'bg-gray-500',
-    basic: 'bg-blue-500', 
-    premium: 'bg-purple-500'
+    basic: 'bg-blue-500',
+    premium: 'bg-purple-500',
   };
 
   const planIcons = {
     free: Info,
     basic: TrendingUp,
-    premium: Crown
+    premium: Crown,
   };
 
   const PlanIcon = planIcons[userPlan];
@@ -53,7 +48,9 @@ const AIUsageDashboard = () => {
           <BarChart3 className="w-5 h-5" />
           AI Usage Dashboard
         </h3>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-white text-sm ${planColors[userPlan]}`}>
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded-full text-white text-sm ${planColors[userPlan]}`}
+        >
           <PlanIcon className="w-4 h-4" />
           {userPlan.charAt(0).toUpperCase() + userPlan.slice(1)} Plan
         </div>
@@ -63,15 +60,20 @@ const AIUsageDashboard = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Today's Total Usage</span>
-          <span className="text-sm text-gray-600">{totalUsage} / {totalLimit}</span>
+          <span className="text-sm text-gray-600">
+            {totalUsage} / {totalLimit}
+          </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(usagePercentage, 100)}%` }}
             className={`h-2 rounded-full ${
-              usagePercentage > 90 ? 'bg-red-500' : 
-              usagePercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
+              usagePercentage > 90
+                ? 'bg-red-500'
+                : usagePercentage > 70
+                  ? 'bg-yellow-500'
+                  : 'bg-green-500'
             }`}
           />
         </div>
@@ -86,9 +88,10 @@ const AIUsageDashboard = () => {
       {/* Feature Breakdown */}
       <div className="space-y-4">
         <h4 className="font-medium text-gray-700">Feature Usage Breakdown</h4>
-        {featureStats.map((stat) => {
-          const percentage = stat.limit > 0 ? (stat.usage / stat.limit) * 100 : 0;
-          
+        {featureStats.map(stat => {
+          const percentage =
+            stat.limit > 0 ? (stat.usage / stat.limit) * 100 : 0;
+
           return (
             <div key={stat.id} className="space-y-2">
               <div className="flex justify-between items-center">
@@ -109,9 +112,13 @@ const AIUsageDashboard = () => {
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(percentage, 100)}%` }}
                   className={`h-1 rounded-full ${
-                    !stat.enabled ? 'bg-gray-400' :
-                    percentage > 90 ? 'bg-red-400' : 
-                    percentage > 70 ? 'bg-yellow-400' : 'bg-blue-400'
+                    !stat.enabled
+                      ? 'bg-gray-400'
+                      : percentage > 90
+                        ? 'bg-red-400'
+                        : percentage > 70
+                          ? 'bg-yellow-400'
+                          : 'bg-blue-400'
                   }`}
                 />
               </div>
@@ -129,10 +136,13 @@ const AIUsageDashboard = () => {
         >
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-5 h-5 text-purple-600" />
-            <h4 className="font-semibold text-purple-800">Unlock More AI Power</h4>
+            <h4 className="font-semibold text-purple-800">
+              Unlock More AI Power
+            </h4>
           </div>
           <p className="text-purple-700 text-sm mb-3">
-            Upgrade to Premium for unlimited AI generations and advanced features.
+            Upgrade to Premium for unlimited AI generations and advanced
+            features.
           </p>
           <button
             onClick={() => upgradePlan('premium')}
@@ -145,7 +155,9 @@ const AIUsageDashboard = () => {
 
       {/* Plan Benefits */}
       <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h4 className="font-medium text-gray-700 mb-2">Current Plan Benefits</h4>
+        <h4 className="font-medium text-gray-700 mb-2">
+          Current Plan Benefits
+        </h4>
         <ul className="text-sm text-gray-600 space-y-1">
           {userPlan === 'free' && (
             <>

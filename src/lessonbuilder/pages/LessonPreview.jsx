@@ -23,7 +23,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import devLogger from '@lessonbuilder/utils/devLogger';
+import ImmersiveReader from '@/components/courses/ImmersiveReader';
+import { getTtsToken } from '@/services/speechify';
 
 const getImageCaptionHtml = block => {
   const captionHtml = (
@@ -120,6 +121,9 @@ const LessonPreview = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const videoRef = useRef(null);
   const [isVideoOutOfView, setIsVideoOutOfView] = useState(false);
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
+  const [readerContent, setReaderContent] = useState('');
+  const [readerTitle, setReaderTitle] = useState('');
 
   useEffect(() => {
     let styleEl = document.getElementById('lesson-preview-image-list-style');
@@ -1067,6 +1071,83 @@ const LessonPreview = () => {
     navigate(
       `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/builder`
     );
+  };
+
+  const getReaderHtmlForBlock = block => {
+    if (!block) return '';
+
+    if (block.htmlCss && block.htmlCss.trim()) {
+      return block.htmlCss;
+    }
+
+    // Prefer rich content fields per block type
+    switch (block.type) {
+      case 'text':
+      case 'statement':
+      case 'list':
+      case 'quote':
+      case 'table':
+      case 'embed':
+      case 'divider':
+      case 'audio':
+        return block.content || '';
+      case 'image': {
+        const caption =
+          block.captionHtml || block.caption || block.imageDescription || '';
+        return caption ? `<p>${caption}</p>` : '';
+      }
+      case 'video': {
+        const text =
+          block.videoDescription || block.videoTitle || block.content || '';
+        return text ? `<p>${text}</p>` : '';
+      }
+      case 'youtube': {
+        const text =
+          block.videoDescription || block.videoTitle || block.content || '';
+        return text ? `<p>${text}</p>` : '';
+      }
+      case 'pdf': {
+        const text = block.pdfDescription || block.pdfTitle || '';
+        return text ? `<p>${text}</p>` : '';
+      }
+      default:
+        return block.content || '';
+    }
+  };
+
+  const handleReadBlock = async block => {
+    const html = getReaderHtmlForBlock(block);
+
+    if (!html || !html.trim()) {
+      toast({
+        title: 'Nothing to read',
+        description: 'This content block does not contain readable text.',
+      });
+      return;
+    }
+
+    try {
+      // Call immersive reader token API (backend integration)
+      const { token, subdomain } = await getTtsToken();
+      console.debug('[ImmersiveReader] TTS token acquired', {
+        hasToken: !!token,
+        subdomain,
+      });
+
+      setReaderTitle(lessonData?.title || 'Lesson Reader');
+      setReaderContent(html);
+      setIsReaderOpen(true);
+    } catch (error) {
+      console.error('[ImmersiveReader] Failed to start reader:', error);
+      toast({
+        title: 'Immersive Reader unavailable',
+        description:
+          error?.userMessage ||
+          error?.message ||
+          'Unable to start Immersive Reader. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Setup carousel functionality for quote carousels
@@ -2317,6 +2398,20 @@ const LessonPreview = () => {
                             )}
                           </>
                         )}
+                        {/* Read button for this block */}
+                        {getReaderHtmlForBlock(block)?.trim() && (
+                          <div className="mt-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReadBlock(block)}
+                              className="inline-flex items-center gap-1 text-xs"
+                            >
+                              <BookOpen className="h-3 w-3" />
+                              <span>Read</span>
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -2388,6 +2483,12 @@ const LessonPreview = () => {
           ></div>
         )}
       </div>
+      <ImmersiveReader
+        title={readerTitle || lessonData.title}
+        content={readerContent}
+        isOpen={isReaderOpen}
+        onClose={() => setIsReaderOpen(false)}
+      />
     </>
   );
 };
