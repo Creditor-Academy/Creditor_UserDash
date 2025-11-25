@@ -67,6 +67,7 @@ import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
+import Payments from "@/pages/Payments";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import Home from "@/pages/home";
@@ -348,6 +349,9 @@ function App() {
             <Route path="guides" element={<Guides />} />
             <Route path="termcondition" element={<TermsAndConditions />} />
             
+            {/* Payments route */}
+            <Route path="payments" element={<Payments />} />
+
             {/* Support routes */}
             <Route path="support">
               <Route index element={<Support />} />

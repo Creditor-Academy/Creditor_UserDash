@@ -21,7 +21,8 @@ import {
   Library,
   School,
   Bot,
-  CreditCard
+  CreditCard,
+  Wallet
 } from "lucide-react";
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
@@ -368,6 +369,17 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               label="Messages"
               href="/dashboard/messages"
               active={isActive("/dashboard/messages")}
+              collapsed={collapsed}
+              onNavigate={handleNavigate}
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={Wallet}
+              label="My Payments"
+              href="/dashboard/payments"
+              active={isActive("/dashboard/payments")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
