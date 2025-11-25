@@ -1,13 +1,18 @@
 import api from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://creditor-backend-ceds.onrender.com';
 
 // Organization Management APIs
 export const organizationService = {
   // Create a new organization
-  createOrganization: async (organizationData) => {
+  createOrganization: async organizationData => {
     try {
-      const response = await api.post(`${API_BASE}/api/assets/createOrganization`, organizationData);
+      const response = await api.post(
+        `${API_BASE}/api/assets/createOrganization`,
+        organizationData
+      );
       return response.data;
     } catch (error) {
       console.error('Error creating organization:', error);
@@ -29,7 +34,10 @@ export const organizationService = {
   // Edit an organization
   editOrganization: async (organizationId, organizationData) => {
     try {
-      const response = await api.put(`${API_BASE}/api/assets/editorganization/${organizationId}`, organizationData);
+      const response = await api.put(
+        `${API_BASE}/api/assets/editorganization/${organizationId}`,
+        organizationData
+      );
       return response.data;
     } catch (error) {
       console.error('Error editing organization:', error);
@@ -38,23 +46,28 @@ export const organizationService = {
   },
 
   // Delete an organization
-  deleteOrganization: async (organizationId) => {
+  deleteOrganization: async organizationId => {
     try {
-      const response = await api.delete(`${API_BASE}/api/assets/deleteorganization/${organizationId}`);
+      const response = await api.delete(
+        `${API_BASE}/api/assets/deleteorganization/${organizationId}`
+      );
       return response.data;
     } catch (error) {
       console.error('Error deleting organization:', error);
       throw error;
     }
-  }
+  },
 };
 
 // Category Management APIs
 export const categoryService = {
   // Create a new category
-  createCategory: async (categoryData) => {
+  createCategory: async categoryData => {
     try {
-      const response = await api.post(`${API_BASE}/api/assets/createcategory`, categoryData);
+      const response = await api.post(
+        `${API_BASE}/api/assets/createcategory`,
+        categoryData
+      );
       return response.data;
     } catch (error) {
       console.error('Error creating category:', error);
@@ -63,9 +76,11 @@ export const categoryService = {
   },
 
   // Get categories for a specific organization
-  getCategories: async (organizationId) => {
+  getCategories: async organizationId => {
     try {
-      const response = await api.get(`${API_BASE}/api/assets/organizations/${organizationId}/getCategories`);
+      const response = await api.get(
+        `${API_BASE}/api/assets/organizations/${organizationId}/getCategories`
+      );
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -76,7 +91,10 @@ export const categoryService = {
   // Edit a category
   editCategory: async (categoryId, categoryData) => {
     try {
-      const response = await api.put(`${API_BASE}/api/assets/editcategory/${categoryId}`, categoryData);
+      const response = await api.put(
+        `${API_BASE}/api/assets/editcategory/${categoryId}`,
+        categoryData
+      );
       return response.data;
     } catch (error) {
       console.error('Error editing category:', error);
@@ -85,21 +103,23 @@ export const categoryService = {
   },
 
   // Delete a category
-  deleteCategory: async (categoryId) => {
+  deleteCategory: async categoryId => {
     try {
-      const response = await api.delete(`${API_BASE}/api/assets/deletecategory/${categoryId}`);
+      const response = await api.delete(
+        `${API_BASE}/api/assets/deletecategory/${categoryId}`
+      );
       return response.data;
     } catch (error) {
       console.error('Error deleting category:', error);
       throw error;
     }
-  }
+  },
 };
 
 // Asset Management APIs
 export const assetService = {
   // Create/upload a new asset
-  createAsset: async (assetData) => {
+  createAsset: async assetData => {
     try {
       const formData = new FormData();
       formData.append('title', assetData.title);
@@ -119,11 +139,9 @@ export const assetService = {
         if (fileToUpload.url && !(fileToUpload instanceof File)) {
           const response = await fetch(fileToUpload.url);
           const blob = await response.blob();
-          fileToUpload = new File(
-            [blob],
-            fileToUpload.name || 'image.jpg',
-            { type: blob.type || 'image/jpeg' }
-          );
+          fileToUpload = new File([blob], fileToUpload.name || 'image.jpg', {
+            type: blob.type || 'image/jpeg',
+          });
         }
 
         // Append the file (now guaranteed to be a Blob/File)
@@ -142,7 +160,10 @@ export const assetService = {
         fieldName: 'assetfile',
       });
 
-      const response = await api.post(`${API_BASE}/api/assets/create-asset`, formData);
+      const response = await api.post(
+        `${API_BASE}/api/assets/create-asset`,
+        formData
+      );
       return response.data;
     } catch (error) {
       console.error('Error creating asset:', error);
@@ -158,9 +179,12 @@ export const assetService = {
   },
 
   // Get assets based on organization and category
-  getAssets: async (filters) => {
+  getAssets: async filters => {
     try {
-      const response = await api.post(`${API_BASE}/api/assets/getAssets`, filters);
+      const response = await api.post(
+        `${API_BASE}/api/assets/getAssets`,
+        filters
+      );
       return response.data;
     } catch (error) {
       console.error('Error fetching assets:', error);
@@ -171,7 +195,10 @@ export const assetService = {
   // Edit an asset
   editAsset: async (assetId, assetData) => {
     try {
-      const response = await api.put(`${API_BASE}/api/assets/editasset/${assetId}`, assetData);
+      const response = await api.put(
+        `${API_BASE}/api/assets/editasset/${assetId}`,
+        assetData
+      );
       return response.data;
     } catch (error) {
       console.error('Error editing asset:', error);
@@ -180,9 +207,11 @@ export const assetService = {
   },
 
   // Delete an asset
-  deleteAsset: async (assetId) => {
+  deleteAsset: async assetId => {
     try {
-      const response = await api.delete(`${API_BASE}/api/assets/delete-asset/${assetId}`);
+      const response = await api.delete(
+        `${API_BASE}/api/assets/delete-asset/${assetId}`
+      );
       return response.data;
     } catch (error) {
       console.error('Error deleting asset:', error);
@@ -191,21 +220,21 @@ export const assetService = {
   },
 
   // Search assets globally across all organizations and categories
-  searchAssets: async (searchTerm) => {
+  searchAssets: async searchTerm => {
     try {
       const response = await api.post(`${API_BASE}/api/assets/search`, {
-        query: searchTerm
+        query: searchTerm,
       });
       return response.data;
     } catch (error) {
       console.error('Error searching assets:', error);
       throw error;
     }
-  }
+  },
 };
 
 export default {
   organizationService,
   categoryService,
-  assetService
+  assetService,
 };

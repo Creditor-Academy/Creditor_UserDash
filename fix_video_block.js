@@ -2,7 +2,12 @@ const fs = require('fs');
 const path = require('path');
 
 // Path to the LessonBuilder.jsx file
-const lessonBuilderPath = path.join(__dirname, 'src', 'pages', 'LessonBuilder.jsx');
+const lessonBuilderPath = path.join(
+  __dirname,
+  'src',
+  'pages',
+  'LessonBuilder.jsx'
+);
 
 console.log('🔧 Starting Video Block Fix...');
 
@@ -12,7 +17,11 @@ try {
   console.log('✅ File read successfully');
 
   // 1. Add VideoComponent import
-  if (!content.includes("import VideoComponent from '@/components/VideoComponent';")) {
+  if (
+    !content.includes(
+      "import VideoComponent from '@/components/VideoComponent';"
+    )
+  ) {
     content = content.replace(
       "import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';",
       "import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';\nimport VideoComponent from '@/components/VideoComponent';"
@@ -78,10 +87,16 @@ try {
 
   if (!content.includes('const handleVideoUpdate = (videoBlock) => {')) {
     // Find the end of handleYouTubeUpdate function
-    const youtubeUpdateEnd = content.indexOf('setEditingYouTubeBlock(null);\n  };');
+    const youtubeUpdateEnd = content.indexOf(
+      'setEditingYouTubeBlock(null);\n  };'
+    );
     if (youtubeUpdateEnd !== -1) {
-      const insertPoint = youtubeUpdateEnd + 'setEditingYouTubeBlock(null);\n  };'.length;
-      content = content.slice(0, insertPoint) + handleVideoUpdateFunction + content.slice(insertPoint);
+      const insertPoint =
+        youtubeUpdateEnd + 'setEditingYouTubeBlock(null);\n  };'.length;
+      content =
+        content.slice(0, insertPoint) +
+        handleVideoUpdateFunction +
+        content.slice(insertPoint);
       console.log('✅ Added handleVideoUpdate function');
     }
   }
@@ -95,11 +110,16 @@ try {
   // Find the handleEditBlock function and add the case
   if (!content.includes("case 'video':")) {
     // Look for the switch statement in handleEditBlock
-    const switchPattern = /case 'youtube':\s*setEditingYouTubeBlock\(block\);\s*setShowYouTubeDialog\(true\);\s*break;/;
+    const switchPattern =
+      /case 'youtube':\s*setEditingYouTubeBlock\(block\);\s*setShowYouTubeDialog\(true\);\s*break;/;
     const match = content.match(switchPattern);
     if (match) {
       const insertPoint = match.index + match[0].length;
-      content = content.slice(0, insertPoint) + '\n\n' + videoCaseCode + content.slice(insertPoint);
+      content =
+        content.slice(0, insertPoint) +
+        '\n\n' +
+        videoCaseCode +
+        content.slice(insertPoint);
       console.log('✅ Added video case to handleEditBlock');
     }
   }
@@ -108,7 +128,7 @@ try {
   const functionsToRemove = [
     /const handleVideoDialogClose = \(\) => \{[\s\S]*?\n  \};/,
     /const handleVideoInputChange = \(e\) => \{[\s\S]*?\n  \};/,
-    /const handleAddVideo = async \(\) => \{[\s\S]*?\n  \};/
+    /const handleAddVideo = async \(\) => \{[\s\S]*?\n  \};/,
   ];
 
   functionsToRemove.forEach((pattern, index) => {
@@ -144,10 +164,13 @@ try {
   console.log('  - Removed old video functions');
   console.log('  - Replaced inline dialog with VideoComponent');
   console.log('');
-  console.log('🚀 Video blocks should now add to existing content instead of replacing it!');
-
+  console.log(
+    '🚀 Video blocks should now add to existing content instead of replacing it!'
+  );
 } catch (error) {
   console.error('❌ Error fixing video block:', error.message);
   console.log('');
-  console.log('📋 Manual fix required. Please apply the changes from video_fix_instructions.md');
+  console.log(
+    '📋 Manual fix required. Please apply the changes from video_fix_instructions.md'
+  );
 }

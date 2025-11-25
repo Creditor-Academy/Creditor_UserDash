@@ -1,45 +1,59 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Sparkles, BookOpen, Image, FileText, Search, X, ArrowRight } from 'lucide-react';
+import {
+  CheckCircle,
+  Sparkles,
+  BookOpen,
+  Image,
+  FileText,
+  Search,
+  X,
+  ArrowRight,
+} from 'lucide-react';
 
-const AICourseSuccessModal = ({ isOpen, onClose, courseData, onViewCourse }) => {
+const AICourseSuccessModal = ({
+  isOpen,
+  onClose,
+  courseData,
+  onViewCourse,
+}) => {
   if (!isOpen || !courseData) return null;
 
   const aiFeatures = [];
-  
+
   if (courseData.aiMetadata?.generatedOutlines?.length > 0) {
-    aiFeatures.push({ 
-      icon: BookOpen, 
-      label: 'Course Outlines', 
+    aiFeatures.push({
+      icon: BookOpen,
+      label: 'Course Outlines',
       count: courseData.aiMetadata.generatedOutlines.length,
-      color: 'text-blue-600'
+      color: 'text-blue-600',
     });
   }
-  
+
   if (courseData.aiMetadata?.generatedImages?.length > 0) {
-    aiFeatures.push({ 
-      icon: Image, 
-      label: 'AI Images', 
+    aiFeatures.push({
+      icon: Image,
+      label: 'AI Images',
       count: courseData.aiMetadata.generatedImages.length,
-      color: 'text-purple-600'
+      color: 'text-purple-600',
     });
   }
-  
+
   if (courseData.aiMetadata?.generatedSummaries?.length > 0) {
-    aiFeatures.push({ 
-      icon: FileText, 
-      label: 'Summaries', 
+    aiFeatures.push({
+      icon: FileText,
+      label: 'Summaries',
       count: courseData.aiMetadata.generatedSummaries.length,
-      color: 'text-green-600'
+      color: 'text-green-600',
     });
   }
-  
+
   if (courseData.aiMetadata?.aiSearchResults?.length > 0) {
-    aiFeatures.push({ 
-      icon: Search, 
-      label: 'Research Results', 
+    aiFeatures.push({
+      icon: Search,
+      label: 'Research Results',
       count: courseData.aiMetadata.aiSearchResults.length,
-      color: 'text-orange-600'
+      color: 'text-orange-600',
     });
   }
 
@@ -57,7 +71,7 @@ const AICourseSuccessModal = ({ isOpen, onClose, courseData, onViewCourse }) => 
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white relative">
@@ -67,14 +81,18 @@ const AICourseSuccessModal = ({ isOpen, onClose, courseData, onViewCourse }) => 
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-white/20 rounded-full">
                 <CheckCircle className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">Course Created Successfully!</h2>
-                <p className="text-green-100 text-sm">Your AI-powered course is ready</p>
+                <h2 className="text-xl font-bold">
+                  Course Created Successfully!
+                </h2>
+                <p className="text-green-100 text-sm">
+                  Your AI-powered course is ready
+                </p>
               </div>
             </div>
           </div>
@@ -82,8 +100,12 @@ const AICourseSuccessModal = ({ isOpen, onClose, courseData, onViewCourse }) => 
           {/* Content */}
           <div className="p-6">
             <div className="mb-4">
-              <h3 className="font-semibold text-gray-900 mb-1">{courseData.title}</h3>
-              <p className="text-sm text-gray-600 line-clamp-2">{courseData.description}</p>
+              <h3 className="font-semibold text-gray-900 mb-1">
+                {courseData.title}
+              </h3>
+              <p className="text-sm text-gray-600 line-clamp-2">
+                {courseData.description}
+              </p>
             </div>
 
             {/* AI Features Generated */}
@@ -91,15 +113,26 @@ const AICourseSuccessModal = ({ isOpen, onClose, courseData, onViewCourse }) => 
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-700">AI Content Generated</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    AI Content Generated
+                  </span>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   {aiFeatures.map((feature, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-3 text-center">
-                      <feature.icon className={`w-5 h-5 mx-auto mb-1 ${feature.color}`} />
-                      <div className="text-lg font-semibold text-gray-900">{feature.count}</div>
-                      <div className="text-xs text-gray-600">{feature.label}</div>
+                    <div
+                      key={index}
+                      className="bg-gray-50 rounded-lg p-3 text-center"
+                    >
+                      <feature.icon
+                        className={`w-5 h-5 mx-auto mb-1 ${feature.color}`}
+                      />
+                      <div className="text-lg font-semibold text-gray-900">
+                        {feature.count}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {feature.label}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -110,16 +143,22 @@ const AICourseSuccessModal = ({ isOpen, onClose, courseData, onViewCourse }) => 
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <BookOpen className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">Course Details</span>
+                <span className="text-sm font-medium text-blue-800">
+                  Course Details
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">Difficulty:</span>
-                  <div className="font-medium text-gray-900 capitalize">{courseData.difficulty || 'Intermediate'}</div>
+                  <div className="font-medium text-gray-900 capitalize">
+                    {courseData.difficulty || 'Intermediate'}
+                  </div>
                 </div>
                 <div>
                   <span className="text-gray-600">Duration:</span>
-                  <div className="font-medium text-gray-900">{courseData.duration || '4'} weeks</div>
+                  <div className="font-medium text-gray-900">
+                    {courseData.duration || '4'} weeks
+                  </div>
                 </div>
               </div>
             </div>
