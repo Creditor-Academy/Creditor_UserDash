@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
-  Wand2, 
-  Download, 
-  Copy, 
-  Trash2, 
+import {
+  Search,
+  Wand2,
+  Download,
+  Copy,
+  Trash2,
   Plus,
   MessageSquare,
   Brain,
@@ -18,7 +18,7 @@ import {
   ExternalLink,
   Loader2,
   Code,
-  FileText
+  FileText,
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
 import aiProxyService from '../../services/aiProxyService';
@@ -37,14 +37,14 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
     { text: 'How to create effective presentations?', category: 'Skills' },
     { text: 'Database design principles', category: 'Database' },
     { text: 'Project management methodologies', category: 'Management' },
-    { text: 'Digital marketing strategies', category: 'Marketing' }
+    { text: 'Digital marketing strategies', category: 'Marketing' },
   ];
 
   const performSearch = async (query = searchQuery) => {
     if (!query.trim()) return;
 
     setIsSearching(true);
-    
+
     // Add to search history
     if (!searchHistory.includes(query)) {
       setSearchHistory([query, ...searchHistory.slice(0, 9)]);
@@ -53,21 +53,25 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
     try {
       // Use Bytez API for real content search
       const response = await aiProxyService.answerQuestion(query, '', {
-        max_answer_length: 300
+        max_answer_length: 300,
       });
 
       // Extract answer text properly from response object
       let answer;
       if (typeof response.answer === 'string') {
         answer = response.answer;
-      } else if (response.answer && typeof response.answer === 'object' && response.answer.answer) {
+      } else if (
+        response.answer &&
+        typeof response.answer === 'object' &&
+        response.answer.answer
+      ) {
         answer = response.answer.answer;
       } else if (response.generated_text) {
         answer = response.generated_text;
       } else {
         answer = `Information about ${query}`;
       }
-      
+
       // Create structured results based on AI response
       const results = [
         {
@@ -79,12 +83,12 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
             'Core definition and principles',
             'Real-world applications',
             'Best practices and guidelines',
-            'Common use cases and examples'
+            'Common use cases and examples',
           ],
           difficulty: 'Beginner',
           readTime: '5 min',
-          source: 'Bytez AI Knowledge Base'
-        }
+          source: 'Bytez AI Knowledge Base',
+        },
       ];
 
       // Generate additional content variations
@@ -98,19 +102,18 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
             'Getting started guide',
             'Implementation examples',
             'Common patterns and solutions',
-            'Troubleshooting tips'
+            'Troubleshooting tips',
           ],
           difficulty: 'Intermediate',
           readTime: '10 min',
-          source: 'Bytez AI Knowledge Base'
+          source: 'Bytez AI Knowledge Base',
         });
       }
 
       setSearchResults(results);
-
     } catch (error) {
       console.error('Search failed:', error);
-      
+
       // Fallback results
       const fallbackResults = [
         {
@@ -122,26 +125,26 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
             'Basic overview and introduction',
             'Key concepts to understand',
             'Practical applications',
-            'Further learning resources'
+            'Further learning resources',
           ],
           difficulty: 'Beginner',
           readTime: '3 min',
           source: 'Fallback Content',
-          error: 'AI search failed, showing fallback'
-        }
+          error: 'AI search failed, showing fallback',
+        },
       ];
-      
+
       setSearchResults(fallbackResults);
     }
 
     setIsSearching(false);
   };
 
-  const deleteResult = (id) => {
+  const deleteResult = id => {
     setSearchResults(searchResults.filter(result => result.id !== id));
   };
 
-  const copyResult = (content) => {
+  const copyResult = content => {
     navigator.clipboard.writeText(content);
   };
 
@@ -155,27 +158,35 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
     URL.revokeObjectURL(url);
   };
 
-  const insertIntoCourse = (result) => {
+  const insertIntoCourse = result => {
     // This would integrate with the course content editor
     console.log('Inserting search result into course:', result);
     // Implementation would depend on the course editor structure
   };
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = type => {
     switch (type) {
-      case 'concept': return BookOpen;
-      case 'tutorial': return Code;
-      case 'advanced': return Lightbulb;
-      default: return FileText;
+      case 'concept':
+        return BookOpen;
+      case 'tutorial':
+        return Code;
+      case 'advanced':
+        return Lightbulb;
+      default:
+        return FileText;
     }
   };
 
-  const getDifficultyColor = (difficulty) => {
+  const getDifficultyColor = difficulty => {
     switch (difficulty) {
-      case 'Beginner': return 'bg-green-100 text-green-700';
-      case 'Intermediate': return 'bg-yellow-100 text-yellow-700';
-      case 'Advanced': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'Beginner':
+        return 'bg-green-100 text-green-700';
+      case 'Intermediate':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'Advanced':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -193,8 +204,8 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && performSearch()}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyPress={e => e.key === 'Enter' && performSearch()}
               placeholder="Ask anything... (e.g., 'What is React?', 'Explain machine learning')"
               className="w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
@@ -253,9 +264,9 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
       {/* Loading State */}
       {isSearching && (
         <div className="bg-white rounded-lg border">
-          <LoadingBuffer 
-            type="ai" 
-            message="Searching for answers..." 
+          <LoadingBuffer
+            type="ai"
+            message="Searching for answers..."
             showSparkles={true}
           />
         </div>
@@ -265,7 +276,7 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
       {searchResults.length > 0 && !isSearching && (
         <div className="space-y-4">
           <h4 className="text-lg font-semibold">Search Results</h4>
-          {searchResults.map((result) => {
+          {searchResults.map(result => {
             const TypeIcon = getTypeIcon(result.type);
             return (
               <motion.div
@@ -280,9 +291,13 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
                       <TypeIcon className="w-5 h-5 text-orange-600" />
                     </div>
                     <div>
-                      <h5 className="font-semibold text-lg mb-1">{result.title}</h5>
+                      <h5 className="font-semibold text-lg mb-1">
+                        {result.title}
+                      </h5>
                       <div className="flex items-center gap-3 text-sm text-gray-500">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(result.difficulty)}`}>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(result.difficulty)}`}
+                        >
                           {result.difficulty}
                         </span>
                         <span className="flex items-center gap-1">
@@ -317,7 +332,10 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
                   <h6 className="font-medium text-sm mb-2">Key Points:</h6>
                   <ul className="space-y-1">
                     {result.keyPoints.map((point, index) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
+                      <li
+                        key={index}
+                        className="text-sm text-gray-600 flex items-start gap-2"
+                      >
                         <span className="text-orange-500 mt-1">•</span>
                         {point}
                       </li>
@@ -349,7 +367,9 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
         <div className="text-center py-12 text-gray-500">
           <Search className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p className="text-lg mb-2">Search for any topic</p>
-          <p className="text-sm">Get AI-powered content snippets for your course</p>
+          <p className="text-sm">
+            Get AI-powered content snippets for your course
+          </p>
         </div>
       )}
     </div>

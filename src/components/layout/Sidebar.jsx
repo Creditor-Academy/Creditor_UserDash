@@ -22,6 +22,7 @@ import {
   School,
   Bot,
   CreditCard,
+  CalendarDays,
 } from 'lucide-react';
 import { currentUserId } from '@/data/currentUser';
 import { getUserRole } from '@/services/userService';
@@ -399,6 +400,17 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   label="Course Catalog"
                   href="/dashboard/catalog"
                   active={isActive('/dashboard/catalog')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={CalendarDays}
+                  label="Attendance"
+                  href="/dashboard/attendance"
+                  active={isActive('/dashboard/attendance')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />

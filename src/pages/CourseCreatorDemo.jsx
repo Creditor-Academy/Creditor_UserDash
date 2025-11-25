@@ -11,11 +11,12 @@ const CourseCreatorDemo = () => {
               AI-Powered Course Creator
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Create comprehensive courses with AI-generated modules and lessons. 
-              Each lesson includes structured content with headings, introductions, key points, and summaries.
+              Create comprehensive courses with AI-generated modules and
+              lessons. Each lesson includes structured content with headings,
+              introductions, key points, and summaries.
             </p>
           </div>
-          
+
           <CourseCreator />
         </div>
       </div>

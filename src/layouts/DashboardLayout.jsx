@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
-import Sidebar from "@/components/layout/Sidebar";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import BackButton from "@/components/navigation/BackButton";
-import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
+import React, { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import Sidebar from '@/components/layout/Sidebar';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import BackButton from '@/components/navigation/BackButton';
+import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 
 // Create a context for the sidebar state
 export const SidebarContext = React.createContext({
   sidebarCollapsed: false,
-  setSidebarCollapsed: () => {}
+  setSidebarCollapsed: () => {},
 });
 
 export function DashboardLayout() {
@@ -20,16 +20,18 @@ export function DashboardLayout() {
 
   // Only show back button on specific pages where navigation back makes sense
   const pathsWithBackButton = [
-    "/profile",
-    "/faqs",
-    "/support",
-    "/guides",
-    "/support/ticket", 
-    "/privacy",
-    "/avatar-picker"
+    '/profile',
+    '/faqs',
+    '/support',
+    '/guides',
+    '/support/ticket',
+    '/privacy',
+    '/avatar-picker',
   ];
-  
-  const showBackButton = pathsWithBackButton.some(path => location.pathname.startsWith(path));
+
+  const showBackButton = pathsWithBackButton.some(path =>
+    location.pathname.startsWith(path)
+  );
 
   // Sidebar width values
   const expandedWidth = '17rem';
@@ -39,8 +41,10 @@ export function DashboardLayout() {
   useEffect(() => {
     setIsMobileSidebarOpen(false);
     // Auto-collapse sidebar for immersive pages like ScenarioTakePage and LessonBuilder
-    const immersive = location.pathname.startsWith('/dashboard/scenario/take/') || 
-                     location.pathname.includes('/lesson/') && location.pathname.includes('/builder');
+    const immersive =
+      location.pathname.startsWith('/dashboard/scenario/take/') ||
+      (location.pathname.includes('/lesson/') &&
+        location.pathname.includes('/builder'));
     setSidebarCollapsed(immersive);
   }, [location.pathname]);
 
@@ -51,15 +55,15 @@ export function DashboardLayout() {
         <div
           className={
             `fixed top-0 left-0 h-screen z-30 transform transition-transform duration-300 ` +
-            `${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} ` +
+            `${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ` +
             `lg:translate-x-0`
           }
         >
-          <Sidebar 
-          collapsed={sidebarCollapsed} 
-          setCollapsed={setSidebarCollapsed} 
-          onCreditorCardClick={() => setCreditModalOpen(true)}
-        />
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            setCollapsed={setSidebarCollapsed}
+            onCreditorCardClick={() => setCreditModalOpen(true)}
+          />
         </div>
 
         {/* Mobile overlay */}
@@ -76,7 +80,9 @@ export function DashboardLayout() {
           className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-[17rem]'}`}
         >
           {/* Header - fixed at the top */}
-          <header className={`fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-14 sm:h-16 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-[17rem]'}`}>
+          <header
+            className={`fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-14 sm:h-16 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-[17rem]'}`}
+          >
             <DashboardHeader
               sidebarCollapsed={sidebarCollapsed}
               onMobileMenuClick={() => setIsMobileSidebarOpen(true)}
@@ -90,7 +96,7 @@ export function DashboardLayout() {
                   <BackButton />
                 </div>
               )}
-              <motion.main 
+              <motion.main
                 className="p-4 sm:p-5 lg:p-6 pt-3 sm:pt-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -104,9 +110,9 @@ export function DashboardLayout() {
       </div>
 
       {/* Credit Purchase Modal */}
-      <CreditPurchaseModal 
-        open={creditModalOpen} 
-        onClose={() => setCreditModalOpen(false)} 
+      <CreditPurchaseModal
+        open={creditModalOpen}
+        onClose={() => setCreditModalOpen(false)}
       />
     </SidebarContext.Provider>
   );
