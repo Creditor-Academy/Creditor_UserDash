@@ -217,7 +217,8 @@ const QuickValue = () => {
         <div className="quick-value-container">
           <h2 className="section-title">Trusted Results, Proven Impact</h2>
           <p className="section-subtitle">
-            We partner with organizations worldwide to create learning experiences that drive real outcomes.
+            We partner with organizations worldwide to create learning
+            experiences that drive real outcomes.
           </p>
 
           <div className="quick-value-grid">
@@ -264,7 +265,15 @@ const QuickValue = () => {
   );
 };
 
-const ValueCard = ({ icon, targetNumber, suffix, label, isVisible, delay, color }) => {
+const ValueCard = ({
+  icon,
+  targetNumber,
+  suffix,
+  label,
+  isVisible,
+  delay,
+  color,
+}) => {
   const [count, setCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -302,34 +311,27 @@ const ValueCard = ({ icon, targetNumber, suffix, label, isVisible, delay, color 
   };
 
   return (
-    <div 
+    <div
       className="value-card"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        boxShadow: isHovered 
-          ? `0 12px 30px ${hexToRgba(color, 0.25)}` 
-          : '0 4px 20px rgba(0, 0, 0, 0.08)'
+        boxShadow: isHovered
+          ? `0 12px 30px ${hexToRgba(color, 0.25)}`
+          : '0 4px 20px rgba(0, 0, 0, 0.08)',
       }}
     >
-      <div 
-        className="icon-wrapper"
-        style={{ background: color }}
-      >
+      <div className="icon-wrapper" style={{ background: color }}>
         {icon}
       </div>
-      <div 
-        className="counter"
-        style={{ color: color }}
-      >
-        {count}{suffix}
+      <div className="counter" style={{ color: color }}>
+        {count}
+        {suffix}
       </div>
-      <div className="value-label">
-        {label}
-      </div>
-      
+      <div className="value-label">{label}</div>
+
       {/* Top bar that appears on hover */}
-      <div 
+      <div
         style={{
           position: 'absolute',
           top: 0,
@@ -339,10 +341,10 @@ const ValueCard = ({ icon, targetNumber, suffix, label, isVisible, delay, color 
           background: color,
           transform: isHovered ? 'scaleX(1)' : 'scaleX(0)',
           transformOrigin: 'left',
-          transition: 'transform 0.3s ease'
+          transition: 'transform 0.3s ease',
         }}
       />
-      
+
       {/* Bottom color bar - always visible */}
       <div className="bottom-bar">
         <div style={{ backgroundColor: color, height: '100%' }} />
@@ -352,4 +354,3 @@ const ValueCard = ({ icon, targetNumber, suffix, label, isVisible, delay, color 
 };
 
 export default QuickValue;
-

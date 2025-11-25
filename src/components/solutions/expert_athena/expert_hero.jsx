@@ -1,7 +1,7 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, TrendingUp } from "lucide-react";
-import trainer from "../../../assets/trainer.webp";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, TrendingUp } from 'lucide-react';
+import trainer from '../../../assets/trainer.webp';
 
 export default function ExpertHero() {
   return (
@@ -40,7 +40,9 @@ export default function ExpertHero() {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Athena's all-in-one platform empowers subject matter experts to turn knowledge into new revenue streams with the tools you need to build, sell, and scale learning experiences.
+              Athena's all-in-one platform empowers subject matter experts to
+              turn knowledge into new revenue streams with the tools you need to
+              build, sell, and scale learning experiences.
             </p>
 
             {/* CTA Buttons */}
@@ -66,9 +68,9 @@ export default function ExpertHero() {
             <div className="relative h-[420px] w-full">
               {/* Professional Person Image - Main Background on Right */}
               <div className="absolute right-0 top-0 w-[400px] h-[380px] rounded-2xl overflow-hidden shadow-2xl z-10">
-                <img 
-                  src={trainer} 
-                  alt="Subject matter expert" 
+                <img
+                  src={trainer}
+                  alt="Subject matter expert"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/5" />
@@ -84,7 +86,7 @@ export default function ExpertHero() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
                   Customer Engagement
                 </h3>
-                
+
                 {/* Table Headers */}
                 <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-gray-600 mb-3 border-b border-gray-300 pb-2">
                   <div>NAME</div>
@@ -92,7 +94,7 @@ export default function ExpertHero() {
                   <div>COMP RATE</div>
                   <div>TOTAL REV</div>
                 </div>
-                
+
                 {/* Table Rows */}
                 <div className="space-y-2">
                   <div className="grid grid-cols-4 gap-2 text-xs text-gray-700">
@@ -124,7 +126,9 @@ export default function ExpertHero() {
                 className="absolute bottom-0 right-0 w-48 bg-pink-500 rounded-lg shadow-xl p-4 text-white z-30"
               >
                 <div className="text-3xl font-bold mb-1">$246,301</div>
-                <div className="text-sm font-medium opacity-90">Total Revenue</div>
+                <div className="text-sm font-medium opacity-90">
+                  Total Revenue
+                </div>
                 <TrendingUp className="absolute top-3 right-3 w-5 h-5 opacity-50" />
               </motion.div>
             </div>

@@ -1,7 +1,7 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
-import showcase6 from "../../../assets/showcase6.jpeg";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Check } from 'lucide-react';
+import showcase6 from '../../../assets/showcase6.jpeg';
 
 export default function ExpertScale() {
   return (
@@ -19,24 +19,28 @@ export default function ExpertScale() {
             {/* Small Label */}
             <p className="text-xs font-medium text-blue-300 mb-3">
               The platform for experts
-            </p>    
+            </p>
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal mb-5 leading-tight">
-            You’re one <span className="block">email away 
-                <span className="block">from the sale</span></span>
-              
+              You’re one{' '}
+              <span className="block">
+                email away
+                <span className="block">from the sale</span>
+              </span>
             </h1>
-            <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">Turn your audience into loyal, paying customers with email
-                <span className="block">automation on Athena LMS.</span></p>
-           
+            <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">
+              Turn your audience into loyal, paying customers with email
+              <span className="block">automation on Athena LMS.</span>
+            </p>
+
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg">
                 Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
-              
+
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent hover:bg-white/10 text-white text-sm font-semibold rounded-full border-2 border-yellow-400 hover:border-yellow-300 transition-all duration-300">
                 Talk to sales
                 <ArrowRight className="w-4 h-4" />
@@ -53,9 +57,9 @@ export default function ExpertScale() {
             className="relative"
           >
             <div className="relative shadow-2xl overflow-hidden aspect-[4/3] w-full max-w-3xl lg:max-w-4xl mx-auto">
-              <img 
-                src={showcase6} 
-                alt="Athena LMS Course Dashboard" 
+              <img
+                src={showcase6}
+                alt="Athena LMS Course Dashboard"
                 className="w-full h-full object-contain"
               />
             </div>
@@ -68,5 +72,3 @@ export default function ExpertScale() {
     </section>
   );
 }
-
- 

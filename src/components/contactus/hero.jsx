@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 
 export default function Hero() {
   useEffect(() => {
     // Dynamically load WonderEngine script
-    const script = document.createElement("script");
-    script.src = "https://api.wonderengine.ai/js/form_embed.js";
+    const script = document.createElement('script');
+    script.src = 'https://api.wonderengine.ai/js/form_embed.js';
     script.async = true;
     document.body.appendChild(script);
 
@@ -155,23 +155,53 @@ export default function Hero() {
         <div className="left-copy">
           <h1 className="headline">
             Scale your education
-            <span className="block">programs with <span className="block">Athena LMS</span></span>
+            <span className="block">
+              programs with <span className="block">Athena LMS</span>
+            </span>
           </h1>
           <p className="copy">
-            Get answers to all of your questions on a brief discovery call with one of our
-            <span className="block">solutions experts and cover topics including:</span>
+            Get answers to all of your questions on a brief discovery call with
+            one of our
+            <span className="block">
+              solutions experts and cover topics including:
+            </span>
           </p>
           <ul className="bullets">
-            <li><span className="dot" />Find out if Athena LMS meets your needs. If not, we’ll point you in the right direction.</li>
-            <li><span className="dot" />Share your short and long–term goals and discuss what’s getting in the way.</li>
-            <li><span className="dot" />Learn how companies like yours are using Athena LMS to launch, scale, and streamline education programs that drive revenue and engagement.</li>
+            <li>
+              <span className="dot" />
+              Find out if Athena LMS meets your needs. If not, we’ll point you
+              in the right direction.
+            </li>
+            <li>
+              <span className="dot" />
+              Share your short and long–term goals and discuss what’s getting in
+              the way.
+            </li>
+            <li>
+              <span className="dot" />
+              Learn how companies like yours are using Athena LMS to launch,
+              scale, and streamline education programs that drive revenue and
+              engagement.
+            </li>
           </ul>
 
           <div className="highlights-row">
-            <div className="highlight-box"><div className="highlight-big">1500+</div><div className="highlight-label">Courses</div></div>
-            <div className="highlight-box"><div className="highlight-big">450+</div><div className="highlight-label">Learners</div></div>
-            <div className="highlight-box"><div className="highlight-big">98%</div><div className="highlight-label">Success Rate</div></div>
-            <div className="highlight-box"><div className="highlight-big">24/7</div><div className="highlight-label">Support</div></div>
+            <div className="highlight-box">
+              <div className="highlight-big">1500+</div>
+              <div className="highlight-label">Courses</div>
+            </div>
+            <div className="highlight-box">
+              <div className="highlight-big">450+</div>
+              <div className="highlight-label">Learners</div>
+            </div>
+            <div className="highlight-box">
+              <div className="highlight-big">98%</div>
+              <div className="highlight-label">Success Rate</div>
+            </div>
+            <div className="highlight-box">
+              <div className="highlight-big">24/7</div>
+              <div className="highlight-label">Support</div>
+            </div>
           </div>
         </div>
 

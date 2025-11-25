@@ -51,10 +51,9 @@ export default function Digitalrevenue() {
           className="text-center mb-16 lg:mb-24"
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-gray-900 mb-4 leading-tight">
-          How are memberships different
-           <span className="block">from other content?</span>
+            How are memberships different
+            <span className="block">from other content?</span>
           </h2>
-         
         </motion.div>
 
         {/* Sections */}
@@ -71,7 +70,9 @@ export default function Digitalrevenue() {
               }`}
             >
               {/* Content Side */}
-              <div className={`${item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'} flex flex-col justify-center`}>
+              <div
+                className={`${item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'} flex flex-col justify-center`}
+              >
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-normal text-gray-50 lg:text-gray-900 mb-4 leading-tight lg:leading-tight">
                   {item.title}
                 </h3>
@@ -81,7 +82,9 @@ export default function Digitalrevenue() {
               </div>
 
               {/* Visual Side */}
-              <div className={`${item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
+              <div
+                className={`${item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'}`}
+              >
                 <motion.div
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.3 }}
@@ -93,12 +96,34 @@ export default function Digitalrevenue() {
                       <div className="w-full h-64 bg-[#0f4c81] rounded-none overflow-hidden p-6 flex items-start justify-start gap-4">
                         {/* Mini line chart */}
                         <div className="bg-white rounded-none shadow-md p-3">
-                          <div className="text-[9px] text-gray-600 mb-1">Revenue Over Time</div>
+                          <div className="text-[9px] text-gray-600 mb-1">
+                            Revenue Over Time
+                          </div>
                           <svg viewBox="0 0 180 90" className="w-44 h-24">
-                            <polyline fill="none" stroke="#9ca3af" strokeWidth="1" points="0,70 160,70" />
-                            <polyline fill="none" stroke="#9ca3af" strokeWidth="1" points="0,50 160,50" />
-                            <polyline fill="none" stroke="#9ca3af" strokeWidth="1" points="0,30 160,30" />
-                            <polyline fill="none" stroke="#374151" strokeWidth="2" points="10,65 40,58 70,52 100,46 130,35 160,28" />
+                            <polyline
+                              fill="none"
+                              stroke="#9ca3af"
+                              strokeWidth="1"
+                              points="0,70 160,70"
+                            />
+                            <polyline
+                              fill="none"
+                              stroke="#9ca3af"
+                              strokeWidth="1"
+                              points="0,50 160,50"
+                            />
+                            <polyline
+                              fill="none"
+                              stroke="#9ca3af"
+                              strokeWidth="1"
+                              points="0,30 160,30"
+                            />
+                            <polyline
+                              fill="none"
+                              stroke="#374151"
+                              strokeWidth="2"
+                              points="10,65 40,58 70,52 100,46 130,35 160,28"
+                            />
                             <g fill="#374151">
                               <circle cx="10" cy="65" r="1.5" />
                               <circle cx="40" cy="58" r="1.5" />
@@ -110,19 +135,65 @@ export default function Digitalrevenue() {
                           </svg>
                           {/* Small bar chart */}
                           <svg viewBox="0 0 180 60" className="w-44 h-16">
-                            <rect x="10" y="30" width="18" height="28" fill="#d1d5db" />
-                            <rect x="40" y="24" width="18" height="34" fill="#9ca3af" />
-                            <rect x="70" y="18" width="18" height="40" fill="#6b7280" />
-                            <rect x="100" y="14" width="18" height="44" fill="#4b5563" />
-                            <rect x="130" y="10" width="18" height="48" fill="#374151" />
+                            <rect
+                              x="10"
+                              y="30"
+                              width="18"
+                              height="28"
+                              fill="#d1d5db"
+                            />
+                            <rect
+                              x="40"
+                              y="24"
+                              width="18"
+                              height="34"
+                              fill="#9ca3af"
+                            />
+                            <rect
+                              x="70"
+                              y="18"
+                              width="18"
+                              height="40"
+                              fill="#6b7280"
+                            />
+                            <rect
+                              x="100"
+                              y="14"
+                              width="18"
+                              height="44"
+                              fill="#4b5563"
+                            />
+                            <rect
+                              x="130"
+                              y="10"
+                              width="18"
+                              height="48"
+                              fill="#374151"
+                            />
                           </svg>
                         </div>
                         {/* Donut by payment type */}
                         <div className="bg-white rounded-none shadow-md p-3 w-32 flex flex-col items-center">
-                          <div className="text-[9px] text-gray-600 mb-1">By Payment Type</div>
+                          <div className="text-[9px] text-gray-600 mb-1">
+                            By Payment Type
+                          </div>
                           <svg viewBox="0 0 36 36" className="w-16 h-16">
-                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e5e7eb" strokeWidth="6"></circle>
-                            <path d="M18 18 m 0 -15.915 a 15.915 15.915 0 1 1 0 31.83" fill="none" stroke="#111827" strokeWidth="6" strokeDasharray="75 25" strokeDashoffset="25"></path>
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15.915"
+                              fill="none"
+                              stroke="#e5e7eb"
+                              strokeWidth="6"
+                            ></circle>
+                            <path
+                              d="M18 18 m 0 -15.915 a 15.915 15.915 0 1 1 0 31.83"
+                              fill="none"
+                              stroke="#111827"
+                              strokeWidth="6"
+                              strokeDasharray="75 25"
+                              strokeDashoffset="25"
+                            ></path>
                           </svg>
                         </div>
                       </div>
@@ -137,10 +208,19 @@ export default function Digitalrevenue() {
                           <span>Gold Membership</span>
                           <span className="w-4 h-4 rounded-full bg-gray-200 inline-block" />
                         </div>
-                        <div className="text-[10px] text-gray-500 mb-1">PRODUCTS</div>
+                        <div className="text-[10px] text-gray-500 mb-1">
+                          PRODUCTS
+                        </div>
                         <ul className="space-y-2">
-                          {["Mastering the Art of Digital Design","Crafting Engaging User Experiences","Innovative Strategies for Web Aesthetics"].map((t,i)=> (
-                            <li key={i} className="flex items-center gap-2 text-[11px] text-gray-800">
+                          {[
+                            'Mastering the Art of Digital Design',
+                            'Crafting Engaging User Experiences',
+                            'Innovative Strategies for Web Aesthetics',
+                          ].map((t, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center gap-2 text-[11px] text-gray-800"
+                            >
                               <span className="w-3 h-3 rounded-full border-2 border-gray-300 inline-block" />
                               {t}
                             </li>
@@ -164,13 +244,16 @@ export default function Digitalrevenue() {
                             <span className="inline-block w-5 h-5 rounded-full bg-gray-200" />
                             <span className="text-gray-800">Lily Lee</span>
                             <span className="text-gray-400">@lio_lily</span>
-                            <span className="ml-2 inline-block text-[9px] bg-pink-200 text-gray-800 px-2 py-0.5 rounded">Moderator</span>
+                            <span className="ml-2 inline-block text-[9px] bg-pink-200 text-gray-800 px-2 py-0.5 rounded">
+                              Moderator
+                            </span>
                           </div>
                           <span>22 mins ago</span>
                         </div>
                         {/* Body */}
                         <div className="text-[11px] text-gray-800">
-                          1 hour to go! Join us live for a deep dive into Strategic Planning—you won’t want to miss it.
+                          1 hour to go! Join us live for a deep dive into
+                          Strategic Planning—you won’t want to miss it.
                         </div>
                         {/* Footer */}
                         <div className="flex items-center gap-3 text-[10px] text-gray-600">
@@ -179,7 +262,9 @@ export default function Digitalrevenue() {
                         </div>
                       </div>
                       <div className="mt-3 flex justify-end">
-                        <span className="inline-block bg-[#d9b4c3] text-gray-900 text-[11px] font-semibold px-3 py-1 rounded">Announcements</span>
+                        <span className="inline-block bg-[#d9b4c3] text-gray-900 text-[11px] font-semibold px-3 py-1 rounded">
+                          Announcements
+                        </span>
                       </div>
                     </div>
                   )}

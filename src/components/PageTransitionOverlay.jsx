@@ -1,44 +1,58 @@
-import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export default function PageTransitionOverlay() {
   const location = useLocation();
   const [visible, setVisible] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
-  const [pageName, setPageName] = useState("");
+  const [pageName, setPageName] = useState('');
 
   useEffect(() => {
-    const formatName = (pathname) => {
-      if (pathname === "/") return "HOME";
-      if (pathname === "/about") return "ABOUT US";
-      if (pathname === "/website") return "WEBSITE";
-      if (pathname === "/contact") return "CONTACT US";
-      if (pathname === "/faq") return "RESOURCES";
-      if (pathname === "/product") return "SERVICE";
-      
+    const formatName = pathname => {
+      if (pathname === '/') return 'HOME';
+      if (pathname === '/about') return 'ABOUT US';
+      if (pathname === '/website') return 'WEBSITE';
+      if (pathname === '/contact') return 'CONTACT US';
+      if (pathname === '/faq') return 'RESOURCES';
+      if (pathname === '/product') return 'SERVICE';
+
       // Split the path and get the last segment
-      const pathSegments = pathname.split('/').filter(segment => segment !== '');
+      const pathSegments = pathname
+        .split('/')
+        .filter(segment => segment !== '');
       const lastSegment = pathSegments[pathSegments.length - 1];
-      
+
       // Convert UUIDs or long IDs to more readable format
       if (lastSegment && lastSegment.length > 20) {
-        return "COURSE";
+        return 'COURSE';
       }
-      
-      return lastSegment ? lastSegment.replace(/-/g, " ").toUpperCase() : "PAGE";
+
+      return lastSegment
+        ? lastSegment.replace(/-/g, ' ').toUpperCase()
+        : 'PAGE';
     };
 
     // Normalize path (remove trailing slash) for matching
     const normalizedPath = (() => {
-      const withoutTrailing = location.pathname.replace(/\/+$/, "");
-      return withoutTrailing === "" ? "/" : withoutTrailing;
+      const withoutTrailing = location.pathname.replace(/\/+$/, '');
+      return withoutTrailing === '' ? '/' : withoutTrailing;
     })();
 
     // Whitelist only these routes for overlay
-    const allowedPaths = new Set(["/", "/about", "/website", "/contact", "/faq", "/features", "/whyus", "/product", "/plans"]);
+    const allowedPaths = new Set([
+      '/',
+      '/about',
+      '/website',
+      '/contact',
+      '/faq',
+      '/features',
+      '/whyus',
+      '/product',
+      '/plans',
+    ]);
 
     // Hide overlay for non-whitelisted routes or login explicitly
-    if (location.pathname === "/login" || !allowedPaths.has(normalizedPath)) {
+    if (location.pathname === '/login' || !allowedPaths.has(normalizedPath)) {
       setVisible(false);
       return;
     }
@@ -63,7 +77,7 @@ export default function PageTransitionOverlay() {
 
   return (
     <>
-       <style>{`
+      <style>{`
         .page-transition {
           position: fixed;
           top: 0;
@@ -131,7 +145,7 @@ export default function PageTransitionOverlay() {
          }
        `}</style>
       <div className="page-transition">
-        <div className={`overlay-text${animateOut ? " animate-out" : ""}`}>
+        <div className={`overlay-text${animateOut ? ' animate-out' : ''}`}>
           {pageName}
         </div>
       </div>

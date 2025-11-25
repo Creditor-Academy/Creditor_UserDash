@@ -3,9 +3,13 @@ import { motion } from 'framer-motion';
 
 const CustomerCTASurpass = () => {
   return (
-    <section className="relative py-12 px-4 overflow-hidden" style={{
-      background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
-    }}>
+    <section
+      className="relative py-12 px-4 overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
+      }}
+    >
       {/* Decorative background lines */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
         {[...Array(15)].map((_, i) => (
@@ -14,7 +18,7 @@ const CustomerCTASurpass = () => {
             className="absolute w-full border-t border-white/30"
             style={{
               top: `${i * 7}%`,
-              transform: `translateY(${i * 5}px)`
+              transform: `translateY(${i * 5}px)`,
             }}
           />
         ))}
@@ -30,16 +34,26 @@ const CustomerCTASurpass = () => {
             transition={{ duration: 0.6 }}
             className="space-y-8"
           >
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+            <h2
+              className="text-4xl sm:text-5xl lg:text-6xl font-normal text-white leading-tight"
+              style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+            >
               Ready to maximize customer success?
             </h2>
-            
-            <p className="text-lg sm:text-xl text-white/95 max-w-xl font-normal leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Boost customer satisfaction while reducing support costs—all on a platform built for customer success.
+
+            <p
+              className="text-lg sm:text-xl text-white/95 max-w-xl font-normal leading-relaxed"
+              style={{ fontFamily: 'Arial, sans-serif' }}
+            >
+              Boost customer satisfaction while reducing support costs—all on a
+              platform built for customer success.
             </p>
 
             <div>
-              <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-4 px-10 rounded-full text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <button
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-4 px-10 rounded-full text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+              >
                 Join Now
               </button>
             </div>

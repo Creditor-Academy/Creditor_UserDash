@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   Book,
   BookOpen,
@@ -21,27 +21,36 @@ import {
   Library,
   School,
   Bot,
-  CreditCard
-} from "lucide-react";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
-import { currentUserId } from "@/data/currentUser";
-import { getUserRole } from "@/services/userService";
-import { useAuth } from "@/contexts/AuthContext";
+  CreditCard,
+  CalendarDays,
+} from 'lucide-react';
+import { currentUserId } from '@/data/currentUser';
+import { getUserRole } from '@/services/userService';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { motion } from "framer-motion";
+} from '@/components/ui/dropdown-menu';
+import { motion } from 'framer-motion';
 
-const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownContent, onNavigate, external }) => {
+const SidebarItem = ({
+  icon: Icon,
+  label,
+  href,
+  active,
+  collapsed,
+  dropdownContent,
+  onNavigate,
+  external,
+}) => {
   const handleClick = () => {
     if (external) {
       window.open(href, '_blank', 'noopener,noreferrer');
@@ -57,10 +66,10 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
       <button
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left",
+          'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left',
           active
-            ? "bg-blue-50 text-blue-600 border-l-4 border-blue-500 shadow-sm font-medium"
-            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+            ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500 shadow-sm font-medium'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
         )}
       >
         <Icon size={collapsed ? 24 : 20} />
@@ -78,22 +87,31 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
               <button
                 onClick={handleClick}
                 className={cn(
-                  "flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left",
-                  collapsed ? "justify-center px-2" : "",
+                  'flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left',
+                  collapsed ? 'justify-center px-2' : '',
                   active
-                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm"
+                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
                 )}
               >
-                <Icon size={collapsed ? 24 : 20} className={cn(
-                  "transition-all duration-200",
-                  active ? "text-blue-700" : "text-gray-500 group-hover:text-gray-700"
-                )} />
+                <Icon
+                  size={collapsed ? 24 : 20}
+                  className={cn(
+                    'transition-all duration-200',
+                    active
+                      ? 'text-blue-700'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  )}
+                />
                 {!collapsed && (
-                  <span className={cn(
-                    "transition-colors duration-200",
-                    active ? "font-semibold text-blue-700" : "text-gray-700 group-hover:text-gray-900"
-                  )}>
+                  <span
+                    className={cn(
+                      'transition-colors duration-200',
+                      active
+                        ? 'font-semibold text-blue-700'
+                        : 'text-gray-700 group-hover:text-gray-900'
+                    )}
+                  >
                     {label}
                   </span>
                 )}
@@ -103,22 +121,31 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
                 to={href}
                 onClick={handleClick}
                 className={cn(
-                  "flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group",
-                  collapsed ? "justify-center px-2" : "",
+                  'flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group',
+                  collapsed ? 'justify-center px-2' : '',
                   active
-                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm"
+                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
                 )}
               >
-                <Icon size={collapsed ? 24 : 20} className={cn(
-                  "transition-all duration-200",
-                  active ? "text-blue-700" : "text-gray-500 group-hover:text-gray-700"
-                )} />
+                <Icon
+                  size={collapsed ? 24 : 20}
+                  className={cn(
+                    'transition-all duration-200',
+                    active
+                      ? 'text-blue-700'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  )}
+                />
                 {!collapsed && (
-                  <span className={cn(
-                    "transition-colors duration-200",
-                    active ? "font-semibold text-blue-700" : "text-gray-700 group-hover:text-gray-900"
-                  )}>
+                  <span
+                    className={cn(
+                      'transition-colors duration-200',
+                      active
+                        ? 'font-semibold text-blue-700'
+                        : 'text-gray-700 group-hover:text-gray-900'
+                    )}
+                  >
                     {label}
                   </span>
                 )}
@@ -127,8 +154,8 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
           </motion.div>
         </TooltipTrigger>
         {collapsed && (
-          <TooltipContent 
-            side="right" 
+          <TooltipContent
+            side="right"
             className="bg-gray-900 border-gray-700 text-white shadow-xl"
           >
             {label}
@@ -145,21 +172,21 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const isActive = (path) => {
-    if (path === "/dashboard") {
+  const isActive = path => {
+    if (path === '/dashboard') {
       // Only active on the dashboard root, not on subpages
-      return location.pathname === "/dashboard";
+      return location.pathname === '/dashboard';
     }
     return location.pathname === path;
   };
 
-  const handleNavigate = (path) => {
+  const handleNavigate = path => {
     // Keep sidebar collapsed when on instructor portal
-    if (collapsed && path !== "/instructor") {
+    if (collapsed && path !== '/instructor') {
       setCollapsed(false);
     }
     // Collapse sidebar when navigating to instructor portal
-    if (path === "/instructor") {
+    if (path === '/instructor') {
       setCollapsed(true);
     }
   };
@@ -182,27 +209,35 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   };
 
   // Replace localStorage logic with a constant for testing
-  const isScormAllowed = allowedScormUserIds.includes(currentUserId);
+  // const isScormAllowed = allowedScormUserIds.includes(currentUserId);
 
   // Help section navigation items
   const helpItems = [
     // { icon: FileQuestion, label: "FAQs", path: "/dashboard/faqs" },
     // { icon: MessageSquare, label: "Contact Support", path: "/dashboard/support" },
     // { icon: BookOpen, label: "User Guides", path: "/dashboard/guides" },
-    { icon: Contact, label: "Create Ticket", path: "/dashboard/support/ticket" },
-    { icon: FileQuestion, label: "My Tickets", path: "/dashboard/support/tickets" }
+    {
+      icon: Contact,
+      label: 'Create Ticket',
+      path: '/dashboard/support/ticket',
+    },
+    {
+      icon: FileQuestion,
+      label: 'My Tickets',
+      path: '/dashboard/support/tickets',
+    },
   ];
 
   // Animation variants with smooth transition
   const sidebarVariants = {
-    expanded: { 
-      width: "17rem",
-      transition: { type: "spring", stiffness: 400, damping: 40 }
+    expanded: {
+      width: '17rem',
+      transition: { type: 'spring', stiffness: 400, damping: 40 },
     },
-    collapsed: { 
-      width: "4.5rem",
-      transition: { type: "spring", stiffness: 400, damping: 40 }
-    }
+    collapsed: {
+      width: '4.5rem',
+      transition: { type: 'spring', stiffness: 400, damping: 40 },
+    },
   };
 
   const listVariants = {
@@ -210,28 +245,30 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05
-      }
-    }
+        staggerChildren: 0.05,
+      },
+    },
   };
 
   const itemVariants = {
     hidden: { x: -10, opacity: 0 },
-    show: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 300 } }
+    show: { x: 0, opacity: 1, transition: { type: 'spring', stiffness: 300 } },
   };
 
   return (
     <motion.div
       className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
       variants={sidebarVariants}
-      animate={collapsed ? "collapsed" : "expanded"}
+      animate={collapsed ? 'collapsed' : 'expanded'}
       initial={false}
     >
       {/* Header */}
-      <div className={cn(
-        "flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md",
-        collapsed ? "justify-center" : "justify-between"
-      )}>
+      <div
+        className={cn(
+          'flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
+          collapsed ? 'justify-center' : 'justify-between'
+        )}
+      >
         {!collapsed && (
           <motion.button
             onClick={handleLogoClick}
@@ -247,12 +284,16 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               <BookOpen size={22} className="text-blue-600" />
             </div>
             <div className="flex flex-col">
-              <span className="text-white text-base leading-tight font-bold">Creditor</span>
-              <span className="text-blue-100 text-sm leading-tight font-medium">Academy</span>
+              <span className="text-white text-base leading-tight font-bold">
+                Creditor
+              </span>
+              <span className="text-blue-100 text-sm leading-tight font-medium">
+                Academy
+              </span>
             </div>
           </motion.button>
         )}
-        
+
         {collapsed && (
           <TooltipProvider>
             <Tooltip>
@@ -271,7 +312,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   </div>
                 </motion.button>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 text-white shadow-xl">
+              <TooltipContent
+                side="right"
+                className="bg-gray-900 text-white shadow-xl"
+              >
                 Creditor Academy
               </TooltipContent>
             </Tooltip>
@@ -290,7 +334,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             </Button>
           </motion.div>
         )}
-        
+
         {collapsed && (
           <div className="absolute -right-3 top-1/2 transform -translate-y-1/2">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -309,82 +353,93 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
 
       {/* Navigation Items */}
       <div className="flex-1 overflow-y-auto py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white custom-scrollbar">
-        <motion.div 
+        <motion.div
           className="space-y-2 px-2"
           variants={listVariants}
           initial="hidden"
           animate="show"
         >
           {!moreOpen && (
-          <>
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Home}
-              label="Dashboard"
-              href="/dashboard"
-              active={isActive("/dashboard")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
-          
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Book}
-              label="My Courses"
-              href="/dashboard/courses"
-              active={isActive("/dashboard/courses")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
+            <>
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Home}
+                  label="Dashboard"
+                  href="/dashboard"
+                  active={isActive('/dashboard')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Users}
-              label="Study Groups"
-              href="/dashboard/groups"
-              active={isActive("/dashboard/groups")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Book}
+                  label="My Courses"
+                  href="/dashboard/courses"
+                  active={isActive('/dashboard/courses')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Library}
-              label="Course Catalog"
-              href="/dashboard/catalog"
-              active={isActive("/dashboard/catalog")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
-          
-          {/* Messages moved above More toggle */}
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={MessageSquare}
-              label="Messages"
-              href="/dashboard/messages"
-              active={isActive("/dashboard/messages")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Users}
+                  label="Study Groups"
+                  href="/dashboard/groups"
+                  active={isActive('/dashboard/groups')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
 
-          {/* Creditor Card */}
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={CreditCard}
-              label="Creditor Card"
-              href="#"
-              active={false}
-              collapsed={collapsed}
-              onNavigate={handleCreditorCardClick}
-            />
-          </motion.div>
-          </>
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Library}
+                  label="Course Catalog"
+                  href="/dashboard/catalog"
+                  active={isActive('/dashboard/catalog')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={CalendarDays}
+                  label="Attendance"
+                  href="/dashboard/attendance"
+                  active={isActive('/dashboard/attendance')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
+
+              {/* Messages moved above More toggle */}
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={MessageSquare}
+                  label="Messages"
+                  href="/dashboard/messages"
+                  active={isActive('/dashboard/messages')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
+
+              {/* Creditor Card */}
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={CreditCard}
+                  label="Creditor Card"
+                  href="#"
+                  active={false}
+                  collapsed={collapsed}
+                  onNavigate={handleCreditorCardClick}
+                />
+              </motion.div>
+            </>
           )}
 
           {/* More section toggle */}
@@ -392,18 +447,26 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             <motion.div variants={itemVariants}>
               <div className="px-3 pt-2">
                 <motion.button
-                  onClick={() => setMoreOpen((v) => !v)}
-                  aria-label={moreOpen ? "Show less options" : "Show more options"}
+                  onClick={() => setMoreOpen(v => !v)}
+                  aria-label={
+                    moreOpen ? 'Show less options' : 'Show more options'
+                  }
                   className={cn(
-                    "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors",
+                    'w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors',
                     moreOpen
-                      ? "bg-blue-50 text-blue-700"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
                   )}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{moreOpen ? "Less" : "More"}</span>
-                  <ChevronDown size={14} className={cn("transition-transform", moreOpen ? "-rotate-180" : "rotate-0")} />
+                  <span>{moreOpen ? 'Less' : 'More'}</span>
+                  <ChevronDown
+                    size={14}
+                    className={cn(
+                      'transition-transform',
+                      moreOpen ? '-rotate-180' : 'rotate-0'
+                    )}
+                  />
                 </motion.button>
               </div>
             </motion.div>
@@ -423,7 +486,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={Bot}
                   label="Credit chatbot"
                   href="/dashboard/chatbot"
-                  active={isActive("/dashboard/chatbot")}
+                  active={isActive('/dashboard/chatbot')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -452,7 +515,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             />
           </motion.div> */}
 
-          
           {/* Instructor Portal - only for admin or instructor */}
           {!moreOpen && isInstructorOrAdmin() && (
             <motion.div variants={itemVariants}>
@@ -460,68 +522,77 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 icon={GraduationCap}
                 label="Instructor Portal"
                 href="/instructor"
-                active={isActive("/instructor")}
+                active={isActive('/instructor')}
                 collapsed={collapsed}
                 onNavigate={handleNavigate}
               />
             </motion.div>
           )}
-
-
         </motion.div>
       </div>
 
       {/* Help & Support Footer  */}
-      <motion.div 
+      <motion.div
         className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-gray-100"
         variants={itemVariants}
       >
         {collapsed ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenu>
+          <DropdownMenu>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <motion.button 
+                    <Button
+                      variant="ghost"
                       className="w-full flex justify-center p-3 hover:bg-gray-200 rounded-xl transition-all duration-200 text-gray-600 group shadow-sm"
-                      whileTap={{ scale: 0.98 }}
                     >
                       <HelpCircle size={24} />
-                    </motion.button>
+                    </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    side="right" 
-                    align="start" 
-                    className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="bg-gray-900 text-white shadow-xl"
+                >
+                  Help & Support
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <DropdownMenuContent
+              side="right"
+              align="start"
+              className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
+            >
+              {helpItems.map((item, index) => (
+                <DropdownMenuItem key={index} asChild>
+                  <Link
+                    to={item.path}
+                    className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2"
                   >
-                    {helpItems.map((item, index) => (
-                      <DropdownMenuItem key={index} asChild>
-                        <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
-                          <item.icon size={16} />
-                          <span>{item.label}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 text-white shadow-xl">Help & Support</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                    <item.icon size={16} />
+                    <span>{item.label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <motion.button 
+              <Button
+                variant="ghost"
                 className="w-full justify-start px-4 py-3 text-sm font-semibold bg-white hover:bg-gray-100 rounded-xl flex items-center gap-3 group transition-all duration-200 text-gray-700 shadow-sm border border-gray-200"
-                whileTap={{ y: 0 }}
               >
                 <HelpCircle size={18} />
                 <span>Help & Support</span>
-                <ChevronDown size={14} className="ml-auto transition-transform duration-200 group-hover:rotate-180" />
-              </motion.button>
+                <ChevronDown
+                  size={14}
+                  className="ml-auto transition-transform duration-200 group-hover:rotate-180"
+                />
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
+            <DropdownMenuContent
+              align="end"
               className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
             >
               {helpItems.map((item, index) => (
@@ -532,7 +603,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   transition={{ delay: index * 0.03 }}
                 >
                   <DropdownMenuItem asChild>
-                    <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
+                    <Link
+                      to={item.path}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2"
+                    >
                       <item.icon size={16} className="text-gray-500" />
                       <span>{item.label}</span>
                     </Link>
@@ -542,8 +616,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </motion.div> 
-
+      </motion.div>
     </motion.div>
   );
 }

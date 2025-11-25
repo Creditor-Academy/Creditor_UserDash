@@ -23,7 +23,9 @@ const Membership = () => {
           >
             {/* Breadcrumb/Navigation */}
             <div className="flex items-center gap-3 text-sm text-gray-600 mb-8">
-              <span className="font-medium hover:text-gray-900 cursor-pointer transition">Features</span>
+              <span className="font-medium hover:text-gray-900 cursor-pointer transition">
+                Features
+              </span>
               <span className="text-gray-400">|</span>
               <span className="font-semibold text-gray-900">Memberships</span>
             </div>
@@ -35,7 +37,9 @@ const Membership = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Design a membership program that rewards your audience with premium experiences and members-only content — all while generating reliable monthly income for your business.
+              Design a membership program that rewards your audience with
+              premium experiences and members-only content — all while
+              generating reliable monthly income for your business.
             </p>
 
             {/* CTA Buttons */}
@@ -63,16 +67,31 @@ const Membership = () => {
               <div className="relative w-full max-w-[720px] aspect-[4/3] bg-[#c24f0a] flex items-center justify-center overflow-hidden shadow-2xl">
                 {/* Radiating lines */}
                 <div className="absolute inset-0">
-                  <svg className="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+                  <svg
+                    className="w-full h-full"
+                    viewBox="0 0 800 600"
+                    preserveAspectRatio="xMidYMid slice"
+                  >
                     {[...Array(48)].map((_, i) => {
                       const angle = (i * 360) / 48;
                       const x1 = 400;
                       const y1 = 300;
                       const length = 1000;
-                      const x2 = x1 + Math.cos((angle * Math.PI) / 180) * length;
-                      const y2 = y1 + Math.sin((angle * Math.PI) / 180) * length;
+                      const x2 =
+                        x1 + Math.cos((angle * Math.PI) / 180) * length;
+                      const y2 =
+                        y1 + Math.sin((angle * Math.PI) / 180) * length;
                       return (
-                        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#ffedd5" strokeWidth="1.2" opacity="0.5" />
+                        <line
+                          key={i}
+                          x1={x1}
+                          y1={y1}
+                          x2={x2}
+                          y2={y2}
+                          stroke="#ffedd5"
+                          strokeWidth="1.2"
+                          opacity="0.5"
+                        />
                       );
                     })}
                   </svg>
@@ -84,14 +103,24 @@ const Membership = () => {
                   <div className="absolute top-1/2 -translate-y-1/2 left-[-120px] scale-90 opacity-95">
                     <div className="bg-white shadow-2xl w-[240px]">
                       <div className="w-full h-44 overflow-hidden">
-                        <img src={membershipCardImage} alt="Membership Alt Left" className="w-full h-full object-contain bg-white" />
+                        <img
+                          src={membershipCardImage}
+                          alt="Membership Alt Left"
+                          className="w-full h-full object-contain bg-white"
+                        />
                       </div>
                       <div className="px-5 py-3">
-                        <h3 className="text-xl font-semibold text-gray-900 tracking-tight">Starter Membership</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 tracking-tight">
+                          Starter Membership
+                        </h3>
                       </div>
                       <div className="px-5 py-4 bg-[#f3a6b6] flex items-center justify-between">
-                        <span className="text-lg font-semibold text-gray-900">Basic</span>
-                        <span className="text-xl font-bold text-gray-900">$20 / month</span>
+                        <span className="text-lg font-semibold text-gray-900">
+                          Basic
+                        </span>
+                        <span className="text-xl font-bold text-gray-900">
+                          $20 / month
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -103,16 +132,24 @@ const Membership = () => {
                       <div className="m-3 rounded-xl overflow-hidden bg-white">
                         {/* Image */}
                         <div className="w-full h-60 overflow-hidden">
-                          <img src={membershipCardImage} alt="Membership Center" className="w-full h-full object-contain bg-white" />
+                          <img
+                            src={membershipCardImage}
+                            alt="Membership Center"
+                            className="w-full h-full object-contain bg-white"
+                          />
                         </div>
                         {/* Title */}
                         <div className="px-5 py-3 bg-white">
-                          <h3 className="text-xl font-semibold text-gray-900 tracking-tight text-center">Modern Systems Membership</h3>
+                          <h3 className="text-xl font-semibold text-gray-900 tracking-tight text-center">
+                            Modern Systems Membership
+                          </h3>
                         </div>
                       </div>
                       {/* Full-width CTA bar as button (no border radius) */}
                       <button className="w-full px-5 py-4 bg-[#f3a6b6] flex items-center justify-between rounded-none">
-                        <span className="text-lg font-semibold text-gray-900">Gold Package</span>
+                        <span className="text-lg font-semibold text-gray-900">
+                          Gold Package
+                        </span>
                         <span className="text-xl font-bold text-gray-900">
                           $40.00 <span className="font-semibold">/ month</span>
                         </span>
@@ -124,14 +161,24 @@ const Membership = () => {
                   <div className="absolute top-1/2 -translate-y-1/2 right-[-120px] scale-90 opacity-95">
                     <div className="bg-white shadow-2xl w-[240px]">
                       <div className="w-full h-44 overflow-hidden">
-                        <img src={membershipCardImage} alt="Membership Alt Right" className="w-full h-full object-contain bg-white" />
+                        <img
+                          src={membershipCardImage}
+                          alt="Membership Alt Right"
+                          className="w-full h-full object-contain bg-white"
+                        />
                       </div>
                       <div className="px-5 py-3">
-                        <h3 className="text-xl font-semibold text-gray-900 tracking-tight">Platinum Membership</h3>
+                        <h3 className="text-xl font-semibold text-gray-900 tracking-tight">
+                          Platinum Membership
+                        </h3>
                       </div>
                       <div className="px-5 py-4 bg-[#f3a6b6] flex items-center justify-between">
-                        <span className="text-lg font-semibold text-gray-900">Platinum</span>
-                        <span className="text-xl font-bold text-gray-900">$80 / month</span>
+                        <span className="text-lg font-semibold text-gray-900">
+                          Platinum
+                        </span>
+                        <span className="text-xl font-bold text-gray-900">
+                          $80 / month
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -146,4 +193,3 @@ const Membership = () => {
 };
 
 export default Membership;
-

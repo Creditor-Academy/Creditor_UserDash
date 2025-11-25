@@ -1,7 +1,7 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import Scorm from "../../../assets/Scorm.png";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import Scorm from '../../../assets/Scorm.png';
 
 export default function AcademicScale() {
   return (
@@ -28,7 +28,9 @@ export default function AcademicScale() {
 
             {/* Description */}
             <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">
-              Streamline course creation, automate enrollment, and expand your reach with powerful tools designed specifically for the way your business is structured.
+              Streamline course creation, automate enrollment, and expand your
+              reach with powerful tools designed specifically for the way your
+              business is structured.
             </p>
 
             {/* CTA Buttons */}
@@ -37,7 +39,7 @@ export default function AcademicScale() {
                 Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
-              
+
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent hover:bg-white/10 text-white text-sm font-semibold rounded-full border-2 border-white/30 hover:border-white/50 transition-all duration-300">
                 Talk to sales
                 <ArrowRight className="w-4 h-4" />
@@ -54,9 +56,9 @@ export default function AcademicScale() {
             className="relative"
           >
             <div className="relative shadow-2xl overflow-hidden aspect-square w-full max-w-2xl mx-auto">
-              <img 
-                src={Scorm} 
-                alt="Athena Dashboard Analytics" 
+              <img
+                src={Scorm}
+                alt="Athena Dashboard Analytics"
                 className="w-full h-full object-contain"
               />
             </div>
@@ -69,4 +71,3 @@ export default function AcademicScale() {
     </section>
   );
 }
-

@@ -1,4 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from 'lucide-react';
 
 export default function Hero() {
   return (
@@ -302,7 +302,9 @@ export default function Hero() {
           </div>
           <div className="hero-description-wrapper">
             <p className="hero-description">
-              Athena LMS is where Instructional Design meets Artificial Intelligence — a unified platform that helps you create engaging, research-backed courses in minutes.
+              Athena LMS is where Instructional Design meets Artificial
+              Intelligence — a unified platform that helps you create engaging,
+              research-backed courses in minutes.
             </p>
           </div>
           <div className="hero-buttons-wrapper">

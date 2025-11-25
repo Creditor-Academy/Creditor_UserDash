@@ -1,33 +1,33 @@
-import React from "react";
-import { motion } from "framer-motion";
-import Enrollment from "../../../assets/Enrollment.png";
-import Payment from "../../../assets/Payment.png";
-import Contentshare from "../../../assets/Contentshare.png";
+import React from 'react';
+import { motion } from 'framer-motion';
+import Enrollment from '../../../assets/Enrollment.png';
+import Payment from '../../../assets/Payment.png';
+import Contentshare from '../../../assets/Contentshare.png';
 
 const questions = [
   {
     id: 1,
-    question: "How can I manage growth without growing pains?",
+    question: 'How can I manage growth without growing pains?',
     answer:
       "Struggling with managing high volumes of learners, products, and orders? Athena's scalable platform handles everything from bulk sales and group orders to automatic payment processing. Our centralized dashboard lets you manage multiple courses, cohorts, and certification programs without increasing administrative overhead or adding complexity.",
-    imagePosition: "right",
-    bgColor: "bg-gradient-to-br from-purple-100 to-blue-100",
+    imagePosition: 'right',
+    bgColor: 'bg-gradient-to-br from-purple-100 to-blue-100',
   },
   {
     id: 2,
-    question: "How can I lower my customer acquisition costs?",
+    question: 'How can I lower my customer acquisition costs?',
     answer:
       "Combat customer acquisition costs with Athena's built-in tools. Create customized landing pages that help your brand stand out as the best choice. Use our conversion-optimized checkout experiences to turn more visitors into paying customers and reduce churn with communities that increase engagement.",
-    imagePosition: "left",
-    bgColor: "bg-gradient-to-br from-blue-100 to-purple-100",
+    imagePosition: 'left',
+    bgColor: 'bg-gradient-to-br from-blue-100 to-purple-100',
   },
   {
     id: 3,
-    question: "How can I migrate existing content?",
+    question: 'How can I migrate existing content?',
     answer:
-      "Moving to Athena is simple. Our intuitive uploader lets you import existing materials with drag-and-drop organization. Plus, as a SCORM-compliant platform, we ensure secure content transfer between different learning management systems without compatibility issues. With Athena Enterprise, your dedicated Launch Specialist will guide you from setup to launch, providing strategic insights to help you achieve a successful migration and continued business growth.",
-    imagePosition: "right",
-    bgColor: "bg-gradient-to-br from-purple-100 to-indigo-100",
+      'Moving to Athena is simple. Our intuitive uploader lets you import existing materials with drag-and-drop organization. Plus, as a SCORM-compliant platform, we ensure secure content transfer between different learning management systems without compatibility issues. With Athena Enterprise, your dedicated Launch Specialist will guide you from setup to launch, providing strategic insights to help you achieve a successful migration and continued business growth.',
+    imagePosition: 'right',
+    bgColor: 'bg-gradient-to-br from-purple-100 to-indigo-100',
   },
 ];
 
@@ -50,11 +50,13 @@ export default function AcademicAnswer() {
           className="text-center mb-16 lg:mb-24"
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-gray-900 mb-6 leading-tight">
-            The answers to your biggest{" "}
+            The answers to your biggest{' '}
             <span className="text-blue-600">business questions</span>
           </h2>
           <p className="text-lg sm:text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
-            Running a training company or academy comes with unique challenges and opportunities. Here are some ways Athena can help with your most pressing concerns.
+            Running a training company or academy comes with unique challenges
+            and opportunities. Here are some ways Athena can help with your most
+            pressing concerns.
           </p>
         </motion.div>
 
@@ -68,13 +70,13 @@ export default function AcademicAnswer() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.7, delay: index * 0.1 }}
               className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center ${
-                item.imagePosition === "left" ? "lg:flex-row-reverse" : ""
+                item.imagePosition === 'left' ? 'lg:flex-row-reverse' : ''
               }`}
             >
               {/* Content Side */}
               <div
                 className={`${
-                  item.imagePosition === "left" ? "lg:order-2" : "lg:order-1"
+                  item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'
                 } flex flex-col justify-center`}
               >
                 <h3 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal text-gray-900 mb-6 leading-tight">
@@ -90,7 +92,7 @@ export default function AcademicAnswer() {
               {/* Image Side */}
               <div
                 className={`${
-                  item.imagePosition === "left" ? "lg:order-1" : "lg:order-2"
+                  item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'
                 }`}
               >
                 <motion.div
@@ -101,23 +103,23 @@ export default function AcademicAnswer() {
                   {/* Image Display */}
                   <div className="relative z-10 w-full h-full flex items-center justify-center p-4">
                     {item.id === 1 && (
-                      <img 
-                        src={Enrollment} 
-                        alt="Enrollments Dashboard" 
+                      <img
+                        src={Enrollment}
+                        alt="Enrollments Dashboard"
                         className="w-full h-full object-contain rounded-xl"
                       />
                     )}
                     {item.id === 2 && (
-                      <img 
-                        src={Payment} 
-                        alt="Purchase Interface" 
+                      <img
+                        src={Payment}
+                        alt="Purchase Interface"
                         className="w-full h-full object-contain rounded-xl"
                       />
                     )}
                     {item.id === 3 && (
-                      <img 
-                        src={Contentshare} 
-                        alt="Content Transfer" 
+                      <img
+                        src={Contentshare}
+                        alt="Content Transfer"
                         className="w-full h-full object-contain rounded-xl"
                       />
                     )}
@@ -131,4 +133,3 @@ export default function AcademicAnswer() {
     </section>
   );
 }
-

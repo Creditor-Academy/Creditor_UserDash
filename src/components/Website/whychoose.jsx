@@ -1,5 +1,5 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
 import {
   Rocket,
   ShieldCheck,
@@ -8,36 +8,36 @@ import {
   Clock,
   Users,
   CheckCircle,
-} from "lucide-react";
+} from 'lucide-react';
 
 const DEFAULT_FEATURES = [
   {
-    id: "speed",
-    title: "Blazing-fast performance",
-    desc: "Optimized builds, CDN-first delivery and pragmatic SSR/ISR where it matters.",
+    id: 'speed',
+    title: 'Blazing-fast performance',
+    desc: 'Optimized builds, CDN-first delivery and pragmatic SSR/ISR where it matters.',
     icon: Rocket,
-    accent: "from-indigo-400 to-indigo-600",
+    accent: 'from-indigo-400 to-indigo-600',
   },
   {
-    id: "secure",
-    title: "Enterprise-grade security",
-    desc: "HTTPS, hardened headers, automated audits and secure auth patterns by default.",
+    id: 'secure',
+    title: 'Enterprise-grade security',
+    desc: 'HTTPS, hardened headers, automated audits and secure auth patterns by default.',
     icon: ShieldCheck,
-    accent: "from-emerald-400 to-emerald-600",
+    accent: 'from-emerald-400 to-emerald-600',
   },
   {
-    id: "scale",
-    title: "Built to scale",
-    desc: "Decoupled services, clean APIs and caching strategies that grow with you.",
+    id: 'scale',
+    title: 'Built to scale',
+    desc: 'Decoupled services, clean APIs and caching strategies that grow with you.',
     icon: Layers,
-    accent: "from-sky-400 to-sky-600",
+    accent: 'from-sky-400 to-sky-600',
   },
   {
-    id: "uptime",
-    title: "Proactive maintenance",
-    desc: "Monitoring, backups and on-call practices to keep your site healthy and fast.",
+    id: 'uptime',
+    title: 'Proactive maintenance',
+    desc: 'Monitoring, backups and on-call practices to keep your site healthy and fast.',
     icon: Clock,
-    accent: "from-rose-400 to-rose-600",
+    accent: 'from-rose-400 to-rose-600',
   },
 ];
 
@@ -62,11 +62,11 @@ const itemVariants = {
 
 export default function WhyChooseUs({
   features = DEFAULT_FEATURES,
-  ctaText = "Get a free quote",
-  ctaHref = "#contact",
-  secondaryText = "See case studies",
-  secondaryHref = "#case-studies",
-  className = "",
+  ctaText = 'Get a free quote',
+  ctaHref = '#contact',
+  secondaryText = 'See case studies',
+  secondaryHref = '#case-studies',
+  className = '',
 }) {
   return (
     <section
@@ -92,18 +92,21 @@ export default function WhyChooseUs({
               id="why-choose-us-title"
               className="mt-8 max-w-xl text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight text-gray-900 dark:text-gray-100"
             >
-              Modern websites that perform — beautiful, secure, and built for growth
+              Modern websites that perform — beautiful, secure, and built for
+              growth
             </h2>
 
             <p className="mt-6 text-base text-gray-600 dark:text-gray-300 max-w-lg leading-relaxed">
-              We combine design excellence with engineering discipline: fast launches,
-              measurable outcomes, and an ownership mindset. Small teams to enterprise
-              — same quality, tailored to your goals.
+              We combine design excellence with engineering discipline: fast
+              launches, measurable outcomes, and an ownership mindset. Small
+              teams to enterprise — same quality, tailored to your goals.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5">
-                <strong className="text-gray-900 dark:text-gray-100 font-bold">99.9%</strong>
+                <strong className="text-gray-900 dark:text-gray-100 font-bold">
+                  99.9%
+                </strong>
                 <span>uptime guarantee</span>
               </span>
 
@@ -122,7 +125,7 @@ export default function WhyChooseUs({
             className="z-10"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {features.map((feature) => {
+              {features.map(feature => {
                 const Icon = feature.icon;
                 return (
                   <motion.article
@@ -135,7 +138,7 @@ export default function WhyChooseUs({
                     <div className="flex items-start gap-4">
                       <div
                         className={`flex-shrink-0 rounded-2xl p-3.5 bg-gradient-to-br ${
-                          feature.accent ?? "from-indigo-400 to-indigo-600"
+                          feature.accent ?? 'from-indigo-400 to-indigo-600'
                         } text-white shadow-lg`}
                         aria-hidden="true"
                       >
@@ -156,7 +159,10 @@ export default function WhyChooseUs({
 
                         <div className="mt-4 flex items-center gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100/80 text-indigo-600 px-2.5 py-1 text-xs font-semibold dark:bg-indigo-900/30 dark:text-indigo-300">
-                            <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                            <CheckCircle
+                              className="w-3.5 h-3.5"
+                              aria-hidden="true"
+                            />
                             Proven
                           </span>
                         </div>
@@ -172,5 +178,3 @@ export default function WhyChooseUs({
     </section>
   );
 }
-
-

@@ -1,51 +1,55 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Building2 } from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Building2 } from 'lucide-react';
 
 const caseStudies = [
   {
     id: 1,
     icon: Building2,
-    title: "How Chargebee Empowers Customer Success Through Subscription Academy",
+    title:
+      'How Chargebee Empowers Customer Success Through Subscription Academy',
     quote:
       "Athena Enterprise has been instrumental in scaling our customer education. The platform's flexibility allows us to deliver comprehensive training that directly impacts customer success metrics.",
-    author: "Guy Marion, Chief Marketing Officer",
-    bgColor: "bg-blue-400",
-    hoverColor: "hover:bg-blue-500",
-    textColor: "text-gray-900",
+    author: 'Guy Marion, Chief Marketing Officer',
+    bgColor: 'bg-blue-400',
+    hoverColor: 'hover:bg-blue-500',
+    textColor: 'text-gray-900',
   },
   {
     id: 2,
     icon: Building2,
-    title: "How Keap reduced partner onboarding time by 30% by making the switch from a legacy LMS to Athena Enterprise",
+    title:
+      'How Keap reduced partner onboarding time by 30% by making the switch from a legacy LMS to Athena Enterprise',
     quote:
-      "Athena Enterprise has revolutionized our partner education program. The intuitive interface and powerful analytics have significantly improved our partner onboarding process.",
-    author: "Brian Anciaux, Partner Onboarding Manager",
-    bgColor: "bg-orange-600",
-    hoverColor: "hover:bg-orange-700",
-    textColor: "text-white",
+      'Athena Enterprise has revolutionized our partner education program. The intuitive interface and powerful analytics have significantly improved our partner onboarding process.',
+    author: 'Brian Anciaux, Partner Onboarding Manager',
+    bgColor: 'bg-orange-600',
+    hoverColor: 'hover:bg-orange-700',
+    textColor: 'text-white',
   },
   {
     id: 3,
     icon: Building2,
-    title: "How Hootsuite Uses Athena Enterprise to Educate Customers and Generate Revenue",
+    title:
+      'How Hootsuite Uses Athena Enterprise to Educate Customers and Generate Revenue',
     quote:
-      "Our customers are consuming Hootsuite Academy education content at unprecedented rates. Athena Enterprise has transformed how we deliver value to our user base.",
-    author: "Sarah Whyte, Education Marketing Specialist, Hootsuite",
-    bgColor: "bg-gray-800",
-    hoverColor: "hover:bg-gray-900",
-    textColor: "text-white",
+      'Our customers are consuming Hootsuite Academy education content at unprecedented rates. Athena Enterprise has transformed how we deliver value to our user base.',
+    author: 'Sarah Whyte, Education Marketing Specialist, Hootsuite',
+    bgColor: 'bg-gray-800',
+    hoverColor: 'hover:bg-gray-900',
+    textColor: 'text-white',
   },
   {
     id: 4,
     icon: Building2,
-    title: "IntelyCare trained over 500,000 nursing facility professionals with Athena",
+    title:
+      'IntelyCare trained over 500,000 nursing facility professionals with Athena',
     quote:
-      "The interactive features and viral nature of our training content have been game-changing. Athena has enabled us to scale our impact across the healthcare industry.",
-    author: "Christopher Caulfield, Co-Founder and Chief Nursing Officer",
-    bgColor: "bg-gray-200",
-    hoverColor: "hover:bg-gray-300",
-    textColor: "text-gray-900",
+      'The interactive features and viral nature of our training content have been game-changing. Athena has enabled us to scale our impact across the healthcare industry.',
+    author: 'Christopher Caulfield, Co-Founder and Chief Nursing Officer',
+    bgColor: 'bg-gray-200',
+    hoverColor: 'hover:bg-gray-300',
+    textColor: 'text-gray-900',
   },
 ];
 
@@ -97,9 +101,11 @@ export default function CompanyCase() {
 
           <div className="lg:pt-2">
             <p className="text-base text-gray-700 leading-relaxed mb-6">
-              Explore the countless ways Athena's learning commerce platform helps thousands of companies simplify their operations while maximizing their profits.
+              Explore the countless ways Athena's learning commerce platform
+              helps thousands of companies simplify their operations while
+              maximizing their profits.
             </p>
-            
+
             <button className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
               See all case studies
               <ArrowRight className="w-4 h-4" />
@@ -115,7 +121,7 @@ export default function CompanyCase() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {caseStudies.map((study) => {
+          {caseStudies.map(study => {
             const Icon = study.icon;
             return (
               <motion.div
@@ -128,28 +134,39 @@ export default function CompanyCase() {
                 >
                   {/* Icon */}
                   <div className="mb-6">
-                    <Icon className={`w-10 h-10 ${study.textColor}`} strokeWidth={1.5} />
+                    <Icon
+                      className={`w-10 h-10 ${study.textColor}`}
+                      strokeWidth={1.5}
+                    />
                   </div>
 
                   {/* Title */}
-                  <h3 className={`text-xl lg:text-2xl font-bold ${study.textColor} mb-6 leading-tight`}>
+                  <h3
+                    className={`text-xl lg:text-2xl font-bold ${study.textColor} mb-6 leading-tight`}
+                  >
                     {study.title}
                   </h3>
 
                   {/* Quote */}
-                  <p className={`text-sm ${study.textColor} opacity-90 leading-relaxed mb-4 flex-grow italic`}>
+                  <p
+                    className={`text-sm ${study.textColor} opacity-90 leading-relaxed mb-4 flex-grow italic`}
+                  >
                     "{study.quote}"
                   </p>
 
                   {/* Author */}
                   {study.author && (
-                    <p className={`text-sm ${study.textColor} opacity-90 font-normal mb-6`}>
+                    <p
+                      className={`text-sm ${study.textColor} opacity-90 font-normal mb-6`}
+                    >
                       {study.author}
                     </p>
                   )}
 
                   {/* Learn More Link */}
-                  <button className={`inline-flex items-center gap-2 ${study.textColor} font-semibold text-sm group-hover:gap-3 transition-all duration-300`}>
+                  <button
+                    className={`inline-flex items-center gap-2 ${study.textColor} font-semibold text-sm group-hover:gap-3 transition-all duration-300`}
+                  >
                     Learn more
                     <ArrowRight className="w-4 h-4" />
                   </button>

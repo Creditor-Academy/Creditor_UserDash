@@ -1,44 +1,39 @@
-import React from "react";
-import { motion } from "framer-motion";
-import {
-  TrendingUp,
-  FileCheck,
-  Zap,
-  BarChart3,
-} from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { TrendingUp, FileCheck, Zap, BarChart3 } from 'lucide-react';
 
 const features = [
   {
     id: 1,
     icon: TrendingUp,
-    title: "Diversified revenue streams",
+    title: 'Diversified revenue streams',
     description:
-      "Sell your training through courses, communities, memberships, digital downloads, or other learning experiences — all supported on one platform.",
-    gradient: "from-blue-400 to-cyan-400",
+      'Sell your training through courses, communities, memberships, digital downloads, or other learning experiences — all supported on one platform.',
+    gradient: 'from-blue-400 to-cyan-400',
   },
   {
     id: 2,
     icon: FileCheck,
-    title: "SCORM compliance",
+    title: 'SCORM compliance',
     description:
-      "Easily and securely migrate existing LMS content to Athena and enhance the learner experience with interactive elements that boost engagement.",
-    gradient: "from-purple-400 to-pink-400",
+      'Easily and securely migrate existing LMS content to Athena and enhance the learner experience with interactive elements that boost engagement.',
+    gradient: 'from-purple-400 to-pink-400',
   },
   {
     id: 3,
     icon: Zap,
-    title: "Simplified operations",
+    title: 'Simplified operations',
     description:
       "Automate admin tasks like managing enrollments, sending email reminders, and payments with tools like Athena's powerful automation engine.",
-    gradient: "from-amber-400 to-orange-400",
+    gradient: 'from-amber-400 to-orange-400',
   },
   {
     id: 4,
     icon: BarChart3,
-    title: "Data-driven success",
+    title: 'Data-driven success',
     description:
-      "Use our built-in analytics dashboard to track engagement, completions, and revenue to optimize your training programs and drive results.",
-    gradient: "from-emerald-400 to-teal-400",
+      'Use our built-in analytics dashboard to track engagement, completions, and revenue to optimize your training programs and drive results.',
+    gradient: 'from-emerald-400 to-teal-400',
   },
 ];
 
@@ -83,13 +78,12 @@ export default function AcademicChoose() {
           className="text-center mb-20"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal text-white mb-4 leading-tight">
-            Why academies and training companies choose{" "}
-            <span className="text-blue-400 font-semibold">
-              Athena
-            </span>
+            Why academies and training companies choose{' '}
+            <span className="text-blue-400 font-semibold">Athena</span>
           </h2>
           <p className="text-base sm:text-lg text-blue-200 max-w-2xl mx-auto">
-            Empower your training programs with a comprehensive platform designed for growth and success
+            Empower your training programs with a comprehensive platform
+            designed for growth and success
           </p>
         </motion.div>
 
@@ -101,7 +95,7 @@ export default function AcademicChoose() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
         >
-          {features.map((feature) => {
+          {features.map(feature => {
             const Icon = feature.icon;
             return (
               <motion.div
@@ -112,7 +106,9 @@ export default function AcademicChoose() {
                 <div className="relative h-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 hover:bg-white/15 transition-all duration-300 hover:shadow-xl">
                   <div className="flex items-start gap-6">
                     {/* Icon */}
-                    <div className={`flex-shrink-0 p-3 rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg`}>
+                    <div
+                      className={`flex-shrink-0 p-3 rounded-xl bg-gradient-to-br ${feature.gradient} shadow-lg`}
+                    >
                       <Icon className="w-7 h-7 text-white" strokeWidth={2} />
                     </div>
 
@@ -155,4 +151,3 @@ export default function AcademicChoose() {
     </section>
   );
 }
-
