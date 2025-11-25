@@ -33,14 +33,12 @@ import { Link } from 'react-router-dom';
 import DashboardCarousel from '@/components/dashboard/DashboardCarousel';
 import DashboardGroup from '@/components/dashboard/DashboardGroup';
 import UpcomingCourses from '@/pages/UpcomingCourses';
-import AthenaUpcomingEvent from '@/pages/AthenaUpcomingEvent';
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
 import DashboardTodo from '@/components/dashboard/DashboardTodo';
 import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import ComingSoonPopover from '@/components/dashboard/ComingSoonPopover';
 import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
@@ -768,7 +766,6 @@ export function Dashboard() {
           <ThanksgivingPromo
             onExtendMembership={() => setShowCreditsModal(true)}
           />
-          <ComingSoonPopover />
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
@@ -1353,8 +1350,6 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-
-          <AthenaUpcomingEvent />
         </div>
       </main>
       {/* Credits Modal (reused for services top-up) */}

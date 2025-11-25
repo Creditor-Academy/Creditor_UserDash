@@ -58,6 +58,7 @@ import DemoQuizPage from '@/pages/DemoQuizPage';
 import CalendarPage from '@/pages/CalendarPage';
 import TodoPage from '@/pages/TodoPage';
 import ClassRecordings from '@/pages/ClassRecordings';
+import Attendance from '@/pages/Attendance';
 import CertificatePage from '../src/pages/CertificatePage';
 import SurveyInstructionPage from '@/pages/SurveyInstructionPage';
 import DebateInstructionPage from '@/pages/DebateInstructionPage';
@@ -102,6 +103,7 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import TermsAndConditions from '@/pages/TermCondition';
 import ReturnRefund from '@/pages/ReturnRefund';
 import MembershipTnC from '@/pages/MembershipTnC';
+import MembershipEnrollment from '@/pages/MembershipEnrollment';
 import ContactSection from '@/components/ContactSection';
 import AddUsersPage from '@/pages/AddUsersPage';
 import AICourseCreator from '@/pages/AICourseCreator';
@@ -357,6 +359,10 @@ function App() {
                 }
               >
                 <Route index element={<Dashboard />} />
+                <Route
+                  path="membership/enroll"
+                  element={<MembershipEnrollment />}
+                />
                 <Route path="upcoming-courses" element={<UpcomingCourses />} />
 
                 {/* Course related routes */}
@@ -519,6 +525,7 @@ function App() {
                 <Route path="class-recordings" element={<ClassRecordings />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="calendar" element={<CalendarPage />} />
+                <Route path="attendance" element={<Attendance />} />
                 <Route path="todo" element={<TodoPage />} />
                 <Route path="chatbot" element={<Chatbot />} />
                 <Route path="faqs" element={<FAQs />} />

@@ -32,6 +32,7 @@ const Pricing = () => {
       ],
       sectionHeader: 'Starter Includes:',
       cta: 'Join Now',
+      link: 'https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8',
       popular: false,
       buttonStyle: 'white',
     },
@@ -55,6 +56,7 @@ const Pricing = () => {
       sectionHeader: 'Growth Includes:',
       cta: 'Join Now',
       popular: true,
+      link: 'https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2',
       featured: 'Most Popular!',
       buttonStyle: 'blue',
     },
@@ -293,15 +295,18 @@ const Pricing = () => {
 
                   {/* CTA Button */}
                   <div className="mb-6">
-                    <button
-                      className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 ${
+                    <a
+                      href={plan.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 text-center ${
                         plan.buttonStyle === 'yellow'
                           ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                       }`}
                     >
                       {plan.cta} →
-                    </button>
+                    </a>
                   </div>
 
                   {/* Features Section */}
