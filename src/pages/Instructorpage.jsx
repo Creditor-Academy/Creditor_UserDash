@@ -16,6 +16,10 @@ import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { useAuth } from '@/contexts/AuthContext';
+import CreateAdPage from '@/pages/sponsorAds/CreateAdPage';
+import ManageAdsPage from '@/pages/sponsorAds/ManageAdsPage';
+import EditAdPage from '@/pages/sponsorAds/EditAdPage';
+import AnalyticsPage from '@/pages/sponsorAds/AnalyticsPage';
 import {
   FaBook,
   FaUsers,
@@ -57,6 +61,7 @@ const InstructorPage = () => {
     if (path.includes('/support-tickets')) return 'tickets';
     if (path.includes('/assets')) return 'resources';
     if (path.includes('/payments')) return 'payments';
+    if (path.includes('/sponsor-ads')) return 'sponsor-ads';
     return 'course'; // default
   };
 
@@ -264,6 +269,18 @@ const InstructorPage = () => {
             <FaChartLine /> Course Analytics
           </button>
           <button
+            onClick={() =>
+              handleNavigation('sponsor-ads', '/instructor/sponsor-ads/manage')
+            }
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === 'sponsor-ads'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <FaImages /> Sponsor Ads
+          </button>
+          <button
             onClick={() => setActiveTab('adminPrivateGroups')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'adminPrivateGroups'
@@ -418,6 +435,18 @@ const InstructorPage = () => {
             {activeTab === 'analytics' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CourseActivityAnalytics />
+              </section>
+            )}
+            {activeTab === 'sponsor-ads' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                {location.pathname.includes('/create') && <CreateAdPage />}
+                {location.pathname.includes('/edit/') && <EditAdPage />}
+                {location.pathname.includes('/analytics') && <AnalyticsPage />}
+                {!location.pathname.includes('/create') &&
+                  !location.pathname.includes('/edit/') &&
+                  !location.pathname.includes('/analytics') && (
+                    <ManageAdsPage />
+                  )}
               </section>
             )}
             {activeTab === 'adminPrivateGroups' && (
