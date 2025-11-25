@@ -157,8 +157,10 @@ function useProgressData(externalData) {
 				totalCourses,
 				totalModules: totals.totalModules,
 				unlockedModules: totals.completedModules + totals.inProgressModules,
+				inProgressModules: totals.inProgressModules,
 				lockedModules: totals.lockedModules,
 				totalLessons: totals.totalLessons,
+				completedLessons: totals.completedLessons,
 				unlockedLessons: totals.unlockedLessons,
 				lockedLessons: totals.lockedLessons,
 				overallCompletion,
@@ -254,60 +256,67 @@ function StatCard({ icon: Icon, label, value, subtext }) {
 			initial={{ opacity: 0, y: 12 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.4 }}
-			className="rounded-xl bg-gray-50 border border-gray-100 p-4"
+			className="rounded-2xl border border-gray-100 bg-gradient-to-b from-gray-50 to-white p-4"
 		>
-			<div className="flex items-center gap-3">
-				<div className="p-2 rounded-lg bg-white border border-gray-100">
+			<div className="flex items-start gap-3">
+				<div className="p-2 rounded-xl bg-white border border-gray-100 shadow-sm">
 					<Icon className="h-5 w-5 text-gray-700" />
 				</div>
 				<div>
 					<div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
 					<div className="text-xl font-semibold text-gray-900">{value}</div>
+					{subtext ? <div className="text-xs text-gray-500 mt-1">{subtext}</div> : null}
 				</div>
 			</div>
-			{subtext ? <div className="mt-2 text-xs text-gray-500">{subtext}</div> : null}
+		</motion.div>
+	);
+}
+
+function BadgeCard({ badge }) {
+	return (
+		<motion.div
+			key={badge.id}
+			initial={{ opacity: 0, y: 12 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -12 }}
+			className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm"
+		>
+			<div className="flex-shrink-0">
+				<CircularProgress value={clamp(badge.progress, 0, 100)} size={48} stroke={6} />
+			</div>
+			<div className="min-w-0">
+				<div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
+					<Award className="h-4 w-4 text-amber-500" />
+					<span className="truncate">{badge.title}</span>
+				</div>
+				<p className="text-xs text-gray-500 truncate">{badge.hint}</p>
+			</div>
 		</motion.div>
 	);
 }
 
 function BadgesGallery({ badges = [] }) {
 	const [expanded, setExpanded] = useState(false);
-	const items = expanded ? badges : badges.slice(0, 3);
+	const items = expanded ? badges : badges.slice(0, 4);
 	return (
-		<div>
-			<div className="flex items-center justify-between mb-3">
-				<h4 className="text-base font-semibold text-gray-900">Badges</h4>
+		<div className="rounded-2xl border border-gray-100 bg-white p-4 md:p-5">
+			<div className="flex items-center justify-between mb-4">
+				<div>
+					<h4 className="text-lg font-semibold text-gray-900">Badges</h4>
+					<p className="text-xs text-gray-500">Keep collecting milestones as you learn</p>
+				</div>
 				<button
 					type="button"
-					onClick={() => setExpanded((v) => !v)}
-					className="text-xs text-blue-600 hover:underline"
+					onClick={() => setExpanded((prev) => !prev)}
+					className="text-xs font-medium text-blue-600 hover:text-blue-700"
 				>
 					{expanded ? "Show less" : "View all"}
 				</button>
 			</div>
-			<div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 				<AnimatePresence initial={false}>
-					{items.map((b) => (
-						<motion.div
-							key={b.id}
-							initial={{ opacity: 0, scale: 0.95 }}
-							animate={{ opacity: 1, scale: 1 }}
-							exit={{ opacity: 0, scale: 0.95 }}
-							className="rounded-xl border border-gray-100 p-4 bg-white group relative"
-						>
-							<div className="flex items-center gap-2">
-								<Award className="h-4 w-4 text-amber-500" />
-								<div className="text-sm font-medium text-gray-900 truncate" title={b.hint}>
-									{b.title}
-								</div>
-							</div>
-							<div className="mt-3 flex items-center gap-3">
-								<div className="relative" title={b.hint}>
-									<CircularProgress value={clamp(b.progress, 0, 100)} size={48} stroke={6} />
-								</div>
-								<div className="text-xs text-gray-500 truncate">{b.hint}</div>
-							</div>
-						</motion.div>
+					{items.map((badge) => (
+						<BadgeCard key={badge.id} badge={badge} />
 					))}
 				</AnimatePresence>
 			</div>
@@ -320,13 +329,43 @@ export default function ProgressStats({ data }) {
 	const overall = shaped.summary;
 	const firstCourse = shaped.courses[0];
 
+	const highlightStats = [
+		{
+			icon: Users,
+			label: "Courses",
+			value: overall.totalCourses,
+			subtext: "Enrolled",
+		},
+		{
+			icon: Briefcase,
+			label: "Modules",
+			value: `${overall.totalModules}`,
+			subtext: `${overall.unlockedModules} unlocked`,
+		},
+		{
+			icon: Clock,
+			label: "Lessons",
+			value: overall.totalLessons,
+			subtext: `${overall.completedLessons} completed`,
+		},
+		{
+			icon: TrendingUp,
+			label: "Completion",
+			value: `${overall.overallCompletion}%`,
+			subtext: "Overall progress",
+		},
+	];
+
 	return (
-		<div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
-			<div className="flex items-center justify-between mb-6 md:mb-8">
-				<h3 className="text-2xl font-semibold text-gray-900">Your Progress Overview</h3>
-				<div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+		<div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 space-y-8">
+			<div className="flex flex-wrap items-center gap-3 justify-between">
+				<div>
+					<h3 className="text-2xl font-semibold text-gray-900">Your Progress Overview</h3>
+					<p className="text-sm text-gray-500">Real-time snapshot of your learning journey</p>
+				</div>
+				<div className="flex items-center gap-2 text-xs text-gray-500">
 					<TrendingUp className="h-4 w-4" />
-					<span>Real‑time metrics</span>
+					<span>Auto-refreshed</span>
 				</div>
 			</div>
 
@@ -334,76 +373,59 @@ export default function ProgressStats({ data }) {
 				<div className="p-4 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm">{error}</div>
 			) : null}
 
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-				{/* Left: Overall + Current course */}
-				<div className="space-y-6">
-					<div className="flex flex-col items-center justify-center">
+			<div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+				{highlightStats.map((stat) => (
+					<StatCard key={stat.label} {...stat} />
+				))}
+			</div>
+
+			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+				<div className="col-span-1 xl:col-span-1 rounded-3xl border border-gray-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-6 flex flex-col items-center text-center">
 					<CircularProgress value={overall.overallCompletion} />
-						<div className="mt-4 text-sm text-gray-600">
-							<span className="font-semibold text-gray-900">{overall.unlockedModules}</span> unlocked •{" "}
-							<span className="font-semibold text-gray-900">{overall.lockedModules}</span> locked
-						</div>
+					<div className="mt-4 text-sm text-gray-600">
+						<span className="font-semibold text-gray-900">{overall.unlockedModules}</span> unlocked modules •{" "}
+						<span className="font-semibold text-gray-900">{overall.lockedModules}</span> locked
 					</div>
-
-					{/* Current course */}
-					<div>
-						<div className="flex items-center gap-2 mb-2">
-							<BookOpen className="h-5 w-5 text-gray-700" />
-							<div className="text-sm text-gray-600">Current course</div>
+					<div className="mt-5 grid grid-cols-2 gap-4 w-full">
+						<div className="rounded-2xl bg-white/70 border border-white p-3 text-left shadow-sm">
+							<p className="text-xs text-gray-500">Credits (Earned/Redeemed)</p>
+							<p className="text-lg font-semibold text-gray-900">{overall.creditsEarned} / {overall.creditsRedeemed}</p>
 						</div>
-						<div className="rounded-xl border border-gray-100 p-4 md:p-5">
-							<div className="flex items-center justify-between mb-3">
-								<div className="font-medium text-gray-900 truncate">{firstCourse?.title || "—"}</div>
-								<div className="text-xs text-gray-500">
-									{firstCourse?.stats?.completedModules ?? 0}/{firstCourse?.stats?.totalModules ?? 0} modules
-								</div>
-							</div>
-							<SegmentedModuleBars modules={firstCourse?.modules || []} />
-							<div className="mt-3 flex items-center gap-4 text-[11px] text-gray-600">
-								<div className="flex items-center gap-1">
-									<span className="inline-block h-2 w-2 rounded-full bg-emerald-500"></span> Completed
-								</div>
-								<div className="flex items-center gap-1">
-									<span className="inline-block h-2 w-2 rounded-full bg-amber-400"></span> In‑progress
-								</div>
-								<div className="flex items-center gap-1">
-									<span className="inline-block h-2 w-2 rounded-full bg-rose-400"></span> Locked
-								</div>
-							</div>
+						<div className="rounded-2xl bg-white/70 border border-white p-3 text-left shadow-sm">
+							<p className="text-xs text-gray-500">Badges</p>
+							<p className="text-lg font-semibold text-gray-900">{overall.badges?.length || 0}</p>
 						</div>
 					</div>
 				</div>
-
-				{/* Right: Clean stat cards */}
-				<div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-					<StatCard
-						icon={Users}
-						label="Courses"
-						value={`${overall.totalCourses}`}
-					/>
-					<StatCard
-						icon={Briefcase}
-						label="Modules (E/U/L)"
-						value={`${overall.totalModules} / ${overall.unlockedModules} / ${overall.lockedModules}`}
-					/>
-					<StatCard
-						icon={Clock}
-						label="Lessons (E/U/L)"
-						value={`${overall.totalLessons} / ${overall.unlockedLessons} / ${overall.lockedLessons}`}
-					/>
-					<StatCard icon={TrendingUp} label="Completion" value={`${overall.overallCompletion}%`} />
-					<StatCard
-						icon={Award}
-						label="Credits (E/R)"
-						value={`${overall.creditsEarned} / ${overall.creditsRedeemed}`}
-					/>
-					<StatCard icon={CircleDot} label="Badge tracks" value={`${overall.badges?.length || 0}`} />
+				<div className="col-span-1 xl:col-span-2 rounded-3xl border border-gray-100 bg-white p-6 space-y-6">
+					<div className="flex items-center justify-between">
+						<div>
+							<p className="text-xs uppercase tracking-wide text-gray-500">Current course</p>
+							<h4 className="text-lg font-semibold text-gray-900">{firstCourse?.title || "Select a course to begin"}</h4>
+						</div>
+						<div className="text-xs text-gray-500">
+							{firstCourse?.stats?.completedModules ?? 0}/{firstCourse?.stats?.totalModules ?? 0} modules
+						</div>
+					</div>
+					<SegmentedModuleBars modules={firstCourse?.modules || []} />
+					<div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 grid grid-cols-3 gap-4 text-xs text-gray-600">
+						<div>
+							<p className="font-semibold text-gray-900">{overall.totalModules}</p>
+							<p>Total modules</p>
+						</div>
+						<div>
+							<p className="font-semibold text-gray-900">{overall.inProgressModules}</p>
+							<p>In-progress</p>
+						</div>
+						<div>
+							<p className="font-semibold text-gray-900">{overall.lockedModules}</p>
+							<p>Locked</p>
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<div className="mt-8 md:mt-10">
-				<BadgesGallery badges={overall.badges} />
-			</div>
+			<BadgesGallery badges={overall.badges} />
 		</div>
 	);
 }

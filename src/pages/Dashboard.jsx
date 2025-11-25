@@ -654,82 +654,17 @@ export function Dashboard() {
                       </div>
                     </div>
                   )}
+                  <span className="sr-only" aria-live="polite">
+                    {loading
+                      ? "Syncing your latest progress summary..."
+                      : `Progress synced. Completed ${dashboardData.summary?.completedCourses || 0} courses, finished ${dashboardData.summary?.modulesCompleted || 0} modules, passed ${dashboardData.summary?.assessmentsCompleted || 0} quizzes, and ${dashboardData.summary?.pendingCoursesCount || 0} courses remain.`}
+                  </span>
 
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-blue-600 font-semibold">Completed</span>
-                      </div>
-                      <p className="text-2xl font-bold text-blue-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.completedCourses || 0
-                        )}
-                      </p>
-                      <p className="text-blue-600 text-sm">Courses finished</p>
-                    </div>
-                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-emerald-600 font-semibold">Modules</span>
-                      </div>
-                      <p className="text-2xl font-bold text-emerald-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.modulesCompleted || 0
-                        )}
-                      </p>
-                      <p className="text-emerald-600 text-sm">Modules Completed</p>
-                    </div>
-                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
-                      <div className="flex items-center gap-2">
-                        <Award className="text-orange-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-orange-600 font-semibold">Quizzes</span>
-                      </div>
-                      <p className="text-2xl font-bold text-orange-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.assessmentsCompleted || 0
-                        )}
-                      </p>
-                      <p className="text-orange-600 text-sm">Quiz Completed</p>
-                    </div>
-                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-purple-600 font-semibold">Enrolled</span>
-                      </div>
-                      <p className="text-2xl font-bold text-purple-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.allEnrolledCoursesCount || 0
-                        )}
-                      </p>
-                      <p className="text-purple-600 text-sm">Total Courses</p>
-                    </div>
-                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
-                      <div className="flex items-center gap-2">
-                        <Clock className="text-yellow-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-yellow-600 font-semibold">Pending</span>
-                      </div>
-                      <p className="text-2xl font-bold text-yellow-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.pendingCoursesCount || 0
-                        )}
-                      </p>
-                      <p className="text-yellow-600 text-sm">Courses Remaining</p>
-                    </div>
-                  </div>
                 </div>
               </div>
+
+              {/* Progress Tracker */}
+              <ProgressStats />
 
               {/* My Courses Section (carousel with arrows) */}
               <div className="mb-8 relative">
@@ -812,9 +747,6 @@ export function Dashboard() {
                 </div>
                 <DashboardCarousel />
               </div> */}
-
-              {/* Your Progress */}
-              <ProgressStats />
 
               {/* Monthly Overview */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
