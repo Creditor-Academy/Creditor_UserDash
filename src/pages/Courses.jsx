@@ -420,10 +420,10 @@ export function Courses() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
         <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 sm:mb-6 gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold">My Learning</h1>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -434,14 +434,14 @@ export function Courses() {
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-              {/* <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white uppercase tracking-[0.2em] shadow"
               >
-                <Filter size={16} className="mr-2" />
-                Filters
-              </Button> */}
+                <Link to="/dashboard/successive-pathway">
+                  EXPLORE our ai Successive pathway
+                </Link>
+              </Button>
             </div>
           </div>
 
