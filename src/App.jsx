@@ -107,6 +107,7 @@ import AICourseCreator from '@/pages/AICourseCreator';
 import CreateScenario from '@/pages/CreateScenario';
 import PreviewScenario from '@/pages/PreviewScenario';
 import ScenarioTakePage from '@/pages/ScenarioTakePage';
+import SuccessivePathway from '@/pages/SuccessivePathway';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
@@ -371,6 +372,10 @@ function App() {
                 }
               >
                 <Route index element={<Dashboard />} />
+                <Route
+                  path="successive-pathway"
+                  element={<SuccessivePathway />}
+                />
                 <Route
                   path="membership/enroll"
                   element={<MembershipEnrollment />}
