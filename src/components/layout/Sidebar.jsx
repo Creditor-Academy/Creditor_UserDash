@@ -24,8 +24,9 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { currentUserId } from '@/data/currentUser';
-import { getUserRole } from '@/services/userService';
+import { getUserRole, fetchUserProfile } from '@/services/userService';
 import { useAuth } from '@/contexts/AuthContext';
+import api from '@/services/apiClient';
 import {
   Tooltip,
   TooltipContent,
@@ -170,6 +171,35 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [organizationName, setOrganizationName] = useState('');
+
+  // Fetch organization name from API
+  useEffect(() => {
+    const fetchOrganizationName = async () => {
+      try {
+        // First, get user profile to get organization_id
+        const userProfile = await fetchUserProfile();
+        const organizationId = userProfile?.organization_id;
+
+        if (organizationId) {
+          // Fetch organization details using organization_id
+          const response = await api.get(`/api/org/org/${organizationId}`, {
+            withCredentials: true,
+          });
+
+          // Extract name from response - handle different response structures
+          const orgData = response.data?.data || response.data;
+          if (orgData?.name) {
+            setOrganizationName(orgData.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching organization name:', error);
+      }
+    };
+
+    fetchOrganizationName();
+  }, []);
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -284,7 +314,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             </div>
             <div className="flex flex-col">
               <span className="text-white text-base leading-tight font-bold">
-                Creditor
+                {organizationName || 'Athena'}
               </span>
               <span className="text-blue-100 text-sm leading-tight font-medium">
                 Academy
