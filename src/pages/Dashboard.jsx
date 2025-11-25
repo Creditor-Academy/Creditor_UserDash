@@ -38,7 +38,6 @@ import DashboardTodo from '@/components/dashboard/DashboardTodo';
 import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
-import DashboardWidgets from '@/components/dashboard/DashboardWidgets';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import axios from 'axios';
@@ -950,11 +949,6 @@ export function Dashboard() {
                     </div>
                   </div>
                   <LiveClasses />
-                </div>
-
-                {/* Widgets Section */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-                  <DashboardWidgets />
                 </div>
               </div>
 

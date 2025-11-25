@@ -112,6 +112,8 @@ import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
 // import  ModuleView  from "@/pages/ModuleView";
 import LessonView from '@lessonbuilder/pages/LessonView';
+import LessonPreview from '@lessonbuilder/pages/LessonPreview';
+import LessonBuilder from '@lessonbuilder/pages/LessonBuilder';
 import InstructionalDesign from '@/pages/InstructionalDesign';
 import PricingPage from '@/pages/Pricing';
 import ExpertAthena from './pages/Expert_athena';
