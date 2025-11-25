@@ -727,7 +727,8 @@ ${JSON.stringify(inputSummary, null, 2)}`;
       if (options.includeAssessments !== false) {
         const assessmentBlocks = await this.generateAssessmentSection(
           lessonTitle,
-          blockOrder
+          blockOrder,
+          options
         );
         blocks.push(...assessmentBlocks);
         blockOrder += assessmentBlocks.length;
@@ -1022,51 +1023,101 @@ ${JSON.stringify(inputSummary, null, 2)}`;
   /**
    * Generate assessment section
    */
-  async generateAssessmentSection(lessonTitle, startOrder) {
+  async generateAssessmentSection(lessonTitle, startOrder, options = {}) {
     const blocks = [];
 
     try {
-      // Master Heading for page separation (consistent with other sections)
-      blocks.push(
-        this.createMasterHeading(
-          'Reflection Questions',
-          startOrder,
-          'gradient5'
-        )
-      );
+      const strategy = options.assessmentStrategy || {};
+      const mainType = (strategy.mainAssessmentType || 'mcq').toLowerCase();
 
-      const prompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking. Make them open-ended and engaging.`;
+      if (mainType === 'mcq') {
+        // Heading for quiz section
+        blocks.push(
+          this.createMasterHeading('Quick Check Quiz', startOrder, 'gradient5')
+        );
 
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 250,
-        temperature: 0.7,
-      });
+        const prompt = `Create 3-5 multiple-choice questions for the lesson "${lessonTitle}".
+Each question should have 4 options (A, B, C, D) and exactly one correct answer.
+Return them in a simple text format like:
+Q1: ...?
+A) ...
+B) ...
+C) ...
+D) ...
+Answer: A
 
-      // Extract text from result object
-      const content = result?.success
-        ? result.data?.text || result.content || ''
-        : '';
+Avoid markdown bullets.`;
 
-      const questions = content
-        ? content
-            .split('\n')
-            .filter(line => line.trim() && line.includes('?'))
-            .map(q => q.replace(/^\d+\.?\s*/, '').trim())
-        : [
-            `What are the main benefits of applying ${lessonTitle} in practice?`,
-            `How does ${lessonTitle} relate to other concepts you've learned?`,
-            `What challenges might you face when implementing these concepts?`,
-            `How would you explain ${lessonTitle} to someone new to the subject?`,
-          ];
+        const result = await this.aiService.generateText(prompt, {
+          maxTokens: 400,
+          temperature: 0.7,
+        });
 
-      blocks.push({
-        id: `ai-assessment-content-${Date.now()}`,
-        type: 'list',
-        content: questions.join('\n'),
-        listType: 'ordered',
-        order: startOrder + 1,
-        isAIGenerated: true,
-      });
+        const content = result?.success
+          ? result.data?.text || result.content || ''
+          : '';
+
+        blocks.push({
+          id: `ai-assessment-quiz-${Date.now()}`,
+          type: 'text',
+          textType: 'paragraph',
+          content:
+            content ||
+            `Q1: What is a key idea from ${lessonTitle}?
+A) Concept A
+B) Concept B
+C) Concept C
+D) Concept D
+Answer: A`,
+          order: startOrder + 1,
+          isAIGenerated: true,
+          metadata: {
+            blockType: 'quiz_mcq',
+          },
+        });
+      } else {
+        // Default: reflection-style assessment (existing behavior)
+        blocks.push(
+          this.createMasterHeading(
+            'Reflection Questions',
+            startOrder,
+            'gradient5'
+          )
+        );
+
+        const prompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking. Make them open-ended and engaging.`;
+
+        const result = await this.aiService.generateText(prompt, {
+          maxTokens: 250,
+          temperature: 0.7,
+        });
+
+        // Extract text from result object
+        const content = result?.success
+          ? result.data?.text || result.content || ''
+          : '';
+
+        const questions = content
+          ? content
+              .split('\n')
+              .filter(line => line.trim() && line.includes('?'))
+              .map(q => q.replace(/^\d+\.?\s*/, '').trim())
+          : [
+              `What are the main benefits of applying ${lessonTitle} in practice?`,
+              `How does ${lessonTitle} relate to other concepts you've learned?`,
+              `What challenges might you face when implementing these concepts?`,
+              `How would you explain ${lessonTitle} to someone new to the subject?`,
+            ];
+
+        blocks.push({
+          id: `ai-assessment-content-${Date.now()}`,
+          type: 'list',
+          content: questions.join('\n'),
+          listType: 'ordered',
+          order: startOrder + 1,
+          isAIGenerated: true,
+        });
+      }
 
       return blocks;
     } catch (error) {
