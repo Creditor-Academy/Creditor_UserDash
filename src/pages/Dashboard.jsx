@@ -38,6 +38,7 @@ import DashboardTodo from '@/components/dashboard/DashboardTodo';
 import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
+import DashboardWidgets from '@/components/dashboard/DashboardWidgets';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import axios from 'axios';
@@ -1010,6 +1011,35 @@ export function Dashboard() {
                 )}
               </div>
 
+              {/* Upcoming events + learning sessions */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                  <DashboardCarousel />
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="rounded-full bg-purple-100 p-2 text-purple-500">
+                      <MonitorPlay className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-purple-500">
+                        Learning Sessions
+                      </p>
+                      <h2 className="text-xl font-bold text-gray-900">
+                        Today’s Live Classes
+                      </h2>
+                    </div>
+                  </div>
+                  <LiveClasses />
+                </div>
+
+                {/* Widgets Section */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                  <DashboardWidgets />
+                </div>
+              </div>
+
               {/* Latest Updates Section */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -1027,56 +1057,21 @@ export function Dashboard() {
 
             {/* Right section - enhanced sidebar widgets */}
             <div className="xl:col-span-4 space-y-6">
-              {/* Announcements*/}
-              {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-800">Announcements</h3>
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                </div>
-                <DashboardAnnouncements />
-              </div> */}
-
-              {/* Calendar */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  Your Calendar
-                </h3>
-                <div className="flex justify-center">
-                  <DashboardCalendar />
-                </div>
-              </div>
-
-              {/* Todo */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Upcoming Tasks</h3>
-                <DashboardTodo />
-              </div> */}
+              <DashboardTodo />
+              <DashboardAnnouncements />
+              <DashboardCalendar />
             </div>
           </div>
-          {/* Catalog Banner Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-            <div className="text-center mb-6"></div>
-            <DashboardCarousel />
-          </div>
 
-          <div className="mb-8">
+          <div className="space-y-10">
+            <UpcomingCourses />
+
+            {/* Groups Preview Section */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <MonitorPlay className="h-6 w-6 text-purple-500" />
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Learning Sessions
-                </h2>
-              </div>
-              <LiveClasses />
+              <DashboardGroup />
             </div>
-          </div>
-          <UpcomingCourses />
-          {/* Groups Preview Section */}
-          <div className="mb-8">
-            <DashboardGroup />
-          </div>
-          {/* Services using credits */}
-          <div className="mb-8">
+
+            {/* Services using credits */}
             <div className="rounded-2xl shadow-lg border border-gray-200 bg-white p-6 md:p-8">
               {/* Simple, compact header */}
               <div className="flex items-start justify-between mb-4">
@@ -1337,7 +1332,6 @@ export function Dashboard() {
                               </div>
                             ))
                           )}
-                          {/* Subtle fade indicator for scrollable content */}
                           {(historyTab === 'consultations'
                             ? consultationHistory
                             : websiteHistory

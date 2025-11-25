@@ -1,118 +1,82 @@
-import React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Bell, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Bell, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
-export function DashboardAnnouncements() {
-  // Sample announcements data with actual items 
-  const announcements = [
-    {
-      id: 1,
-      title: "New Course Available",
-      content: "Constitutional Law Advanced Topics is now available",
-      date: "Today",
-      priority: "high",
-      isNew: true,
-    },
-    {
-      id: 2,
-      title: "System Maintenance",
-      content: "Platform will be down for maintenance this weekend",
-      date: "Yesterday",
-      priority: "medium",
-      isNew: true,
-    },
-    {
-      id: 3,
-      title: "Holiday Schedule",
-      content: "Check updated course schedule for the holidays",
-      date: "3 days ago",
-      priority: "low",
-      isNew: false,
-    }
-  ];
-  
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'high': return 'border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20';
-      case 'medium': return 'border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20';
-      case 'low': 
-      default: return 'border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20';
-    }
-  };
-  
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0 }
-  };
-  
+const announcementFeed = [
+  {
+    id: 1,
+    title: 'New Insurance Sales Module',
+    author: 'Training Manager',
+    description:
+      'Advanced Life Insurance Sales Techniques module has been added to the Insurance Fundamentals course.',
+    timeAgo: '2 hours ago',
+  },
+  {
+    id: 2,
+    title: 'Sales Training Office Hours',
+    author: 'Sales Coach',
+    description:
+      'Office hours will be held Tuesday and Thursday from 2-4 PM for sales technique consultation.',
+    timeAgo: '1 day ago',
+  },
+];
+
+export function DashboardAnnouncements({ className = '' }) {
   return (
-    <Card className="border shadow bg-card text-card-foreground h-full overflow-hidden">
-      <CardHeader className="p-3 flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Bell size={14} className="text-primary" />
-          Recent Announcements
-        </CardTitle>
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
-          <Link to="/announcements" className="flex items-center gap-1 hover:text-primary">
-            View All
-            <ChevronRight size={14} className="ml-1" />
+    <Card
+      className={cn(
+        'w-full rounded-2xl border border-gray-200 bg-white shadow-sm',
+        className
+      )}
+    >
+      <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+        <div>
+          <p className="text-sm font-medium text-gray-500">Announcements</p>
+          <h3 className="text-2xl font-semibold text-gray-900">
+            Stay informed
+          </h3>
+          <p className="text-sm text-gray-500">Latest updates from your team</p>
+        </div>
+        <div className="rounded-full bg-blue-50 p-2 text-blue-600">
+          <Bell size={18} />
+        </div>
+      </div>
+
+      <div className="space-y-4 px-5 py-4">
+        {announcementFeed.map(item => (
+          <div
+            key={item.id}
+            className="rounded-2xl border border-gray-100 bg-gray-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {item.title}
+                </p>
+                <p className="text-xs text-gray-500">{item.author}</p>
+              </div>
+              <span className="text-xs text-gray-500">{item.timeAgo}</span>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">{item.description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t border-gray-100 px-5 py-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-between text-blue-600 hover:bg-blue-50"
+          asChild
+        >
+          <Link to="/announcements">
+            View All Announcements
+            <ChevronRight size={18} />
           </Link>
         </Button>
-      </CardHeader>
-
-      <CardContent className="p-3">
-        {announcements.length > 0 ? (
-          <motion.div 
-            className="space-y-2"
-            variants={container}
-            initial="hidden"
-            animate="show"
-          >
-            {announcements.map((announcement) => (
-              <motion.div 
-                key={announcement.id} 
-                className={cn(
-                  "text-sm p-2 relative overflow-hidden rounded-md",
-                  "transition-all duration-300",
-                  getPriorityColor(announcement.priority)
-                )}
-                variants={item}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {announcement.isNew && (
-                      <span className="h-2 w-2 bg-primary rounded-full" />
-                    )}
-                    <span className="font-medium line-clamp-1">{announcement.title}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{announcement.date}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {announcement.content}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        ) : (
-          <div className="text-center py-4">
-            <span className="text-sm text-muted-foreground">No announcements</span>
-          </div>
-        )}
-      </CardContent>
+      </div>
     </Card>
   );
 }
