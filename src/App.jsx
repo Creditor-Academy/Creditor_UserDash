@@ -58,7 +58,6 @@ import DemoQuizPage from '@/pages/DemoQuizPage';
 import CalendarPage from '@/pages/CalendarPage';
 import TodoPage from '@/pages/TodoPage';
 import ClassRecordings from '@/pages/ClassRecordings';
-import Attendance from '@/pages/Attendance';
 import CertificatePage from '../src/pages/CertificatePage';
 import SurveyInstructionPage from '@/pages/SurveyInstructionPage';
 import DebateInstructionPage from '@/pages/DebateInstructionPage';
@@ -68,12 +67,9 @@ import Games from '@/pages/Games';
 import GameDetailView from '@/components/games/GameDetailView';
 import MyTickets from '@/pages/MyTickets';
 import { CourseTimerProvider } from '@/components/courses/CourseTimerProvider';
-import { currentUserId } from '@/data/currentUser';
+import Payments from '@/pages/Payments';
 import Instructorpage from '@/pages/Instructorpage';
 import InstructorCourseModulesPage from '@/pages/InstructorCourseModulesPage';
-import LessonBuilder from '@lessonbuilder/pages/LessonBuilder';
-import LessonPreview from '@lessonbuilder/pages/LessonPreview';
-import LandingPage from '@/pages/LandingPage';
 import Home from '@/pages/home';
 import About from '@/pages/AboutUsPage/About';
 import Contact from '@/pages/contactpage/contact';
@@ -84,6 +80,7 @@ import WhyUs from '@/pages/WhyusPage/WhyUs';
 import Plans from '@/pages/Plans';
 import PageTransitionOverlay from '@/components/PageTransitionOverlay';
 import AdminModal from '@/components/AdminModal';
+import Scrompack from '@/pages/Scrompack';
 import Sov from './coursesL/Sov';
 import Sophomore from './coursesL/Sophomore';
 import OperatePrivate from './coursesL/OperatePrivate';
@@ -538,13 +535,15 @@ function App() {
                 <Route path="class-recordings" element={<ClassRecordings />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="calendar" element={<CalendarPage />} />
-                <Route path="attendance" element={<Attendance />} />
                 <Route path="todo" element={<TodoPage />} />
                 <Route path="chatbot" element={<Chatbot />} />
                 <Route path="faqs" element={<FAQs />} />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="guides" element={<Guides />} />
                 <Route path="termcondition" element={<TermsAndConditions />} />
+
+                {/* Payments route */}
+                <Route path="payments" element={<Payments />} />
 
                 {/* Support routes */}
                 <Route path="support">

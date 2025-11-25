@@ -21,7 +21,7 @@ export function SponsorBanner({ ad, onImpression, onClick }) {
   if (!ad) return null;
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden shadow-lg border border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
       {ad.mediaType === 'image' && ad.mediaUrl && (
         <div className="absolute inset-0">
           <img
@@ -46,7 +46,7 @@ export function SponsorBanner({ ad, onImpression, onClick }) {
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
         </div>
       )}
-      <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 min-h-[180px] md:min-h-[200px]">
+      <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 h-full min-h-[220px]">
         <div className="flex-1 text-white">
           {ad.sponsorName && (
             <p className="text-xs md:text-sm text-white/80 uppercase tracking-wide mb-1">

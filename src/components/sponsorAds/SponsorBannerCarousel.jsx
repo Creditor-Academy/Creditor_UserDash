@@ -77,12 +77,12 @@ export function SponsorBannerCarousel() {
 
   return (
     <div
-      className="relative w-full mb-6"
+      className="relative w-full h-full"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Banner with fade transition */}
-      <div className="relative overflow-hidden rounded-xl min-h-[200px] md:min-h-[220px]">
+      <div className="relative overflow-hidden rounded-2xl h-full">
         <div
           key={`${currentAd.id}-${fadeKey}`}
           className="transition-opacity duration-500 ease-in-out opacity-100"

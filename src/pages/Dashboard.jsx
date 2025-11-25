@@ -765,9 +765,6 @@ export function Dashboard() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          {/* Sponsor Banner Carousel - Top of Dashboard */}
-          <SponsorBannerCarousel />
-
           <ThanksgivingPromo
             onExtendMembership={() => setShowCreditsModal(true)}
           />
@@ -820,99 +817,16 @@ export function Dashboard() {
                       ? 'Syncing your latest progress summary...'
                       : `Progress synced. Completed ${dashboardData.summary?.completedCourses || 0} courses, finished ${dashboardData.summary?.modulesCompleted || 0} modules, passed ${dashboardData.summary?.assessmentsCompleted || 0} quizzes, and ${dashboardData.summary?.pendingCoursesCount || 0} courses remain.`}
                   </span>
-
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-blue-600 font-semibold">
-                          Completed
-                        </span>
-                      </div>
-                      <p className="text-2xl font-bold text-blue-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.completedCourses || 0
-                        )}
-                      </p>
-                      <p className="text-blue-600 text-sm">Courses finished</p>
-                    </div>
-                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-emerald-600 font-semibold">
-                          Modules
-                        </span>
-                      </div>
-                      <p className="text-2xl font-bold text-emerald-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.modulesCompleted || 0
-                        )}
-                      </p>
-                      <p className="text-emerald-600 text-sm">
-                        Modules Completed
-                      </p>
-                    </div>
-                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
-                      <div className="flex items-center gap-2">
-                        <Award className="text-orange-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-orange-600 font-semibold">
-                          Quizzes
-                        </span>
-                      </div>
-                      <p className="text-2xl font-bold text-orange-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.assessmentsCompleted || 0
-                        )}
-                      </p>
-                      <p className="text-orange-600 text-sm">Quiz Completed</p>
-                    </div>
-                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-purple-600 font-semibold">
-                          Enrolled
-                        </span>
-                      </div>
-                      <p className="text-2xl font-bold text-purple-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.allEnrolledCoursesCount || 0
-                        )}
-                      </p>
-                      <p className="text-purple-600 text-sm">Total Courses</p>
-                    </div>
-                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
-                      <div className="flex items-center gap-2">
-                        <Clock className="text-yellow-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-yellow-600 font-semibold">
-                          Pending
-                        </span>
-                      </div>
-                      <p className="text-2xl font-bold text-yellow-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.pendingCoursesCount || 0
-                        )}
-                      </p>
-                      <p className="text-yellow-600 text-sm">
-                        Courses Remaining
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
               {/* Progress Tracker */}
               <ProgressStats />
+
+              {/* Sponsor Banner */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
+                <SponsorBannerCarousel />
+              </div>
 
               {/* My Courses Section (carousel with arrows) */}
               <div className="mb-8 relative">
@@ -1061,31 +975,19 @@ export function Dashboard() {
 
             {/* Right section - enhanced sidebar widgets */}
             <div className="xl:col-span-4 space-y-6">
-              <DashboardTodo />
-              <DashboardAnnouncements />
-              <DashboardCalendar />
-              {/* Announcements*/}
-              {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-800">Announcements</h3>
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                </div>
-                <DashboardAnnouncements />
-              </div> */}
-
               {/* Important Updates Section */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Award className="h-5 w-5 text-emerald-600" />
                     <h3 className="text-lg font-bold text-gray-800">
-                      Important Updates
+                      Important Events
                     </h3>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Stay informed with the latest from Creditor Academy. For
-                    prompt resolution of any concerns, connect with our
-                    dedicated leads below.
+                    Stay ahead with the latest happenings across Creditor
+                    Academy. Connect with our dedicated leads whenever you need
+                    quick help.
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1153,6 +1055,9 @@ export function Dashboard() {
                 </div>
               </div>
 
+              <DashboardTodo />
+              <DashboardAnnouncements />
+
               {/* Calendar */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -1162,12 +1067,6 @@ export function Dashboard() {
                   <DashboardCalendar />
                 </div>
               </div>
-
-              {/* Todo */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Upcoming Tasks</h3>
-                <DashboardTodo />
-              </div> */}
             </div>
           </div>
 
