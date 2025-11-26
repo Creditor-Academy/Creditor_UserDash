@@ -10,7 +10,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
     {
       id: 'ai',
       title: 'AI Course',
-      description: 'Upcoming Feature',
+      description: 'AI Course',
       icon: Sparkles,
       color:
         'bg-gradient-to-br from-cyan-400/90 via-sky-500/90 to-blue-600/90 hover:from-cyan-300 hover:via-sky-400 hover:to-blue-500 border border-cyan-200/70 shadow-lg shadow-cyan-200/60 backdrop-blur-md',
@@ -75,7 +75,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
         initial="hidden"
         animate="visible"
         exit="hidden"
-        className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4"
         onClick={e => {
           // Only close if clicking the backdrop itself
           if (e.target === e.currentTarget) {
@@ -88,11 +88,11 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="bg-white rounded-xl shadow-2xl max-w-sm w-full"
+          className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-sm w-full border border-white/20 overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-white/30 bg-gradient-to-r from-white/50 to-white/30 backdrop-blur-md">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
                 Create Course
@@ -114,14 +114,14 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
           </div>
 
           {/* Content */}
-          <div className="p-4">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="p-6 bg-gradient-to-b from-white/50 to-white/30 backdrop-blur-sm">
+            <div className="grid grid-cols-2 gap-4">
               {courseOptions.map(option => (
                 <motion.div
                   key={option.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`${option.color} rounded-lg p-4 cursor-pointer transition-all duration-200 text-white text-center group`}
+                  className={`${option.color} rounded-2xl p-4 cursor-pointer transition-all duration-200 text-white text-center group relative overflow-hidden`}
                   onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -188,19 +188,6 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
                 </motion.div>
               ))}
             </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mt-5 pt-4 border-t border-gray-100"
-            >
-              <p className="text-xs text-gray-500 text-center leading-relaxed">
-                <span className="font-medium text-gray-600">AI Course</span> is
-                an upcoming feature that will help you create courses faster
-                with intelligent automation.
-              </p>
-            </motion.div>
           </div>
         </motion.div>
       </motion.div>
