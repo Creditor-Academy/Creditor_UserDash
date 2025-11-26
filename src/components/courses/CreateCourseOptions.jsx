@@ -10,7 +10,8 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
     {
       id: 'ai',
       title: 'AI Course',
-      description: 'AI Course',
+      description: 'Generate with AI',
+      tag: 'POWERED BY AI',
       icon: Sparkles,
       color:
         'bg-gradient-to-br from-cyan-400/90 via-sky-500/90 to-blue-600/90 hover:from-cyan-300 hover:via-sky-400 hover:to-blue-500 border border-cyan-200/70 shadow-lg shadow-cyan-200/60 backdrop-blur-md',
@@ -19,6 +20,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       id: 'blank',
       title: 'Manual Course',
       description: 'Create from scratch',
+      tag: 'MANUAL',
       icon: PenTool,
       color: 'bg-gray-600 hover:bg-gray-700',
     },
@@ -143,6 +145,11 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
                   )}
 
                   <div className="flex flex-col items-center space-y-3 relative z-10">
+                    {option.tag && (
+                      <span className="text-xs font-bold px-2 py-1 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
+                        {option.tag}
+                      </span>
+                    )}
                     <motion.div
                       animate={
                         option.disabled
