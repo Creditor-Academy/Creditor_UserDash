@@ -429,10 +429,10 @@ export function Login() {
                 )}
               </CardContent>
 
-              {/* {!showSignUp && !showForgotPassword && (
+              {!showSignUp && !showForgotPassword && (
                 <CardFooter className="flex flex-col space-y-4 pt-2">
                   <div className="text-center text-sm text-slate-500">
-                    Don't have an account?{" "}
+                    Don't have an account?{' '}
                     <button
                       type="button"
                       onClick={() => setShowSignUp(true)}
@@ -443,7 +443,7 @@ export function Login() {
                     </button>
                   </div>
                 </CardFooter>
-              )} */}
+              )}
             </Card>
           </div>
         </div>
