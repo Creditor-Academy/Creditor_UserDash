@@ -434,108 +434,144 @@ function truncatePrompt(prompt, maxLength = 950) {
 
 /**
  * Generate module thumbnail prompt based on module content
+ * Enhanced with premium prompt engineering techniques
  */
 async function generateModuleThumbnailPrompt(
   moduleTitle,
   moduleOverview,
   topicContext
 ) {
-  // Truncate overview to prevent long prompts (max 200 chars for overview)
-  const truncatedOverview = truncateText(moduleOverview || '', 200);
+  // Truncate overview to prevent long prompts (max 150 chars for overview)
+  const truncatedOverview = truncateText(moduleOverview || '', 150);
   const keywords =
     (topicContext.keywords || []).slice(0, 2).join(' and ') || 'relevant';
 
-  const prompt = `Create a realistic, professional photograph-style thumbnail image for module: "${moduleTitle}"
-  
+  // Premium prompt engineering with all 7 enhancement techniques
+  const premiumPrompt = `Create a stunning, professional thumbnail image for module: "${moduleTitle}"
+
 Content: ${truncatedOverview}
-Style: Realistic, photographic, professional
 Domain: ${topicContext.field || 'education'}
 
-Create a realistic thumbnail showing a real-world scene, object, or situation that represents this module in ${topicContext.domain || 'education'}.
-NO infographics, NO diagrams, NO small text labels.
-Just a clean, realistic, professional photograph-style image with minimal or no text.
-16:9 aspect ratio, clean composition, readable at small sizes.`;
+QUALITY REQUIREMENTS:
+1. CINEMATIC LIGHTING: soft cinematic lighting, volumetric light, dramatic contrast, rim lighting
+2. ULTRA-DETAIL: ultra-detailed, 8K clarity, crisp textures, photorealistic depth, hyper-real
+3. COMPOSITION: centered composition, balanced spacing, clean layout, wide angle perspective
+4. COLOR PALETTE: vivid colors, premium gradient palette, high contrast, accent highlights
+5. SHADOWS & REFLECTIONS: soft deep shadows, realistic reflections, smooth lighting falloff, subtle highlights
+6. MATERIAL STYLE: glossy surface, metallic reflections, smooth 3D elements, professional finish
+7. EXCLUSIONS: no text, no watermarks, clean background, no clutter
+
+STYLE: Professional, vivid, photorealistic, premium quality
+ASPECT RATIO: 16:9 thumbnail format
+MOOD: Modern, professional, educational, inspiring`;
 
   try {
-    const response = await openAIService.generateText(prompt, {
+    const response = await openAIService.generateText(premiumPrompt, {
       model: 'gpt-4o-mini',
-      max_tokens: 150, // Reduced to keep prompt shorter
-      temperature: 0.7,
+      max_tokens: 180, // Increased for better quality prompts
+      temperature: 0.8, // Slightly higher for more creative variations
       systemPrompt:
-        'You create realistic, photographic-style image prompts. NO infographics, NO diagrams, NO small text. Only realistic scenes, objects, or situations.',
+        'You are a premium prompt engineer for DALL-E 3. Create stunning, photorealistic image prompts that emphasize: cinematic lighting, ultra-detail, professional composition, premium colors, realistic shadows, material textures, and clean execution. Always include specific visual quality descriptors. NO infographics, NO diagrams, NO text overlays.',
     });
 
     let generatedPrompt = response.trim();
 
-    // Ensure the generated prompt emphasizes realistic style
+    // Enhance with premium quality markers if not present
     if (
       generatedPrompt &&
-      !generatedPrompt.toLowerCase().includes('realistic') &&
-      !generatedPrompt.toLowerCase().includes('photograph')
+      !generatedPrompt.toLowerCase().includes('cinematic')
     ) {
-      generatedPrompt = `Realistic, professional photograph-style image: ${generatedPrompt}. NO infographics, NO diagrams, NO small text labels. Clean, realistic visual.`;
+      generatedPrompt = `${generatedPrompt}, with soft cinematic lighting, volumetric light, and dramatic professional lighting`;
     }
+
+    if (
+      generatedPrompt &&
+      !generatedPrompt.toLowerCase().includes('ultra-detailed')
+    ) {
+      generatedPrompt = `${generatedPrompt}, ultra-detailed, 8K clarity, crisp textures, photorealistic`;
+    }
+
+    // Add final quality assurance
+    generatedPrompt = `${generatedPrompt}. No text, no watermarks, clean professional background. Vivid, premium quality.`;
 
     // Ensure final prompt is under 1000 characters
     return truncatePrompt(generatedPrompt, 950);
   } catch (error) {
     console.error('Module thumbnail prompt generation failed:', error);
-    // Fallback prompt (always under 200 chars)
-    const fallback = `Realistic, professional photograph-style image showing a real-world scene representing ${truncateText(moduleTitle, 50)}. NO infographics, NO diagrams, NO small text. Clean, realistic visual, 16:9 thumbnail format`;
+    // Enhanced fallback prompt with premium techniques
+    const fallback = `Professional, ultra-detailed 8K thumbnail for "${truncateText(moduleTitle, 40)}". Cinematic lighting with volumetric light, centered composition, premium gradient colors, realistic shadows, glossy finish, no text, clean background, vivid and photorealistic`;
     return truncatePrompt(fallback, 950);
   }
 }
 
 /**
  * Generate lesson thumbnail prompt based on lesson content
+ * Enhanced with premium prompt engineering techniques
  */
 async function generateLessonThumbnailPrompt(
   lessonTitle,
   lessonSummary,
   topicContext
 ) {
-  // Truncate summary to prevent long prompts (max 200 chars for summary)
-  const truncatedSummary = truncateText(lessonSummary || '', 200);
+  // Truncate summary to prevent long prompts (max 150 chars for summary)
+  const truncatedSummary = truncateText(lessonSummary || '', 150);
   const keywords =
     (topicContext.keywords || []).slice(2, 4).join(' and ') || 'relevant';
 
-  const prompt = `Create a realistic, professional photograph-style thumbnail image for lesson: "${lessonTitle}"
-  
+  // Premium prompt engineering with all 7 enhancement techniques
+  const premiumPrompt = `Create a stunning, professional thumbnail image for lesson: "${lessonTitle}"
+
 Content: ${truncatedSummary}
-Style: Realistic, photographic, professional
 Domain: ${topicContext.field || 'education'}
 
-Create a realistic thumbnail showing a real-world scene, object, or situation that represents this specific lesson in ${topicContext.domain || 'education'}.
-NO infographics, NO diagrams, NO small text labels.
-Just a clean, realistic, professional photograph-style image with minimal or no text.
-16:9 aspect ratio, clean composition, readable at small sizes.`;
+QUALITY REQUIREMENTS:
+1. CINEMATIC LIGHTING: soft cinematic lighting, volumetric light, dramatic contrast, rim lighting
+2. ULTRA-DETAIL: ultra-detailed, 8K clarity, crisp textures, photorealistic depth, hyper-real
+3. COMPOSITION: centered composition, balanced spacing, clean layout, wide angle perspective
+4. COLOR PALETTE: vivid colors, premium gradient palette, high contrast, accent highlights
+5. SHADOWS & REFLECTIONS: soft deep shadows, realistic reflections, smooth lighting falloff, subtle highlights
+6. MATERIAL STYLE: glossy surface, metallic reflections, smooth 3D elements, professional finish
+7. EXCLUSIONS: no text, no watermarks, clean background, no clutter
+
+STYLE: Professional, vivid, photorealistic, premium quality
+ASPECT RATIO: 16:9 thumbnail format
+MOOD: Modern, professional, educational, inspiring`;
 
   try {
-    const response = await openAIService.generateText(prompt, {
+    const response = await openAIService.generateText(premiumPrompt, {
       model: 'gpt-4o-mini',
-      max_tokens: 150, // Reduced to keep prompt shorter
-      temperature: 0.7,
+      max_tokens: 180, // Increased for better quality prompts
+      temperature: 0.8, // Slightly higher for more creative variations
       systemPrompt:
-        'You create realistic, photographic-style image prompts. NO infographics, NO diagrams, NO small text. Only realistic scenes, objects, or situations.',
+        'You are a premium prompt engineer for DALL-E 3. Create stunning, photorealistic image prompts that emphasize: cinematic lighting, ultra-detail, professional composition, premium colors, realistic shadows, material textures, and clean execution. Always include specific visual quality descriptors. NO infographics, NO diagrams, NO text overlays.',
     });
 
     let generatedPrompt = response.trim();
 
-    // Ensure the generated prompt emphasizes realistic style
+    // Enhance with premium quality markers if not present
     if (
       generatedPrompt &&
-      !generatedPrompt.toLowerCase().includes('realistic') &&
-      !generatedPrompt.toLowerCase().includes('photograph')
+      !generatedPrompt.toLowerCase().includes('cinematic')
     ) {
-      generatedPrompt = `Realistic, professional photograph-style image: ${generatedPrompt}. NO infographics, NO diagrams, NO small text labels. Clean, realistic visual.`;
+      generatedPrompt = `${generatedPrompt}, with soft cinematic lighting, volumetric light, and dramatic professional lighting`;
     }
+
+    if (
+      generatedPrompt &&
+      !generatedPrompt.toLowerCase().includes('ultra-detailed')
+    ) {
+      generatedPrompt = `${generatedPrompt}, ultra-detailed, 8K clarity, crisp textures, photorealistic`;
+    }
+
+    // Add final quality assurance
+    generatedPrompt = `${generatedPrompt}. No text, no watermarks, clean professional background. Vivid, premium quality.`;
 
     // Ensure final prompt is under 1000 characters
     return truncatePrompt(generatedPrompt, 950);
   } catch (error) {
     console.error('Lesson thumbnail prompt generation failed:', error);
-    // Fallback prompt (always under 200 chars)
-    const fallback = `Realistic, professional photograph-style image showing a real-world scene representing ${truncateText(lessonTitle, 50)}. NO infographics, NO diagrams, NO small text. Clean, realistic visual, 16:9 thumbnail format`;
+    // Enhanced fallback prompt with premium techniques
+    const fallback = `Professional, ultra-detailed 8K thumbnail for "${truncateText(lessonTitle, 40)}". Cinematic lighting with volumetric light, centered composition, premium gradient colors, realistic shadows, glossy finish, no text, clean background, vivid and photorealistic`;
     return truncatePrompt(fallback, 950);
   }
 }

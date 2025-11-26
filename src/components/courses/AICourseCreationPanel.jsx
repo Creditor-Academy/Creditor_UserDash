@@ -1642,10 +1642,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
       const phaseAnalysis = designPhases?.analysis || {};
 
       // Get module and lesson counts (default to 1 if not specified)
+      // Use nullish coalescing (??) instead of || to handle 0 values correctly
       const moduleCount =
-        requestedModuleCount || phaseAnalysis.moduleCount || 1;
+        (requestedModuleCount !== null &&
+        requestedModuleCount !== undefined &&
+        requestedModuleCount !== ''
+          ? Number(requestedModuleCount)
+          : null) ||
+        phaseAnalysis.moduleCount ||
+        1;
       const lessonsPerModule =
-        requestedLessonsPerModule || phaseAnalysis.lessonsPerModule || 1;
+        (requestedLessonsPerModule !== null &&
+        requestedLessonsPerModule !== undefined &&
+        requestedLessonsPerModule !== ''
+          ? Number(requestedLessonsPerModule)
+          : null) ||
+        phaseAnalysis.lessonsPerModule ||
+        1;
 
       const blueprintInput = {
         courseTitle,
@@ -1929,19 +1942,36 @@ ${JSON.stringify(userPayload, null, 2)}`;
     setAiImageError('');
 
     try {
-      // Create a more descriptive prompt based on course title if no prompt is provided
-      const prompt =
-        aiImagePrompt.trim() ||
-        `Professional course thumbnail for "${courseData.title}" - educational, modern, clean design, high quality`;
+      // Create a premium prompt based on course title if no prompt is provided
+      let prompt = aiImagePrompt.trim();
 
-      console.log('🎨 Generating AI thumbnail with OpenAI DALL-E:', prompt);
+      if (!prompt) {
+        // Enhanced premium prompt with all 7 quality techniques
+        prompt = `Create a stunning, professional course thumbnail for "${courseData.title}"
 
-      // Use OpenAI service for image generation
+QUALITY REQUIREMENTS:
+1. CINEMATIC LIGHTING: soft cinematic lighting, volumetric light, HDR glow, dramatic contrast, rim lighting
+2. ULTRA-DETAIL: ultra-detailed, 8K clarity, crisp textures, photorealistic depth, hyper-real
+3. COMPOSITION: centered composition, balanced spacing, clean layout, wide angle perspective
+4. COLOR PALETTE: vivid colors, premium gradient palette, high contrast, accent highlights
+5. SHADOWS & REFLECTIONS: soft deep shadows, realistic reflections, smooth lighting falloff, subtle highlights
+6. MATERIAL STYLE: glossy surface, metallic reflections, smooth 3D elements, professional finish
+7. EXCLUSIONS: no text, no watermarks, clean background, no clutter
+
+STYLE: Professional, vivid, photorealistic, premium quality, educational
+MOOD: Modern, inspiring, professional, engaging`;
+      }
+
+      console.log(
+        '🎨 Generating AI thumbnail with OpenAI DALL-E (Premium Quality):',
+        prompt.substring(0, 100) + '...'
+      );
+
+      // Use OpenAI service for image generation with premium quality settings
       const response = await openAIService.generateCourseImage(prompt, {
         style: 'vivid',
         size: '1024x1024',
         quality: 'standard',
-        style: 'vivid',
       });
 
       // Check if we have a valid image URL (either from success or fallback)

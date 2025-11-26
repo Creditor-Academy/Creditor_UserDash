@@ -1192,10 +1192,13 @@ Answer: A`,
       console.log(`🎨 Generating hero image for: ${lessonTitle}`);
 
       // Create a realistic, photographic prompt for the image
-      const imagePrompt = `Realistic, professional photograph-style image for a lesson about "${lessonTitle}" in ${moduleTitle} course. 
+      let imagePrompt = `Realistic, professional photograph-style image for a lesson about "${lessonTitle}" in ${moduleTitle} course. 
 Describe a real-world scene, setting, or situation that represents the key concepts of ${lessonTitle}. 
 NO infographics, NO diagrams, NO small text labels. 
 Just a clean, realistic, professional photograph-style image with minimal or no text. High-quality, engaging visual.`;
+
+      // Enhance with 7-layer premium quality system
+      imagePrompt += ` QUALITY REQUIREMENTS: soft cinematic lighting, volumetric light, dramatic contrast, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
 
       // Generate image using OpenAI DALL-E
       const imageResult = await openAIService.generateImage(imagePrompt, {
@@ -1261,9 +1264,12 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       );
 
       // Create focused prompt for realistic concept image
-      const imagePrompt = `Realistic, professional photograph-style image showing a real-world scene or object that represents ${conceptName} of "${lessonTitle}". 
+      let imagePrompt = `Realistic, professional photograph-style image showing a real-world scene or object that represents ${conceptName} of "${lessonTitle}". 
 Describe an actual scene, situation, or object. NO infographics, NO diagrams, NO small text labels. 
 Just a clean, realistic, professional photograph-style image with minimal or no text.`;
+
+      // Enhance with 7-layer premium quality system
+      imagePrompt += ` QUALITY REQUIREMENTS: soft cinematic lighting, volumetric light, dramatic contrast, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
 
       // Generate image using OpenAI DALL-E
       const imageResult = await openAIService.generateImage(imagePrompt, {

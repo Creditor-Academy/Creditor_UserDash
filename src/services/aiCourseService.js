@@ -2290,8 +2290,13 @@ Format as JSON:
     console.log('🖼️ Generating AI image for learning objectives...');
     let objectivesImageUrl = null;
     try {
+      let objectivesPrompt = `Professional educational illustration showing learning objectives and goals for ${lessonStructure.lesson_title}. Modern, clean design with icons representing education, targets, and achievement. Bright colors, minimalist style.`;
+
+      // Enhance with 7-layer premium quality system
+      objectivesPrompt += ` QUALITY: soft cinematic lighting, volumetric light, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+
       const imageResult = await generateImage({
-        prompt: `Professional educational illustration showing learning objectives and goals for ${lessonStructure.lesson_title}. Modern, clean design with icons representing education, targets, and achievement. Bright colors, minimalist style.`,
+        prompt: objectivesPrompt,
         size: '1024x1024',
         quality: 'standard',
         style: 'vivid',
@@ -2470,8 +2475,13 @@ Format as JSON:
       console.log(`🖼️ Generating AI image for section: ${section.title}...`);
       let sectionImageUrl = null;
       try {
+        let sectionPrompt = `Professional illustration for educational content about "${section.title}" in the context of ${lessonStructure.lesson_title}. Modern, clean design with relevant icons and visual elements. Educational style, bright colors.`;
+
+        // Enhance with 7-layer premium quality system
+        sectionPrompt += ` QUALITY: soft cinematic lighting, volumetric light, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+
         const imageResult = await generateImage({
-          prompt: `Professional illustration for educational content about "${section.title}" in the context of ${lessonStructure.lesson_title}. Modern, clean design with relevant icons and visual elements. Educational style, bright colors.`,
+          prompt: sectionPrompt,
           size: '1024x1024',
           quality: 'standard',
           style: 'vivid',

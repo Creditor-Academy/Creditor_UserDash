@@ -448,20 +448,46 @@ Requirements:
       temperature: 0.7,
     });
 
-    // Generate AI image with DALL-E
+    // Generate AI image with DALL-E - Enhanced with 7-layer premium quality
     let imageUrl = IMAGE_PLACEHOLDER;
     let uploadedToS3 = false;
     let imageError = null;
 
     try {
-      console.log('🎨 Generating AI image (left):', imagePrompt.trim());
-      const imageResult = await openAIService.generateImage(
-        imagePrompt.trim(),
-        {
-          ...DEFAULT_IMAGE_OPTIONS,
-          folder: IMAGE_FOLDERS.left,
-        }
+      // Enhance prompt with 7-layer premium quality system
+      let enhancedPrompt = imagePrompt.trim();
+
+      // Add premium quality layers if not already present
+      if (!enhancedPrompt.toLowerCase().includes('cinematic')) {
+        enhancedPrompt +=
+          ', soft cinematic lighting, volumetric light, dramatic contrast';
+      }
+      if (!enhancedPrompt.toLowerCase().includes('ultra-detailed')) {
+        enhancedPrompt +=
+          ', ultra-detailed, 8K clarity, crisp textures, photorealistic depth';
+      }
+      if (!enhancedPrompt.toLowerCase().includes('composition')) {
+        enhancedPrompt +=
+          ', centered composition, balanced spacing, clean layout';
+      }
+      if (
+        !enhancedPrompt.toLowerCase().includes('shadow') &&
+        !enhancedPrompt.toLowerCase().includes('reflection')
+      ) {
+        enhancedPrompt +=
+          ', soft deep shadows, realistic reflections, smooth lighting falloff';
+      }
+      enhancedPrompt +=
+        '. No text, no watermarks, clean background. Vivid, premium quality.';
+
+      console.log(
+        '🎨 Generating AI image (left) with premium 7-layer enhancement:',
+        enhancedPrompt.substring(0, 100) + '...'
       );
+      const imageResult = await openAIService.generateImage(enhancedPrompt, {
+        ...DEFAULT_IMAGE_OPTIONS,
+        folder: IMAGE_FOLDERS.left,
+      });
 
       // Validate response
       if (!imageResult) {
