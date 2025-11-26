@@ -94,13 +94,19 @@ describe('User Service', () => {
       );
     });
 
-    it('should use first role when multiple roles provided', () => {
+    it('should store all roles and use priority when multiple roles provided', () => {
       const roles = ['instructor', 'admin'];
       userService.setUserRoles(roles);
 
+      // Should store all roles
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
         'userRoles',
-        JSON.stringify(['instructor'])
+        JSON.stringify(['instructor', 'admin'])
+      );
+      // Should set primary role based on priority (admin > instructor)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'userRole',
+        'admin'
       );
     });
 
@@ -112,6 +118,22 @@ describe('User Service', () => {
         JSON.stringify(['user'])
       );
       expect(localStorageMock.setItem).toHaveBeenCalledWith('userRole', 'user');
+    });
+
+    it('should prioritize super_admin role over all others', () => {
+      const roles = ['user', 'instructor', 'admin', 'super_admin'];
+      userService.setUserRoles(roles);
+
+      // Should store all roles
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'userRoles',
+        JSON.stringify(['user', 'instructor', 'admin', 'super_admin'])
+      );
+      // Should set primary role to super_admin (highest priority)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'userRole',
+        'super_admin'
+      );
     });
   });
 
