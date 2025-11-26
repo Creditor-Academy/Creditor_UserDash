@@ -450,6 +450,9 @@ Requirements:
 
     // Generate AI image with DALL-E
     let imageUrl = IMAGE_PLACEHOLDER;
+    let uploadedToS3 = false;
+    let imageError = null;
+
     try {
       console.log('🎨 Generating AI image (left):', imagePrompt.trim());
       const imageResult = await openAIService.generateImage(
@@ -459,17 +462,43 @@ Requirements:
           folder: IMAGE_FOLDERS.left,
         }
       );
+
+      // Validate response
+      if (!imageResult) {
+        throw new Error('Image generation returned null response');
+      }
+
       const resolved = resolveImageResponse(imageResult);
-      if (resolved.url) {
-        imageUrl = resolved.url;
-        if (!resolved.uploadedToS3) {
-          console.warn('⚠️ Left image not stored in S3, using fallback URL');
+
+      if (!resolved.url) {
+        throw new Error('Image generation returned no URL');
+      }
+
+      imageUrl = resolved.url;
+      uploadedToS3 = resolved.uploadedToS3;
+
+      // Validate URL is accessible
+      try {
+        const headResponse = await fetch(imageUrl, { method: 'HEAD' });
+        if (!headResponse.ok) {
+          console.warn(`⚠️ Image URL returned status ${headResponse.status}`);
+          imageError = `Image URL not accessible (${headResponse.status})`;
+          imageUrl = IMAGE_PLACEHOLDER;
         }
-      } else {
-        console.error('❌ Left image generation returned no URL:', imageResult);
+      } catch (urlError) {
+        console.warn('⚠️ Could not validate image URL:', urlError.message);
+        imageError = 'Image URL validation failed';
+        imageUrl = IMAGE_PLACEHOLDER;
+      }
+
+      if (!uploadedToS3) {
+        console.warn('⚠️ Left image not stored in S3, using OpenAI URL');
+        imageError = 'Image not uploaded to S3';
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error);
+      console.error('❌ Image generation failed:', error.message);
+      imageError = error.message;
+      imageUrl = IMAGE_PLACEHOLDER;
     }
 
     return {
@@ -495,6 +524,8 @@ Requirements:
         variant: 'image-text-left',
         aiGenerated: true,
         imagePrompt: imagePrompt.trim(),
+        uploadedToS3: uploadedToS3,
+        imageError: imageError, // Track errors
       },
     };
   }
@@ -530,6 +561,9 @@ Requirements:
     });
 
     let imageUrl = IMAGE_PLACEHOLDER;
+    let uploadedToS3 = false;
+    let imageError = null;
+
     try {
       console.log('🎨 Generating AI image (right):', imagePrompt.trim());
       const imageResult = await openAIService.generateImage(
@@ -539,20 +573,43 @@ Requirements:
           folder: IMAGE_FOLDERS.right,
         }
       );
+
+      // Validate response
+      if (!imageResult) {
+        throw new Error('Image generation returned null response');
+      }
+
       const resolved = resolveImageResponse(imageResult);
-      if (resolved.url) {
-        imageUrl = resolved.url;
-        if (!resolved.uploadedToS3) {
-          console.warn('⚠️ Right image not stored in S3, using fallback URL');
+
+      if (!resolved.url) {
+        throw new Error('Image generation returned no URL');
+      }
+
+      imageUrl = resolved.url;
+      uploadedToS3 = resolved.uploadedToS3;
+
+      // Validate URL is accessible
+      try {
+        const headResponse = await fetch(imageUrl, { method: 'HEAD' });
+        if (!headResponse.ok) {
+          console.warn(`⚠️ Image URL returned status ${headResponse.status}`);
+          imageError = `Image URL not accessible (${headResponse.status})`;
+          imageUrl = IMAGE_PLACEHOLDER;
         }
-      } else {
-        console.error(
-          '❌ Right image generation returned no URL:',
-          imageResult
-        );
+      } catch (urlError) {
+        console.warn('⚠️ Could not validate image URL:', urlError.message);
+        imageError = 'Image URL validation failed';
+        imageUrl = IMAGE_PLACEHOLDER;
+      }
+
+      if (!uploadedToS3) {
+        console.warn('⚠️ Right image not stored in S3, using OpenAI URL');
+        imageError = 'Image not uploaded to S3';
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error);
+      console.error('❌ Image generation failed:', error.message);
+      imageError = error.message;
+      imageUrl = IMAGE_PLACEHOLDER;
     }
 
     return {
@@ -578,6 +635,8 @@ Requirements:
         variant: 'image-text-right',
         aiGenerated: true,
         imagePrompt: imagePrompt.trim(),
+        uploadedToS3: uploadedToS3,
+        imageError: imageError, // Track errors
       },
     };
   }

@@ -260,31 +260,84 @@ export async function createCompleteAICourse(courseData) {
           : 'No',
       });
     } else {
-      try {
-        console.log('📋 Step 1: Generating AI course outline...');
-        const outlineResponse = await generateAICourseOutline(courseData);
-        if (!outlineResponse.success) {
-          console.warn(
-            'AI outline generation failed, using fallback structure'
+      // Retry logic for AI outline generation
+      let generationAttempts = 0;
+      const maxGenerationAttempts = 3;
+      let outlineError = null;
+
+      while (generationAttempts < maxGenerationAttempts) {
+        try {
+          console.log(
+            `📋 Step 1: Generating AI course outline (attempt ${generationAttempts + 1}/${maxGenerationAttempts})...`
           );
-          courseStructure = {
-            title: courseData.title,
-            subject: courseData.subject || courseData.title,
-            modules: generateFallbackModules(courseData),
-          };
-        } else {
+          const outlineResponse = await generateAICourseOutline(courseData);
+
+          // Validate response structure
+          if (!outlineResponse) {
+            throw new Error('AI generation returned null response');
+          }
+
+          if (!outlineResponse.success) {
+            throw new Error(
+              outlineResponse.error || 'AI generation returned no data'
+            );
+          }
+
+          if (!outlineResponse.data || !outlineResponse.data.modules) {
+            throw new Error('Invalid AI response structure: missing modules');
+          }
+
+          if (outlineResponse.data.modules.length === 0) {
+            throw new Error('AI generation returned empty module list');
+          }
+
           courseStructure = outlineResponse.data;
+          console.log(
+            `✅ AI outline generated successfully with ${courseStructure.modules.length} modules`
+          );
+          break;
+        } catch (outlineError) {
+          generationAttempts++;
+          console.error(
+            `❌ AI generation attempt ${generationAttempts} failed:`,
+            outlineError.message
+          );
+
+          if (generationAttempts >= maxGenerationAttempts) {
+            console.warn(
+              '⚠️ All AI generation attempts failed, using fallback structure'
+            );
+            courseStructure = {
+              title: courseData.title,
+              subject: courseData.subject || courseData.title,
+              modules: generateFallbackModules(courseData),
+              metadata: {
+                generatedBy: 'fallback',
+                reason: 'AI generation failed after all retries',
+                originalError: outlineError.message,
+              },
+            };
+
+            // Notify user about fallback
+            if (typeof window !== 'undefined' && window.showNotification) {
+              window.showNotification(
+                'AI generation failed. Using template structure instead. You can enhance it manually.',
+                'warning'
+              );
+            }
+            break;
+          }
+
+          // Retry with exponential backoff
+          const waitTime = Math.min(
+            1000 * Math.pow(2, generationAttempts - 1),
+            10000
+          );
+          console.log(
+            `⏳ Waiting ${waitTime}ms before retry attempt ${generationAttempts + 1}...`
+          );
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
-      } catch (outlineError) {
-        console.warn(
-          'AI outline generation error, using fallback:',
-          outlineError.message
-        );
-        courseStructure = {
-          title: courseData.title,
-          subject: courseData.subject || courseData.title,
-          modules: generateFallbackModules(courseData),
-        };
       }
     }
 
@@ -295,24 +348,76 @@ export async function createCompleteAICourse(courseData) {
     try {
       console.log('🏗️ Step 2: Creating course via backend API...');
 
+      // Normalize course data to ensure all required fields are present
+      const normalizedTitle = (
+        courseStructure.title ||
+        courseStructure.course_title ||
+        courseData.title
+      ).substring(0, 200);
+
+      const normalizedDescription = (
+        courseData.description || 'Course description'
+      ).substring(0, 2000);
+
+      const normalizedSubject = (
+        courseStructure.subject ||
+        courseData.subject ||
+        courseData.title
+      ).substring(0, 150);
+
+      // Parse learning objectives from string or array
+      let learningObjectives = [];
+      if (courseData.learningObjectives) {
+        if (Array.isArray(courseData.learningObjectives)) {
+          learningObjectives = courseData.learningObjectives;
+        } else if (typeof courseData.learningObjectives === 'string') {
+          learningObjectives = courseData.learningObjectives
+            .split('\n')
+            .map(s => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      // Map difficulty level to course_level
+      const difficultyMap = {
+        beginner: 'BEGINNER',
+        intermediate: 'INTERMEDIATE',
+        advanced: 'ADVANCED',
+        expert: 'EXPERT',
+      };
+
+      const courseLevelFromAI =
+        courseStructure.difficulty || courseData.difficulty || 'intermediate';
+      const courseLevel =
+        difficultyMap[courseLevelFromAI.toLowerCase()] || 'INTERMEDIATE';
+
+      // Parse duration
+      const estimatedDuration =
+        courseData.duration || courseStructure.duration || '4 weeks';
+
       const coursePayload = {
-        title:
-          courseStructure.title ||
-          courseStructure.course_title ||
-          courseData.title,
-        description: courseData.description,
-        subject: courseStructure.subject || courseData.subject,
-        objectives: courseData.learningObjectives,
-        duration: courseData.duration,
-        max_students: courseData.max_students,
+        title: normalizedTitle,
+        description: normalizedDescription,
+        subject: normalizedSubject,
+        learning_objectives: learningObjectives,
+        course_level: courseLevel,
+        estimated_duration: estimatedDuration,
+        max_students: Number(courseData.max_students) || 100,
         price: courseData.price || '0',
-        thumbnail: courseData.thumbnail,
+        thumbnail: courseData.thumbnail || null,
+        isHidden: false,
+        course_status: 'DRAFT',
+        courseType: 'OPEN',
+        lockModules: 'UNLOCKED',
+        requireFinalQuiz: true,
       };
 
       console.log('📦 Course payload prepared:', {
         title: coursePayload.title,
         hasDescription: !!coursePayload.description,
         subject: coursePayload.subject,
+        courseLevel: coursePayload.course_level,
+        objectivesCount: learningObjectives.length,
         moduleCount: courseStructure.modules?.length || 0,
       });
 
@@ -411,12 +516,20 @@ export async function createCompleteAICourse(courseData) {
 
         // Retry logic for module creation
         let moduleRetryCount = 0;
-        const maxModuleRetries = 2;
+        const maxModuleRetries = 3;
         let createdModule;
 
         while (moduleRetryCount < maxModuleRetries) {
           try {
             createdModule = await createModule(courseId, modulePayload);
+
+            // Validate module was created with ID
+            const moduleId = createdModule.data?.id || createdModule.id;
+            if (!moduleId) {
+              throw new Error('Module created but no ID returned');
+            }
+
+            console.log(`✅ Module created with ID: ${moduleId}`);
             break;
           } catch (moduleError) {
             moduleRetryCount++;
@@ -424,7 +537,7 @@ export async function createCompleteAICourse(courseData) {
               throw moduleError;
             }
             console.warn(
-              `Module creation retry ${moduleRetryCount} for: ${moduleData.title || moduleData.module_title}`
+              `Module creation retry ${moduleRetryCount}/${maxModuleRetries} for: ${moduleData.title || moduleData.module_title}`
             );
             await new Promise(resolve =>
               setTimeout(resolve, 500 * moduleRetryCount)
@@ -437,8 +550,99 @@ export async function createCompleteAICourse(courseData) {
           originalLessons: moduleData.lessons || [],
         });
 
+        // ✅ Create lessons IMMEDIATELY after module is ready (not after all modules)
+        const moduleId = createdModule.data?.id || createdModule.id;
+        if (moduleData.lessons && moduleData.lessons.length > 0) {
+          console.log(
+            `📝 Creating ${moduleData.lessons.length} lessons for module ${i + 1}...`
+          );
+
+          for (let j = 0; j < moduleData.lessons.length; j++) {
+            const lessonData = moduleData.lessons[j];
+
+            try {
+              console.log(
+                `📝 Creating lesson ${j + 1}/${moduleData.lessons.length}: ${lessonData.title}`
+              );
+
+              // Validate and prepare lesson thumbnail URL
+              const lessonThumbnail =
+                lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+              const validatedLessonThumbnail =
+                lessonThumbnail &&
+                (lessonThumbnail.startsWith('http') ||
+                  lessonThumbnail.startsWith('data:'))
+                  ? lessonThumbnail
+                  : '';
+
+              const lessonPayload = {
+                title: lessonData.title.substring(0, 200),
+                description:
+                  lessonData.description ||
+                  `${lessonData.title} lesson content`,
+                order: j + 1,
+                status: 'PUBLISHED',
+              };
+
+              if (
+                validatedLessonThumbnail &&
+                validatedLessonThumbnail.trim() !== ''
+              ) {
+                lessonPayload.thumbnail = validatedLessonThumbnail;
+              }
+
+              // Retry logic for lesson creation
+              let lessonRetryCount = 0;
+              const maxLessonRetries = 2;
+              let createdLesson;
+
+              while (lessonRetryCount < maxLessonRetries) {
+                try {
+                  createdLesson = await createLesson(
+                    courseId,
+                    moduleId,
+                    lessonPayload
+                  );
+
+                  // Validate lesson was created with ID
+                  const lessonId = createdLesson.data?.id || createdLesson.id;
+                  if (!lessonId) {
+                    throw new Error('Lesson created but no ID returned');
+                  }
+
+                  console.log(`✅ Lesson created with ID: ${lessonId}`);
+                  break;
+                } catch (lessonError) {
+                  lessonRetryCount++;
+                  if (lessonRetryCount >= maxLessonRetries) {
+                    throw lessonError;
+                  }
+                  console.warn(
+                    `Lesson creation retry ${lessonRetryCount}/${maxLessonRetries}`
+                  );
+                  await new Promise(resolve =>
+                    setTimeout(resolve, 500 * lessonRetryCount)
+                  );
+                }
+              }
+
+              createdLessons.push(createdLesson);
+            } catch (lessonError) {
+              console.error(
+                `❌ Failed to create lesson "${lessonData.title}":`,
+                lessonError.message
+              );
+              lessonErrors.push({
+                moduleTitle: moduleData.title || moduleData.module_title,
+                lessonTitle: lessonData.title,
+                error: lessonError.message,
+              });
+            }
+          }
+        }
+
         console.log(
-          `✅ Module ${i + 1} created successfully:`,
+          `✅ Module ${i + 1} completed:`,
           moduleData.title || moduleData.module_title
         );
       } catch (moduleError) {
@@ -465,102 +669,8 @@ export async function createCompleteAICourse(courseData) {
       console.warn('⚠️ Module creation errors:', moduleErrors);
     }
 
-    // Step 4: Create lessons for each module using deployed backend API
-    const createdLessons = [];
-    const lessonErrors = [];
-
-    for (const module of createdModules) {
-      const moduleId = module.data?.id || module.id;
-      const moduleTitle =
-        module.data?.title || module.title || 'Unknown Module';
-
-      if (module.originalLessons && module.originalLessons.length > 0) {
-        updateProgress(
-          `Creating ${module.originalLessons.length} lessons for module: ${moduleTitle}`
-        );
-
-        for (let j = 0; j < module.originalLessons.length; j++) {
-          const lessonData = module.originalLessons[j];
-
-          try {
-            console.log(
-              `📝 Creating lesson ${j + 1}/${module.originalLessons.length} in module "${moduleTitle}": ${lessonData.title}`
-            );
-
-            // Validate and prepare lesson thumbnail URL
-            const lessonThumbnail =
-              lessonData.thumbnail || lessonData.lesson_thumbnail_url;
-            const validatedLessonThumbnail =
-              lessonThumbnail &&
-              (lessonThumbnail.startsWith('http') ||
-                lessonThumbnail.startsWith('data:'))
-                ? lessonThumbnail
-                : '';
-
-            console.log('🎨 Lesson thumbnail data:', {
-              thumbnail: lessonData.thumbnail,
-              lesson_thumbnail_url: lessonData.lesson_thumbnail_url,
-              validated_thumbnail: validatedLessonThumbnail,
-            });
-
-            const lessonPayload = {
-              title: lessonData.title || `Lesson ${j + 1}`,
-              description:
-                lessonData.description ||
-                `Lesson content for ${lessonData.title}`,
-              order: j + 1,
-              status: 'PUBLISHED',
-              content: lessonData.content || '',
-              duration: lessonData.duration || '15 min',
-            };
-
-            // Only include thumbnail if it has a valid value
-            if (
-              validatedLessonThumbnail &&
-              validatedLessonThumbnail.trim() !== ''
-            ) {
-              lessonPayload.thumbnail = validatedLessonThumbnail;
-            }
-
-            // Use enhanced API client instead of fetch for better error handling
-            const response = await fetch(
-              `${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`,
-              {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                credentials: 'include',
-                body: JSON.stringify(lessonPayload),
-              }
-            );
-
-            if (!response.ok) {
-              const errorData = await response
-                .json()
-                .catch(() => ({ message: 'Unknown error' }));
-              throw new Error(
-                `HTTP ${response.status}: ${errorData.message || errorData.errorMessage || 'Failed to create lesson'}`
-              );
-            }
-
-            const createdLesson = await response.json();
-            createdLessons.push(createdLesson);
-
-            console.log(`✅ Lesson "${lessonData.title}" created successfully`);
-          } catch (lessonError) {
-            console.error(
-              `❌ Failed to create lesson "${lessonData.title}":`,
-              lessonError.message
-            );
-            lessonErrors.push({
-              moduleTitle,
-              lessonTitle: lessonData.title,
-              error: lessonError.message,
-            });
-            // Continue with other lessons instead of failing completely
-          }
-        }
-      }
-    }
+    // Note: Lessons are now created immediately after each module (see above)
+    // This prevents race conditions and orphaned data
 
     // Step 5: Auto-generate lesson content using universalAILessonService
     console.log('📝 Step 5: Auto-generating content for all lessons...');
