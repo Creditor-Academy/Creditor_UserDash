@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hide scrollbar for slider */
+/* Hide and scrollbar for slider */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
