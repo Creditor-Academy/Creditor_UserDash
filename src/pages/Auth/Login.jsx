@@ -242,30 +242,40 @@ export function Login() {
         // Set authentication state
         setAuth(response.data.accessToken);
 
-        // Store user roles from login response
-        if (
-          response.data.user?.roles &&
-          Array.isArray(response.data.user.roles)
-        ) {
-          setUserRoles(response.data.user.roles);
-          console.log('[Auth] User roles stored:', response.data.user.roles);
-        }
+        // Fetch user profile to check roles
+        try {
+          const profile = await fetchUserProfile();
+          console.log('[Auth] User profile fetched:', profile);
 
-        // Check if user is superadmin from the login response
-        const isSuperAdmin = response.data.user?.roles?.includes('super_admin');
-        console.log('[Auth] Is superadmin:', isSuperAdmin);
+          // Check if user is superadmin
+          const userRoles = profile.user_roles?.map(r => r.role) || [];
+          const isSuperAdmin = userRoles.includes('super_admin');
+          console.log(
+            '[Auth] User roles:',
+            userRoles,
+            'Is superadmin:',
+            isSuperAdmin
+          );
 
-        // Dispatch userLoggedIn event to trigger UserContext profile fetch
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+          // Store roles
+          if (userRoles.length > 0) {
+            setUserRoles(userRoles);
+          }
 
-        toast.success('Login successful!');
+          toast.success('Login successful!');
 
-        // Redirect based on role
-        if (isSuperAdmin) {
-          console.log('[Auth] Redirecting to superadmin dashboard');
-          navigate('/superadmin/dashboard');
-        } else {
-          console.log('[Auth] Redirecting to regular dashboard');
+          // Redirect based on role
+          if (isSuperAdmin) {
+            console.log('[Auth] Redirecting to superadmin dashboard');
+            navigate('/superadmin/dashboard');
+          } else {
+            console.log('[Auth] Redirecting to regular dashboard');
+            navigate('/dashboard');
+          }
+        } catch (profileError) {
+          console.error('[Auth] Error fetching profile:', profileError);
+          // Still redirect to dashboard even if profile fetch fails
+          toast.success('Login successful!');
           navigate('/dashboard');
         }
       } else {
