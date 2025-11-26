@@ -50,6 +50,9 @@ import SupportTicket from '@/pages/SupportTicket';
 import Announcements from '@/pages/Announcements';
 import PaymentSuccess from '@/pages/PaymentSuccess';
 import PaymentFailed from '@/pages/PaymentFailed';
+import Sponsor from '@/pages/Sponsor';
+import SponsorCreate from '@/pages/SponsorCreate';
+import SponsorPayment from '@/pages/SponsorPayment';
 import AssignmentSubmit from '@/pages/AssignmentSubmit';
 import AssignmentSubmissions from '@/pages/AssignmentSubmissions';
 import DebateView from '@/pages/DebateView';
@@ -551,6 +554,20 @@ function App() {
 
                 {/* Payments route */}
                 <Route path="payments" element={<Payments />} />
+
+                {/* Sponsor routes */}
+                <Route path="sponsor">
+                  <Route index element={<Sponsor />} />
+                  <Route path="create" element={<SponsorCreate />} />
+                  <Route
+                    path="edit/:submissionId"
+                    element={<SponsorCreate />}
+                  />
+                  <Route
+                    path="payment/:submissionId"
+                    element={<SponsorPayment />}
+                  />
+                </Route>
 
                 {/* Support routes */}
                 <Route path="support">

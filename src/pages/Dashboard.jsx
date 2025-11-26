@@ -761,7 +761,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20">
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
           <ThanksgivingPromo
@@ -770,20 +770,27 @@ export function Dashboard() {
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
-            <div className="xl:col-span-8 space-y-8">
-              {/* Enhanced Greeting Section */}
-              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-                <div className="animate-gradient-shift absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10"></div>
-                <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
-                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                      <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            <div className="xl:col-span-8 space-y-6">
+              {/* Enhanced Greeting Section with Glassmorphism */}
+              <div className="group relative rounded-3xl overflow-hidden shadow-xl border border-white/60 hover:shadow-2xl transition-all duration-500">
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 animate-gradient-shift"></div>
+                {/* Decorative circles */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/30 to-purple-400/30 rounded-full blur-3xl transform translate-x-20 -translate-y-20 group-hover:scale-110 transition-transform duration-700"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-400/30 to-cyan-400/30 rounded-full blur-3xl transform -translate-x-10 translate-y-10 group-hover:scale-110 transition-transform duration-700"></div>
+
+                {/* Glass effect layer */}
+                <div className="relative z-10 p-6 sm:p-7 bg-white/70 backdrop-blur-md">
+                  <div className="flex items-start sm:items-center gap-4 sm:gap-5 mb-3">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-2xl flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-400 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                      <GraduationCap className="relative text-white w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
+                      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent break-words">
                         {`Welcome back${userName ? `, ${userName}` : ''}!`}
                       </h2>
-                      <p className="text-gray-600 text-sm sm:text-base leading-snug">
+                      <p className="text-gray-700 text-sm sm:text-base leading-relaxed font-medium">
                         Continue your private education journey and achieve your
                         learning goals.
                       </p>
@@ -820,30 +827,43 @@ export function Dashboard() {
               </div>
 
               {/* Progress Tracker */}
-              <ProgressStats />
+              <div className="transform hover:scale-[1.01] transition-transform duration-300">
+                <ProgressStats />
+              </div>
 
               {/* Sponsor Banner */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-                <SponsorBannerCarousel />
+              <div className="relative group bg-white rounded-3xl shadow-lg hover:shadow-2xl border border-gray-200/80 hover:border-purple-200/60 p-5 sm:p-6 transition-all duration-500 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                  <SponsorBannerCarousel />
+                </div>
               </div>
 
               {/* My Courses Section (carousel with arrows) */}
               <div className="mb-8 relative">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    My Courses
-                  </h2>
+                <div className="flex items-center justify-between mb-6 bg-gradient-to-r from-white/80 to-transparent backdrop-blur-sm rounded-2xl p-4 border border-white/40 shadow-sm">
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent">
+                      My Courses
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Track your learning progress
+                    </p>
+                  </div>
                   <Button
                     variant="outline"
                     asChild
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                    className="border-blue-300 bg-blue-50/50 text-blue-700 hover:bg-blue-100 hover:border-blue-400 hover:shadow-md transition-all duration-300 font-semibold"
                   >
                     <Link
                       to="/dashboard/courses"
                       className="flex items-center gap-2"
                     >
                       View all courses
-                      <ChevronRight size={16} />
+                      <ChevronRight
+                        size={16}
+                        className="group-hover:translate-x-1 transition-transform"
+                      />
                     </Link>
                   </Button>
                 </div>
@@ -930,25 +950,34 @@ export function Dashboard() {
 
               {/* Upcoming events + learning sessions */}
               <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-                  <DashboardCarousel />
+                <div className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl border border-gray-200/80 hover:border-blue-200/60 p-5 sm:p-6 transition-all duration-500 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10">
+                    <DashboardCarousel />
+                  </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="rounded-full bg-purple-100 p-2 text-purple-500">
-                      <MonitorPlay className="h-5 w-5" />
+                <div className="group relative bg-gradient-to-br from-purple-50 via-white to-pink-50/30 rounded-3xl shadow-lg hover:shadow-2xl border border-purple-200/50 hover:border-purple-300/70 p-5 sm:p-6 transition-all duration-500 overflow-hidden">
+                  {/* Decorative elements */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-300/20 to-purple-300/20 rounded-full blur-2xl transform -translate-x-8 translate-y-8"></div>
+
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-4 mb-6 bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/40 shadow-sm">
+                      <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3 shadow-lg">
+                        <MonitorPlay className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-purple-700 uppercase tracking-wide">
+                          Learning Sessions
+                        </p>
+                        <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-purple-900 bg-clip-text text-transparent">
+                          Today's Live Classes
+                        </h2>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-purple-500">
-                        Learning Sessions
-                      </p>
-                      <h2 className="text-xl font-bold text-gray-900">
-                        Today’s Live Classes
-                      </h2>
-                    </div>
+                    <LiveClasses />
                   </div>
-                  <LiveClasses />
                 </div>
               </div>
 
@@ -970,121 +999,161 @@ export function Dashboard() {
             {/* Right section - enhanced sidebar widgets */}
             <div className="xl:col-span-4 space-y-6">
               {/* Important Updates Section */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Award className="h-5 w-5 text-emerald-600" />
-                    <h3 className="text-lg font-bold text-gray-800">
-                      Important Events
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Stay ahead with the latest happenings across Creditor
-                    Academy. Connect with our dedicated leads whenever you need
-                    quick help.
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  {/* Athena LMS and Login Issues */}
-                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-indigo-200">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                        <MonitorPlay className="h-5 w-5 text-white" />
+              <div className="group relative bg-gradient-to-br from-white via-emerald-50/30 to-white rounded-3xl shadow-lg hover:shadow-2xl border border-emerald-200/50 hover:border-emerald-300/70 p-6 transition-all duration-500 overflow-hidden">
+                {/* Decorative background */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-300/20 to-blue-300/20 rounded-full blur-2xl transform translate-x-8 -translate-y-8 group-hover:scale-125 transition-transform duration-700"></div>
+
+                <div className="relative z-10">
+                  <div className="mb-5 bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/40 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg">
+                        <Award className="h-5 w-5 text-white" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-gray-900 mb-1">
-                          Athena LMS and Login Issues
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-3">
-                          If you're experiencing challenges with Athena LMS
-                          access or login, reach out to our Platform Lead for
-                          expert assistance.
-                        </p>
-                        <Button
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto"
-                          onClick={() =>
-                            window.open(
-                              'https://calendly.com/hashmi-creditoracademy',
-                              '_blank',
-                              'noopener,noreferrer'
-                            )
-                          }
-                        >
-                          Schedule Now
-                        </Button>
+                      <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-emerald-900 bg-clip-text text-transparent">
+                        Important Events
+                      </h3>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Stay ahead with the latest happenings across Creditor
+                      Academy. Connect with our dedicated leads whenever you
+                      need quick help.
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    {/* Athena LMS and Login Issues */}
+                    <div className="group/card relative rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50 via-white to-blue-50/30 p-5 transition-all duration-300 hover:shadow-xl hover:border-indigo-300 hover:-translate-y-1 overflow-hidden">
+                      {/* Decorative glow */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-400/20 rounded-full blur-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"></div>
+
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover/card:scale-110 transition-transform duration-300">
+                          <MonitorPlay className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-base font-bold text-gray-900 mb-2">
+                            Athena LMS and Login Issues
+                          </h4>
+                          <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                            If you're experiencing challenges with Athena LMS
+                            access or login, reach out to our Platform Lead for
+                            expert assistance.
+                          </p>
+                          <Button
+                            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-sm w-full font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                            onClick={() =>
+                              window.open(
+                                'https://calendly.com/hashmi-creditoracademy',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
+                          >
+                            Schedule Now
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Payments, Credits, and Debits Issues */}
-                  <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-emerald-200">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-gray-900 mb-1">
-                          Payments, Credits, and Debits Issues
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-3">
-                          For any queries or issues related to payments,
-                          credits, or debits, consult our Payment Lead to ensure
-                          smooth and accurate handling.
-                        </p>
-                        <Button
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto"
-                          onClick={() =>
-                            window.open(
-                              'https://calendly.com/mausam-creditoracademy',
-                              '_blank',
-                              'noopener,noreferrer'
-                            )
-                          }
-                        >
-                          Schedule Now
-                        </Button>
+                    {/* Payments, Credits, and Debits Issues */}
+                    <div className="group/card relative rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-white to-teal-50/30 p-5 transition-all duration-300 hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 overflow-hidden">
+                      {/* Decorative glow */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"></div>
+
+                      <div className="relative flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover/card:scale-110 transition-transform duration-300">
+                          <CheckCircle className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-base font-bold text-gray-900 mb-2">
+                            Payments, Credits, and Debits Issues
+                          </h4>
+                          <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                            For any queries or issues related to payments,
+                            credits, or debits, consult our Payment Lead to
+                            ensure smooth and accurate handling.
+                          </p>
+                          <Button
+                            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm w-full font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                            onClick={() =>
+                              window.open(
+                                'https://calendly.com/mausam-creditoracademy',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
+                          >
+                            Schedule Now
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <DashboardTodo />
-              <DashboardAnnouncements />
+              <div className="transform hover:scale-[1.01] transition-transform duration-300">
+                <DashboardTodo />
+              </div>
+
+              <div className="transform hover:scale-[1.01] transition-transform duration-300">
+                <DashboardAnnouncements />
+              </div>
 
               {/* Calendar */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  Your Calendar
-                </h3>
-                <div className="flex justify-center">
-                  <DashboardCalendar />
+              <div className="group relative bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 rounded-3xl shadow-lg hover:shadow-2xl border border-blue-200/50 hover:border-blue-300/70 p-6 transition-all duration-500 overflow-hidden">
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-blue-300/20 to-purple-300/20 rounded-full blur-2xl transform translate-x-10 -translate-y-10 group-hover:scale-125 transition-transform duration-700"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-5 bg-white/60 backdrop-blur-sm rounded-2xl p-3 border border-white/40 shadow-sm">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg">
+                      <Clock className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-blue-900 bg-clip-text text-transparent">
+                      Your Calendar
+                    </h3>
+                  </div>
+                  <div className="flex justify-center bg-white/40 backdrop-blur-sm rounded-2xl p-3">
+                    <DashboardCalendar />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-10">
-            <UpcomingCourses />
+          <div className="space-y-8">
+            <div className="transform hover:scale-[1.005] transition-transform duration-300">
+              <UpcomingCourses />
+            </div>
 
             {/* Groups Preview Section */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <DashboardGroup />
+            <div className="group relative bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20 rounded-3xl shadow-lg hover:shadow-2xl border border-gray-200/60 hover:border-blue-200/60 p-6 sm:p-7 transition-all duration-500 overflow-hidden">
+              {/* Decorative background elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-300/10 to-purple-300/10 rounded-full blur-3xl transform translate-x-20 -translate-y-20 group-hover:scale-125 transition-transform duration-700"></div>
+              <div className="absolute bottom-0 left-0 w-56 h-56 bg-gradient-to-tr from-emerald-300/10 to-cyan-300/10 rounded-full blur-3xl transform -translate-x-16 translate-y-16 group-hover:scale-125 transition-transform duration-700"></div>
+
+              <div className="relative z-10">
+                <DashboardGroup />
+              </div>
             </div>
 
             {/* Services using credits */}
-            <div className="rounded-2xl shadow-lg border border-gray-200 bg-white p-6 md:p-8">
-              {/* Simple, compact header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <Award className="h-5 w-5 text-emerald-600" />
+            <div className="group relative rounded-3xl shadow-xl hover:shadow-2xl border border-gray-200/60 hover:border-purple-200/60 bg-gradient-to-br from-white via-purple-50/20 to-blue-50/20 p-6 md:p-8 transition-all duration-500 overflow-hidden">
+              {/* Decorative background elements */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-300/10 to-blue-300/10 rounded-full blur-3xl transform translate-x-32 -translate-y-32 group-hover:scale-110 transition-transform duration-700"></div>
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-pink-300/10 to-emerald-300/10 rounded-full blur-3xl transform -translate-x-24 translate-y-24 group-hover:scale-110 transition-transform duration-700"></div>
+
+              {/* Header */}
+              <div className="relative z-10 flex flex-col sm:flex-row items-start justify-between mb-6 gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-xl">
+                    <Award className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
+                    <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 via-purple-900 to-blue-900 bg-clip-text text-transparent">
                       Creditor Academy Services
                     </h2>
-                    <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+                    <p className="text-sm sm:text-base text-gray-700 mt-2 max-w-2xl leading-relaxed">
                       At Creditor Academy, we offer a comprehensive suite of
                       professional services designed to empower businesses and
                       individuals with tailored solutions. Explore our key
@@ -1093,32 +1162,32 @@ export function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <div className="hidden sm:flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1 text-sm">
-                    {balance} credits
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/60 text-gray-900 px-4 py-2 text-sm font-semibold shadow-sm">
+                    💎 {balance} credits
                   </span>
                   {!showServiceHistory ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 hover:border-purple-400 font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                       onClick={() => setShowServiceHistory(true)}
                     >
-                      History
+                      📜 History
                     </Button>
                   ) : (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                       onClick={() => setShowServiceHistory(false)}
                     >
-                      Go back
+                      ← Go back
                     </Button>
                   )}
                 </div>
               </div>
-              <div className="mb-6 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+              <div className="relative z-10 mb-7 h-px bg-gradient-to-r from-transparent via-purple-300/50 to-transparent"></div>
 
               {/* Sliding container switches between main services and history */}
               <div className="relative overflow-hidden">
@@ -1132,28 +1201,28 @@ export function Dashboard() {
                   }}
                 >
                   {/* Panel: Services */}
-                  <div className="w-1/2 pr-0 md:pr-3">
+                  <div className="relative z-10 w-1/2 pr-0 md:pr-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {/* Website Services */}
-                      <div className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-blue-200">
+                      <div className="group/service relative overflow-hidden rounded-3xl border-2 border-blue-200/60 bg-gradient-to-br from-blue-50 via-white to-cyan-50/40 p-6 transition-all duration-500 hover:shadow-2xl hover:border-blue-400 hover:-translate-y-2">
                         {/* decorative glows */}
-                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-blue-300/30 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-blue-200/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-blue-400/30 blur-3xl group-hover/service:scale-150 transition-transform duration-700" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-cyan-300/30 blur-3xl group-hover/service:scale-150 transition-transform duration-700" />
                         {/* illustration */}
                         <img
                           src="/Creditor_academy.png"
                           alt="website services"
                           loading="lazy"
-                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-10 transition-all duration-500 group-hover/service:opacity-20 group-hover/service:scale-110"
                         />
                         <div className="relative z-10 flex flex-col h-full">
-                          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
-                            <MonitorPlay size={20} />
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center shadow-xl text-white ring-4 ring-blue-100 mb-4 group-hover/service:scale-110 group-hover/service:rotate-3 transition-all duration-300">
+                            <MonitorPlay size={24} />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover/service:text-blue-900 transition-colors">
                             Website Services
                           </h3>
-                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                          <p className="text-sm text-gray-700 mb-5 flex-grow leading-relaxed">
                             Elevate your online presence with our expert website
                             design, development, and maintenance solutions.
                             Whether you're launching a new site or optimizing an
@@ -1161,33 +1230,39 @@ export function Dashboard() {
                             and high-performing websites that drive results.
                           </p>
                           <Button
-                            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
-                            onClick={() => setShowConsultBooking(true)}
+                            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white w-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                            onClick={() =>
+                              window.open(
+                                'https://calendly.com/prerna-creditoracademy/',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
                           >
-                            Schedule Now
+                            Schedule Now →
                           </Button>
                         </div>
                       </div>
                       {/* Digital Marketing and SEO Services */}
-                      <div className="group relative overflow-hidden rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-purple-200">
+                      <div className="group/service relative overflow-hidden rounded-3xl border-2 border-purple-200/60 bg-gradient-to-br from-purple-50 via-white to-pink-50/40 p-6 transition-all duration-500 hover:shadow-2xl hover:border-purple-400 hover:-translate-y-2">
                         {/* decorative glows */}
-                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-purple-300/30 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-purple-200/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-purple-400/30 blur-3xl group-hover/service:scale-150 transition-transform duration-700" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-pink-300/30 blur-3xl group-hover/service:scale-150 transition-transform duration-700" />
                         {/* illustration */}
                         <img
                           src="/Creditor_academy.png"
                           alt="digital marketing services"
                           loading="lazy"
-                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-10 transition-all duration-500 group-hover/service:opacity-20 group-hover/service:scale-110"
                         />
                         <div className="relative z-10 flex flex-col h-full">
-                          <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
-                            <Target size={20} />
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-xl text-white ring-4 ring-purple-100 mb-4 group-hover/service:scale-110 group-hover/service:rotate-3 transition-all duration-300">
+                            <Target size={24} />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover/service:text-purple-900 transition-colors">
                             Digital Marketing and SEO Services
                           </h3>
-                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                          <p className="text-sm text-gray-700 mb-5 flex-grow leading-relaxed">
                             Boost your visibility and growth with our strategic
                             digital marketing and SEO expertise. From targeted
                             campaigns and content creation to advanced search
@@ -1195,34 +1270,40 @@ export function Dashboard() {
                             and convert your audience effectively.
                           </p>
                           <Button
-                            className="bg-purple-600 hover:bg-purple-700 text-white w-full"
-                            onClick={() => setShowConsultBooking(true)}
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white w-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                            onClick={() =>
+                              window.open(
+                                'https://calendly.com/ayush-creditoracademy/',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
                           >
-                            Schedule Now
+                            Schedule Now →
                           </Button>
                         </div>
                       </div>
                       {/* Recruitment and Staffing Services */}
-                      <div className="group relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-orange-200">
+                      <div className="group/service relative overflow-hidden rounded-3xl border-2 border-orange-200/60 bg-gradient-to-br from-orange-50 via-white to-amber-50/40 p-6 transition-all duration-500 hover:shadow-2xl hover:border-orange-400 hover:-translate-y-2">
                         {/* decorative glows */}
-                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-orange-300/30 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-orange-200/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-orange-400/30 blur-3xl group-hover/service:scale-150 transition-transform duration-700" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl group-hover/service:scale-150 transition-transform duration-700" />
                         {/* illustration */}
                         <img
                           src="/Creditor_academy.png"
                           alt="recruitment services"
                           loading="lazy"
-                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-10 transition-all duration-500 group-hover/service:opacity-20 group-hover/service:scale-110"
                         />
                         <div className="relative z-10 flex flex-col h-full">
-                          <div className="w-12 h-12 rounded-xl bg-orange-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
-                            <GraduationCap size={20} />
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center shadow-xl text-white ring-4 ring-orange-100 mb-4 group-hover/service:scale-110 group-hover/service:rotate-3 transition-all duration-300">
+                            <GraduationCap size={24} />
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover/service:text-orange-900 transition-colors">
                             Recruitment and Staffing Services (Including
                             Payroll)
                           </h3>
-                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                          <p className="text-sm text-gray-700 mb-5 flex-grow leading-relaxed">
                             Streamline your talent acquisition with our
                             end-to-end recruitment, staffing, and payroll
                             management services. We connect you with top-tier
@@ -1231,10 +1312,16 @@ export function Dashboard() {
                             operations.
                           </p>
                           <Button
-                            className="bg-orange-600 hover:bg-orange-700 text-white w-full"
-                            onClick={() => setShowConsultBooking(true)}
+                            className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white w-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                            onClick={() =>
+                              window.open(
+                                'https://calendly.com/d/cwfz-k3q-w85/creditor-academy-education-counselor',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
                           >
-                            Schedule Now
+                            Schedule Now →
                           </Button>
                         </div>
                       </div>

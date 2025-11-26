@@ -23,6 +23,7 @@ import {
   Bot,
   CreditCard,
   Wallet,
+  Megaphone,
 } from 'lucide-react';
 import { allowedScormUserIds } from '@/data/allowedScormUsers';
 import { currentUserId } from '@/data/currentUser';
@@ -424,6 +425,18 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   label="My Payments"
                   href="/dashboard/payments"
                   active={isActive('/dashboard/payments')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
+
+              {/* Sponsor Section */}
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Megaphone}
+                  label="Sponsor"
+                  href="/dashboard/sponsor"
+                  active={isActive('/dashboard/sponsor')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />

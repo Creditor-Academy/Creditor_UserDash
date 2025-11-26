@@ -312,4 +312,101 @@
       transform: translate(0px, 0px) scale(1);
     }
   }
+
+  /* Dashboard specific animations */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer-bg 2s linear infinite;
+  }
+
+  @keyframes shimmer-bg {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Glass morphism effect */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Hover glow effect */
+  .hover-glow {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .hover-glow::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(99, 102, 241, 0.3) 0%,
+      transparent 70%
+    );
+    transform: translate(-50%, -50%);
+    transition:
+      width 0.6s ease,
+      height 0.6s ease;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .hover-glow:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Smooth scroll behavior */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom horizontal scroll */
+  .custom-horizontal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  }
+
+  .custom-horizontal-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .custom-horizontal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-horizontal-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.4);
+    border-radius: 10px;
+  }
+
+  .custom-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.6);
+  }
 }
