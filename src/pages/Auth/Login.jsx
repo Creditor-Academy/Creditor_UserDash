@@ -242,12 +242,32 @@ export function Login() {
         // Set authentication state
         setAuth(response.data.accessToken);
 
-        // Don't set default role - let UserContext fetch profile and set correct role
+        // Store user roles from login response
+        if (
+          response.data.user?.roles &&
+          Array.isArray(response.data.user.roles)
+        ) {
+          setUserRoles(response.data.user.roles);
+          console.log('[Auth] User roles stored:', response.data.user.roles);
+        }
+
+        // Check if user is superadmin from the login response
+        const isSuperAdmin = response.data.user?.roles?.includes('super_admin');
+        console.log('[Auth] Is superadmin:', isSuperAdmin);
+
         // Dispatch userLoggedIn event to trigger UserContext profile fetch
         window.dispatchEvent(new CustomEvent('userLoggedIn'));
 
         toast.success('Login successful!');
-        navigate('/dashboard');
+
+        // Redirect based on role
+        if (isSuperAdmin) {
+          console.log('[Auth] Redirecting to superadmin dashboard');
+          navigate('/superadmin/dashboard');
+        } else {
+          console.log('[Auth] Redirecting to regular dashboard');
+          navigate('/dashboard');
+        }
       } else {
         toast.error(response.data.message || 'Login failed');
       }

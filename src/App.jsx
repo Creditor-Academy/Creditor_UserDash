@@ -113,6 +113,8 @@ import ScenarioTakePage from '@/pages/ScenarioTakePage';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
+import SuperAdminDashboard from '@/pages/SuperAdmin/Dashboard';
+import SuperAdminRoute from '@/components/SuperAdminRoute';
 // import  ModuleView  from "@/pages/ModuleView";
 import LessonView from '@lessonbuilder/pages/LessonView';
 import InstructionalDesign from '@/pages/InstructionalDesign';
@@ -186,6 +188,14 @@ function App() {
               <Route path="/remedy" element={<Remedy />} />
               <Route path="/pmp" element={<MerchantProcessing />} />
               <Route path="/privatemerchant" element={<PrivateMerchant />} />
+
+              {/* SuperAdmin routes */}
+              <Route element={<SuperAdminRoute />}>
+                <Route
+                  path="/superadmin/dashboard"
+                  element={<SuperAdminDashboard />}
+                />
+              </Route>
 
               {/* Platform routes */}
               <Route path="/platform/courses" element={<CoursesPage />} />

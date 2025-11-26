@@ -96,17 +96,9 @@ export const UserProvider = ({ children }) => {
       // Set user role based on profile data
       if (Array.isArray(data.user_roles) && data.user_roles.length > 0) {
         const roles = data.user_roles.map(roleObj => roleObj.role);
-        const priorityRoles = ['admin', 'instructor', 'user'];
-        const highestRole =
-          priorityRoles.find(role => roles.includes(role)) || 'user';
 
-        console.log(
-          'UserContext: Setting user role to:',
-          highestRole,
-          'from roles:',
-          roles
-        );
-        setUserRole(highestRole);
+        console.log('UserContext: Setting user roles to:', roles);
+        setUserRoles(roles);
 
         // Dispatch event to notify other components about role change
         window.dispatchEvent(new Event('userRoleChanged'));
