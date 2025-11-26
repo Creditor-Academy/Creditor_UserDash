@@ -1233,11 +1233,20 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         );
       }
 
+      // Generate contextual caption for the image
+      const caption = await this.generateContextualCaption(
+        'hero',
+        lessonTitle,
+        '',
+        imagePrompt,
+        { moduleTitle, courseTitle }
+      );
+
       // Create image block with proper structure
       return this.createImageBlock({
         url: permanentUrl,
         alt: `Hero image for ${lessonTitle}`,
-        caption: `Visual representation of ${lessonTitle}`,
+        caption: caption,
         order,
         metadata: {
           blockType: 'hero_image',
@@ -1304,11 +1313,20 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         );
       }
 
+      // Generate contextual caption for the image
+      const caption = await this.generateContextualCaption(
+        'concept',
+        lessonTitle,
+        conceptName,
+        imagePrompt,
+        {}
+      );
+
       // Create image block
       return this.createImageBlock({
         url: permanentUrl,
         alt: `Illustration of ${conceptName}`,
-        caption: `Visual guide to ${conceptName}`,
+        caption: caption,
         order,
         metadata: {
           blockType: 'concept_image',
@@ -3170,6 +3188,94 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       (usePound ? '#' : '') +
       ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')
     );
+  }
+
+  /**
+   * Generate contextual caption for an image based on lesson/course context
+   * Uses AI to create meaningful explanations instead of generic text
+   * @param {string} imageType - Type of image (hero, concept, illustration, etc.)
+   * @param {string} lessonTitle - Title of the lesson
+   * @param {string} conceptName - Name of the concept (if applicable)
+   * @param {string} generatedPrompt - The prompt used to generate the image
+   * @param {Object} context - Additional context (moduleTitle, courseTitle, description)
+   * @returns {Promise<string>} Contextual caption text
+   */
+  async generateContextualCaption(
+    imageType,
+    lessonTitle,
+    conceptName = '',
+    generatedPrompt = '',
+    context = {}
+  ) {
+    try {
+      const { moduleTitle = '', courseTitle = '', description = '' } = context;
+
+      // Build a prompt to generate a meaningful caption
+      const captionPrompt = `Generate a concise, educational caption (1-2 sentences) for an AI-generated image.
+
+Image Type: ${imageType}
+Lesson: ${lessonTitle}
+${conceptName ? `Concept: ${conceptName}` : ''}
+${moduleTitle ? `Module: ${moduleTitle}` : ''}
+${courseTitle ? `Course: ${courseTitle}` : ''}
+${description ? `Context: ${description.substring(0, 150)}` : ''}
+${generatedPrompt ? `Image Description: ${generatedPrompt.substring(0, 200)}` : ''}
+
+Requirements:
+- Explain what the image shows and its educational value
+- Connect it to the lesson/course concepts
+- Be specific and informative, NOT generic
+- Use professional, educational tone
+- Keep it 1-2 sentences maximum
+- Do NOT start with "This image shows" or similar generic phrases
+
+Generate ONLY the caption text, no additional explanation.`;
+
+      const result = await this.aiService.generateText(captionPrompt, {
+        maxTokens: 100,
+        temperature: 0.7,
+        systemPrompt:
+          'You are an expert educational content writer. Create concise, meaningful captions that explain images in educational context. Be specific and avoid generic descriptions.',
+      });
+
+      // Extract text from result
+      let caption = typeof result === 'string' ? result.trim() : '';
+
+      // Fallback if generation fails or returns empty
+      if (!caption || caption.length < 10) {
+        caption = this.generateFallbackCaption(
+          imageType,
+          lessonTitle,
+          conceptName
+        );
+      }
+
+      return caption;
+    } catch (error) {
+      console.warn('⚠️ Caption generation failed:', error.message);
+      // Return fallback caption
+      return this.generateFallbackCaption(imageType, lessonTitle, conceptName);
+    }
+  }
+
+  /**
+   * Generate fallback caption when AI generation fails
+   * More contextual than generic text
+   * @param {string} imageType - Type of image
+   * @param {string} lessonTitle - Lesson title
+   * @param {string} conceptName - Concept name
+   * @returns {string} Fallback caption
+   */
+  generateFallbackCaption(imageType, lessonTitle, conceptName = '') {
+    const fallbacks = {
+      hero: `Real-world example illustrating key concepts from "${lessonTitle}"`,
+      concept: `Visual representation of ${conceptName || 'the concept'} in "${lessonTitle}"`,
+      illustration: `Practical application of ${conceptName || 'concepts'} in "${lessonTitle}"`,
+      example: `Concrete example demonstrating ${conceptName || 'the principles'} of "${lessonTitle}"`,
+      default: `Visual guide to understanding "${lessonTitle}"`,
+    };
+
+    return fallbacks[imageType] || fallbacks.default;
   }
 
   /**

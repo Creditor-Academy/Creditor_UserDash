@@ -541,7 +541,7 @@ Requirements:
       content: {
         imageUrl: imageUrl,
         text: contentText.trim(),
-        caption: `Visual guide for ${context.topic}`,
+        caption: `Real-world example illustrating key concepts of ${context.topic}. ${contentText.trim().substring(0, 100)}...`,
         imagePosition: 'left',
       },
       order: 4,
@@ -652,7 +652,7 @@ Requirements:
       content: {
         imageUrl: imageUrl,
         text: contentText.trim(),
-        caption: `Practical application of ${context.topic}`,
+        caption: `Real-world application demonstrating practical usage of ${context.topic}. ${contentText.trim().substring(0, 100)}...`,
         imagePosition: 'right',
       },
       order: 5,
