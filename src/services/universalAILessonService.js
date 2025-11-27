@@ -1278,13 +1278,26 @@ Describe an actual scene, situation, or object. NO infographics, NO diagrams, NO
 Just a clean, realistic, professional photograph-style image with minimal or no text.`;
 
       // Enhance with 7-layer premium quality system
-      imagePrompt += ` QUALITY REQUIREMENTS: soft cinematic lighting, volumetric light, dramatic contrast, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+      // Special handling for human/portrait images - use HD quality and professional portrait guidelines
+      const isPortrait =
+        /person|people|human|face|portrait|man|woman|child|professional|instructor|expert|instructor|teacher|student/i.test(
+          conceptName + ' ' + lessonTitle
+        );
+
+      if (isPortrait) {
+        imagePrompt += ` PROFESSIONAL PORTRAIT REQUIREMENTS: High-quality professional headshot or portrait, clear facial features, professional lighting (three-point lighting), sharp focus on face, natural skin tones, professional appearance, well-groomed, confident expression, neutral or warm background, studio-quality photography, no distortion, no messy appearance, clean and polished look. QUALITY: 8K resolution, professional photography standards, studio lighting, perfect focus, no artifacts.`;
+      } else {
+        imagePrompt += ` QUALITY REQUIREMENTS: soft cinematic lighting, volumetric light, dramatic contrast, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+      }
 
       // Generate image using OpenAI DALL-E
+      // Use HD quality for portrait images to ensure better facial features
+      const imageQuality = isPortrait ? 'hd' : 'standard';
+
       const imageResult = await openAIService.generateImage(imagePrompt, {
         model: 'dall-e-3',
         size: '1024x1024',
-        quality: 'standard',
+        quality: imageQuality,
         style: 'vivid',
       });
 
@@ -1904,6 +1917,110 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
             }
           </div>`;
 
+      // NEW LAYOUTS - Phase 2 Enhancements
+      case 'grid':
+        const gridImages = block.images || [imageUrl];
+        return `
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 my-6">
+            ${gridImages
+              .map(
+                img => `
+              <div class="overflow-hidden rounded-lg shadow-md hover:shadow-lg transition">
+                <img src="${img}" alt="Grid image" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300" />
+              </div>
+            `
+              )
+              .join('')}
+          </div>`;
+
+      case 'carousel':
+        const carouselId = `carousel-${Date.now()}`;
+        return `
+          <div class="relative my-6 rounded-lg overflow-hidden shadow-lg">
+            <div class="relative bg-gray-900 aspect-video">
+              <img src="${imageUrl}" alt="Carousel" 
+                   id="${carouselId}-img" class="w-full h-full object-cover" />
+            </div>
+            <div class="flex justify-center gap-2 p-4 bg-gray-100">
+              <button onclick="document.getElementById('${carouselId}-img').style.opacity='0.5'"
+                      class="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition">
+                ← Prev
+              </button>
+              <button onclick="document.getElementById('${carouselId}-img').style.opacity='1'"
+                      class="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition">
+                Next →
+              </button>
+            </div>
+            ${text ? `<div class="p-4 bg-white text-center text-sm text-gray-600">${text}</div>` : ''}
+          </div>`;
+
+      case 'before-after':
+        const beforeUrl = block.beforeUrl || imageUrl;
+        const afterUrl = block.afterUrl || imageUrl;
+        const sliderId = `slider-${Date.now()}`;
+        return `
+          <div class="relative my-6 rounded-lg overflow-hidden shadow-lg">
+            <div class="relative w-full aspect-video">
+              <img src="${beforeUrl}" alt="Before" 
+                   class="w-full h-full object-cover" />
+              <div class="absolute inset-0 overflow-hidden" style="width: 50%">
+                <img src="${afterUrl}" alt="After" 
+                     class="w-full h-full object-cover" />
+              </div>
+              <input type="range" min="0" max="100" value="50" 
+                     class="absolute inset-0 w-full h-full opacity-0 cursor-col-resize"
+                     oninput="this.parentElement.querySelector('div').style.width = this.value + '%'" />
+            </div>
+            <p class="text-center text-sm text-gray-600 p-2">Drag to compare</p>
+          </div>`;
+
+      case 'annotated':
+        const annotations = block.annotations || [];
+        return `
+          <div class="relative my-6 rounded-lg overflow-hidden shadow-lg">
+            <img src="${imageUrl}" alt="Annotated image" class="w-full h-auto" />
+            ${annotations
+              .map(
+                (ann, idx) => `
+              <div class="absolute" style="left: ${ann.x}%; top: ${ann.y}%;">
+                <div class="w-8 h-8 bg-red-500 rounded-full border-2 border-white cursor-pointer
+                            hover:bg-red-600 transition flex items-center justify-center text-white text-xs font-bold"
+                     title="${ann.label}">
+                  ${idx + 1}
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>`;
+
+      case 'collage':
+        const collageImages = block.images || [imageUrl];
+        return `
+          <div class="grid gap-3 my-6" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+            ${collageImages
+              .map(
+                img => `
+              <div class="overflow-hidden rounded-lg shadow-md hover:shadow-lg transition">
+                <img src="${img}" alt="Collage item" class="w-full h-40 object-cover hover:scale-105 transition-transform duration-300" />
+              </div>
+            `
+              )
+              .join('')}
+          </div>`;
+
+      case 'split-screen':
+        return `
+          <div class="flex gap-6 my-6 items-center">
+            <div class="flex-1">
+              <img src="${imageUrl}" alt="Split screen image" 
+                   class="w-full h-auto rounded-lg shadow-lg" />
+            </div>
+            <div class="flex-1 prose prose-lg max-w-none">
+              <p class="text-base leading-relaxed text-gray-700">${text}</p>
+            </div>
+          </div>`;
+
       default:
         return `
           <div class="my-6 text-center">
@@ -1983,6 +2100,61 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
                   ${parsedContent}
                 </p>
               </div>
+            </div>
+          </div>`;
+
+      // NEW VARIANTS - Phase 1 Enhancements
+      case 'success':
+        return `
+          <div class="flex gap-3 p-4 rounded-lg border-l-4 border-green-500 bg-green-50">
+            <span class="text-2xl flex-shrink-0">✓</span>
+            <div class="flex-1 text-green-900 text-base leading-relaxed">
+              ${parsedContent}
+            </div>
+          </div>`;
+
+      case 'warning':
+        return `
+          <div class="flex gap-3 p-4 rounded-lg border-l-4 border-yellow-500 bg-yellow-50">
+            <span class="text-2xl flex-shrink-0">⚠️</span>
+            <div class="flex-1 text-yellow-900 text-base leading-relaxed">
+              ${parsedContent}
+            </div>
+          </div>`;
+
+      case 'error':
+        return `
+          <div class="flex gap-3 p-4 rounded-lg border-l-4 border-red-500 bg-red-50">
+            <span class="text-2xl flex-shrink-0">❌</span>
+            <div class="flex-1 text-red-900 text-base leading-relaxed">
+              ${parsedContent}
+            </div>
+          </div>`;
+
+      case 'pro-tip':
+        return `
+          <div class="flex gap-3 p-4 rounded-lg border-l-4 border-amber-500 bg-amber-50">
+            <span class="text-2xl flex-shrink-0">💎</span>
+            <div class="flex-1 text-amber-900 text-base leading-relaxed">
+              ${parsedContent}
+            </div>
+          </div>`;
+
+      case 'remember':
+        return `
+          <div class="flex gap-3 p-4 rounded-lg border-l-4 border-indigo-500 bg-indigo-50">
+            <span class="text-2xl flex-shrink-0">🧠</span>
+            <div class="flex-1 text-indigo-900 text-base leading-relaxed">
+              ${parsedContent}
+            </div>
+          </div>`;
+
+      case 'key-takeaway':
+        return `
+          <div class="flex gap-3 p-4 rounded-lg border-l-4 border-pink-500 bg-pink-50">
+            <span class="text-2xl flex-shrink-0">🎯</span>
+            <div class="flex-1 text-pink-900 text-base leading-relaxed">
+              ${parsedContent}
             </div>
           </div>`;
 
@@ -2106,6 +2278,159 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
           </ol>
         </div>
       `;
+    }
+
+    // NEW VARIANTS - Phase 3 Enhancements
+    // Handle checklist with progress
+    if (block.variant === 'checklist-progress') {
+      const completed = Object.values(finalCheckedItems).filter(c => c).length;
+      const total = listItems.length;
+      const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      return `
+        <div class="my-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div class="mb-4">
+            <div class="flex justify-between text-sm font-semibold mb-2 text-blue-900">
+              <span>Progress</span>
+              <span>${completed}/${total}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-500 h-2 rounded-full transition-all" 
+                   style="width: ${progress}%"></div>
+            </div>
+          </div>
+          <ul class="space-y-2">
+            ${listItems
+              .map(
+                (item, idx) => `
+              <li class="flex items-center gap-2">
+                <input type="checkbox" ${finalCheckedItems[idx] ? 'checked' : ''} 
+                       class="w-5 h-5 rounded border-gray-300" />
+                <span class="${finalCheckedItems[idx] ? 'line-through text-gray-400' : 'text-gray-700'}">${item}</span>
+              </li>
+            `
+              )
+              .join('')}
+          </ul>
+        </div>`;
+    }
+
+    // Handle nested list
+    if (block.variant === 'nested') {
+      return `
+        <ul class="my-6 space-y-2 pl-4">
+          ${(block.items || listItems)
+            .map(
+              item => `
+            <li class="text-base text-gray-700">
+              <strong>${typeof item === 'string' ? item : item.text}</strong>
+              ${
+                item.children
+                  ? `
+                <ul class="mt-2 pl-6 space-y-1 border-l-2 border-gray-300">
+                  ${item.children
+                    .map(
+                      child => `
+                    <li class="text-gray-600">• ${child}</li>
+                  `
+                    )
+                    .join('')}
+                </ul>
+              `
+                  : ''
+              }
+            </li>
+          `
+            )
+            .join('')}
+        </ul>`;
+    }
+
+    // Handle icon list
+    if (block.variant === 'icon-list') {
+      const iconMap = {
+        CheckCircle: '✓',
+        AlertCircle: '⚠️',
+        Info: 'ℹ️',
+        Star: '⭐',
+        Lightbulb: '💡',
+        Target: '🎯',
+      };
+
+      return `
+        <ul class="my-6 space-y-3">
+          ${(block.items || listItems)
+            .map(
+              item => `
+            <li class="flex items-center gap-3 text-base text-gray-700">
+              <span class="text-xl">${iconMap[item.icon] || '•'}</span>
+              <span>${typeof item === 'string' ? item : item.text}</span>
+            </li>
+          `
+            )
+            .join('')}
+        </ul>`;
+    }
+
+    // Handle tagged list
+    if (block.variant === 'tagged') {
+      return `
+        <ul class="my-6 space-y-2">
+          ${(block.items || listItems)
+            .map(
+              item => `
+            <li class="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+              <span class="text-base text-gray-700">${typeof item === 'string' ? item : item.text}</span>
+              <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                    style="background-color: ${item.tagColor || '#E5E7EB'}; 
+                           color: ${item.tagTextColor || '#374151'}">
+                ${item.tag || 'tag'}
+              </span>
+            </li>
+          `
+            )
+            .join('')}
+        </ul>`;
+    }
+
+    // Handle pros-cons list
+    if (block.variant === 'pros-cons') {
+      return `
+        <div class="grid md:grid-cols-2 gap-6 my-6">
+          <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+            <h4 class="font-semibold text-green-900 mb-3">✓ Pros</h4>
+            <ul class="space-y-2">
+              ${(
+                block.pros ||
+                listItems.slice(0, Math.ceil(listItems.length / 2))
+              )
+                .map(
+                  pro => `
+                <li class="text-green-800 flex gap-2">
+                  <span>✓</span>
+                  <span>${typeof pro === 'string' ? pro : pro.text}</span>
+                </li>
+              `
+                )
+                .join('')}
+            </ul>
+          </div>
+          <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+            <h4 class="font-semibold text-red-900 mb-3">✗ Cons</h4>
+            <ul class="space-y-2">
+              ${(block.cons || listItems.slice(Math.ceil(listItems.length / 2)))
+                .map(
+                  con => `
+                <li class="text-red-800 flex gap-2">
+                  <span>✗</span>
+                  <span>${typeof con === 'string' ? con : con.text}</span>
+                </li>
+              `
+                )
+                .join('')}
+            </ul>
+          </div>
+        </div>`;
     }
 
     // Handle bulleted list - Use proper CSS classes from ListComponent
@@ -2300,6 +2625,112 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
           </div>
         </div>
       `;
+    }
+
+    // NEW VARIANTS - Phase 4 Enhancements
+    // Handle testimonial quote with avatar and rating
+    if (quoteVariant === 'testimonial') {
+      const rating = block.rating || 5;
+      return `
+        <div class="relative bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto border border-gray-100">
+          <div class="flex items-start gap-4 mb-4">
+            <img src="${authorImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100&q=80'}" 
+                 alt="${quoteAuthor}" class="w-12 h-12 rounded-full object-cover" />
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900">${quoteAuthor || 'Anonymous'}</p>
+              <div class="flex gap-1 mt-1">
+                ${Array(rating)
+                  .fill(0)
+                  .map(() => '<span class="text-yellow-400">★</span>')
+                  .join('')}
+              </div>
+            </div>
+          </div>
+          <blockquote class="text-gray-700 leading-relaxed italic">
+            "${quoteContent}"
+          </blockquote>
+        </div>`;
+    }
+
+    // Handle pull-quote (large, highlighted)
+    if (quoteVariant === 'pull-quote') {
+      return `
+        <div class="relative my-8 pl-6 border-l-4 border-blue-500 bg-blue-50 p-6 rounded-r-lg">
+          <blockquote class="text-2xl md:text-3xl text-gray-900 font-semibold leading-tight mb-4">
+            "${quoteContent}"
+          </blockquote>
+          ${quoteAuthor ? `<cite class="text-gray-700 font-medium">— ${quoteAuthor}</cite>` : ''}
+        </div>`;
+    }
+
+    // Handle citation quote
+    if (quoteVariant === 'citation') {
+      return `
+        <div class="relative bg-gray-50 rounded-lg p-6 my-6 border-l-4 border-indigo-500">
+          <div class="flex gap-4">
+            <div class="text-4xl text-indigo-200 leading-none">"</div>
+            <div class="flex-1">
+              <p class="text-gray-700 leading-relaxed mb-3">${quoteContent}</p>
+              ${quoteAuthor ? `<p class="text-sm text-gray-600 font-semibold">— <span class="text-indigo-600">${quoteAuthor}</span></p>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Handle comparison quote
+    if (quoteVariant === 'comparison') {
+      const quotes = block.quotes || [
+        { quote: quoteContent, author: quoteAuthor },
+        { quote: 'Second quote', author: 'Author 2' },
+      ];
+      return `
+        <div class="grid md:grid-cols-2 gap-6 my-6">
+          ${quotes
+            .map(
+              (q, idx) => `
+            <div class="p-6 rounded-lg ${idx === 0 ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-green-50 border-l-4 border-green-500'}">
+              <blockquote class="text-gray-700 italic mb-3">"${q.quote}"</blockquote>
+              <cite class="text-sm font-semibold ${idx === 0 ? 'text-blue-700' : 'text-green-700'}">— ${q.author}</cite>
+            </div>
+          `
+            )
+            .join('')}
+        </div>`;
+    }
+
+    // Handle quote with background and icon
+    if (quoteVariant === 'with-background') {
+      return `
+        <div class="relative rounded-xl overflow-hidden shadow-lg my-6">
+          <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 opacity-90"></div>
+          <div class="relative z-10 p-8 md:p-12 text-center">
+            <div class="text-5xl mb-4">💡</div>
+            <blockquote class="text-xl md:text-2xl text-white font-light leading-relaxed mb-6">
+              "${quoteContent}"
+            </blockquote>
+            ${quoteAuthor ? `<cite class="text-white/90 font-medium">— ${quoteAuthor}</cite>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // Handle quote with icon
+    if (quoteVariant === 'with-icon') {
+      const iconMap = {
+        success: '✓',
+        warning: '⚠️',
+        info: 'ℹ️',
+        tip: '💡',
+        quote: '"',
+      };
+      const icon = iconMap[block.icon] || iconMap.quote;
+      return `
+        <div class="flex gap-4 my-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="text-4xl flex-shrink-0">${icon}</div>
+          <div class="flex-1">
+            <blockquote class="text-gray-800 leading-relaxed mb-3">${quoteContent}</blockquote>
+            ${quoteAuthor ? `<cite class="text-sm text-gray-600 font-semibold">— ${quoteAuthor}</cite>` : ''}
+          </div>
+        </div>`;
     }
 
     // Default quote_a - Use proper CSS classes from QuoteComponent
@@ -4215,6 +4646,7 @@ Generate ONLY the caption text, no additional explanation.`;
     const blockConfigs = {
       objectives: [
         { type: 'statement', variant: 'important' },
+        { type: 'statement', variant: 'pro-tip' },
         { type: 'text_paragraph' },
         { type: 'list_bullet' },
       ],
@@ -4238,6 +4670,7 @@ Generate ONLY the caption text, no additional explanation.`;
       ],
       'why-matters': [
         { type: 'statement', variant: 'important' },
+        { type: 'statement', variant: 'remember' },
         { type: 'quote' },
         { type: 'text_paragraph' },
         { type: 'list_numbered' },
@@ -4271,18 +4704,20 @@ Generate ONLY the caption text, no additional explanation.`;
       ],
       mistakes: [
         { type: 'statement', variant: 'warning' },
+        { type: 'statement', variant: 'error' },
         { type: 'text_paragraph' },
         { type: 'list_bullet' },
         { type: 'quote' },
       ],
       practices: [
         { type: 'quote' },
-        { type: 'statement', variant: 'info' },
+        { type: 'statement', variant: 'success' },
         { type: 'text_paragraph' },
         { type: 'list_bullet' },
         { type: 'link' },
       ],
       summary: [
+        { type: 'statement', variant: 'key-takeaway' },
         { type: 'statement', variant: 'highlight' },
         { type: 'text_paragraph' },
         { type: 'list_bullet' },
@@ -4311,18 +4746,16 @@ Generate ONLY the caption text, no additional explanation.`;
     // Ensure we have at least minBlocks
     while (blocks.length < minBlocks) {
       const additionalTypes = [
-        'text_paragraph',
-        'statement',
-        'list_bullet',
-        'quote',
-        'text_subheading',
+        { type: 'text_paragraph' },
+        { type: 'statement', variant: 'success' },
+        { type: 'statement', variant: 'pro-tip' },
+        { type: 'list_bullet' },
+        { type: 'quote' },
+        { type: 'text_subheading' },
       ];
-      const randomType =
+      const randomBlock =
         additionalTypes[Math.floor(Math.random() * additionalTypes.length)];
-      blocks.push({
-        type: randomType,
-        variant: randomType === 'statement' ? 'info' : null,
-      });
+      blocks.push(randomBlock);
     }
 
     // Limit to minBlocks + 2 for variety

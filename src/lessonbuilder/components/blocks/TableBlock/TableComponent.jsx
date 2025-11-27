@@ -31,6 +31,8 @@ const TableComponent = ({
   const [isEditMode, setIsEditMode] = useState(isEditing || false);
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBulkPasteDialog, setShowBulkPasteDialog] = useState(false);
+  const [bulkPasteText, setBulkPasteText] = useState('');
   const componentRef = useRef();
 
   // Animation effect for smooth appearance
@@ -246,6 +248,85 @@ const TableComponent = ({
     }));
   };
 
+  const handleBulkPaste = pastedText => {
+    try {
+      // Split by newlines for rows and tabs for columns
+      const rows = pastedText
+        .trim()
+        .split('\n')
+        .filter(row => row.trim().length > 0);
+
+      if (rows.length === 0) {
+        alert('Invalid paste format. Please paste some data.');
+        return;
+      }
+
+      const parsedData = rows.map(row =>
+        row
+          .split('\t')
+          .map(cell => cell.trim())
+          .filter(cell => cell.length > 0 || true)
+      );
+
+      if (parsedData.length === 0 || parsedData[0].length === 0) {
+        alert(
+          'Invalid paste format. Please use tab-separated values (like Excel).'
+        );
+        return;
+      }
+
+      // Determine the number of columns
+      const numCols = Math.max(...parsedData.map(row => row.length));
+      const numRows = parsedData.length;
+
+      // Prepare new table data
+      let newHeaders = [];
+      let newData = [];
+
+      // If multiple rows, first row becomes headers
+      if (numRows > 1) {
+        for (let i = 0; i < numCols; i++) {
+          newHeaders.push(parsedData[0][i] || `Column ${i + 1}`);
+        }
+        // Rest becomes data rows
+        for (let i = 1; i < numRows; i++) {
+          const row = [];
+          for (let j = 0; j < numCols; j++) {
+            row.push(parsedData[i][j] || '');
+          }
+          newData.push(row);
+        }
+      } else {
+        // Single row: treat as data, auto-generate headers
+        for (let i = 0; i < numCols; i++) {
+          newHeaders.push(`Column ${i + 1}`);
+        }
+        newData.push(parsedData[0]);
+      }
+
+      // Ensure we have valid data
+      if (newData.length === 0) {
+        newData = [new Array(numCols).fill('')];
+      }
+
+      setTableData(prev => ({
+        ...(prev || {}),
+        headers: newHeaders,
+        data: newData,
+        columns: numCols,
+        rows: newData.length,
+      }));
+
+      const dataRowCount = newData.length;
+      alert(`✅ Pasted ${dataRowCount} data row(s) × ${numCols} column(s)`);
+    } catch (error) {
+      console.error('Paste error:', error);
+      alert(
+        "Error parsing pasted data. Please ensure it's tab-separated (like Excel)."
+      );
+    }
+  };
+
   const generateTableHTML = (data, templateId, isPreview = false) => {
     const template = tableTemplates.find(t => t.id === templateId);
 
@@ -259,23 +340,23 @@ const TableComponent = ({
             ? 'md:grid-cols-3'
             : `md:grid-cols-${data.columns}`;
 
-      const gridGap = isPreview ? 'gap-1' : 'gap-8';
-      const padding = isPreview ? 'p-1' : 'p-6';
-      const textSize = isPreview ? 'text-xs' : 'text-base';
-      const headerSize = isPreview ? 'text-xs' : 'text-lg';
+      const gridGap = isPreview ? 'gap-1' : 'gap-6';
+      const padding = isPreview ? 'p-1.5' : 'p-4';
+      const textSize = isPreview ? 'text-[10px]' : 'text-sm';
+      const headerSize = isPreview ? 'text-[11px]' : 'text-base';
 
       return `
         <div class="grid ${colClass} ${gridGap}">
           ${data.data[0]
             .map(
               (content, index) => `
-            <div class="group relative ${padding} rounded-lg border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 min-h-fit">
-              <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-lg"></div>
-              <div class="flex items-start mb-2">
-                <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
-                <h3 class="font-bold ${headerSize} text-gray-900 break-words leading-tight">${data.headers[index]}</h3>
+            <div class="group relative ${padding} rounded border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 min-h-fit">
+              <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t"></div>
+              <div class="flex items-start mb-1">
+                <div class="w-0.5 h-0.5 bg-blue-500 rounded-full mr-1 mt-1 flex-shrink-0"></div>
+                <h3 class="font-bold ${headerSize} text-gray-900 break-words leading-tight line-clamp-2">${data.headers[index]}</h3>
               </div>
-              <div class="text-gray-700 leading-relaxed ${textSize} break-words whitespace-pre-wrap overflow-wrap-anywhere">${content}</div>
+              <div class="text-gray-700 leading-relaxed ${textSize} break-words line-clamp-3 overflow-hidden">${content.substring(0, 60)}</div>
             </div>
           `
             )
@@ -284,10 +365,10 @@ const TableComponent = ({
       `;
     } else {
       // Generate pure table HTML without wrapper containers
-      const padding = isPreview ? 'px-1 py-0.5' : 'px-6 py-4';
-      const textSize = isPreview ? 'text-xs' : 'text-sm';
-      const headerTextSize = isPreview ? 'text-xs' : 'text-sm';
-      const tableClass = isPreview ? 'w-full text-xs' : 'min-w-full';
+      const padding = isPreview ? 'px-2 py-1' : 'px-6 py-4';
+      const textSize = isPreview ? 'text-[10px]' : 'text-sm';
+      const headerTextSize = isPreview ? 'text-[10px]' : 'text-sm';
+      const tableClass = isPreview ? 'w-full text-[10px]' : 'min-w-full';
 
       return `
         <div class="relative">
@@ -298,10 +379,10 @@ const TableComponent = ({
                 ${data.headers
                   .map(
                     (header, index) => `
-                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top" style="min-width: 150px; max-width: 300px;">
+                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top" style="min-width: ${isPreview ? '80px' : '150px'}; max-width: ${isPreview ? '120px' : '300px'};">
                     <div class="flex items-start">
-                      <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
-                      <span class="break-words leading-tight">${header}</span>
+                      <div class="w-0.5 h-0.5 bg-blue-500 rounded-full mr-1 mt-1 flex-shrink-0"></div>
+                      <span class="break-words leading-tight line-clamp-2">${header}</span>
                     </div>
                   </th>
                 `
@@ -317,8 +398,8 @@ const TableComponent = ({
                   ${row
                     .map(
                       (cell, cellIndex) => `
-                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: 150px; max-width: 300px;">
-                      <div class="font-medium ${textSize} break-words whitespace-pre-wrap leading-relaxed">${cell}</div>
+                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: ${isPreview ? '80px' : '150px'}; max-width: ${isPreview ? '120px' : '300px'};">
+                      <div class="font-medium ${textSize} break-words leading-relaxed line-clamp-2">${cell.substring(0, 40)}</div>
                     </td>
                   `
                     )
@@ -518,6 +599,14 @@ const TableComponent = ({
             </h4>
             <div className="flex space-x-2">
               <Button
+                onClick={() => setShowBulkPasteDialog(true)}
+                size="sm"
+                className="bg-purple-500 hover:bg-purple-600 text-white flex items-center gap-1"
+                title="Paste Excel-like data (6x23 format supported)"
+              >
+                📋 Paste Data
+              </Button>
+              <Button
                 onClick={addRow}
                 size="sm"
                 className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-1"
@@ -534,6 +623,13 @@ const TableComponent = ({
                 Add Column
               </Button>
             </div>
+          </div>
+
+          {/* Bulk Paste Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            <strong>💡 Tip:</strong> Click "Paste Data" to quickly import
+            Excel-like data. Copy from Excel/Sheets, paste here with
+            tab-separated columns and newline-separated rows.
           </div>
 
           {/* Headers */}
@@ -769,8 +865,8 @@ const TableComponent = ({
             </div>
 
             {/* Enhanced Preview */}
-            <div className="bg-white rounded-xl border border-gray-200 p-2 group-hover:border-blue-200 transition-colors duration-300">
-              <div className="flex items-center justify-between mb-1">
+            <div className="bg-white rounded-xl border border-gray-200 p-3 group-hover:border-blue-200 transition-colors duration-300">
+              <div className="flex items-center justify-between mb-2">
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Preview
                 </div>
@@ -779,7 +875,7 @@ const TableComponent = ({
                 </div>
               </div>
               <div
-                className="w-full overflow-hidden max-w-full"
+                className="w-full overflow-x-auto max-w-full text-xs"
                 style={{ maxWidth: '100%' }}
                 dangerouslySetInnerHTML={{
                   __html: generateTableHTML(
@@ -858,6 +954,69 @@ const TableComponent = ({
     );
   }
 
+  // Render Bulk Paste Dialog
+  const renderBulkPasteDialog = () => (
+    <Dialog open={showBulkPasteDialog} onOpenChange={setShowBulkPasteDialog}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Paste Excel-like Data</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            <strong>📋 How to use:</strong>
+            <ul className="mt-2 space-y-1 ml-4">
+              <li>• Copy data from Excel, Google Sheets, or any spreadsheet</li>
+              <li>• Paste it in the text area below</li>
+              <li>• Supports any size: 6×23, 10×50, etc.</li>
+              <li>• First row becomes headers (optional)</li>
+            </ul>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Paste your data here:
+            </label>
+            <textarea
+              value={bulkPasteText}
+              onChange={e => setBulkPasteText(e.target.value)}
+              placeholder="Name	Age	City
+John	25	New York
+Jane	30	Los Angeles
+Bob	28	Chicago"
+              className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+            />
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button
+              onClick={() => {
+                setShowBulkPasteDialog(false);
+                setBulkPasteText('');
+              }}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (bulkPasteText.trim()) {
+                  handleBulkPaste(bulkPasteText);
+                  setShowBulkPasteDialog(false);
+                  setBulkPasteText('');
+                } else {
+                  alert('Please paste some data first');
+                }
+              }}
+              className="bg-purple-500 hover:bg-purple-600 text-white"
+            >
+              Import Data
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Render sidebar for template selection
   return (
     <div
@@ -902,6 +1061,9 @@ const TableComponent = ({
           {renderTemplateSelection()}
         </div>
       </div>
+
+      {/* Bulk Paste Dialog */}
+      {renderBulkPasteDialog()}
     </div>
   );
 };
