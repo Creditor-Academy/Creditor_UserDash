@@ -4564,6 +4564,58 @@ MOOD: Modern, inspiring, professional, engaging`;
                                             className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
                                             placeholder="Total duration, target number of modules/lessons, and flow style (linear vs modular/choose-your-own-path)."
                                           />
+
+                                          {/* Module and Lesson Count Inputs */}
+                                          <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div>
+                                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                Number of modules
+                                              </label>
+                                              <input
+                                                type="number"
+                                                min="1"
+                                                max="20"
+                                                value={
+                                                  courseData.moduleCount || ''
+                                                }
+                                                onChange={e =>
+                                                  setCourseData(prev => ({
+                                                    ...prev,
+                                                    moduleCount: e.target.value
+                                                      ? parseInt(e.target.value)
+                                                      : 1,
+                                                  }))
+                                                }
+                                                className="w-full px-2 py-1 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
+                                                placeholder="e.g., 4"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                Lessons per module
+                                              </label>
+                                              <input
+                                                type="number"
+                                                min="1"
+                                                max="20"
+                                                value={
+                                                  courseData.lessonsPerModule ||
+                                                  ''
+                                                }
+                                                onChange={e =>
+                                                  setCourseData(prev => ({
+                                                    ...prev,
+                                                    lessonsPerModule: e.target
+                                                      .value
+                                                      ? parseInt(e.target.value)
+                                                      : 1,
+                                                  }))
+                                                }
+                                                className="w-full px-2 py-1 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
+                                                placeholder="e.g., 3"
+                                              />
+                                            </div>
+                                          </div>
                                         </div>
 
                                         <div>

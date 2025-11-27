@@ -33,6 +33,8 @@ const TableComponent = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showBulkPasteDialog, setShowBulkPasteDialog] = useState(false);
   const [bulkPasteText, setBulkPasteText] = useState('');
+  const [pasteSuccess, setPasteSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const componentRef = useRef();
 
   // Animation effect for smooth appearance
@@ -250,6 +252,10 @@ const TableComponent = ({
 
   const handleBulkPaste = pastedText => {
     try {
+      if (!pastedText || !pastedText.trim()) {
+        return;
+      }
+
       // Split by newlines for rows and tabs for columns
       const rows = pastedText
         .trim()
@@ -257,25 +263,22 @@ const TableComponent = ({
         .filter(row => row.trim().length > 0);
 
       if (rows.length === 0) {
-        alert('Invalid paste format. Please paste some data.');
         return;
       }
 
-      const parsedData = rows.map(row =>
-        row
-          .split('\t')
-          .map(cell => cell.trim())
-          .filter(cell => cell.length > 0 || true)
-      );
+      // Parse each row by tabs
+      const parsedData = rows
+        .map(row => {
+          const cells = row.split('\t').map(cell => cell.trim());
+          return cells.length > 0 ? cells : [];
+        })
+        .filter(row => row.length > 0);
 
       if (parsedData.length === 0 || parsedData[0].length === 0) {
-        alert(
-          'Invalid paste format. Please use tab-separated values (like Excel).'
-        );
         return;
       }
 
-      // Determine the number of columns
+      // Determine the number of columns (max columns across all rows)
       const numCols = Math.max(...parsedData.map(row => row.length));
       const numRows = parsedData.length;
 
@@ -318,12 +321,20 @@ const TableComponent = ({
       }));
 
       const dataRowCount = newData.length;
-      alert(`✅ Pasted ${dataRowCount} data row(s) × ${numCols} column(s)`);
+      setSuccessMessage(
+        `Pasted ${dataRowCount} data row(s) × ${numCols} column(s)`
+      );
+      setPasteSuccess(true);
+
+      // Auto-close dialog after 1.5 seconds
+      setTimeout(() => {
+        setShowBulkPasteDialog(false);
+        setBulkPasteText('');
+        setPasteSuccess(false);
+        setSuccessMessage('');
+      }, 1500);
     } catch (error) {
       console.error('Paste error:', error);
-      alert(
-        "Error parsing pasted data. Please ensure it's tab-separated (like Excel)."
-      );
     }
   };
 
@@ -364,22 +375,22 @@ const TableComponent = ({
         </div>
       `;
     } else {
-      // Generate pure table HTML without wrapper containers
+      // Generate responsive table HTML with proper mobile support
       const padding = isPreview ? 'px-2 py-1' : 'px-6 py-4';
       const textSize = isPreview ? 'text-[10px]' : 'text-sm';
       const headerTextSize = isPreview ? 'text-[10px]' : 'text-sm';
       const tableClass = isPreview ? 'w-full text-[10px]' : 'min-w-full';
 
       return `
-        <div class="relative">
+        <div class="relative w-full">
           <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm table-scrollbar">
-            <table class="${tableClass} divide-y divide-gray-200 min-w-full">
+            <table class="${tableClass} divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
                 ${data.headers
                   .map(
                     (header, index) => `
-                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top" style="min-width: ${isPreview ? '80px' : '150px'}; max-width: ${isPreview ? '120px' : '300px'};">
+                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top whitespace-nowrap" style="min-width: ${isPreview ? '80px' : '150px'}; max-width: ${isPreview ? '120px' : '300px'};">
                     <div class="flex items-start">
                       <div class="w-0.5 h-0.5 bg-blue-500 rounded-full mr-1 mt-1 flex-shrink-0"></div>
                       <span class="break-words leading-tight line-clamp-2">${header}</span>
@@ -411,6 +422,22 @@ const TableComponent = ({
             </tbody>
             </table>
           </div>
+          <style>
+            @media (max-width: 768px) {
+              .table-scrollbar {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+              }
+              table {
+                font-size: 0.875rem;
+              }
+              th, td {
+                padding: 0.5rem 0.75rem !important;
+                min-width: 100px !important;
+                max-width: 150px !important;
+              }
+            }
+          </style>
         </div>
       `;
     }
@@ -892,6 +919,211 @@ const TableComponent = ({
     </div>
   );
 
+  // Render Bulk Paste Dialog
+  const renderBulkPasteDialog = () => (
+    <Dialog open={showBulkPasteDialog} onOpenChange={setShowBulkPasteDialog}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg -mx-6 -mt-6 px-6 py-6 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">
+                Import Data from Spreadsheet
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">
+                Paste Excel, Google Sheets, or CSV data
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          {/* Instructions Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 text-sm mb-2">
+                  How to use:
+                </h3>
+                <ul className="space-y-1.5 text-sm text-blue-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">1.</span>
+                    <span>
+                      Copy data from Excel, Google Sheets, or any spreadsheet
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">2.</span>
+                    <span>Paste it in the text area below</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">3.</span>
+                    <span>Supports any size: 6×23, 10×50, 100×100, etc.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">4.</span>
+                    <span>First row becomes headers (optional)</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Example Card */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-gray-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M5 9V7a1 1 0 011-1h8a1 1 0 011 1v2M5 9c0 1.657-.895 3-2 3s-2-1.343-2-3m14 0c0 1.657.895 3 2 3s2-1.343 2-3m-9-3h2m-6 3h12a2 2 0 002-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v5a2 2 0 002 2z" />
+              </svg>
+              Example Format:
+            </h3>
+            <div className="bg-white border border-gray-300 rounded-lg p-3 font-mono text-xs text-gray-700 overflow-x-auto">
+              <div>Name Age City</div>
+              <div>John 25 New York</div>
+              <div>Jane 30 Los Angeles</div>
+              <div>Bob 28 Chicago</div>
+            </div>
+          </div>
+
+          {/* Textarea */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">
+              Paste your data here:
+            </label>
+            <textarea
+              value={bulkPasteText}
+              onChange={e => setBulkPasteText(e.target.value)}
+              placeholder="Name	Age	City
+John	25	New York
+Jane	30	Los Angeles
+Bob	28	Chicago"
+              className="w-full h-48 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none font-mono text-sm transition-all duration-200 resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              💡 Tip: Use Tab to separate columns and Enter to separate rows
+            </p>
+          </div>
+
+          {/* Success Message */}
+          {pasteSuccess && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 flex items-center gap-3 animate-in fade-in duration-300">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-6 h-6 text-green-600 animate-bounce"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-green-900">
+                  Data imported successfully!
+                </p>
+                <p className="text-sm text-green-700">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+            <Button
+              onClick={() => {
+                setShowBulkPasteDialog(false);
+                setBulkPasteText('');
+                setPasteSuccess(false);
+                setSuccessMessage('');
+              }}
+              variant="outline"
+              className="px-6 py-2 rounded-lg font-medium"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (bulkPasteText.trim()) {
+                  handleBulkPaste(bulkPasteText);
+                }
+              }}
+              disabled={pasteSuccess}
+              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {pasteSuccess ? (
+                <>
+                  <svg
+                    className="w-4 h-4 inline mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Done
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4 inline mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Import Data
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Render edit dialog when in edit mode
   if (isEditMode) {
     if (isLoading) {
@@ -913,109 +1145,51 @@ const TableComponent = ({
     const template = tableTemplates.find(t => t.id === selectedTemplate);
 
     return (
-      <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent
-          className={`max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out transform ${
-            isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-          }`}
-          aria-describedby={undefined}
-        >
-          {/* Fixed Header */}
-          <DialogHeader className="flex-shrink-0 sticky top-0 bg-white z-10 border-b border-gray-200 pb-4">
-            <DialogTitle>
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg text-white">
-                    {template?.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      Edit {template?.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {template?.description}
-                    </p>
+      <>
+        <Dialog open={true} onOpenChange={onClose}>
+          <DialogContent
+            className={`max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out transform ${
+              isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+            }`}
+            aria-describedby={undefined}
+          >
+            {/* Fixed Header */}
+            <DialogHeader className="flex-shrink-0 sticky top-0 bg-white z-10 border-b border-gray-200 pb-4">
+              <DialogTitle>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg text-white">
+                      {template?.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Edit {template?.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {template?.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+              </DialogTitle>
+            </DialogHeader>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              {template?.type === 'layout'
-                ? renderColumnEditor(template, true)
-                : renderDataTableEditor(template, true)}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                {template?.type === 'layout'
+                  ? renderColumnEditor(template, true)
+                  : renderDataTableEditor(template, true)}
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Paste Dialog */}
+        {renderBulkPasteDialog()}
+      </>
     );
   }
-
-  // Render Bulk Paste Dialog
-  const renderBulkPasteDialog = () => (
-    <Dialog open={showBulkPasteDialog} onOpenChange={setShowBulkPasteDialog}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Paste Excel-like Data</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-            <strong>📋 How to use:</strong>
-            <ul className="mt-2 space-y-1 ml-4">
-              <li>• Copy data from Excel, Google Sheets, or any spreadsheet</li>
-              <li>• Paste it in the text area below</li>
-              <li>• Supports any size: 6×23, 10×50, etc.</li>
-              <li>• First row becomes headers (optional)</li>
-            </ul>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Paste your data here:
-            </label>
-            <textarea
-              value={bulkPasteText}
-              onChange={e => setBulkPasteText(e.target.value)}
-              placeholder="Name	Age	City
-John	25	New York
-Jane	30	Los Angeles
-Bob	28	Chicago"
-              className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-            />
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button
-              onClick={() => {
-                setShowBulkPasteDialog(false);
-                setBulkPasteText('');
-              }}
-              variant="outline"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (bulkPasteText.trim()) {
-                  handleBulkPaste(bulkPasteText);
-                  setShowBulkPasteDialog(false);
-                  setBulkPasteText('');
-                } else {
-                  alert('Please paste some data first');
-                }
-              }}
-              className="bg-purple-500 hover:bg-purple-600 text-white"
-            >
-              Import Data
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
 
   // Render sidebar for template selection
   return (

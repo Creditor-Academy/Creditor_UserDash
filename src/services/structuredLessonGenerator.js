@@ -113,88 +113,47 @@ class StructuredLessonGenerator {
     const totalBlocks = 8;
 
     try {
-      // Block 1: Master Heading
+      // Generate ALL blocks in parallel (OPTIMIZED - Phase 6: Ultra Parallel)
       onProgress?.({
         current: 1,
         total: totalBlocks,
-        message: 'Creating lesson title...',
+        message: 'Generating all content blocks in parallel...',
       });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateMasterHeading(context))
-      );
 
-      // Block 2: Paragraph
-      onProgress?.({
-        current: 2,
-        total: totalBlocks,
-        message: 'Writing introduction...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateParagraph(context))
-      );
+      const [
+        masterHeading,
+        paragraph,
+        elegantQuote,
+        carouselQuotes,
+        imageLeft,
+        imageRight,
+        numberedList,
+        table,
+        divider,
+      ] = await Promise.all([
+        this.generateWithRetry(() => this.generateMasterHeading(context)),
+        this.generateWithRetry(() => this.generateParagraph(context)),
+        this.generateWithRetry(() => this.generateElegantQuote(context)),
+        this.generateWithRetry(() => this.generateCarouselQuotes(context)),
+        this.generateWithRetry(() => this.generateImageLeft(context)),
+        this.generateWithRetry(() => this.generateImageRight(context)),
+        this.generateWithRetry(() => this.generateNumberedList(context)),
+        this.generateWithRetry(() => this.generateTable(context)),
+        Promise.resolve(this.generateDivider()), // Static, no async needed
+      ]);
 
-      // Block 3: Statement (Elegant Quote)
-      onProgress?.({
-        current: 3,
-        total: totalBlocks,
-        message: 'Creating key insight...',
-      });
+      // Add all blocks in order
       blocks.push(
-        await this.generateWithRetry(() => this.generateElegantQuote(context))
+        masterHeading,
+        paragraph,
+        elegantQuote,
+        carouselQuotes,
+        imageLeft,
+        imageRight,
+        numberedList,
+        table,
+        divider
       );
-
-      // Block 4: Carousel Quotes
-      onProgress?.({
-        current: 4,
-        total: totalBlocks,
-        message: 'Generating expert quotes...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateCarouselQuotes(context))
-      );
-
-      // Block 5: Image Left
-      onProgress?.({
-        current: 5,
-        total: totalBlocks,
-        message: 'Generating first image...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateImageLeft(context))
-      );
-
-      // Block 6: Image Right
-      onProgress?.({
-        current: 6,
-        total: totalBlocks,
-        message: 'Generating second image...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateImageRight(context))
-      );
-
-      // Block 7: Numbered List
-      onProgress?.({
-        current: 7,
-        total: totalBlocks,
-        message: 'Creating key points...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateNumberedList(context))
-      );
-
-      // Block 8: Table
-      onProgress?.({
-        current: 8,
-        total: totalBlocks,
-        message: 'Building comparison table...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateTable(context))
-      );
-
-      // Block 9: Divider
-      blocks.push(this.generateDivider());
 
       // Convert blocks to HTML
       const processedBlocks = blocks.map(block => ({
@@ -421,17 +380,24 @@ Requirements:
    */
   async generateImageLeft(context) {
     // Generate image prompt
-    const imagePromptText = `Create a professional, educational image prompt for "${context.topic}".
-    
+    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt for "${context.topic}".
+
 Requirements:
-- Describe a clear, informative visual
-- Modern and professional style
-- Suitable for educational content
+- Design a structured, organized visual with clear hierarchy
+- Include flowchart elements, diagrams, or process flows if applicable
+- Use professional colors, icons, and typography
+- Show detailed information with proper spacing and layout
+- Include labels, annotations, and key points clearly visible
+- Modern, clean, professional style suitable for educational content
+- Ensure all text is readable and well-organized
+- Create a visually rich, information-dense design
 - Return ONLY the image description, no extra text`;
 
     const imagePrompt = await openAIService.generateText(imagePromptText, {
-      maxTokens: 100,
-      temperature: 0.7,
+      maxTokens: 200,
+      temperature: 0.8,
+      systemPrompt:
+        'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
     });
 
     // Generate content text
@@ -454,31 +420,52 @@ Requirements:
     let imageError = null;
 
     try {
-      // Enhance prompt with 7-layer premium quality system
+      // Enhance prompt with infographic-specific quality system
       let enhancedPrompt = imagePrompt.trim();
 
-      // Add premium quality layers if not already present
-      if (!enhancedPrompt.toLowerCase().includes('cinematic')) {
-        enhancedPrompt +=
-          ', soft cinematic lighting, volumetric light, dramatic contrast';
+      // Add infographic-specific enhancements
+      if (!enhancedPrompt.toLowerCase().includes('infographic')) {
+        enhancedPrompt = `Professional infographic/flowchart design: ${enhancedPrompt}`;
       }
-      if (!enhancedPrompt.toLowerCase().includes('ultra-detailed')) {
+
+      // Ensure readable text and clear hierarchy
+      if (!enhancedPrompt.toLowerCase().includes('readable')) {
         enhancedPrompt +=
-          ', ultra-detailed, 8K clarity, crisp textures, photorealistic depth';
+          ', with clear, readable text labels, professional typography';
       }
-      if (!enhancedPrompt.toLowerCase().includes('composition')) {
+
+      // Add visual hierarchy and structure
+      if (!enhancedPrompt.toLowerCase().includes('hierarchy')) {
         enhancedPrompt +=
-          ', centered composition, balanced spacing, clean layout';
+          ', clear visual hierarchy, organized sections, logical flow';
       }
-      if (
-        !enhancedPrompt.toLowerCase().includes('shadow') &&
-        !enhancedPrompt.toLowerCase().includes('reflection')
-      ) {
+
+      // Add professional design elements
+      if (!enhancedPrompt.toLowerCase().includes('icon')) {
         enhancedPrompt +=
-          ', soft deep shadows, realistic reflections, smooth lighting falloff';
+          ', professional icons, visual elements, color-coded sections';
       }
+
+      // Add quality specifications for infographics
+      if (!enhancedPrompt.toLowerCase().includes('8k')) {
+        enhancedPrompt +=
+          ', ultra-high resolution, 8K quality, crisp details, sharp text';
+      }
+
+      // Add professional styling
+      if (!enhancedPrompt.toLowerCase().includes('professional')) {
+        enhancedPrompt +=
+          ', modern professional design, premium color palette, clean spacing';
+      }
+
+      // Ensure information density
+      if (!enhancedPrompt.toLowerCase().includes('information')) {
+        enhancedPrompt +=
+          ', information-rich, well-organized, detailed content';
+      }
+
       enhancedPrompt +=
-        '. No text, no watermarks, clean background. Vivid, premium quality.';
+        '. Clean white or light background, no watermarks, vivid colors, professional quality.';
 
       console.log(
         '🎨 Generating AI image (left) with premium 7-layer enhancement:',
@@ -560,17 +547,24 @@ Requirements:
    * Block 6: Content Left + Image Right
    */
   async generateImageRight(context) {
-    const imagePromptText = `Create a professional image prompt showing practical application of "${context.topic}".
+    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing practical application of "${context.topic}".
     
 Requirements:
-- Show real-world usage or example
-- Modern and professional
-- Educational value
+- Design a structured, organized visual with clear hierarchy
+- Show practical applications with flowchart or process diagram elements
+- Use professional colors, icons, and typography
+- Include detailed information with proper spacing and layout
+- Display labels, annotations, and key points clearly visible
+- Modern, clean, professional style suitable for educational content
+- Ensure all text is readable and well-organized
+- Create a visually rich, information-dense design
 - Return ONLY the image description`;
 
     const imagePrompt = await openAIService.generateText(imagePromptText, {
-      maxTokens: 100,
-      temperature: 0.7,
+      maxTokens: 200,
+      temperature: 0.8,
+      systemPrompt:
+        'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
     });
 
     const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".
@@ -591,14 +585,61 @@ Requirements:
     let imageError = null;
 
     try {
-      console.log('🎨 Generating AI image (right):', imagePrompt.trim());
-      const imageResult = await openAIService.generateImage(
-        imagePrompt.trim(),
-        {
-          ...DEFAULT_IMAGE_OPTIONS,
-          folder: IMAGE_FOLDERS.right,
-        }
+      // Enhance prompt with infographic-specific quality system
+      let enhancedPrompt = imagePrompt.trim();
+
+      // Add infographic-specific enhancements
+      if (!enhancedPrompt.toLowerCase().includes('infographic')) {
+        enhancedPrompt = `Professional infographic/flowchart design: ${enhancedPrompt}`;
+      }
+
+      // Ensure readable text and clear hierarchy
+      if (!enhancedPrompt.toLowerCase().includes('readable')) {
+        enhancedPrompt +=
+          ', with clear, readable text labels, professional typography';
+      }
+
+      // Add visual hierarchy and structure
+      if (!enhancedPrompt.toLowerCase().includes('hierarchy')) {
+        enhancedPrompt +=
+          ', clear visual hierarchy, organized sections, logical flow';
+      }
+
+      // Add professional design elements
+      if (!enhancedPrompt.toLowerCase().includes('icon')) {
+        enhancedPrompt +=
+          ', professional icons, visual elements, color-coded sections';
+      }
+
+      // Add quality specifications for infographics
+      if (!enhancedPrompt.toLowerCase().includes('8k')) {
+        enhancedPrompt +=
+          ', ultra-high resolution, 8K quality, crisp details, sharp text';
+      }
+
+      // Add professional styling
+      if (!enhancedPrompt.toLowerCase().includes('professional')) {
+        enhancedPrompt +=
+          ', modern professional design, premium color palette, clean spacing';
+      }
+
+      // Ensure information density
+      if (!enhancedPrompt.toLowerCase().includes('information')) {
+        enhancedPrompt +=
+          ', information-rich, well-organized, detailed content';
+      }
+
+      enhancedPrompt +=
+        '. Clean white or light background, no watermarks, vivid colors, professional quality.';
+
+      console.log(
+        '🎨 Generating AI image (right) with infographic enhancement:',
+        enhancedPrompt.substring(0, 100) + '...'
       );
+      const imageResult = await openAIService.generateImage(enhancedPrompt, {
+        ...DEFAULT_IMAGE_OPTIONS,
+        folder: IMAGE_FOLDERS.right,
+      });
 
       // Validate response
       if (!imageResult) {
