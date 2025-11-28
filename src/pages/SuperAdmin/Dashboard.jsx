@@ -32,7 +32,7 @@ export default function SuperAdminDashboard() {
       case 'billing':
         return <BillingContent />;
       case 'support':
-        return <SupportContent />;
+        return <DashboardContent />;
       default:
         return <DashboardContent />;
     }
