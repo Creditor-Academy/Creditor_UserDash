@@ -1,124 +1,63 @@
-import React, { useEffect } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { BarChart, Users, BookOpen, Settings, LogOut } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import TopNav from './TopNav';
+import HeroAnalytics from './HeroAnalytics';
+import AnalyticsChart from './AnalyticsChart';
+import RevenueInsights from './RevenueInsights';
+import ActivityFeed from './ActivityFeed';
+import DashboardContent from './sections/DashboardContent';
+import OrganizationsContent from './sections/OrganizationsContent';
+import UsersContent from './sections/UsersContent';
+import BillingContent from './sections/BillingContent';
+import SupportContent from './sections/SupportContent';
 
 export default function SuperAdminDashboard() {
   const { logout, userRoles } = useAuth();
-  const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('dashboard');
 
   useEffect(() => {
     console.log('[SuperAdminDashboard] Mounted with roles:', userRoles);
   }, [userRoles]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'dashboard':
+        return <DashboardContent />;
+      case 'organizations':
+        return <OrganizationsContent />;
+      case 'users':
+        return <UsersContent />;
+      case 'billing':
+        return <BillingContent />;
+      case 'support':
+        return <SupportContent />;
+      default:
+        return <DashboardContent />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
-            SuperAdmin Dashboard
-          </h1>
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-[#0E1015] via-[#141820] to-[#1A1D28] text-white overflow-x-hidden">
+      <div className="flex">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+        />
+
+        <div
+          className={`flex-1 transition-all duration-500 ease-out ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}
+        >
+          <TopNav />
+
+          <main className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+            {renderContent()}
+          </main>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Stats Cards */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">
-                +20.1% from last month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Courses
-              </CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">89</div>
-              <p className="text-xs text-muted-foreground">
-                +12 courses this month
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                System Health
-              </CardTitle>
-              <BarChart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">100%</div>
-              <p className="text-xs text-muted-foreground">
-                All systems operational
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-lg font-medium mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button
-              variant="outline"
-              className="h-24 flex flex-col items-center justify-center gap-2"
-            >
-              <Users className="h-6 w-6" />
-              Manage Users
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex flex-col items-center justify-center gap-2"
-            >
-              <BookOpen className="h-6 w-6" />
-              Manage Courses
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex flex-col items-center justify-center gap-2"
-            >
-              <Settings className="h-6 w-6" />
-              System Settings
-            </Button>
-          </div>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
