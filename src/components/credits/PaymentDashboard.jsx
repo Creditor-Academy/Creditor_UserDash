@@ -7,7 +7,9 @@ import {
   FaHistory,
   FaEye,
   FaCalendarAlt,
+  FaDownload,
 } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 function formatDate(value) {
   try {
     if (!value) return '—';
@@ -515,6 +517,225 @@ const PaymentDashboard = () => {
     return list;
   }, [allHistory, filterDate, filterTxnType, users, search]);
 
+  // Analytics: purchases by course (top N), lapses, and lightweight AI suggestions
+  const analytics = useMemo(() => {
+    // Top courses by usage purchases
+    const purchaseCounts = new Map();
+    allHistory
+      .filter(h => h.type === 'usage')
+      .forEach(h => {
+        const course =
+          h.catalogItem || h.lessonName || h.description || 'Unknown';
+        purchaseCounts.set(course, (purchaseCounts.get(course) || 0) + 1);
+      });
+    const purchases = Array.from(purchaseCounts.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Lapses: Expired and Expiring Soon users
+    const expiredUsers = enriched.filter(u => u.membershipLabel === 'Expired');
+    const expiringUsers = enriched.filter(
+      u => u.membershipLabel === 'Expiring Soon'
+    );
+
+    // AI suggestions (rule-based placeholder)
+    const suggestions = [];
+    if (expiringUsers.length > 0) {
+      suggestions.push(
+        `${expiringUsers.length} memberships expiring soon. Trigger renewal emails and show limited-time bundles.`
+      );
+    }
+    if (expiredUsers.length > 0) {
+      suggestions.push(
+        `${expiredUsers.length} expired memberships. Offer reactivation discount and highlight top-selling course.`
+      );
+    }
+    if (purchases[0]) {
+      suggestions.push(
+        `Top interest: "${purchases[0].name}". Cross-sell related lessons and upsell premium package.`
+      );
+    }
+    const lowCreditUsers = enriched.filter(u => (Number(u.credits) || 0) < 500);
+    if (lowCreditUsers.length > 0) {
+      suggestions.push(
+        `${lowCreditUsers.length} users low on credits. Prompt credit top-up at checkout and dashboard banner.`
+      );
+    }
+
+    return {
+      purchases,
+      expiredUsers,
+      expiringUsers,
+      suggestions,
+    };
+  }, [allHistory, enriched]);
+
+  // Detailed usage breakdown by category
+  const [usageCategory, setUsageCategory] = useState('all'); // all|catalog|courses|modules|lessons|consultation|website
+  const usageBreakdown = useMemo(() => {
+    const catMap = {
+      catalog: new Map(),
+      courses: new Map(),
+      modules: new Map(),
+      lessons: new Map(),
+      consultation: new Map(),
+      website: new Map(),
+    };
+    let total = 0;
+    allHistory
+      .filter(h => h.type === 'usage')
+      .forEach(h => {
+        let cat = null;
+        let key = '';
+        if ((h.serviceType || '').toLowerCase().includes('consult')) {
+          cat = 'consultation';
+          key = h.description || 'Consultation';
+        } else if ((h.serviceType || '').toLowerCase().includes('website')) {
+          cat = 'website';
+          key = h.description || 'Website Service';
+        } else if (h.catalogItem) {
+          cat = 'catalog';
+          key = h.catalogItem;
+        } else if (h.lessonName) {
+          cat = 'lessons';
+          key = h.lessonName;
+        } else if ((h.description || '').toLowerCase().includes('module')) {
+          cat = 'modules';
+          key = h.description;
+        } else if (h.description) {
+          cat = 'courses';
+          key = h.description;
+        }
+        if (!cat) return;
+        total += 1;
+        catMap[cat].set(key, (catMap[cat].get(key) || 0) + 1);
+      });
+
+    const toList = m =>
+      Array.from(m.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+    const result = {
+      total,
+      catalog: toList(catMap.catalog),
+      courses: toList(catMap.courses),
+      modules: toList(catMap.modules),
+      lessons: toList(catMap.lessons),
+      consultation: toList(catMap.consultation),
+      website: toList(catMap.website),
+    };
+    return result;
+  }, [allHistory]);
+
+  const exportUsage = (scope = 'all') => {
+    const rows = [];
+    const cats = [
+      'catalog',
+      'courses',
+      'modules',
+      'lessons',
+      'consultation',
+      'website',
+    ];
+    const selectedCats = scope === 'all' ? cats : [scope];
+    selectedCats.forEach(c => {
+      usageBreakdown[c].forEach(item => {
+        rows.push({ Category: c, Item: item.name, Purchases: item.count });
+      });
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Usage');
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    XLSX.writeFile(wb, `payment-dashboard-usage-${scope}-${ts}.xlsx`);
+  };
+
+  const exportLapses = (scope = 'all') => {
+    const rows = [];
+    const includeExpired = scope === 'all' || scope === 'expired';
+    const includeExpiring = scope === 'all' || scope === 'expiring';
+    if (includeExpired) {
+      analytics.expiredUsers.forEach(u => {
+        rows.push({
+          Status: 'Expired',
+          ID: u.id,
+          Name: u.name,
+          Email: u.email,
+          MembershipEnds: formatDate(
+            u.membership?.expiresAt || u.membership?.nextBillingDate
+          ),
+          Credits: Number(u.credits) || 0,
+        });
+      });
+    }
+    if (includeExpiring) {
+      analytics.expiringUsers.forEach(u => {
+        rows.push({
+          Status: 'Expiring Soon',
+          ID: u.id,
+          Name: u.name,
+          Email: u.email,
+          MembershipEnds: formatDate(
+            u.membership?.expiresAt || u.membership?.nextBillingDate
+          ),
+          Credits: Number(u.credits) || 0,
+        });
+      });
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'Lapses');
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    XLSX.writeFile(wb, `payment-dashboard-lapses-${scope}-${ts}.xlsx`);
+  };
+
+  const handleExport = () => {
+    let rows = [];
+    let sheetName = 'Data';
+    if (activeTab === 'users') {
+      rows = filtered.map(u => ({
+        ID: u.id,
+        Name: u.name,
+        Email: u.email,
+        MembershipStatus: u.membershipLabel,
+        MembershipEnds: formatDate(
+          u.membership?.expiresAt || u.membership?.nextBillingDate
+        ),
+        Credits: Number(u.credits) || 0,
+      }));
+      sheetName = 'Users';
+    } else if (activeTab === 'history') {
+      rows = filteredHistory.map(h => ({
+        Date: formatDate(h.date),
+        Type: h.type,
+        Description: h.description,
+        Credits: Number(h.credits) || 0,
+        UserName: h.userName,
+        UserEmail: h.userEmail,
+      }));
+      sheetName = 'History';
+    } else if (activeTab === 'analytics') {
+      rows = [
+        {
+          TotalUsers: stats.totalUsers,
+          ActiveMemberships: stats.activeMemberships,
+          TotalCredits: stats.totalCredits,
+          TotalUsage: stats.totalUsage,
+          ExpiringSoon: stats.expiringSoon,
+        },
+      ];
+      sheetName = 'Analytics';
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    XLSX.writeFile(
+      wb,
+      `payment-dashboard-${sheetName.toLowerCase()}-${ts}.xlsx`
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
@@ -531,6 +752,13 @@ const PaymentDashboard = () => {
             </p>
           </div>
         </div>
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm"
+        >
+          <FaDownload />
+          Export
+        </button>
       </div>
 
       {/* Statistics Cards */}
@@ -994,6 +1222,177 @@ const PaymentDashboard = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="space-y-4">
+              {/* Lapse export dropdown */}
+              <div className="flex items-center justify-end">
+                <div className="relative">
+                  <details className="group inline-block">
+                    <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm">
+                      <FaDownload /> Export Lapses
+                    </summary>
+                    <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg p-1 z-10">
+                      <button
+                        onClick={() => exportLapses('expiring')}
+                        className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                      >
+                        Expiring Soon
+                      </button>
+                      <button
+                        onClick={() => exportLapses('expired')}
+                        className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                      >
+                        Expired
+                      </button>
+                      <button
+                        onClick={() => exportLapses('all')}
+                        className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                      >
+                        All Lapses
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </div>
+
+              {/* Usage analytics: category summary and drilldown */}
+              <div className="bg-white rounded-xl border p-4 space-y-4">
+                <div className="text-sm font-semibold text-gray-800">
+                  Usage Analytics
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                  {[
+                    'catalog',
+                    'courses',
+                    'modules',
+                    'lessons',
+                    'consultation',
+                    'website',
+                  ].map(c => {
+                    const count = usageBreakdown[c].reduce(
+                      (s, i) => s + i.count,
+                      0
+                    );
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => setUsageCategory(c)}
+                        className={`rounded-lg border px-3 py-2 text-sm text-left ${usageCategory === c ? 'border-blue-300 bg-blue-50' : 'hover:bg-gray-50'}`}
+                      >
+                        <div className="text-gray-600 capitalize">{c}</div>
+                        <div className="text-lg font-semibold text-gray-900">
+                          {count}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600 capitalize">
+                    Showing: {usageCategory}
+                  </div>
+                  <div className="relative">
+                    <details className="group inline-block">
+                      <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm">
+                        <FaDownload /> Export Usage
+                      </summary>
+                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg p-1 z-10">
+                        <button
+                          onClick={() => exportUsage('all')}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                        >
+                          All
+                        </button>
+                        {[
+                          'catalog',
+                          'courses',
+                          'modules',
+                          'lessons',
+                          'consultation',
+                          'website',
+                        ].map(c => (
+                          <button
+                            key={c}
+                            onClick={() => exportUsage(c)}
+                            className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm capitalize"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-600">
+                        <th className="py-2 pr-4">Item</th>
+                        <th className="py-2 pr-4">Purchases</th>
+                        <th className="py-2">Share</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const list =
+                          usageCategory === 'all'
+                            ? Object.entries(usageBreakdown)
+                                .filter(([k]) => k !== 'total')
+                                .flatMap(([k, arr]) =>
+                                  arr.map(a => ({
+                                    ...a,
+                                    name: `${k}: ${a.name}`,
+                                  }))
+                                )
+                            : usageBreakdown[usageCategory];
+                        const total =
+                          list.reduce((s, i) => s + i.count, 0) || 1;
+                        return list.slice(0, 20).map((row, idx) => (
+                          <tr key={idx} className="border-t">
+                            <td className="py-2 pr-4 truncate" title={row.name}>
+                              {row.name}
+                            </td>
+                            <td className="py-2 pr-4">{row.count}</td>
+                            <td className="py-2">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="h-2 bg-blue-300 rounded"
+                                  style={{
+                                    width: `${(row.count / total) * 100}%`,
+                                  }}
+                                />
+                                <span className="text-gray-600">
+                                  {Math.round((row.count / total) * 100)}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* AI suggestions */}
+              <div className="bg-white rounded-xl border p-4">
+                <div className="text-sm font-semibold text-gray-800 mb-2">
+                  AI Suggestions
+                </div>
+                <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                  {analytics.suggestions.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                  {analytics.suggestions.length === 0 && (
+                    <li>No notable trends detected. Keep monitoring.</li>
+                  )}
+                </ul>
               </div>
             </div>
           )}
