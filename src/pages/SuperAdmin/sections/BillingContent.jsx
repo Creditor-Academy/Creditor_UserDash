@@ -67,25 +67,24 @@ export default function BillingContent() {
       {/* Header */}
       <div className="relative">
         <div
-          className="rounded-3xl md:rounded-[40px] p-6 md:p-8 lg:p-12 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-white/[0.01] backdrop-blur-3xl border border-white/[0.1] overflow-hidden"
+          className="rounded-2xl p-6 md:p-8 bg-gradient-to-br from-white/[0.1] via-white/[0.05] to-white/[0.01] backdrop-blur-3xl border border-white/[0.12] overflow-hidden"
           style={{
             boxShadow:
-              '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset -1px -1px 0 rgba(0, 0, 0, 0.25)',
+              '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent rounded-3xl md:rounded-[40px] pointer-events-none"></div>
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.15] to-transparent rounded-3xl pointer-events-none"></div>
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/15 to-transparent pointer-events-none"></div>
           <div className="relative z-10">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/40 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent rounded-2xl"></div>
-                <CreditCard className="w-6 h-6 text-white relative z-10" />
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent rounded-lg"></div>
+                <CreditCard className="w-5 h-5 text-white relative z-10" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-white">
+                <h1 className="text-2xl md:text-3xl font-bold text-white">
                   Billing
                 </h1>
-                <p className="text-gray-400 text-sm mt-1">
+                <p className="text-xs md:text-sm text-gray-400 mt-1">
                   Manage payments and invoices
                 </p>
               </div>
@@ -95,35 +94,32 @@ export default function BillingContent() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div
               key={index}
-              className="rounded-3xl p-6 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-white/[0.01] backdrop-blur-3xl border border-white/[0.1] relative overflow-hidden group"
+              className="rounded-xl p-4 bg-gradient-to-br from-white/[0.1] via-white/[0.05] to-white/[0.01] backdrop-blur-3xl border border-white/[0.12] relative overflow-hidden"
               style={{
                 boxShadow:
-                  '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                  '0 6px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent rounded-3xl pointer-events-none"></div>
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent rounded-3xl pointer-events-none"></div>
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent pointer-events-none"></div>
 
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-gray-400 text-sm font-medium">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-gray-400 text-xs font-medium">
                     {stat.label}
                   </h3>
                   <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}
+                    className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}
                   >
-                    <Icon className="w-5 h-5 text-white" />
+                    <Icon className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-white">
-                  {stat.value}
-                </div>
+                <div className="text-xl font-bold text-white">{stat.value}</div>
               </div>
             </div>
           );
@@ -132,34 +128,34 @@ export default function BillingContent() {
 
       {/* Invoices Table */}
       <div
-        className="rounded-3xl overflow-hidden bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-white/[0.01] backdrop-blur-3xl border border-white/[0.1]"
+        className="rounded-xl overflow-hidden bg-gradient-to-br from-white/[0.1] via-white/[0.05] to-white/[0.01] backdrop-blur-3xl border border-white/[0.12]"
         style={{
           boxShadow:
-            '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+            '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent rounded-3xl pointer-events-none"></div>
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent pointer-events-none"></div>
 
         <div className="overflow-x-auto relative z-10">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/[0.1]">
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+              <tr className="border-b border-white/[0.08]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Invoice ID
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Organization
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Amount
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Due Date
                 </th>
               </tr>
@@ -168,28 +164,28 @@ export default function BillingContent() {
               {billingData.map(bill => (
                 <tr
                   key={bill.id}
-                  className="border-b border-white/[0.05] hover:bg-white/[0.05] transition-colors"
+                  className="border-b border-white/[0.05] hover:bg-white/[0.04] transition-colors"
                 >
-                  <td className="px-6 py-4 text-sm text-cyan-300 font-semibold">
+                  <td className="px-4 py-3 text-xs text-cyan-300 font-semibold">
                     {bill.invoiceId}
                   </td>
-                  <td className="px-6 py-4 text-sm text-white font-medium">
+                  <td className="px-4 py-3 text-xs text-white font-medium">
                     {bill.organization}
                   </td>
-                  <td className="px-6 py-4 text-sm text-emerald-300 font-semibold">
+                  <td className="px-4 py-3 text-xs text-emerald-300 font-semibold">
                     {bill.amount}
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-4 py-3 text-xs">
                     <div
-                      className={`inline-flex items-center px-3 py-1 rounded-full ${bill.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-yellow-500/20 text-yellow-300'} text-xs font-semibold border ${bill.status === 'Paid' ? 'border-emerald-500/30' : 'border-yellow-500/30'}`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${bill.status === 'Paid' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-yellow-500/15 text-yellow-300 border-yellow-500/25'}`}
                     >
                       {bill.status}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">
+                  <td className="px-4 py-3 text-xs text-gray-400">
                     {bill.date}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">
+                  <td className="px-4 py-3 text-xs text-gray-400">
                     {bill.dueDate}
                   </td>
                 </tr>

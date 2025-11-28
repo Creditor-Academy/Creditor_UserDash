@@ -30,10 +30,10 @@ export default function AnalyticsChart() {
 
   return (
     <div
-      className="p-4 md:p-6 lg:p-8 rounded-3xl md:rounded-[40px] bg-gradient-to-br from-white/[0.1] via-white/[0.05] to-white/[0.02] backdrop-blur-3xl border border-white/[0.15] h-full relative overflow-hidden group"
+      className="p-4 md:p-6 lg:p-8 rounded-2xl md:rounded-3xl bg-gradient-to-br from-white/[0.13] via-white/[0.07] to-white/[0.02] backdrop-blur-3xl border border-white/[0.16] h-full relative overflow-hidden group"
       style={{
         boxShadow:
-          '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset -1px -1px 0 rgba(0, 0, 0, 0.2)',
+          '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.16), inset -1px -1px 0 rgba(0, 0, 0, 0.2)',
       }}
     >
       {/* Reflection */}
@@ -128,7 +128,7 @@ export default function AnalyticsChart() {
         </div>
 
         {/* Y-axis Labels */}
-        <div className="absolute left-0 top-0 bottom-12 flex flex-col justify-between text-xs text-gray-600">
+        <div className="absolute left-0 top-0 bottom-12 flex flex-col justify-between text-xs text-gray-400 font-medium">
           <span>${maxValue}k</span>
           <span>${Math.round(maxValue * 0.75)}k</span>
           <span>${Math.round(maxValue * 0.5)}k</span>

@@ -32,14 +32,14 @@ export default function SuperAdminDashboard() {
       case 'billing':
         return <BillingContent />;
       case 'support':
-        return <DashboardContent />;
+        return <SupportContent />;
       default:
         return <DashboardContent />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0E1015] via-[#141820] to-[#1A1D28] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#0A0E14] via-[#0F1419] to-[#141820] text-white overflow-x-hidden">
       <div className="flex">
         <Sidebar
           collapsed={sidebarCollapsed}
@@ -53,7 +53,7 @@ export default function SuperAdminDashboard() {
         >
           <TopNav />
 
-          <main className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+          <main className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto">
             {renderContent()}
           </main>
         </div>
