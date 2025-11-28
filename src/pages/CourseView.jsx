@@ -512,7 +512,7 @@ export function CourseView() {
     }
   }, [userProfile?.id, courseId]);
 
-  // Fetch lesson counts for all modules to determine which have lessons
+  // Fetch lesson counts for all modules to determine which have published lessons
   useEffect(() => {
     const checkModulesForLessons = async () => {
       if (!modules || modules.length === 0) return;
@@ -521,7 +521,7 @@ export function CourseView() {
       const modulesWithLessonsSet = new Set();
 
       try {
-        // Check each module for lessons
+        // Check each module for published lessons
         const lessonCheckPromises = modules.map(async module => {
           try {
             const response = await axios.get(
@@ -535,8 +535,14 @@ export function CourseView() {
             const lessonsData = response.data?.data || response.data || [];
             const lessons = Array.isArray(lessonsData) ? lessonsData : [];
 
-            // If module has any lessons, add it to the set
-            if (lessons.length > 0) {
+            // Filter to only count PUBLISHED lessons
+            const publishedLessons = lessons.filter(lesson => {
+              const status = lesson.status || lesson.lesson_status || 'DRAFT';
+              return status && status.toUpperCase() === 'PUBLISHED';
+            });
+
+            // If module has any published lessons, add it to the set
+            if (publishedLessons.length > 0) {
               modulesWithLessonsSet.add(String(module.id));
             }
           } catch (err) {
@@ -1016,7 +1022,7 @@ export function CourseView() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+                      {/* <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
                         <div className="p-2 bg-purple-500 rounded-lg shadow-md">
                           <Clock className="h-5 w-5 text-white" />
                         </div>
@@ -1030,7 +1036,7 @@ export function CourseView() {
                               : 'N/A'}
                           </p>
                         </div>
-                      </div>
+                      </div> */}
                       {courseDetails.instructor && (
                         <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-100">
                           <div className="p-2 bg-orange-500 rounded-lg shadow-md">
@@ -1234,7 +1240,7 @@ export function CourseView() {
                                 {filteredBookSmartModules.length} modules
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
+                            {/* <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
                               <Clock className="w-4 h-4 text-blue-600" />
                               <span className="text-sm font-semibold text-gray-700">
                                 {Math.round(
@@ -1250,7 +1256,7 @@ export function CourseView() {
                                 ) / 10}{' '}
                                 hr
                               </span>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -1309,7 +1315,7 @@ export function CourseView() {
                                 {filteredStreetSmartModules.length} modules
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                            {/* <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
                               <Clock className="w-4 h-4 text-purple-600" />
                               <span className="text-sm font-semibold text-gray-700">
                                 {Math.round(
@@ -1325,7 +1331,7 @@ export function CourseView() {
                                 ) / 10}{' '}
                                 hr
                               </span>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>

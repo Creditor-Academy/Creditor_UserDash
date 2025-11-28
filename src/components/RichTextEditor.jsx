@@ -136,9 +136,9 @@
 //         >
 //           <Strikethrough className="h-4 w-4" />
 //         </Toggle>
-        
+
 //         <Separator orientation="vertical" className="mx-1 h-6" />
-        
+
 //         <Toggle
 //           size="sm"
 //           pressed={editor.isActive('bulletList')}
@@ -155,9 +155,9 @@
 //         >
 //           <ListOrdered className="h-4 w-4" />
 //         </Toggle>
-        
+
 //         <Separator orientation="vertical" className="mx-1 h-6" />
-        
+
 //         <Toggle
 //           size="sm"
 //           pressed={editor.isActive({ textAlign: 'left' })}
@@ -190,9 +190,9 @@
 //         >
 //           <AlignJustify className="h-4 w-4" />
 //         </Toggle>
-        
+
 //         <Separator orientation="vertical" className="mx-1 h-6" />
-        
+
 //         <Popover>
 //           <PopoverTrigger asChild>
 //             <Button variant="ghost" size="sm" className="h-8 gap-1 px-2">
@@ -221,7 +221,7 @@
 //             </div>
 //           </PopoverContent>
 //         </Popover>
-        
+
 //         <Button
 //           variant="ghost"
 //           size="sm"

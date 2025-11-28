@@ -1,16 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare, Shield, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getAllTickets, addReplyToTicket, updateTicketStatus } from '@/services/ticketService';
+import {
+  Search,
+  Filter,
+  Mail,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  User,
+  MessageSquare,
+  Shield,
+  Lock,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {
+  getAllTickets,
+  addReplyToTicket,
+  updateTicketStatus,
+} from '@/services/ticketService';
 import { createTicketReplyNotification } from '@/services/notificationService';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SupportTicketsPage = () => {
@@ -54,19 +96,22 @@ const SupportTicketsPage = () => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
                   <Lock className="h-8 w-8 text-red-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Restricted</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Access Restricted
+                </h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  {isInstructor 
-                    ? "Instructors cannot view support tickets. Only administrators have access to support ticket management."
-                    : "You don't have permission to view support tickets. Only administrators can access this feature."
-                  }
+                  {isInstructor
+                    ? 'Instructors cannot view support tickets. Only administrators have access to support ticket management.'
+                    : "You don't have permission to view support tickets. Only administrators can access this feature."}
                 </p>
                 <div className="bg-gray-50 p-3 rounded-lg border">
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                     <Shield className="h-4 w-4" />
                     <span className="font-medium">Required Role:</span>
                   </div>
-                  <Badge className="bg-blue-100 text-blue-800 border-transparent">Admin</Badge>
+                  <Badge className="bg-blue-100 text-blue-800 border-transparent">
+                    Admin
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -81,35 +126,37 @@ const SupportTicketsPage = () => {
     try {
       setLoading(true);
       const response = await getAllTickets();
-      
-              // Transform the data to match our component's expected format
-        const transformedTickets = response.data.data.map(ticket => ({
-          id: ticket.id,
-          userId: ticket.student_id,
-          userName: ticket.student ? `${ticket.student.first_name} ${ticket.student.last_name}`.trim() : 'Unknown User',
-          userEmail: ticket.student?.email || 'No email',
-          subject: ticket.subject,
-          message: ticket.description || ticket.message, // Use description field from backend
-          status: mapToFrontendStatus(ticket.status), // Map backend status to frontend format
-          priority: ticket.priority?.toLowerCase() || 'medium',
-          createdAt: ticket.created_at,
-          updatedAt: ticket.updated_at,
-          attachments: ticket.attachments ? JSON.parse(ticket.attachments) : [],
-          replies: ticket.replies || [],
-          category: ticket.category || 'General'
-        }));
-      
+
+      // Transform the data to match our component's expected format
+      const transformedTickets = response.data.data.map(ticket => ({
+        id: ticket.id,
+        userId: ticket.student_id,
+        userName: ticket.student
+          ? `${ticket.student.first_name} ${ticket.student.last_name}`.trim()
+          : 'Unknown User',
+        userEmail: ticket.student?.email || 'No email',
+        subject: ticket.subject,
+        message: ticket.description || ticket.message, // Use description field from backend
+        status: mapToFrontendStatus(ticket.status), // Map backend status to frontend format
+        priority: ticket.priority?.toLowerCase() || 'medium',
+        createdAt: ticket.created_at,
+        updatedAt: ticket.updated_at,
+        attachments: ticket.attachments ? JSON.parse(ticket.attachments) : [],
+        replies: ticket.replies || [],
+        category: ticket.category || 'General',
+      }));
+
       // Sort tickets by creation date (newest first)
-      const sortedTickets = transformedTickets.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+      const sortedTickets = transformedTickets.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
       setTickets(sortedTickets);
     } catch (error) {
       console.error('Error fetching tickets:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch support tickets. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch support tickets. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -121,9 +168,9 @@ const SupportTicketsPage = () => {
   }, [toast]);
 
   // Map backend status to frontend display format
-  const mapToFrontendStatus = (backendStatus) => {
+  const mapToFrontendStatus = backendStatus => {
     if (!backendStatus) return 'pending';
-    
+
     const status = backendStatus.toLowerCase();
     switch (status) {
       case 'pending':
@@ -141,14 +188,17 @@ const SupportTicketsPage = () => {
   };
 
   const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (ticket.message && ticket.message.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         ticket.userName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch =
+      ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ticket.message &&
+        ticket.message.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      ticket.userName.toLowerCase().includes(searchTerm.toLowerCase());
+
     // Get the normalized status for comparison
     const ticketStatus = mapToFrontendStatus(ticket.status);
-    const matchesStatus = statusFilter === 'all' || ticketStatus === statusFilter;
-    
+    const matchesStatus =
+      statusFilter === 'all' || ticketStatus === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
@@ -163,18 +213,18 @@ const SupportTicketsPage = () => {
   const endIndex = Math.min(startIndex + pageSize, filteredTickets.length);
   const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
 
-  const toggleTicketExpansion = (ticketId) => {
+  const toggleTicketExpansion = ticketId => {
     setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
     setReplyingTo(null);
     setReplyText('');
   };
 
-  const handleReply = async (ticketId) => {
+  const handleReply = async ticketId => {
     if (!replyText.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a reply message.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter a reply message.',
+        variant: 'destructive',
       });
       return;
     }
@@ -182,16 +232,17 @@ const SupportTicketsPage = () => {
     try {
       setSubmittingReply(true);
       await addReplyToTicket(ticketId, {
-        message: replyText.trim()
+        message: replyText.trim(),
       });
 
-    
       // Refresh tickets to get the updated data
       const response = await getAllTickets();
       const transformedTickets = response.data.data.map(ticket => ({
         id: ticket.id,
         userId: ticket.student_id,
-        userName: ticket.student ? `${ticket.student.first_name} ${ticket.student.last_name}`.trim() : 'Unknown User',
+        userName: ticket.student
+          ? `${ticket.student.first_name} ${ticket.student.last_name}`.trim()
+          : 'Unknown User',
         userEmail: ticket.student?.email || 'No email',
         subject: ticket.subject,
         message: ticket.description || ticket.message,
@@ -200,12 +251,12 @@ const SupportTicketsPage = () => {
         createdAt: ticket.created_at,
         updatedAt: ticket.updated_at,
         attachments: ticket.attachments ? JSON.parse(ticket.attachments) : [],
-        replies: ticket.replies || []
+        replies: ticket.replies || [],
       }));
-      
+
       // Sort tickets by creation date (newest first)
-      const sortedTickets = transformedTickets.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+      const sortedTickets = transformedTickets.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
       setTickets(sortedTickets);
       setReplyText('');
@@ -213,22 +264,22 @@ const SupportTicketsPage = () => {
       setIsReplyDialogOpen(false);
 
       toast({
-        title: "Success",
-        description: "Reply sent successfully!",
+        title: 'Success',
+        description: 'Reply sent successfully!',
       });
     } catch (error) {
       console.error('Error sending reply:', error);
       toast({
-        title: "Error",
-        description: "Failed to send reply. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to send reply. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setSubmittingReply(false);
     }
   };
 
-  const openReplyDialog = (ticketId) => {
+  const openReplyDialog = ticketId => {
     setActiveTicketId(ticketId);
     setReplyingTo(ticketId);
     setReplyText('');
@@ -246,52 +297,68 @@ const SupportTicketsPage = () => {
   // Update ticket status via backend API
   const applyStatusChange = async () => {
     if (!activeTicketId) return;
-    
+
     try {
       setSubmittingReply(true);
       await updateTicketStatus(activeTicketId, statusDraft);
-      
+
       // Refresh tickets list to get updated data from backend
       await fetchTickets();
-      
+
       setIsStatusDialogOpen(false);
-      toast({ 
-        title: 'Status updated', 
-        description: `Ticket status changed to ${statusDraft}.` 
+      toast({
+        title: 'Status updated',
+        description: `Ticket status changed to ${statusDraft}.`,
       });
     } catch (error) {
       console.error('Error updating ticket status:', error);
       toast({
-        title: "Error",
-        description: "Failed to update ticket status. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update ticket status. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setSubmittingReply(false);
     }
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = status => {
     switch (status) {
       case 'open':
       case 'pending':
       case 'PENDING':
-        return <Badge className="bg-red-100 text-red-700 border-transparent">Open</Badge>;
+        return (
+          <Badge className="bg-red-100 text-red-700 border-transparent">
+            Open
+          </Badge>
+        );
       case 'in-progress':
       case 'IN_PROGRESS':
-        return <Badge className="bg-amber-100 text-amber-700 border-transparent">In Progress</Badge>;
+        return (
+          <Badge className="bg-amber-100 text-amber-700 border-transparent">
+            In Progress
+          </Badge>
+        );
       case 'resolved':
       case 'RESOLVED':
-        return <Badge className="bg-emerald-100 text-emerald-700 border-transparent">Resolved</Badge>;
+        return (
+          <Badge className="bg-emerald-100 text-emerald-700 border-transparent">
+            Resolved
+          </Badge>
+        );
       case 'closed':
       case 'CLOSED':
-        return <Badge className="bg-gray-100 text-gray-700 border-transparent">Closed</Badge>;
+        return (
+          <Badge className="bg-gray-100 text-gray-700 border-transparent">
+            Closed
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getPriorityIcon = (priority) => {
+  const getPriorityIcon = priority => {
     switch (priority) {
       case 'high':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
@@ -304,18 +371,18 @@ const SupportTicketsPage = () => {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   // Map frontend status to backend status format
-  const mapToBackendStatus = (frontendStatus) => {
+  const mapToBackendStatus = frontendStatus => {
     switch (frontendStatus?.toLowerCase()) {
       case 'open':
       case 'pending':
@@ -348,7 +415,7 @@ const SupportTicketsPage = () => {
                     placeholder="Search tickets..."
                     className="pl-10 w-full h-9 text-sm"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={e => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <div className="w-40">
@@ -370,7 +437,8 @@ const SupportTicketsPage = () => {
             </div>
             {filteredTickets.length > 0 && (
               <div className="text-sm text-gray-500">
-                Showing {startIndex + 1}-{endIndex} of {filteredTickets.length} tickets
+                Showing {startIndex + 1}-{endIndex} of {filteredTickets.length}{' '}
+                tickets
               </div>
             )}
           </div>
@@ -383,21 +451,23 @@ const SupportTicketsPage = () => {
           ) : filteredTickets.length === 0 ? (
             <div className="text-center py-12">
               <Mail className="mx-auto h-10 w-10 text-gray-300 mb-3" />
-              <h3 className="text-base font-medium text-gray-700">No tickets found</h3>
+              <h3 className="text-base font-medium text-gray-700">
+                No tickets found
+              </h3>
               <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'No tickets match your search criteria. Try adjusting your filters.' 
+                {searchTerm || statusFilter !== 'all'
+                  ? 'No tickets match your search criteria. Try adjusting your filters.'
                   : 'No support tickets have been created yet'}
               </p>
             </div>
           ) : (
             <div className="space-y-3 p-4">
-              {paginatedTickets.map((ticket) => (
-                <div 
+              {paginatedTickets.map(ticket => (
+                <div
                   key={ticket.id}
                   className={`bg-white rounded-lg border transition-all duration-200 overflow-hidden ${expandedTicket === ticket.id ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-md'}`}
                 >
-                  <div 
+                  <div
                     className={`p-4 cursor-pointer ${expandedTicket === ticket.id ? 'border-b border-gray-100' : ''}`}
                     onClick={() => toggleTicketExpansion(ticket.id)}
                   >
@@ -411,21 +481,28 @@ const SupportTicketsPage = () => {
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-medium text-gray-900 truncate">{ticket.subject}</h3>
+                              <h3 className="text-sm font-medium text-gray-900 truncate">
+                                {ticket.subject}
+                              </h3>
                               {getStatusBadge(ticket.status)}
                             </div>
                             <p className="text-xs text-gray-500 truncate mt-0.5">
-                              {ticket.userName} • {ticket.userEmail} • {formatDate(ticket.createdAt)}
+                              {ticket.userName} • {ticket.userEmail} •{' '}
+                              {formatDate(ticket.createdAt)}
                             </p>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
-                          ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
+                        <div
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            ticket.priority === 'high'
+                              ? 'bg-red-100 text-red-800'
+                              : ticket.priority === 'medium'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                          }`}
+                        >
                           {ticket.priority}
                         </div>
                         <button className="text-gray-400 hover:text-gray-600 p-1">
@@ -438,18 +515,20 @@ const SupportTicketsPage = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {expandedTicket === ticket.id && (
                     <div className="p-4 bg-gray-50 border-t border-gray-100">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-4">
                           <div>
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Message</h4>
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                              Message
+                            </h4>
                             <div className="bg-white p-3 rounded border text-sm text-gray-700 whitespace-pre-line">
                               {ticket.message}
                             </div>
                           </div>
-                          
+
                           {ticket.replies && ticket.replies.length > 0 && (
                             <div>
                               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
@@ -457,7 +536,10 @@ const SupportTicketsPage = () => {
                               </h4>
                               <div className="space-y-3">
                                 {ticket.replies.map((reply, index) => (
-                                  <div key={index} className="bg-white p-3 rounded border">
+                                  <div
+                                    key={index}
+                                    className="bg-white p-3 rounded border"
+                                  >
                                     <div className="flex justify-between items-start">
                                       <div className="flex items-center gap-2">
                                         <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-600">
@@ -480,13 +562,17 @@ const SupportTicketsPage = () => {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="space-y-4">
                           <div>
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Details</h4>
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                              Details
+                            </h4>
                             <div className="bg-white p-3 rounded border space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Ticket ID:</span>
+                                <span className="text-gray-500">
+                                  Ticket ID:
+                                </span>
                                 <span className="font-medium">{ticket.id}</span>
                               </div>
                               <div className="flex justify-between">
@@ -494,27 +580,33 @@ const SupportTicketsPage = () => {
                                 <span>{formatDate(ticket.createdAt)}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Last Updated:</span>
+                                <span className="text-gray-500">
+                                  Last Updated:
+                                </span>
                                 <span>{formatDate(ticket.updatedAt)}</span>
                               </div>
                             </div>
                           </div>
-                          
+
                           <div>
-                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Actions</h4>
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                              Actions
+                            </h4>
                             <div className="space-y-2">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 className="w-full justify-start"
                                 onClick={() => openReplyDialog(ticket.id)}
                               >
                                 <MessageSquare className="h-4 w-4 mr-2" />
                                 Reply
                               </Button>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 className="w-full justify-start"
-                                onClick={() => openStatusDialog(ticket.id, ticket.status)}
+                                onClick={() =>
+                                  openStatusDialog(ticket.id, ticket.status)
+                                }
                               >
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Update Status
@@ -530,26 +622,27 @@ const SupportTicketsPage = () => {
             </div>
           )}
         </CardContent>
-        
+
         {/* Pagination */}
         {filteredTickets.length > 0 && (
           <div className="px-4 py-3 border-t bg-gray-50 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {startIndex + 1} to {endIndex} of {filteredTickets.length} results
+              Showing {startIndex + 1} to {endIndex} of {filteredTickets.length}{' '}
+              results
             </div>
             <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
                 <span className="ml-1">Previous</span>
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >
@@ -560,20 +653,21 @@ const SupportTicketsPage = () => {
           </div>
         )}
       </Card>
-      
-      
+
       {/* Reply Dialog */}
       <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reply to User</DialogTitle>
-            <DialogDescription>Write your response and send it to the user.</DialogDescription>
+            <DialogDescription>
+              Write your response and send it to the user.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <Textarea
               placeholder="Type your reply..."
               value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
+              onChange={e => setReplyText(e.target.value)}
               rows={5}
               className="resize-none"
             />
@@ -596,26 +690,25 @@ const SupportTicketsPage = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Change Status</DialogTitle>
-            <DialogDescription>Select a new status for this ticket.</DialogDescription>
+            <DialogDescription>
+              Select a new status for this ticket.
+            </DialogDescription>
           </DialogHeader>
           <div className="pt-2">
             <Select value={statusDraft} onValueChange={setStatusDraft}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
-                              <SelectContent>
-                  <SelectItem value="PENDING">Open</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="RESOLVED">Resolved</SelectItem>
-                  <SelectItem value="CLOSED">Closed</SelectItem>
-                </SelectContent>
+              <SelectContent>
+                <SelectItem value="PENDING">Open</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                <SelectItem value="RESOLVED">Resolved</SelectItem>
+                <SelectItem value="CLOSED">Closed</SelectItem>
+              </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button 
-              onClick={applyStatusChange} 
-              disabled={submittingReply}
-            >
+            <Button onClick={applyStatusChange} disabled={submittingReply}>
               {submittingReply ? 'Updating...' : 'Apply'}
             </Button>
           </DialogFooter>

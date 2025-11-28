@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Bold, 
-  Italic, 
-  Underline, 
+import {
+  Bold,
+  Italic,
+  Underline,
   Strikethrough,
   Type,
   Palette,
@@ -18,13 +18,13 @@ import {
   Code,
   Quote,
   Undo,
-  Redo
+  Redo,
 } from 'lucide-react';
 
-const TextSelectionToolbar = ({ 
-  selection, 
-  onFormat, 
-  onLink, 
+const TextSelectionToolbar = ({
+  selection,
+  onFormat,
+  onLink,
   onImage,
   onList,
   onAlign,
@@ -35,7 +35,7 @@ const TextSelectionToolbar = ({
   canUndo,
   canRedo,
   onUndo,
-  onRedo
+  onRedo,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -44,12 +44,40 @@ const TextSelectionToolbar = ({
   const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false);
   const toolbarRef = useRef(null);
 
-  const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
-  const fontFamilies = ['Arial', 'Times New Roman', 'Courier New', 'Roboto', 'Serif', 'Sans-serif'];
+  const fontSizes = [
+    '12px',
+    '14px',
+    '16px',
+    '18px',
+    '20px',
+    '24px',
+    '32px',
+    '48px',
+  ];
+  const fontFamilies = [
+    'Arial',
+    'Times New Roman',
+    'Courier New',
+    'Roboto',
+    'Serif',
+    'Sans-serif',
+  ];
   const colors = [
-    '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', 
-    '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
-    '#008000', '#FFC0CB', '#A52A2A', '#808080', '#FFD700'
+    '#000000',
+    '#FFFFFF',
+    '#FF0000',
+    '#00FF00',
+    '#0000FF',
+    '#FFFF00',
+    '#FF00FF',
+    '#00FFFF',
+    '#FFA500',
+    '#800080',
+    '#008000',
+    '#FFC0CB',
+    '#A52A2A',
+    '#808080',
+    '#FFD700',
   ];
 
   useEffect(() => {
@@ -58,13 +86,13 @@ const TextSelectionToolbar = ({
       if (!range.collapsed) {
         const rect = range.getBoundingClientRect();
         const toolbarHeight = 50;
-        
+
         // Position toolbar above the selection
         setPosition({
-          x: rect.left + (rect.width / 2) - 200, // Center the toolbar
-          y: rect.top - toolbarHeight - 10
+          x: rect.left + rect.width / 2 - 200, // Center the toolbar
+          y: rect.top - toolbarHeight - 10,
         });
-        
+
         setIsVisible(true);
       } else {
         setIsVisible(false);
@@ -75,7 +103,7 @@ const TextSelectionToolbar = ({
   }, [selection]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = event => {
       if (toolbarRef.current && !toolbarRef.current.contains(event.target)) {
         setShowColorPicker(false);
         setShowFontSizePicker(false);
@@ -95,7 +123,7 @@ const TextSelectionToolbar = ({
       className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1"
       style={{
         left: Math.max(10, position.x),
-        top: Math.max(10, position.y)
+        top: Math.max(10, position.y),
       }}
     >
       {/* Undo/Redo */}
@@ -136,7 +164,7 @@ const TextSelectionToolbar = ({
         </Button>
         {showFontFamilyPicker && (
           <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[150px]">
-            {fontFamilies.map((font) => (
+            {fontFamilies.map(font => (
               <button
                 key={font}
                 className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
@@ -167,7 +195,7 @@ const TextSelectionToolbar = ({
         </Button>
         {showFontSizePicker && (
           <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[100px]">
-            {fontSizes.map((size) => (
+            {fontSizes.map(size => (
               <button
                 key={size}
                 className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
@@ -240,7 +268,7 @@ const TextSelectionToolbar = ({
         {showColorPicker && (
           <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[200px]">
             <div className="grid grid-cols-5 gap-2">
-              {colors.map((color) => (
+              {colors.map(color => (
                 <button
                   key={color}
                   className="w-8 h-8 rounded border border-gray-300 hover:scale-110 transition-transform"
