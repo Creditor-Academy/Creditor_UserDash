@@ -895,17 +895,64 @@ const PaymentDashboard = () => {
     let rows = [];
     let sheetName = 'Data';
     if (activeTab === 'users') {
-      rows = filtered.map(u => ({
-        ID: u.id,
-        Name: u.name,
-        Email: u.email,
-        MembershipStatus: u.membershipLabel,
-        MembershipEnds: formatDate(
-          u.membership?.expiresAt || u.membership?.nextBillingDate
-        ),
-        Credits: Number(u.credits) || 0,
-      }));
+      rows = filtered.map(u => {
+        const hist = creditHistory[u.id] || [];
+        const list = Array.isArray(hist) ? hist : [];
+        const usageList = list.filter(h => h.type === 'usage');
+        const usageCount = usageList.length;
+        const usageCredits = usageList.reduce(
+          (sum, h) => sum + Math.abs(Number(h.credits) || 0),
+          0
+        );
+        return {
+          ID: u.id,
+          Name: u.name,
+          Email: u.email,
+          MembershipStatus: u.membershipLabel,
+          MembershipEnds: formatDate(
+            u.membership?.expiresAt || u.membership?.nextBillingDate
+          ),
+          Credits: Number(u.credits) || 0,
+          UsageCount: usageCount,
+          UsageCredits: usageCredits,
+        };
+      });
       sheetName = 'Users';
+
+      // Build detailed usage rows for a second sheet
+      const detailed = [];
+      filtered.forEach(u => {
+        const hist = creditHistory[u.id] || [];
+        const list = Array.isArray(hist) ? hist : [];
+        list
+          .filter(h => h.type === 'usage')
+          .forEach(h => {
+            detailed.push({
+              UserID: u.id,
+              UserName: u.name,
+              Date: formatDate(h.date),
+              Description: h.description,
+              UsageType: h.usageType || '',
+              CatalogItem: h.catalogItem || '',
+              LessonName: h.lessonName || '',
+              ServiceType: h.serviceType || '',
+              Consultant: h.consultant || '',
+              Credits: Number(h.credits) || 0,
+            });
+          });
+      });
+
+      const wb = XLSX.utils.book_new();
+      const wsUsers = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, wsUsers, 'Users');
+      const wsUsage = XLSX.utils.json_to_sheet(detailed);
+      XLSX.utils.book_append_sheet(wb, wsUsage, 'UsersUsage');
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      XLSX.writeFile(
+        wb,
+        `payment-dashboard-${sheetName.toLowerCase()}-${ts}.xlsx`
+      );
+      return;
     } else if (activeTab === 'history') {
       rows = filteredHistory.map(h => ({
         Date: formatDate(h.date),
@@ -1289,6 +1336,16 @@ const PaymentDashboard = () => {
                       Clear
                     </button>
                   )}
+                </div>
+                <div className="ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm"
+                    title="Export filtered history"
+                  >
+                    <FaDownload /> Export
+                  </button>
                 </div>
               </div>
               <div className="space-y-3">
