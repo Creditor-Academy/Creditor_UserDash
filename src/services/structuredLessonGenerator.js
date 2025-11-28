@@ -376,31 +376,22 @@ Requirements:
   }
 
   /**
-   * Block 5: Image Left + Content Right
+   * Block 5: Content Right + Image Left
    */
   async generateImageLeft(context) {
-    // Generate image prompt
-    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt for "${context.topic}".
-
+    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing key concepts of "${context.topic}".
+    
 Requirements:
 - Design a structured, organized visual with clear hierarchy
-- Include flowchart elements, diagrams, or process flows if applicable
+- Show key concepts with flowchart or diagram elements
 - Use professional colors, icons, and typography
-- Show detailed information with proper spacing and layout
-- Include labels, annotations, and key points clearly visible
+- Include detailed information with proper spacing and layout
+- Display labels, annotations, and key points clearly visible
 - Modern, clean, professional style suitable for educational content
 - Ensure all text is readable and well-organized
 - Create a visually rich, information-dense design
-- Return ONLY the image description, no extra text`;
+- Return ONLY the image description`;
 
-    const imagePrompt = await openAIService.generateText(imagePromptText, {
-      maxTokens: 200,
-      temperature: 0.8,
-      systemPrompt:
-        'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
-    });
-
-    // Generate content text
     const contentPrompt = `Write 2-3 sentences explaining a key concept about "${context.topic}".
 
 Requirements:
@@ -409,10 +400,19 @@ Requirements:
 - Professional tone
 - Return ONLY the text`;
 
-    const contentText = await openAIService.generateText(contentPrompt, {
-      maxTokens: 150,
-      temperature: 0.7,
-    });
+    // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
+    const [imagePrompt, contentText] = await Promise.all([
+      openAIService.generateText(imagePromptText, {
+        maxTokens: 200,
+        temperature: 0.8,
+        systemPrompt:
+          'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
+      }),
+      openAIService.generateText(contentPrompt, {
+        maxTokens: 150,
+        temperature: 0.7,
+      }),
+    ]);
 
     // Generate AI image with DALL-E - Enhanced with 7-layer premium quality
     let imageUrl = IMAGE_PLACEHOLDER;
@@ -420,52 +420,8 @@ Requirements:
     let imageError = null;
 
     try {
-      // Enhance prompt with infographic-specific quality system
-      let enhancedPrompt = imagePrompt.trim();
-
-      // Add infographic-specific enhancements
-      if (!enhancedPrompt.toLowerCase().includes('infographic')) {
-        enhancedPrompt = `Professional infographic/flowchart design: ${enhancedPrompt}`;
-      }
-
-      // Ensure readable text and clear hierarchy
-      if (!enhancedPrompt.toLowerCase().includes('readable')) {
-        enhancedPrompt +=
-          ', with clear, readable text labels, professional typography';
-      }
-
-      // Add visual hierarchy and structure
-      if (!enhancedPrompt.toLowerCase().includes('hierarchy')) {
-        enhancedPrompt +=
-          ', clear visual hierarchy, organized sections, logical flow';
-      }
-
-      // Add professional design elements
-      if (!enhancedPrompt.toLowerCase().includes('icon')) {
-        enhancedPrompt +=
-          ', professional icons, visual elements, color-coded sections';
-      }
-
-      // Add quality specifications for infographics
-      if (!enhancedPrompt.toLowerCase().includes('8k')) {
-        enhancedPrompt +=
-          ', ultra-high resolution, 8K quality, crisp details, sharp text';
-      }
-
-      // Add professional styling
-      if (!enhancedPrompt.toLowerCase().includes('professional')) {
-        enhancedPrompt +=
-          ', modern professional design, premium color palette, clean spacing';
-      }
-
-      // Ensure information density
-      if (!enhancedPrompt.toLowerCase().includes('information')) {
-        enhancedPrompt +=
-          ', information-rich, well-organized, detailed content';
-      }
-
-      enhancedPrompt +=
-        '. Clean white or light background, no watermarks, vivid colors, professional quality.';
+      // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
+      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
 
       console.log(
         '🎨 Generating AI image (left) with premium 7-layer enhancement:',
@@ -560,13 +516,6 @@ Requirements:
 - Create a visually rich, information-dense design
 - Return ONLY the image description`;
 
-    const imagePrompt = await openAIService.generateText(imagePromptText, {
-      maxTokens: 200,
-      temperature: 0.8,
-      systemPrompt:
-        'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
-    });
-
     const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".
 
 Requirements:
@@ -575,62 +524,27 @@ Requirements:
 - Professional tone
 - Return ONLY the text`;
 
-    const contentText = await openAIService.generateText(contentPrompt, {
-      maxTokens: 150,
-      temperature: 0.7,
-    });
+    // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
+    const [imagePrompt, contentText] = await Promise.all([
+      openAIService.generateText(imagePromptText, {
+        maxTokens: 200,
+        temperature: 0.8,
+        systemPrompt:
+          'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
+      }),
+      openAIService.generateText(contentPrompt, {
+        maxTokens: 150,
+        temperature: 0.7,
+      }),
+    ]);
 
     let imageUrl = IMAGE_PLACEHOLDER;
     let uploadedToS3 = false;
     let imageError = null;
 
     try {
-      // Enhance prompt with infographic-specific quality system
-      let enhancedPrompt = imagePrompt.trim();
-
-      // Add infographic-specific enhancements
-      if (!enhancedPrompt.toLowerCase().includes('infographic')) {
-        enhancedPrompt = `Professional infographic/flowchart design: ${enhancedPrompt}`;
-      }
-
-      // Ensure readable text and clear hierarchy
-      if (!enhancedPrompt.toLowerCase().includes('readable')) {
-        enhancedPrompt +=
-          ', with clear, readable text labels, professional typography';
-      }
-
-      // Add visual hierarchy and structure
-      if (!enhancedPrompt.toLowerCase().includes('hierarchy')) {
-        enhancedPrompt +=
-          ', clear visual hierarchy, organized sections, logical flow';
-      }
-
-      // Add professional design elements
-      if (!enhancedPrompt.toLowerCase().includes('icon')) {
-        enhancedPrompt +=
-          ', professional icons, visual elements, color-coded sections';
-      }
-
-      // Add quality specifications for infographics
-      if (!enhancedPrompt.toLowerCase().includes('8k')) {
-        enhancedPrompt +=
-          ', ultra-high resolution, 8K quality, crisp details, sharp text';
-      }
-
-      // Add professional styling
-      if (!enhancedPrompt.toLowerCase().includes('professional')) {
-        enhancedPrompt +=
-          ', modern professional design, premium color palette, clean spacing';
-      }
-
-      // Ensure information density
-      if (!enhancedPrompt.toLowerCase().includes('information')) {
-        enhancedPrompt +=
-          ', information-rich, well-organized, detailed content';
-      }
-
-      enhancedPrompt +=
-        '. Clean white or light background, no watermarks, vivid colors, professional quality.';
+      // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
+      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
 
       console.log(
         '🎨 Generating AI image (right) with infographic enhancement:',

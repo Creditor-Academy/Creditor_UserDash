@@ -737,8 +737,8 @@ export async function createCompleteAICourse(courseData) {
       generationConfig[generationMode] || generationConfig.STANDARD;
     console.log(`🎯 Using ${generationMode} generation mode`);
 
-    // Process lessons in batches for parallel execution (OPTIMIZED)
-    const BATCH_SIZE = 5; // Process 5 lessons simultaneously
+    // Process lessons in batches for parallel execution (OPTIMIZED - Phase 2: Increased batch size)
+    const BATCH_SIZE = 10; // Process 10 lessons simultaneously (increased from 5 for better parallelization)
     let processedCount = 0;
 
     for (let i = 0; i < createdLessons.length; i += BATCH_SIZE) {
@@ -747,7 +747,7 @@ export async function createCompleteAICourse(courseData) {
       const totalBatches = Math.ceil(createdLessons.length / BATCH_SIZE);
 
       console.log(
-        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons)`
+        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons in parallel)`
       );
 
       // Process all lessons in batch in parallel
