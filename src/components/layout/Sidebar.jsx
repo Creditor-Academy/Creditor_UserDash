@@ -23,6 +23,8 @@ import {
   Bot,
   CreditCard,
   CalendarDays,
+  Megaphone,
+  Handshake,
 } from 'lucide-react';
 import { currentUserId } from '@/data/currentUser';
 import { getUserRole } from '@/services/userService';
@@ -428,6 +430,19 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 />
               </motion.div>
 
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Handshake}
+                  label="Sponsor Center"
+                  href="/dashboard/sponsor-center/submit"
+                  active={location.pathname.startsWith(
+                    '/dashboard/sponsor-center'
+                  )}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+              </motion.div>
+
               {/* Creditor Card */}
               <motion.div variants={itemVariants}>
                 <SidebarItem
@@ -523,6 +538,20 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 label="Instructor Portal"
                 href="/instructor"
                 active={isActive('/instructor')}
+                collapsed={collapsed}
+                onNavigate={handleNavigate}
+              />
+            </motion.div>
+          )}
+          {!moreOpen && isInstructorOrAdmin() && (
+            <motion.div variants={itemVariants}>
+              <SidebarItem
+                icon={Megaphone}
+                label="Sponsor Ads"
+                href="/dashboard/admin/sponsor-ads/create"
+                active={location.pathname.startsWith(
+                  '/dashboard/admin/sponsor-ads'
+                )}
                 collapsed={collapsed}
                 onNavigate={handleNavigate}
               />

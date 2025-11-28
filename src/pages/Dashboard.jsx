@@ -40,6 +40,9 @@ import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncement
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
+import SponsorBanner from '@/components/sponsorAds/SponsorBanner';
+import SponsorSidebarAd from '@/components/sponsorAds/SponsorSidebarAd';
+import SponsorAdPopup from '@/components/sponsorAds/SponsorAdPopup';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -53,10 +56,57 @@ import {
   bookWebsiteService,
   fetchUserWebsiteServices,
 } from '../services/websiteService';
+import { useSponsorAds } from '@/contexts/SponsorAdsContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Dashboard() {
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
+  const { userRole } = useAuth();
+  const { getPrimaryAdForPlacement } = useSponsorAds();
+  const [isSponsorPopupOpen, setIsSponsorPopupOpen] = useState(false);
+
+  const dashboardBannerAd = useMemo(
+    () => getPrimaryAdForPlacement('dashboard_banner', { role: userRole }),
+    [getPrimaryAdForPlacement, userRole]
+  );
+
+  const dashboardSidebarAd = useMemo(
+    () => getPrimaryAdForPlacement('dashboard_sidebar', { role: userRole }),
+    [getPrimaryAdForPlacement, userRole]
+  );
+
+  const popupAd = useMemo(
+    () => getPrimaryAdForPlacement('popup', { role: userRole }),
+    [getPrimaryAdForPlacement, userRole]
+  );
+
+  useEffect(() => {
+    if (!popupAd) return;
+    const storageKey = `sponsor_popup_${popupAd.id}`;
+    if (
+      popupAd.frequency === 'once_per_session' &&
+      typeof window !== 'undefined' &&
+      window.sessionStorage.getItem(storageKey)
+    ) {
+      return;
+    }
+    const shouldShow =
+      popupAd.frequency === 'always' ||
+      popupAd.frequency === 'once_per_session' ||
+      (popupAd.frequency === 'low' && Math.random() < 0.4);
+    if (!shouldShow) return;
+    const timer = setTimeout(() => {
+      setIsSponsorPopupOpen(true);
+      if (
+        popupAd.frequency === 'once_per_session' &&
+        typeof window !== 'undefined'
+      ) {
+        window.sessionStorage.setItem(storageKey, 'shown');
+      }
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [popupAd]);
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
@@ -766,6 +816,11 @@ export function Dashboard() {
           <ThanksgivingPromo
             onExtendMembership={() => setShowCreditsModal(true)}
           />
+          {dashboardBannerAd && (
+            <div className="mb-6">
+              <SponsorBanner ad={dashboardBannerAd} />
+            </div>
+          )}
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
@@ -1025,6 +1080,9 @@ export function Dashboard() {
 
             {/* Right section - enhanced sidebar widgets */}
             <div className="xl:col-span-4 space-y-6">
+              {dashboardSidebarAd && (
+                <SponsorSidebarAd ad={dashboardSidebarAd} />
+              )}
               {/* Announcements*/}
               {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1352,6 +1410,13 @@ export function Dashboard() {
           </div>
         </div>
       </main>
+      {popupAd && (
+        <SponsorAdPopup
+          ad={popupAd}
+          open={isSponsorPopupOpen}
+          onClose={() => setIsSponsorPopupOpen(false)}
+        />
+      )}
       {/* Credits Modal (reused for services top-up) */}
       {showCreditsModal && (
         <CreditPurchaseModal
