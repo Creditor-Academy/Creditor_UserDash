@@ -69,10 +69,10 @@ export default function ActivityFeed() {
         {activities.map(activity => (
           <div
             key={activity.id}
-            className="group p-4 md:p-6 rounded-3xl md:rounded-[32px] bg-gradient-to-br from-white/[0.1] to-white/[0.02] backdrop-blur-3xl border border-white/[0.12] hover:border-white/[0.2] transition-all hover:scale-105 hover:-translate-y-1 cursor-pointer relative overflow-hidden"
+            className="group p-4 md:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-br from-white/[0.13] to-white/[0.02] backdrop-blur-3xl border border-white/[0.16] hover:border-white/[0.22] transition-all hover:scale-105 hover:-translate-y-1 cursor-pointer relative overflow-hidden"
             style={{
               boxShadow:
-                '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14)',
             }}
           >
             {/* Reflection */}

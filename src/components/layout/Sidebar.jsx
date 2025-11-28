@@ -315,7 +315,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             </div>
             <div className="flex flex-col">
               <span className="text-white text-base leading-tight font-bold">
-                {organizationName || 'Athena'}
+                {organizationName || 'Athena LMS'}
               </span>
               <span className="text-blue-100 text-sm leading-tight font-medium">
                 Academy

@@ -74,25 +74,24 @@ export default function SupportContent() {
       {/* Header */}
       <div className="relative">
         <div
-          className="rounded-3xl md:rounded-[40px] p-6 md:p-8 lg:p-12 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-white/[0.01] backdrop-blur-3xl border border-white/[0.1] overflow-hidden"
+          className="rounded-2xl p-6 md:p-8 bg-gradient-to-br from-white/[0.1] via-white/[0.05] to-white/[0.01] backdrop-blur-3xl border border-white/[0.12] overflow-hidden"
           style={{
             boxShadow:
-              '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset -1px -1px 0 rgba(0, 0, 0, 0.25)',
+              '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent rounded-3xl md:rounded-[40px] pointer-events-none"></div>
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.15] to-transparent rounded-3xl pointer-events-none"></div>
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/15 to-transparent pointer-events-none"></div>
           <div className="relative z-10">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/40 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent rounded-2xl"></div>
-                <Headphones className="w-6 h-6 text-white relative z-10" />
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-md relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent rounded-lg"></div>
+                <Headphones className="w-5 h-5 text-white relative z-10" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-white">
+                <h1 className="text-2xl md:text-3xl font-bold text-white">
                   Support
                 </h1>
-                <p className="text-gray-400 text-sm mt-1">
+                <p className="text-xs md:text-sm text-gray-400 mt-1">
                   Manage support tickets and issues
                 </p>
               </div>
@@ -102,68 +101,69 @@ export default function SupportContent() {
       </div>
 
       {/* Support Tickets */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {tickets.map(ticket => (
           <div
             key={ticket.id}
-            className="rounded-3xl p-6 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-white/[0.01] backdrop-blur-3xl border border-white/[0.1] hover:border-white/[0.15] transition-all cursor-pointer group relative overflow-hidden"
+            className="rounded-xl p-4 bg-gradient-to-br from-white/[0.1] via-white/[0.05] to-white/[0.01] backdrop-blur-3xl border border-white/[0.12] hover:border-white/[0.18] transition-all cursor-pointer relative overflow-hidden"
             style={{
               boxShadow:
-                '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                '0 6px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-white/[0.02] to-transparent rounded-3xl pointer-events-none"></div>
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent rounded-3xl pointer-events-none"></div>
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent pointer-events-none"></div>
 
             <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-sm font-semibold text-cyan-300">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="text-xs font-semibold text-cyan-300">
                       {ticket.id}
                     </span>
-                    <h3 className="text-lg font-bold text-white">
+                    <h3 className="text-sm font-bold text-white">
                       {ticket.title}
                     </h3>
                   </div>
-                  <p className="text-sm text-gray-400">{ticket.description}</p>
+                  <p className="text-xs text-gray-400">{ticket.description}</p>
                 </div>
-                <div className="flex items-center space-x-2 ml-4">
+                <div className="flex items-center space-x-2 ml-3 flex-shrink-0">
                   <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getPriorityColor(ticket.priority)} flex items-center justify-center shadow-lg`}
+                    className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getPriorityColor(ticket.priority)} flex items-center justify-center shadow-md`}
                   >
-                    <MessageCircle className="w-5 h-5 text-white" />
+                    <MessageCircle className="w-4 h-4 text-white" />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/[0.1]">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-white/[0.08]">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Organization</div>
-                  <div className="text-sm text-gray-300">
+                  <div className="text-xs text-gray-500 mb-0.5">
+                    Organization
+                  </div>
+                  <div className="text-xs text-gray-300">
                     {ticket.organization}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Priority</div>
+                  <div className="text-xs text-gray-500 mb-0.5">Priority</div>
                   <div
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${getPriorityColor(ticket.priority)} bg-opacity-20 text-white`}
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r ${getPriorityColor(ticket.priority)} bg-opacity-20 text-white`}
                   >
                     {ticket.priority}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Status</div>
+                  <div className="text-xs text-gray-500 mb-0.5">Status</div>
                   <div
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(ticket.status)}`}
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(ticket.status)}`}
                   >
                     {ticket.status}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Date</div>
-                  <div className="text-sm text-gray-300 flex items-center space-x-1">
-                    <Clock className="w-4 h-4" />
+                  <div className="text-xs text-gray-500 mb-0.5">Date</div>
+                  <div className="text-xs text-gray-300 flex items-center space-x-1">
+                    <Clock className="w-3 h-3" />
                     <span>{ticket.date}</span>
                   </div>
                 </div>
