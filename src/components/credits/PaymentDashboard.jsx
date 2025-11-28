@@ -9,6 +9,21 @@ import {
   FaCalendarAlt,
   FaDownload,
 } from 'react-icons/fa';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  LineChart,
+  Line,
+  CartesianGrid,
+} from 'recharts';
 import * as XLSX from 'xlsx';
 function formatDate(value) {
   try {
@@ -627,6 +642,95 @@ const PaymentDashboard = () => {
     return result;
   }, [allHistory]);
 
+  // Chart datasets
+  const chartData = useMemo(() => {
+    // Credit tiers
+    const high = users.filter(u => (Number(u.credits) || 0) >= 1000).length;
+    const mid = users.filter(u => {
+      const c = Number(u.credits) || 0;
+      return c >= 500 && c < 1000;
+    }).length;
+    const low = users.filter(u => (Number(u.credits) || 0) < 500).length;
+    const creditTiers = [
+      { name: 'High (≥1000)', value: high, color: '#10B981' },
+      { name: 'Medium (500-999)', value: mid, color: '#F59E0B' },
+      { name: 'Low (<500)', value: low, color: '#EF4444' },
+    ];
+
+    // Top purchases (count)
+    const purchaseBar = (analytics.purchases || [])
+      .slice(0, 8)
+      .map(p => ({ name: p.name, count: p.count }));
+
+    // Usage over last 30 days (sum of usage credits per day)
+    const today = new Date();
+    const days = Array.from({ length: 30 }).map((_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (29 - i));
+      const key = d.toISOString().slice(0, 10);
+      return {
+        key,
+        label: d.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+        credits: 0,
+      };
+    });
+    const byKey = new Map(days.map(d => [d.key, d]));
+    allHistory
+      .filter(h => h.type === 'usage')
+      .forEach(h => {
+        const d = new Date(h.date);
+        const key = !Number.isNaN(d.getTime())
+          ? d.toISOString().slice(0, 10)
+          : null;
+        if (key && byKey.has(key)) {
+          const obj = byKey.get(key);
+          obj.credits += Math.abs(Number(h.credits) || 0);
+        }
+      });
+    const usageLine = days.map(d => ({ date: d.label, credits: d.credits }));
+
+    return { creditTiers, purchaseBar, usageLine };
+  }, [users, analytics.purchases, allHistory]);
+
+  // Usage Analytics charts datasets
+  const usageCharts = useMemo(() => {
+    const categories = [
+      'catalog',
+      'courses',
+      'modules',
+      'lessons',
+      'consultation',
+      'website',
+    ];
+    const categoryTotals = categories.map(c => ({
+      name: c,
+      label: c.charAt(0).toUpperCase() + c.slice(1),
+      value: usageBreakdown[c].reduce((s, i) => s + i.count, 0),
+    }));
+
+    let selectedItems = [];
+    if (usageCategory === 'all') {
+      selectedItems = categories
+        .flatMap(c =>
+          usageBreakdown[c].map(i => ({
+            name: `${c}: ${i.name}`,
+            count: i.count,
+          }))
+        )
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+    } else {
+      selectedItems = (usageBreakdown[usageCategory] || [])
+        .slice(0, 10)
+        .map(i => ({ name: i.name, count: i.count }));
+    }
+
+    return { categoryTotals, selectedItems };
+  }, [usageBreakdown, usageCategory]);
+
   const exportUsage = (scope = 'all') => {
     const rows = [];
     const cats = [
@@ -687,6 +791,104 @@ const PaymentDashboard = () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Lapses');
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     XLSX.writeFile(wb, `payment-dashboard-lapses-${scope}-${ts}.xlsx`);
+  };
+
+  const exportUserHistory = user => {
+    if (!user) return;
+    try {
+      const hist = creditHistory[user.id] || [];
+      const historyList = Array.isArray(hist) ? hist : [];
+      const rows = historyList.map(h => ({
+        Date: formatDate(h.date),
+        Type: h.type,
+        Description: h.description,
+        Credits: Number(h.credits) || 0,
+      }));
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'History');
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      try {
+        XLSX.writeFile(wb, `user-${user.id}-credit-history-${ts}.xlsx`);
+      } catch {
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const url = URL.createObjectURL(
+          new Blob([wbout], { type: 'application/octet-stream' })
+        );
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user-${user.id}-credit-history-${ts}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error('Export error (history):', e);
+      alert('Unable to export user history.');
+    }
+  };
+
+  const exportUserUsage = (user, scope = 'records') => {
+    if (!user) return;
+    try {
+      const hist = creditHistory[user.id] || [];
+      const usageList = Array.isArray(hist)
+        ? hist.filter(h => h.type === 'usage')
+        : [];
+      const wb = XLSX.utils.book_new();
+
+      if (scope === 'records') {
+        const rows = usageList.map(u => ({
+          Date: formatDate(u.date),
+          Description: u.description,
+          UsageType: u.usageType || '',
+          CatalogItem: u.catalogItem || '',
+          LessonName: u.lessonName || '',
+          ServiceType: u.serviceType || '',
+          Consultant: u.consultant || '',
+          Credits: Number(u.credits) || 0,
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'Usage Records');
+      } else if (scope === 'breakdown') {
+        const byCat = usageList.reduce((acc, item) => {
+          const key =
+            item.usageType ||
+            item.serviceType ||
+            item.catalogItem ||
+            item.lessonName ||
+            'Other';
+          acc[key] = (acc[key] || 0) + Math.abs(Number(item.credits) || 0);
+          return acc;
+        }, {});
+        const rows = Object.entries(byCat)
+          .sort((a, b) => b[1] - a[1])
+          .map(([Category, TotalCredits]) => ({ Category, TotalCredits }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'Breakdown');
+      }
+
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      try {
+        XLSX.writeFile(wb, `user-${user.id}-usage-${scope}-${ts}.xlsx`);
+      } catch {
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const url = URL.createObjectURL(
+          new Blob([wbout], { type: 'application/octet-stream' })
+        );
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user-${user.id}-usage-${scope}-${ts}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error('Export error (usage):', e);
+      alert('Unable to export usage data.');
+    }
   };
 
   const handleExport = () => {
@@ -1152,74 +1354,81 @@ const PaymentDashboard = () => {
 
           {activeTab === 'analytics' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <div className="border rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">
                     Credit Distribution
                   </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        High Credits (≥1000)
-                      </span>
-                      <span className="font-medium">
-                        {
-                          users.filter(u => (Number(u.credits) || 0) >= 1000)
-                            .length
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Medium Credits (500-999)
-                      </span>
-                      <span className="font-medium">
-                        {
-                          users.filter(u => {
-                            const c = Number(u.credits) || 0;
-                            return c >= 500 && c < 1000;
-                          }).length
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        Low Credits (&lt;500)
-                      </span>
-                      <span className="font-medium">
-                        {
-                          users.filter(u => (Number(u.credits) || 0) < 500)
-                            .length
-                        }
-                      </span>
-                    </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData.creditTiers}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label
+                        >
+                          {chartData.creditTiers.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-                <div className="border rounded-lg p-4">
+
+                <div className="border rounded-lg p-4 xl:col-span-2">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    Membership Status
+                    Top Purchases
                   </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Active</span>
-                      <span className="font-medium text-emerald-600">
-                        {stats.activeMemberships}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Expiring Soon</span>
-                      <span className="font-medium text-amber-600">
-                        {stats.expiringSoon}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Expired</span>
-                      <span className="font-medium text-red-600">
-                        {users.length -
-                          stats.activeMemberships -
-                          stats.expiringSoon}
-                      </span>
-                    </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData.purchaseBar}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="name"
+                          hide={false}
+                          interval={0}
+                          angle={-10}
+                          textAnchor="end"
+                          height={50}
+                        />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" name="Purchases" fill="#3B82F6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 xl:col-span-3">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Usage (last 30 days)
+                  </h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData.usageLine}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="credits"
+                          name="Credits Used"
+                          stroke="#10B981"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -1329,6 +1538,91 @@ const PaymentDashboard = () => {
                   </div>
                 </div>
 
+                {/* Charts for Usage Analytics */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-3">
+                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">
+                      Category Share
+                    </h4>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={usageCharts.categoryTotals}
+                            dataKey="value"
+                            nameKey="label"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            paddingAngle={2}
+                            label
+                          >
+                            {usageCharts.categoryTotals.map((entry, index) => (
+                              <Cell
+                                key={`uc-cell-${index}`}
+                                fill={
+                                  [
+                                    '#60A5FA',
+                                    '#F59E0B',
+                                    '#10B981',
+                                    '#EF4444',
+                                    '#8B5CF6',
+                                    '#06B6D4',
+                                  ][index % 6]
+                                }
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-3">
+                    <h4 className="font-semibold text-gray-900 mb-2 text-sm capitalize">
+                      Top Items — {usageCategory}
+                    </h4>
+                    <div className="h-64">
+                      {usageCharts.selectedItems.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-sm text-gray-500 border border-dashed rounded-md">
+                          No items to display for this selection
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={usageCharts.selectedItems}
+                            layout="vertical"
+                            margin={{ left: 60, right: 16, top: 16, bottom: 8 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis
+                              type="category"
+                              dataKey="name"
+                              width={120}
+                              tickFormatter={v =>
+                                typeof v === 'string' && v.length > 18
+                                  ? v.slice(0, 18) + '…'
+                                  : v
+                              }
+                            />
+                            <Tooltip />
+                            <Legend />
+                            <Bar
+                              dataKey="count"
+                              name="Purchases"
+                              fill="#3B82F6"
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -1408,7 +1702,7 @@ const PaymentDashboard = () => {
           />
           <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-3xl max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900">
                     {userDetailModal.user.name}
@@ -1417,14 +1711,25 @@ const PaymentDashboard = () => {
                     {userDetailModal.user.email}
                   </p>
                 </div>
-                <button
-                  onClick={() =>
-                    setUserDetailModal({ open: false, user: null })
-                  }
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => exportUserHistory(userDetailModal.user)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm"
+                    title="Export Credit History"
+                  >
+                    <FaDownload /> Export
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setUserDetailModal({ open: false, user: null })
+                    }
+                    className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             </div>
             <div className="p-6 overflow-y-auto max-h-[60vh]">
@@ -1479,7 +1784,6 @@ const PaymentDashboard = () => {
                   {(() => {
                     const hist = creditHistory[userDetailModal.user.id] || [];
                     const historyList = Array.isArray(hist) ? hist : [];
-
                     if (historyList.length === 0) {
                       return (
                         <div className="text-center text-gray-600 py-4">
@@ -1487,7 +1791,6 @@ const PaymentDashboard = () => {
                         </div>
                       );
                     }
-
                     return historyList.map((h, i) => (
                       <div
                         key={i}
@@ -1520,11 +1823,7 @@ const PaymentDashboard = () => {
                             {h.type}
                           </span>
                           <div
-                            className={`font-semibold ${
-                              h.type === 'usage' || h.type === 'deduct'
-                                ? 'text-red-600'
-                                : 'text-green-600'
-                            }`}
+                            className={`font-semibold ${h.type === 'usage' || h.type === 'deduct' ? 'text-red-600' : 'text-green-600'}`}
                           >
                             {h.type === 'usage' || h.type === 'deduct'
                               ? '-'
@@ -1559,12 +1858,40 @@ const PaymentDashboard = () => {
                   {userUsageModal.user.name} · {userUsageModal.user.email}
                 </p>
               </div>
-              <button
-                onClick={() => setUserUsageModal({ open: false, user: null })}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                <details className="group inline-block relative">
+                  <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm">
+                    <FaDownload /> Export
+                  </summary>
+                  <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg p-1 z-10">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        exportUserUsage(userUsageModal.user, 'records')
+                      }
+                      className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                    >
+                      Usage Records
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        exportUserUsage(userUsageModal.user, 'breakdown')
+                      }
+                      className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                    >
+                      Category Breakdown
+                    </button>
+                  </div>
+                </details>
+                <button
+                  type="button"
+                  onClick={() => setUserUsageModal({ open: false, user: null })}
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <div className="p-6 overflow-y-auto max-h-[60vh] space-y-5">
               {(() => {
@@ -1572,7 +1899,6 @@ const PaymentDashboard = () => {
                 const usageList = Array.isArray(hist)
                   ? hist.filter(h => h.type === 'usage')
                   : [];
-
                 if (usageList.length === 0) {
                   return (
                     <div className="text-center text-gray-600 py-8 border rounded-lg">
@@ -1580,7 +1906,6 @@ const PaymentDashboard = () => {
                     </div>
                   );
                 }
-
                 const now = new Date();
                 const totalUsageCredits = usageList.reduce(
                   (sum, item) => sum + Math.abs(item.credits || 0),
@@ -1598,11 +1923,9 @@ const PaymentDashboard = () => {
                   acc[key] = (acc[key] || 0) + Math.abs(item.credits || 0);
                   return acc;
                 }, {});
-
                 const categoryEntries = Object.entries(usageByCategory).sort(
                   (a, b) => b[1] - a[1]
                 );
-
                 return (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1645,7 +1968,6 @@ const PaymentDashboard = () => {
                         </p>
                       </div>
                     </div>
-
                     <div className="border rounded-lg">
                       <div className="border-b px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600">
                         Usage breakdown by category
@@ -1666,7 +1988,6 @@ const PaymentDashboard = () => {
                         ))}
                       </ul>
                     </div>
-
                     <div className="border rounded-lg overflow-hidden">
                       <table className="min-w-full text-left text-sm">
                         <thead className="bg-gray-50 text-xs uppercase text-gray-600">
