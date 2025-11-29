@@ -22,6 +22,7 @@ import InboxModal from './InboxModal';
 import CalendarModal from './CalendarModal';
 import UserDetailsModal from '@/components/UserDetailsModal';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay';
 import { search } from '@/services/searchService';
 import { fetchUserCourses } from '@/services/courseService';
 import {
@@ -814,6 +815,12 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
+
+            {/* Compact Token Display */}
+            <div className="hidden lg:block">
+              <CompactTokenDisplay />
+            </div>
+
             {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
