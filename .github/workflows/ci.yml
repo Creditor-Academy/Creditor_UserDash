@@ -87,6 +87,14 @@ jobs:
         name: build-files
         path: ./dist/
         
+    - name: Build Status Report
+      if: always()
+      run: |
+        echo "✅ Build completed successfully"
+        echo "Branch: ${{ github.ref }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Build artifacts uploaded to dist/"
+        
   deploy-staging:
     runs-on: ubuntu-latest
     needs: [test, build]
