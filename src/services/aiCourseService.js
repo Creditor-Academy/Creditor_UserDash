@@ -737,8 +737,10 @@ export async function createCompleteAICourse(courseData) {
       generationConfig[generationMode] || generationConfig.STANDARD;
     console.log(`🎯 Using ${generationMode} generation mode`);
 
-    // Process lessons in batches for parallel execution (OPTIMIZED - Phase 2: Increased batch size)
-    const BATCH_SIZE = 10; // Process 10 lessons simultaneously (increased from 5 for better parallelization)
+    // Process lessons in batches for parallel execution (OPTIMIZED - Phase 3: Aggressive parallelization)
+    // BATCH_SIZE increased to 20 for maximum parallelization (from 10)
+    // This generates 20 lessons simultaneously with all their content blocks
+    const BATCH_SIZE = 20; // Process 20 lessons simultaneously (AGGRESSIVE: doubled from 10)
     let processedCount = 0;
 
     for (let i = 0; i < createdLessons.length; i += BATCH_SIZE) {
@@ -747,7 +749,7 @@ export async function createCompleteAICourse(courseData) {
       const totalBatches = Math.ceil(createdLessons.length / BATCH_SIZE);
 
       console.log(
-        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons in parallel)`
+        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons in parallel) - AGGRESSIVE MODE`
       );
 
       // Process all lessons in batch in parallel
@@ -786,7 +788,7 @@ export async function createCompleteAICourse(courseData) {
 
             if (useStructuredGeneration) {
               console.log(
-                '🎯 Using structured lesson generator (8-block format)'
+                `🎯 Using structured lesson generator (${generationMode} mode)`
               );
 
               // Generate lesson with structured format
@@ -797,12 +799,14 @@ export async function createCompleteAICourse(courseData) {
                   description: courseData.description,
                   difficulty: courseData.difficulty || 'intermediate',
                   targetAudience: courseData.targetAudience || 'learners',
+                  generationMode: generationMode, // Pass generation mode
                 },
                 progress => {
                   console.log(
                     `  └─ ${progress.message} (${progress.current}/${progress.total})`
                   );
-                }
+                },
+                { skipImages: generationMode === 'QUICK' } // Pass config to skip images in QUICK mode
               );
 
               if (result.success) {
@@ -910,12 +914,12 @@ export async function createCompleteAICourse(courseData) {
         }
       });
 
-      // Add delay between batches to avoid rate limiting
+      // Add minimal delay between batches to avoid rate limiting (OPTIMIZED: reduced from 500ms to 100ms)
       if (i + BATCH_SIZE < createdLessons.length) {
         console.log(
-          `⏳ Batch ${batchNumber} complete, waiting 500ms before next batch...`
+          `⏳ Batch ${batchNumber} complete, waiting 100ms before next batch...`
         );
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 

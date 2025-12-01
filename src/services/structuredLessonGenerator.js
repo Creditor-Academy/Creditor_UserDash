@@ -1,4 +1,4 @@
-import openAIService from './openAIService.js';
+import optimizedOpenAIService from './optimizedOpenAIService.js';
 import { updateLessonContent } from './courseService.js';
 
 /**
@@ -97,9 +97,8 @@ class StructuredLessonGenerator {
   }
 
   /**
-   * Generate complete lesson with 8 fixed blocks
    */
-  async generateLesson(lessonId, courseData, onProgress = null) {
+  async generateLesson(lessonId, courseData, onProgress = null, config = {}) {
     console.log(
       '🎯 Starting structured lesson generation for lesson:',
       lessonId
@@ -109,8 +108,15 @@ class StructuredLessonGenerator {
     const context = this.extractContext(courseData);
     console.log('📋 Extracted context:', context);
 
+    // Check if images should be skipped (QUICK mode)
+    const skipImages =
+      config.skipImages || courseData.generationMode === 'QUICK';
+    if (skipImages) {
+      console.log('⚡ QUICK MODE: Skipping image generation for speed');
+    }
+
     const blocks = [];
-    const totalBlocks = 8;
+    const totalBlocks = skipImages ? 6 : 8; // 6 blocks without images, 8 with
 
     try {
       // Generate ALL blocks in parallel (OPTIMIZED - Phase 6: Ultra Parallel)
@@ -120,31 +126,31 @@ class StructuredLessonGenerator {
         message: 'Generating all content blocks in parallel...',
       });
 
-      const [
-        masterHeading,
-        paragraph,
-        elegantQuote,
-        carouselQuotes,
-        imageLeft,
-        imageRight,
-        numberedList,
-        table,
-        divider,
-      ] = await Promise.all([
+      // Generate blocks conditionally based on mode
+      const blockPromises = [
         this.generateWithRetry(() => this.generateMasterHeading(context)),
         this.generateWithRetry(() => this.generateParagraph(context)),
         this.generateWithRetry(() => this.generateElegantQuote(context)),
         this.generateWithRetry(() => this.generateCarouselQuotes(context)),
-        this.generateWithRetry(() => this.generateImageLeft(context)),
-        this.generateWithRetry(() => this.generateImageRight(context)),
         this.generateWithRetry(() => this.generateNumberedList(context)),
         this.generateWithRetry(() => this.generateTable(context)),
         Promise.resolve(this.generateDivider()), // Static, no async needed
-      ]);
+      ];
 
-      // Add all blocks in order
-      blocks.push(
-        masterHeading,
+      // Only add image generation if not in QUICK mode
+      if (!skipImages) {
+        blockPromises.splice(
+          4,
+          0,
+          this.generateWithRetry(() => this.generateImageLeft(context)),
+          this.generateWithRetry(() => this.generateImageRight(context))
+        );
+      }
+
+      const generatedBlocks = await Promise.all(blockPromises);
+
+      // Destructure based on mode
+      let masterHeading,
         paragraph,
         elegantQuote,
         carouselQuotes,
@@ -152,8 +158,40 @@ class StructuredLessonGenerator {
         imageRight,
         numberedList,
         table,
-        divider
-      );
+        divider;
+
+      if (skipImages) {
+        [
+          masterHeading,
+          paragraph,
+          elegantQuote,
+          carouselQuotes,
+          numberedList,
+          table,
+          divider,
+        ] = generatedBlocks;
+      } else {
+        [
+          masterHeading,
+          paragraph,
+          elegantQuote,
+          carouselQuotes,
+          imageLeft,
+          imageRight,
+          numberedList,
+          table,
+          divider,
+        ] = generatedBlocks;
+      }
+
+      // Add all blocks in order
+      blocks.push(masterHeading, paragraph, elegantQuote, carouselQuotes);
+
+      if (!skipImages) {
+        blocks.push(imageLeft, imageRight);
+      }
+
+      blocks.push(numberedList, table, divider);
 
       // Convert blocks to HTML
       const processedBlocks = blocks.map(block => ({
@@ -216,7 +254,7 @@ Requirements:
 - Suitable for ${context.difficulty} level
 - Return ONLY the title text, no quotes or extra formatting`;
 
-    const content = await openAIService.generateText(prompt, {
+    const content = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 50,
       temperature: 0.8,
     });
@@ -258,7 +296,7 @@ Requirements:
 - Professional and informative tone
 - Return ONLY the paragraph text`;
 
-    const content = await openAIService.generateText(prompt, {
+    const content = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 200,
       temperature: 0.7,
     });
@@ -294,7 +332,7 @@ Requirements:
 - Should emphasize the value or impact of the topic
 - Return ONLY the quote text, no quotation marks`;
 
-    const content = await openAIService.generateText(prompt, {
+    const content = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 100,
       temperature: 0.8,
     });
@@ -331,7 +369,7 @@ Requirements:
 - Professional and insightful
 - Format as JSON array: [{"quote": "...", "author": "Name", "title": "Title"}]`;
 
-    const response = await openAIService.generateText(prompt, {
+    const response = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 300,
       temperature: 0.8,
     });
@@ -402,13 +440,13 @@ Requirements:
 
     // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
     const [imagePrompt, contentText] = await Promise.all([
-      openAIService.generateText(imagePromptText, {
+      optimizedOpenAIService.generateText(imagePromptText, {
         maxTokens: 200,
         temperature: 0.8,
         systemPrompt:
           'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
       }),
-      openAIService.generateText(contentPrompt, {
+      optimizedOpenAIService.generateText(contentPrompt, {
         maxTokens: 150,
         temperature: 0.7,
       }),
@@ -427,10 +465,13 @@ Requirements:
         '🎨 Generating AI image (left) with premium 7-layer enhancement:',
         enhancedPrompt.substring(0, 100) + '...'
       );
-      const imageResult = await openAIService.generateImage(enhancedPrompt, {
-        ...DEFAULT_IMAGE_OPTIONS,
-        folder: IMAGE_FOLDERS.left,
-      });
+      const imageResult = await optimizedOpenAIService.generateImage(
+        enhancedPrompt,
+        {
+          ...DEFAULT_IMAGE_OPTIONS,
+          folder: IMAGE_FOLDERS.left,
+        }
+      );
 
       // Validate response
       if (!imageResult) {
@@ -526,13 +567,13 @@ Requirements:
 
     // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
     const [imagePrompt, contentText] = await Promise.all([
-      openAIService.generateText(imagePromptText, {
+      optimizedOpenAIService.generateText(imagePromptText, {
         maxTokens: 200,
         temperature: 0.8,
         systemPrompt:
           'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
       }),
-      openAIService.generateText(contentPrompt, {
+      optimizedOpenAIService.generateText(contentPrompt, {
         maxTokens: 150,
         temperature: 0.7,
       }),
@@ -550,10 +591,13 @@ Requirements:
         '🎨 Generating AI image (right) with infographic enhancement:',
         enhancedPrompt.substring(0, 100) + '...'
       );
-      const imageResult = await openAIService.generateImage(enhancedPrompt, {
-        ...DEFAULT_IMAGE_OPTIONS,
-        folder: IMAGE_FOLDERS.right,
-      });
+      const imageResult = await optimizedOpenAIService.generateImage(
+        enhancedPrompt,
+        {
+          ...DEFAULT_IMAGE_OPTIONS,
+          folder: IMAGE_FOLDERS.right,
+        }
+      );
 
       // Validate response
       if (!imageResult) {
@@ -635,7 +679,7 @@ Requirements:
 - Professional tone
 - Format as JSON array: ["Point 1", "Point 2", ...]`;
 
-    const response = await openAIService.generateText(prompt, {
+    const response = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 300,
       temperature: 0.7,
     });
@@ -682,7 +726,7 @@ Requirements:
 - Clear and informative
 - Format as JSON: {"headers": ["Col1", "Col2", "Col3"], "rows": [["cell1", "cell2", "cell3"], ...]}`;
 
-    const response = await openAIService.generateText(prompt, {
+    const response = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 400,
       temperature: 0.7,
     });
