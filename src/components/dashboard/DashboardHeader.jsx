@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -34,8 +34,11 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchNotifications } from '@/services/notificationService';
 import { useCredits } from '@/contexts/CreditsContext';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
+  const { isChristmasMode, toggleChristmasMode } =
+    useContext(SeasonalThemeContext);
   const { isInstructorOrAdmin, hasRole } = useAuth();
   const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -814,6 +817,16 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
+            <button
+              type="button"
+              onClick={toggleChristmasMode}
+              aria-pressed={isChristmasMode}
+              className="hidden sm:inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 christmas-toggle-btn"
+            >
+              {isChristmasMode
+                ? 'Disable Christmas Mode'
+                : '🎄 Enable Christmas Mode'}
+            </button>
             {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
@@ -836,7 +849,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              aria-label="Notifications"
+              aria-label={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
+              title={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
             >
               <BellDot className="h-5 w-5" />
               {unreadNotifications > 0 && (

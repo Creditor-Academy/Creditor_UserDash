@@ -312,4 +312,388 @@
       transform: translate(0px, 0px) scale(1);
     }
   }
+
+  :root {
+    --christmas-red: #b11226;
+    --christmas-green: #0b6b3a;
+    --christmas-gold: #d4af37;
+    --christmas-snow: #fafafa;
+  }
+
+  .christmas-theme .dashboard-shell {
+    background: #b11226;
+  }
+
+  .christmas-surface {
+    background: #b11226;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-surface > main {
+    position: relative;
+    z-index: 2;
+  }
+
+  .snowfall-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 20px,
+        rgba(255, 255, 255, 0.8),
+        transparent
+      ),
+      radial-gradient(
+        3px 3px at 0px 40px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 10px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      );
+    background-size: 80px 80px;
+    animation: snowfall 18s linear infinite;
+  }
+
+  @keyframes snowfall {
+    0% {
+      background-position:
+        0 0,
+        0 0,
+        0 0;
+    }
+    100% {
+      background-position:
+        0 80px,
+        0 120px,
+        0 60px;
+    }
+  }
+
+  .christmas-hero-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: #b11226;
+    color: #fff;
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-hero-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at top right,
+      rgba(212, 175, 55, 0.35),
+      transparent 45%
+    );
+    pointer-events: none;
+  }
+
+  .christmas-hero-content {
+    flex: 1 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .christmas-hero-content h1 {
+    font-size: clamp(1.5rem, 3vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+
+  .christmas-hero-content p {
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 36rem;
+  }
+
+  .christmas-hero-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .christmas-hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .gift-pill,
+  .snow-pill {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+  }
+
+  .christmas-hero-visual {
+    flex: 0 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .christmas-hero-visual img {
+    width: 100%;
+    max-width: 280px;
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+    border: 3px solid rgba(212, 175, 55, 0.35);
+  }
+
+  .floating-snow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      3px 3px at 30px 30px,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    animation: gentleSnow 12s linear infinite;
+  }
+
+  @keyframes gentleSnow {
+    0% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(20px);
+    }
+  }
+
+  .christmas-challenge-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1.75rem;
+    border-radius: 1.25rem;
+    background: linear-gradient(
+      135deg,
+      rgba(11, 107, 58, 0.9),
+      rgba(177, 18, 38, 0.9)
+    );
+    color: #fff;
+    box-shadow: 0 20px 30px rgba(11, 107, 58, 0.2);
+  }
+
+  .christmas-challenge-card h2 {
+    font-size: 1.6rem;
+    margin: 0.25rem 0;
+  }
+
+  .challenge-badges {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .challenge-badges > div {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .challenge-badges .badge-icon {
+    font-size: 1.4rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-panel {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-lights {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(212, 175, 55, 0.9) 0 12px,
+      rgba(255, 255, 255, 0) 12px 16px
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-logo-mark {
+    display: inline-block;
+  }
+
+  .sidebar-logo-hat {
+    position: absolute;
+    top: -12px;
+    right: -8px;
+    font-size: 1.25rem;
+    opacity: 0;
+    transform: rotate(-10deg);
+    transition: opacity 0.3s ease;
+  }
+
+  .christmas-theme .sidebar-panel {
+    background: linear-gradient(180deg, rgba(11, 107, 58, 0.05), #ffffff);
+    border-right-color: rgba(177, 18, 38, 0.15);
+  }
+
+  .christmas-theme .sidebar-header {
+    background: #b11226;
+  }
+
+  .christmas-theme .sidebar-lights,
+  .christmas-theme .sidebar-logo-hat {
+    opacity: 1;
+  }
+
+  .sidebar-menu-item {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .sidebar-menu-item-active {
+    box-shadow: 0 10px 20px rgba(11, 107, 58, 0.15);
+  }
+
+  .christmas-theme .sidebar-menu-item-active {
+    background: linear-gradient(
+      90deg,
+      rgba(177, 18, 38, 0.2),
+      rgba(11, 107, 58, 0.25)
+    );
+    border-left-color: var(--christmas-gold);
+    color: var(--christmas-red);
+  }
+
+  .christmas-theme .sidebar-menu-label::after {
+    content: '❄️';
+    margin-left: 0.35rem;
+    font-size: 0.8rem;
+    opacity: 0.6;
+  }
+
+  .christmas-toggle-btn {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    transition:
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .christmas-theme .christmas-toggle-btn {
+    border-color: rgba(212, 175, 55, 0.6);
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--christmas-green);
+  }
+
+  .christmas-theme .christmas-toggle-btn:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .christmas-course-card {
+    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .christmas-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px rgba(11, 107, 58, 0.15);
+  }
+
+  .course-holiday-label {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(177, 18, 38, 0.9);
+    color: #fff;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    box-shadow: 0 5px 10px rgba(177, 18, 38, 0.2);
+  }
+
+  .course-snowflake {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 1.1rem;
+    animation: twinkle 4s ease-in-out infinite;
+    opacity: 0.8;
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translateY(4px) rotate(10deg);
+      opacity: 1;
+    }
+  }
+
+  .christmas-theme button[class*='bg-blue-'],
+  .christmas-theme .bg-blue-600 {
+    background-color: var(--christmas-red) !important;
+    color: #fff !important;
+  }
+
+  .christmas-theme button[class*='bg-blue-']:hover,
+  .christmas-theme .bg-blue-600:hover {
+    background-color: #820d1b !important;
+    box-shadow: 0 12px 18px rgba(177, 18, 38, 0.25);
+  }
+
+  .christmas-theme button[class*='border-blue-'],
+  .christmas-theme .border-blue-200 {
+    border-color: var(--christmas-green) !important;
+    color: var(--christmas-green) !important;
+  }
+
+  .christmas-theme .progress-bar,
+  .christmas-theme .bg-gradient-to-r.from-blue-50 {
+    background-image: linear-gradient(
+      90deg,
+      rgba(177, 18, 38, 0.15),
+      rgba(11, 107, 58, 0.15)
+    );
+  }
+
+  @media (max-width: 640px) {
+    .christmas-hero-banner {
+      padding: 1.5rem;
+    }
+
+    .challenge-badges {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
 }

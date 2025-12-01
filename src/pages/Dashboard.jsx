@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useContext,
 } from 'react';
 import ProgressStats from '@/components/dashboard/ProgressStats';
 import CourseCard from '@/components/dashboard/CourseCard';
@@ -52,10 +53,12 @@ import {
   bookWebsiteService,
   fetchUserWebsiteServices,
 } from '../services/websiteService';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function Dashboard() {
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
+  const { isChristmasMode } = useContext(SeasonalThemeContext);
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
@@ -758,10 +761,51 @@ export function Dashboard() {
     }
   };
 
+  const courseSectionTitle = isChristmasMode
+    ? '📚 Winter Courses'
+    : 'My Courses';
+
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div
+      className={`relative flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white ${
+        isChristmasMode ? 'christmas-surface' : ''
+      }`}
+    >
+      {isChristmasMode && (
+        <div
+          className="snowfall-layer pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
+          {isChristmasMode && (
+            <section className="christmas-hero-banner mb-8">
+              <div className="christmas-hero-content">
+                <p className="christmas-hero-kicker">Exclusive Holiday Mode</p>
+                <h1>
+                  Season’s Greetings, {userName || 'Scholar'}! Keep learning
+                  this Christmas 🎄📚
+                </h1>
+                <p>
+                  Cozy up with pine-green goals, track your progress like Santa,
+                  and unlock extra sparkle with every lesson.
+                </p>
+                <div className="christmas-hero-cta">
+                  <span className="gift-pill">🎁 Bonus tips unlocked</span>
+                  <span className="snow-pill">❄️ Snow-safe streak active</span>
+                </div>
+              </div>
+              <div className="christmas-hero-visual">
+                <img
+                  src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/christmas-lms.png"
+                  alt="Festive tree with gifts"
+                  loading="lazy"
+                />
+                <div className="floating-snow" aria-hidden="true" />
+              </div>
+            </section>
+          )}
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
@@ -901,7 +945,7 @@ export function Dashboard() {
               <div className="mb-8 relative">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-800">
-                    My Courses
+                    {courseSectionTitle}
                   </h2>
                   <Button
                     variant="outline"
