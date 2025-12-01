@@ -1,14 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Mic, ChevronLeft } from 'lucide-react';
+import { Mic, ChevronLeft, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  speechify,
+  createAudioUrl,
+  revokeAudioUrl,
+} from '@/services/speechifyapi';
+
+// Dummy text for speech synthesis
+const DUMMY_TEXT =
+  'Welcome to our intelligent learning platform. This is a demonstration of AI-powered voice synthesis. The system can convert any text into natural-sounding speech using advanced neural networks. You can select from multiple voices, each with unique characteristics, to find the perfect match for your learning experience.';
+
+// ElevenLabs voice options for speech synthesis
+const SPEECH_VOICES = [
+  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' },
+  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella' },
+  { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni' },
+  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli' },
+  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh' },
+  { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold' },
+  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam' },
+  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam' },
+];
 
 const LessonListener = () => {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
   const TOTAL_BARS = 60;
 
-  const voices = [
+  // Visual voice avatars for display
+  const voiceAvatars = [
     { id: 1, img: 'https://i.pravatar.cc/150?img=40', label: 'Mentor' },
     { id: 2, img: 'https://i.pravatar.cc/150?img=60', label: 'Instructor' },
     { id: 3, img: 'https://i.pravatar.cc/150?img=32', label: 'Narrator' },
@@ -22,6 +54,15 @@ const LessonListener = () => {
   );
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Speech synthesis state
+  const [text, setText] = useState(DUMMY_TEXT);
+  const [selectedVoiceId, setSelectedVoiceId] = useState(SPEECH_VOICES[0].id);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [error, setError] = useState(null);
+  const audioRef = useRef(null);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setBars(
@@ -31,19 +72,90 @@ const LessonListener = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll carousel - show 3 at a time, so max index is voices.length - 3
+  // Auto-scroll carousel - show 3 at a time, so max index is voiceAvatars.length - 3
   useEffect(() => {
-    const maxIndex = voices.length - 3; // 6 - 3 = 3 (shows: 0-2, 1-3, 2-4, 3-5)
+    const maxIndex = voiceAvatars.length - 3; // 6 - 3 = 3 (shows: 0-2, 1-3, 2-4, 3-5)
     const interval = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % (maxIndex + 1));
     }, 5000); // Change every 5 seconds (slower)
     return () => clearInterval(interval);
-  }, [voices.length]);
+  }, [voiceAvatars.length]);
 
   const handleBack = () => {
     navigate(
       `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/preview`
     );
+  };
+
+  // Cleanup audio URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        revokeAudioUrl(audioUrl);
+      }
+    };
+  }, [audioUrl]);
+
+  // Handle audio playback end
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handleEnded = () => {
+        setCurrentlyPlaying(null);
+      };
+      audio.addEventListener('ended', handleEnded);
+      return () => {
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, [audioUrl]);
+
+  const handleSpeak = async () => {
+    if (!text.trim()) {
+      setError('Please enter some text to convert to speech.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setCurrentlyPlaying(null);
+
+    // Clean up previous audio URL
+    if (audioUrl) {
+      revokeAudioUrl(audioUrl);
+      setAudioUrl(null);
+    }
+
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+
+    try {
+      const selectedVoice = SPEECH_VOICES.find(v => v.id === selectedVoiceId);
+      const audioBlob = await speechify(text, selectedVoiceId);
+      const url = createAudioUrl(audioBlob);
+
+      setAudioUrl(url);
+      setCurrentlyPlaying(selectedVoice?.name || 'Unknown');
+
+      // Auto-play the audio
+      if (audioRef.current) {
+        audioRef.current.src = url;
+        audioRef.current.play().catch(err => {
+          console.error('Error playing audio:', err);
+          setError(
+            'Failed to play audio. Please check your browser permissions.'
+          );
+        });
+      }
+    } catch (err) {
+      console.error('Speech synthesis error:', err);
+      setError(err.message || 'Failed to generate speech. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -104,6 +216,85 @@ const LessonListener = () => {
               Experience AI-assisted learning that adapts tone, clarity, and
               pace — designed for your understanding.
             </p>
+
+            {/* Speech Synthesis Controls */}
+            <div className="space-y-4 mt-8 p-6 bg-white/80 backdrop-blur-sm rounded-lg border border-blue-100 shadow-sm">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="text-input"
+                  className="text-base font-semibold text-gray-700"
+                >
+                  Text to Convert
+                </Label>
+                <Textarea
+                  id="text-input"
+                  value={text}
+                  onChange={e => setText(e.target.value)}
+                  placeholder="Enter text to convert to speech..."
+                  className="min-h-[120px] resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="voice-select"
+                  className="text-base font-semibold text-gray-700"
+                >
+                  Select Voice
+                </Label>
+                <Select
+                  value={selectedVoiceId}
+                  onValueChange={setSelectedVoiceId}
+                >
+                  <SelectTrigger id="voice-select" className="w-full">
+                    <SelectValue placeholder="Select a voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPEECH_VOICES.map(voice => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                onClick={handleSpeak}
+                disabled={isLoading || !text.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Speech...
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="mr-2 h-4 w-4" />
+                    Speak
+                  </>
+                )}
+              </Button>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {currentlyPlaying && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700 flex items-center">
+                  <Volume2 className="mr-2 h-4 w-4" />
+                  <span>
+                    Playing voice: <strong>{currentlyPlaying}</strong>
+                  </span>
+                </div>
+              )}
+
+              {/* Hidden audio element for playback */}
+              <audio ref={audioRef} style={{ display: 'none' }} />
+            </div>
           </div>
 
           {/* Right: Mic + voice avatars - Straight horizontal layout */}
@@ -122,14 +313,14 @@ const LessonListener = () => {
                 className="flex items-center transition-transform duration-1000 ease-in-out"
                 style={{
                   transform: `translateX(-${currentIndex * (100 / 3)}%)`,
-                  width: `${(voices.length / 3) * 100}%`,
+                  width: `${(voiceAvatars.length / 3) * 100}%`,
                 }}
               >
-                {voices.map((v, i) => (
+                {voiceAvatars.map((v, i) => (
                   <div
                     key={v.id}
                     className="flex-shrink-0 flex flex-col items-center space-y-2 group cursor-pointer px-2"
-                    style={{ width: `${100 / voices.length}%` }}
+                    style={{ width: `${100 / voiceAvatars.length}%` }}
                   >
                     <div className="relative">
                       <div className="absolute inset-0 rounded-full bg-blue-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
