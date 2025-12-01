@@ -579,7 +579,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95">
+      <header
+        className={`app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95 ${
+          isChristmasMode ? 'christmas-app-header' : ''
+        }`}
+      >
         <div className="h-16 flex items-center justify-between px-4 sm:px-6">
           {/* Left: Mobile menu + Logo */}
           <div className="flex items-center gap-3">
@@ -600,7 +604,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1
+                className={`text-base sm:text-lg font-bold ${
+                  isChristmasMode
+                    ? 'text-white drop-shadow-sm'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
+                }`}
+              >
                 LMS Athena
               </h1>
             </button>
@@ -821,7 +831,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
               type="button"
               onClick={toggleChristmasMode}
               aria-pressed={isChristmasMode}
-              className="hidden sm:inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 christmas-toggle-btn"
+              className={`hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors christmas-toggle-btn ${
+                isChristmasMode
+                  ? 'text-white border-white/60 bg-white/20 hover:bg-white/30'
+                  : 'text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
             >
               {isChristmasMode
                 ? 'Disable Christmas Mode'

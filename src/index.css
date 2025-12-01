@@ -314,14 +314,12 @@
   }
 
   :root {
-    --christmas-red: #b11226;
-    --christmas-green: #0b6b3a;
-    --christmas-gold: #d4af37;
-    --christmas-snow: #fafafa;
+    --christmas-red: #ff4d4f;
+    --christmas-snow: #fff2f3;
   }
 
   .christmas-theme .dashboard-shell {
-    background: radial-gradient(circle at top, #fff4f4, #f2fbf5);
+    background: var(--christmas-snow);
   }
 
   .christmas-surface {
@@ -381,11 +379,7 @@
     gap: 2rem;
     padding: 2rem;
     border-radius: 1.5rem;
-    background: linear-gradient(
-      135deg,
-      rgba(177, 18, 38, 0.95),
-      rgba(11, 107, 58, 0.92)
-    );
+    background: var(--christmas-red);
     color: #fff;
     box-shadow: 0 25px 45px rgba(0, 0, 0, 0.15);
     position: relative;
@@ -398,7 +392,7 @@
     inset: 0;
     background: radial-gradient(
       circle at top right,
-      rgba(212, 175, 55, 0.35),
+      rgba(255, 255, 255, 0.25),
       transparent 45%
     );
     pointer-events: none;
@@ -457,7 +451,7 @@
     max-width: 280px;
     border-radius: 1.25rem;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
-    border: 3px solid rgba(212, 175, 55, 0.35);
+    border: 3px solid rgba(255, 255, 255, 0.35);
   }
 
   .floating-snow {
@@ -487,13 +481,9 @@
     gap: 1.5rem;
     padding: 1.75rem;
     border-radius: 1.25rem;
-    background: linear-gradient(
-      135deg,
-      rgba(11, 107, 58, 0.9),
-      rgba(177, 18, 38, 0.9)
-    );
+    background: var(--christmas-red);
     color: #fff;
-    box-shadow: 0 20px 30px rgba(11, 107, 58, 0.2);
+    box-shadow: 0 20px 30px rgba(255, 77, 79, 0.2);
   }
 
   .christmas-challenge-card h2 {
@@ -535,8 +525,8 @@
     height: 8px;
     background-image: repeating-linear-gradient(
       90deg,
-      rgba(212, 175, 55, 0.9) 0 12px,
-      rgba(255, 255, 255, 0) 12px 16px
+      rgba(255, 65, 65, 0.967) 0 12px,
+      rgba(222, 27, 27, 0) 12px 16px
     );
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -557,16 +547,20 @@
   }
 
   .christmas-theme .sidebar-panel {
-    background: linear-gradient(180deg, rgba(11, 107, 58, 0.05), #ffffff);
-    border-right-color: rgba(177, 18, 38, 0.15);
+    background: var(--christmas-snow);
+    border-right-color: rgba(255, 107, 107, 0.3);
   }
 
   .christmas-theme .sidebar-header {
-    background: linear-gradient(
-      90deg,
-      var(--christmas-green),
-      var(--christmas-red)
-    );
+    background: var(--christmas-red);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 18px 35px rgba(255, 107, 107, 0.4);
+    color: #fff;
+  }
+
+  .christmas-theme .sidebar-header .text-blue-100,
+  .christmas-theme .sidebar-header .text-blue-600 {
+    color: rgba(255, 255, 255, 0.95) !important;
   }
 
   .christmas-theme .sidebar-lights,
@@ -581,16 +575,12 @@
   }
 
   .sidebar-menu-item-active {
-    box-shadow: 0 10px 20px rgba(11, 107, 58, 0.15);
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.15);
   }
 
   .christmas-theme .sidebar-menu-item-active {
-    background: linear-gradient(
-      90deg,
-      rgba(177, 18, 38, 0.2),
-      rgba(11, 107, 58, 0.25)
-    );
-    border-left-color: var(--christmas-gold);
+    background: rgba(255, 107, 107, 0.15);
+    border-left-color: var(--christmas-red);
     color: var(--christmas-red);
   }
 
@@ -610,17 +600,58 @@
   }
 
   .christmas-theme .christmas-toggle-btn {
-    border-color: rgba(212, 175, 55, 0.6);
-    background: rgba(255, 255, 255, 0.85);
-    color: var(--christmas-green);
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--christmas-red);
   }
 
   .christmas-theme .christmas-toggle-btn:hover {
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.25);
+  }
+
+  .christmas-theme .app-header {
+    background: var(--christmas-red);
+    border-bottom-color: rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.35);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-theme .christmas-app-header::after {
+    content: none;
+  }
+
+  .christmas-theme .app-header .text-gray-600,
+  .christmas-theme .app-header .text-gray-700,
+  .christmas-theme .app-header .text-gray-900 {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  .christmas-theme .app-header .text-blue-600 {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .app-header .bg-white,
+  .christmas-theme .app-header .bg-white\/80,
+  .christmas-theme .app-header .bg-white\/95 {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .christmas-theme .app-header .hover\:bg-gray-50:hover,
+  .christmas-theme .app-header .hover\:bg-gray-100:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .christmas-theme .app-header .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.35) !important;
   }
 
   .christmas-course-card {
-    border-color: rgba(212, 175, 55, 0.4);
+    border-color: rgba(255, 107, 107, 0.3);
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(6px);
     transition:
@@ -630,20 +661,20 @@
 
   .christmas-course-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 35px rgba(11, 107, 58, 0.15);
+    box-shadow: 0 20px 35px rgba(255, 107, 107, 0.18);
   }
 
   .course-holiday-label {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: rgba(177, 18, 38, 0.9);
+    background: var(--christmas-red);
     color: #fff;
     padding: 0.2rem 0.6rem;
     font-size: 0.75rem;
     border-radius: 999px;
-    border: 1px solid rgba(212, 175, 55, 0.6);
-    box-shadow: 0 5px 10px rgba(177, 18, 38, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 5px 10px rgba(255, 107, 107, 0.25);
   }
 
   .course-snowflake {
@@ -681,17 +712,13 @@
 
   .christmas-theme button[class*='border-blue-'],
   .christmas-theme .border-blue-200 {
-    border-color: var(--christmas-green) !important;
-    color: var(--christmas-green) !important;
+    border-color: var(--christmas-red) !important;
+    color: var(--christmas-red) !important;
   }
 
   .christmas-theme .progress-bar,
   .christmas-theme .bg-gradient-to-r.from-blue-50 {
-    background-image: linear-gradient(
-      90deg,
-      rgba(177, 18, 38, 0.15),
-      rgba(11, 107, 58, 0.15)
-    );
+    background-color: rgba(255, 107, 107, 0.2);
   }
 
   @media (max-width: 640px) {

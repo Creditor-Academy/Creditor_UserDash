@@ -705,6 +705,22 @@ export function Dashboard() {
     return baseCount;
   }, [dashboardData.summary?.allEnrolledCoursesCount, visibleCards]);
 
+  const snowflakes = useMemo(() => {
+    if (!isChristmasMode) return [];
+    return Array.from({ length: 36 }, () => {
+      const size = 4 + Math.random() * 8;
+      return {
+        left: `${Math.random() * 100}%`,
+        // Small delay range so flakes start almost immediately on load
+        delay: `${Math.random() * 1.2}s`,
+        duration: `${8 + Math.random() * 4}s`,
+        size: `${size}px`,
+        opacity: 0.4 + Math.random() * 0.4,
+        drift: `${Math.random() * 40 - 20}px`,
+      };
+    });
+  }, [isChristmasMode]);
+
   const CourseShimmerCard = () => (
     <div className="h-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
       <div className="aspect-[16/9] relative bg-gray-200 overflow-hidden">
@@ -772,10 +788,29 @@ export function Dashboard() {
       }`}
     >
       {isChristmasMode && (
-        <div
-          className="snowfall-layer pointer-events-none"
-          aria-hidden="true"
-        />
+        <>
+          <div
+            className="snowfall-layer pointer-events-none"
+            aria-hidden="true"
+          />
+          <div className="interactive-snow" aria-hidden="true">
+            {snowflakes.map((flake, index) => (
+              <span
+                key={`snowflake-${index}`}
+                className="snowflake"
+                style={{
+                  left: flake.left,
+                  animationDelay: flake.delay,
+                  animationDuration: flake.duration,
+                  width: flake.size,
+                  height: flake.size,
+                  opacity: flake.opacity,
+                  '--drift': flake.drift,
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
@@ -785,7 +820,7 @@ export function Dashboard() {
                 <p className="christmas-hero-kicker">Exclusive Holiday Mode</p>
                 <h1>
                   Season’s Greetings, {userName || 'Scholar'}! Keep learning
-                  this Christmas 🎄📚
+                  this Christmas 🎄
                 </h1>
                 <p>
                   Cozy up with pine-green goals, track your progress like Santa,
@@ -798,7 +833,7 @@ export function Dashboard() {
               </div>
               <div className="christmas-hero-visual">
                 <img
-                  src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/christmas-lms.png"
+                  src="https://www.marthastewart.com/thmb/QLJ2ymBE9wpzU11WirJx_yBH5vI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/muted-ornaments-christmas-tree-102821018-2896471d00c34f6fa95b8aa822dfbdb2.jpg"
                   alt="Festive tree with gifts"
                   loading="lazy"
                 />
