@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useSponsorAds } from '@/contexts/SponsorAdsContext';
 import SponsorAdPreview from '@/components/sponsorAds/SponsorAdPreview';
+import { createSponsorAd } from '@/services/sponsorAdsService';
 
 const roleOptions = ['student', 'teacher', 'admin'];
 const categoryOptions = ['business', 'finance', 'technology', 'legal'];
@@ -37,12 +38,34 @@ const adTypeToMediaType = {
 };
 
 const placementOptions = [
-  { value: 'dashboard_banner', label: 'Dashboard Banner' },
-  { value: 'dashboard_sidebar', label: 'Dashboard Sidebar' },
-  { value: 'course_player_sidebar', label: 'Course Player Right Sidebar' },
-  { value: 'course_listing_tile', label: 'Course Listing Page Ad Tile' },
-  { value: 'popup', label: 'Popup Ad (optional)' },
+  {
+    value: 'dashboard_banner',
+    label: 'Dashboard Banner',
+    backendValue: 'DASHBOARD',
+  },
+  {
+    value: 'dashboard_sidebar',
+    label: 'Dashboard Sidebar',
+    backendValue: 'SIDEBAR',
+  },
+  {
+    value: 'course_player_sidebar',
+    label: 'Course Player Right Sidebar',
+    backendValue: 'COURSE_PLAYER',
+  },
+  {
+    value: 'course_listing_tile',
+    label: 'Course Listing Page Ad Tile',
+    backendValue: 'COURSE_LISTING',
+  },
+  { value: 'popup', label: 'Popup Ad (optional)', backendValue: 'POPUP' },
 ];
+
+// Map frontend placement value to backend position
+const mapPlacementToPosition = placement => {
+  const option = placementOptions.find(opt => opt.value === placement);
+  return option?.backendValue || 'DASHBOARD';
+};
 
 const frequencyOptions = [
   { value: 'always', label: 'Always show' },
@@ -76,7 +99,9 @@ export const SponsorAdCreate = () => {
   const { addAd } = useSponsorAds();
   const [formState, setFormState] = useState(initialForm);
   const [mediaPreview, setMediaPreview] = useState('');
+  const [mediaFile, setMediaFile] = useState(null);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = e => {
     const { name, value } = e.target;
@@ -109,8 +134,14 @@ export const SponsorAdCreate = () => {
   const handleMediaUpload = e => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Store the file object for API upload
+    setMediaFile(file);
+
+    // Create preview URL
     const previewUrl = URL.createObjectURL(file);
     setMediaPreview(previewUrl);
+
     const fileType = file.type.startsWith('video') ? 'video' : 'image';
     setFormState(prev => ({
       ...prev,
@@ -127,8 +158,17 @@ export const SponsorAdCreate = () => {
     [formState, mediaPreview]
   );
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.warn(
+        'Form submission already in progress, ignoring duplicate submit'
+      );
+      return;
+    }
+
     const nextErrors = {};
     if (!formState.sponsorName.trim())
       nextErrors.sponsorName = 'Sponsor name is required';
@@ -140,17 +180,60 @@ export const SponsorAdCreate = () => {
       nextErrors.dateRange = 'Start date must be before end date';
     }
 
+    // Validate image is provided
+    if (!mediaFile && !formState.mediaUrl) {
+      nextErrors.mediaUrl = 'Please upload an image';
+    } else if (formState.mediaUrl && !isValidUrl(formState.mediaUrl)) {
+      nextErrors.mediaUrl = 'Please provide a valid image URL';
+    }
+
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    addAd({
-      ...formState,
-      mediaUrl: mediaPreview || formState.mediaUrl,
-      mediaType: adTypeToMediaType[formState.adType] || 'image',
-    });
-    toast.success('Sponsor ad saved in mock JSON');
-    setFormState(initialForm);
-    setMediaPreview('');
+    setIsSubmitting(true);
+
+    try {
+      // Prepare data for backend API
+      const apiData = {
+        title: formState.title,
+        description: formState.description,
+        mediaFile: mediaFile || formState.mediaUrl, // File object or URL string
+        linkUrl: formState.ctaUrl,
+        sponsorName: formState.sponsorName,
+        startDate: formState.startDate,
+        endDate: formState.endDate,
+        position: mapPlacementToPosition(formState.placement),
+        organizationId: null,
+      };
+
+      // Call backend API
+      const result = await createSponsorAd(apiData);
+
+      // Also add to local context for immediate UI update (optional)
+      if (result.data) {
+        addAd({
+          ...formState,
+          mediaUrl: result.data.image_url || mediaPreview || formState.mediaUrl,
+          mediaType: adTypeToMediaType[formState.adType] || 'image',
+        });
+      }
+
+      toast.success('Sponsor ad created successfully!');
+      setFormState(initialForm);
+      setMediaPreview('');
+      setMediaFile(null);
+
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
+    } catch (error) {
+      console.error('Failed to create sponsor ad:', error);
+      toast.error(
+        error.message || 'Failed to create sponsor ad. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const durationDays = Math.max(
@@ -592,8 +675,9 @@ export const SponsorAdCreate = () => {
         <Button
           type="submit"
           className="bg-blue-600 text-white hover:bg-blue-700 px-8 rounded-2xl"
+          disabled={isSubmitting}
         >
-          Save Sponsor Ad
+          {isSubmitting ? 'Creating Ad...' : 'Save Sponsor Ad'}
         </Button>
       </div>
     </form>

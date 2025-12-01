@@ -40,10 +40,6 @@ import NewsPage from '@/pages/group/NewsPage';
 
 import AnnouncementsPage from '@/pages/group/AnnouncementsPage';
 import ChatPage from '@/pages/group/ChatPage';
-import SponsorAdsLayout from '@/pages/admin/SponsorAdsLayout';
-import SponsorAdCreate from '@/pages/admin/SponsorAdCreate';
-import SponsorAdManage from '@/pages/admin/SponsorAdManage';
-import SponsorAdAnalytics from '@/pages/admin/SponsorAdAnalytics';
 import SponsorCenterLayout from '@/pages/sponsorCenter/SponsorCenterLayout';
 import SponsorRequestPage from '@/pages/sponsorCenter/SponsorRequestPage';
 import MySponsorAdsPage from '@/pages/sponsorCenter/MySponsorAdsPage';
@@ -560,18 +556,6 @@ function App() {
                       </Route>
                     </Route>
 
-                    <Route
-                      path="admin/sponsor-ads"
-                      element={<SponsorAdsLayout />}
-                    >
-                      <Route index element={<SponsorAdCreate />} />
-                      <Route path="create" element={<SponsorAdCreate />} />
-                      <Route path="manage" element={<SponsorAdManage />} />
-                      <Route
-                        path="analytics"
-                        element={<SponsorAdAnalytics />}
-                      />
-                    </Route>
                     <Route
                       path="sponsor-center"
                       element={<SponsorCenterLayout />}
