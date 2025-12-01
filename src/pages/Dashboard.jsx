@@ -39,7 +39,6 @@ import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -763,9 +762,6 @@ export function Dashboard() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          <ThanksgivingPromo
-            onExtendMembership={() => setShowCreditsModal(true)}
-          />
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
