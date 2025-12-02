@@ -1258,7 +1258,7 @@ export function Dashboard() {
                               </Button>
                               <Button
                                 variant="outline"
-                                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                className="bg-white text-black border-gray-300 hover:bg-gray-50 hover:text-black"
                                 onClick={() => setShowWebsiteDetails(true)}
                               >
                                 Learn more

@@ -19,11 +19,13 @@ export function DashboardLayout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
   const [isChristmasMode, setIsChristmasMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') return true;
     try {
-      return localStorage.getItem('dashboardChristmasMode') === 'true';
+      const saved = localStorage.getItem('dashboardChristmasMode');
+      // Default to true if not set
+      return saved === null ? true : saved === 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 

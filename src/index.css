@@ -314,16 +314,35 @@
   }
 
   :root {
-    --christmas-red: #ff4d4f;
-    --christmas-snow: #fff2f3;
+    --christmas-red: #b11226;
+    --christmas-red-dark: #8b0000;
+    --christmas-red-medium: #a00000;
+    --christmas-red-light: #c11226;
+    --christmas-red-lighter: #e8d4d6;
+    --christmas-red-lightest: #f5e8e9;
+    --christmas-snow: #1a0000;
   }
 
   .christmas-theme .dashboard-shell {
-    background: var(--christmas-snow);
+    background: linear-gradient(
+      135deg,
+      #f5e8e9 0%,
+      #e8d4d6 25%,
+      #e0c4c7 50%,
+      #e8d4d6 75%,
+      #f5e8e9 100%
+    );
   }
 
   .christmas-surface {
-    background: linear-gradient(135deg, #fafafa 0%, #fefefe 100%);
+    background: linear-gradient(
+      135deg,
+      #f5e8e9 0%,
+      #e8d4d6 25%,
+      #e0c4c7 50%,
+      #e8d4d6 75%,
+      #f5e8e9 100%
+    );
     position: relative;
     overflow: hidden;
   }
@@ -416,9 +435,16 @@
     gap: 2rem;
     padding: 2rem;
     border-radius: 1.5rem;
-    background: var(--christmas-red);
+    background: linear-gradient(
+      135deg,
+      #8b0000 0%,
+      #a00000 25%,
+      #b11226 50%,
+      #a00000 75%,
+      #8b0000 100%
+    );
     color: #fff;
-    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 25px 45px rgba(139, 0, 0, 0.4);
     position: relative;
     overflow: hidden;
   }
@@ -575,23 +601,26 @@
 
   .sidebar-logo-hat {
     position: absolute;
-    top: -12px;
-    right: -8px;
-    font-size: 1.25rem;
-    opacity: 0;
-    transform: rotate(-10deg);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    opacity: 1;
     transition: opacity 0.3s ease;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    pointer-events: none;
   }
 
   .christmas-theme .sidebar-panel {
-    background: var(--christmas-snow);
-    border-right-color: rgba(255, 107, 107, 0.3);
+    background: linear-gradient(180deg, #f5e8e9 0%, #e8d4d6 50%, #f5e8e9 100%);
+    border-right-color: rgba(177, 18, 38, 0.2);
   }
 
   .christmas-theme .sidebar-header {
-    background: var(--christmas-red);
+    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
     border-bottom-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 18px 35px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 18px 35px rgba(139, 0, 0, 0.5);
     color: #fff;
   }
 
@@ -600,9 +629,39 @@
     color: rgba(255, 255, 255, 0.95) !important;
   }
 
-  .christmas-theme .sidebar-lights,
+  .christmas-theme .christmas-logo-icon {
+    color: #b11226 !important;
+    opacity: 0;
+  }
+
+  .christmas-theme .sidebar-lights {
+    opacity: 1;
+  }
+
   .christmas-theme .sidebar-logo-hat {
     opacity: 1;
+    animation: santaBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes santaBounce {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+  }
+
+  /* Profile Header Text in Christmas Theme */
+  .christmas-theme .profile-header-text .profile-name,
+  .christmas-theme .profile-header-text .profile-email {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .profile-header-text:hover .profile-name,
+  .christmas-theme .profile-header-text:hover .profile-email {
+    color: #8b0000 !important;
   }
 
   .sidebar-menu-item {
@@ -616,9 +675,9 @@
   }
 
   .christmas-theme .sidebar-menu-item-active {
-    background: rgba(255, 107, 107, 0.15);
-    border-left-color: var(--christmas-red);
-    color: var(--christmas-red);
+    background: rgba(255, 255, 255, 0.15);
+    border-left-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
   }
 
   .christmas-theme .sidebar-menu-label::after {
@@ -647,9 +706,9 @@
   }
 
   .christmas-theme .app-header {
-    background: var(--christmas-red);
+    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
     border-bottom-color: rgba(255, 255, 255, 0.25) !important;
-    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.35);
+    box-shadow: 0 15px 40px rgba(139, 0, 0, 0.5);
     color: #fff;
     position: relative;
     overflow: hidden;
@@ -743,8 +802,8 @@
 
   .christmas-theme button[class*='bg-blue-']:hover,
   .christmas-theme .bg-blue-600:hover {
-    background-color: #820d1b !important;
-    box-shadow: 0 12px 18px rgba(177, 18, 38, 0.25);
+    background-color: #8b0000 !important;
+    box-shadow: 0 12px 18px rgba(139, 0, 0, 0.4);
   }
 
   .christmas-theme button[class*='border-blue-'],
@@ -771,7 +830,14 @@
 
   /* Login Page Christmas Theme */
   .login-christmas-theme {
-    background: linear-gradient(135deg, #fff4f4 0%, #f2fbf5 100%);
+    background: linear-gradient(
+      135deg,
+      #8b0000 0%,
+      #a00000 25%,
+      #b11226 50%,
+      #a00000 75%,
+      #8b0000 100%
+    );
     position: relative;
     overflow: hidden;
   }
@@ -834,9 +900,9 @@
   .login-christmas-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    border: 2px solid rgba(177, 18, 38, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     box-shadow:
-      0 25px 50px rgba(177, 18, 38, 0.15),
+      0 25px 50px rgba(139, 0, 0, 0.4),
       0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   }
 
@@ -861,20 +927,21 @@
 
   .login-christmas-theme input[type='email'],
   .login-christmas-theme input[type='password'] {
-    border-color: rgba(177, 18, 38, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.95);
   }
 
   .login-christmas-theme input[type='email']:focus,
   .login-christmas-theme input[type='password']:focus {
-    border-color: var(--christmas-red);
-    box-shadow: 0 0 0 3px rgba(177, 18, 38, 0.1);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
   }
 
   .login-christmas-theme .text-blue-600 {
-    color: var(--christmas-red) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
   }
 
   .login-christmas-theme .text-blue-600:hover {
-    color: #820d1b !important;
+    color: #fff !important;
   }
 }

@@ -285,7 +285,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
           >
             <div className="relative sidebar-logo-mark">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                <BookOpen size={22} className="text-blue-600" />
+                <BookOpen
+                  size={22}
+                  className="text-blue-600 christmas-logo-icon"
+                />
               </div>
               <span className="sidebar-logo-hat" aria-hidden="true">
                 🎅
@@ -317,7 +320,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 >
                   <div className="relative sidebar-logo-mark">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                      <BookOpen size={22} className="text-blue-600" />
+                      <BookOpen
+                        size={22}
+                        className="text-blue-600 christmas-logo-icon"
+                      />
                     </div>
                     <span className="sidebar-logo-hat" aria-hidden="true">
                       🎅

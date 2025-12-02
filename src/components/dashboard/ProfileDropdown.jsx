@@ -164,14 +164,14 @@ export function ProfileDropdown() {
             </Avatar>
             <div className="absolute inset-0 bg-primary/0 rounded-full transition-colors duration-300 group-hover/avatar:bg-primary/10 animate-pulse-subtle"></div>
           </div>
-          <div className="hidden md:block text-left group/text">
-            <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300">
+          <div className="hidden md:block text-left group/text profile-header-text">
+            <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300 profile-name">
               {userProfile
                 ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() ||
                   'User'
                 : 'User'}
             </p>
-            <p className="text-xs text-muted-foreground group-hover/text:text-primary/70 transition-colors duration-300">
+            <p className="text-xs text-muted-foreground group-hover/text:text-primary/70 transition-colors duration-300 profile-email">
               {userProfile?.email || 'Loading...'}
             </p>
           </div>

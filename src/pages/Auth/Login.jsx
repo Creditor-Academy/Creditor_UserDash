@@ -46,6 +46,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SignUp } from '@/pages/Auth/SignUp';
 import { storeAccessToken } from '@/services/tokenService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import christmasImage from '@/assets/Chri.png';
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -188,18 +189,19 @@ export function Login() {
   const [animateImage, setAnimateImage] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
-  const [isChristmasMode, setIsChristmasMode] = useState(false);
+  const [isChristmasMode, setIsChristmasMode] = useState(true);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    // Check for Christmas mode from localStorage
+    // Check for Christmas mode from localStorage, default to true
     const checkChristmasMode = () => {
       try {
         const saved = localStorage.getItem('dashboardChristmasMode');
-        setIsChristmasMode(saved === 'true');
+        // Default to true if not set
+        setIsChristmasMode(saved === null ? true : saved === 'true');
       } catch {
-        setIsChristmasMode(false);
+        setIsChristmasMode(true);
       }
     };
     checkChristmasMode();
@@ -322,8 +324,8 @@ export function Login() {
             </div>
           )}
           <img
-            src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/login.PNG"
-            alt="Login illustration"
+            src={christmasImage}
+            alt="Christmas login illustration"
             className={`max-w-[420px] w-[80%] h-auto object-contain transition-all duration-700 ease-out will-change-transform 
               ${animateImage ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
             loading="eager"
