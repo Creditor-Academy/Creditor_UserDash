@@ -45,6 +45,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { SignUp } from '@/pages/Auth/SignUp';
 import { storeAccessToken } from '@/services/tokenService';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -187,8 +188,26 @@ export function Login() {
   const [animateImage, setAnimateImage] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
+  const [isChristmasMode, setIsChristmasMode] = useState(false);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+  useEffect(() => {
+    // Check for Christmas mode from localStorage
+    const checkChristmasMode = () => {
+      try {
+        const saved = localStorage.getItem('dashboardChristmasMode');
+        setIsChristmasMode(saved === 'true');
+      } catch {
+        setIsChristmasMode(false);
+      }
+    };
+    checkChristmasMode();
+    // Listen for changes
+    const handleStorageChange = () => checkChristmasMode();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     // Trigger card animation on mount
@@ -274,10 +293,34 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-white">
+    <div
+      className={`min-h-screen relative overflow-hidden ${
+        isChristmasMode ? 'login-christmas-theme' : 'bg-white'
+      }`}
+    >
+      {isChristmasMode && (
+        <div className="login-snowfall-layer" aria-hidden="true" />
+      )}
       <div className="relative flex min-h-screen">
         {/* Left Illustration */}
-        <div className="hidden lg:flex w-1/2 items-center justify-center p-10">
+        <div className="hidden lg:flex w-1/2 items-center justify-center p-10 relative">
+          {isChristmasMode && (
+            <div className="login-snowflakes-container" aria-hidden="true">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="login-snowflake"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 5}s`,
+                    animationDuration: `${5 + Math.random() * 5}s`,
+                  }}
+                >
+                  ❄️
+                </span>
+              ))}
+            </div>
+          )}
           <img
             src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/login.PNG"
             alt="Login illustration"
@@ -290,7 +333,11 @@ export function Login() {
         {/* Right Wave + Card */}
         <div className="flex-1 relative flex items-center justify-center p-0">
           {/* Blue wave background */}
-          <div className="absolute inset-y-0 right-0 w-screen text-blue-500 -z-0 pointer-events-none">
+          <div
+            className={`absolute inset-y-0 right-0 w-screen -z-0 pointer-events-none ${
+              isChristmasMode ? 'text-red-500' : 'text-blue-500'
+            }`}
+          >
             <svg
               viewBox="0 0 800 800"
               xmlns="http://www.w3.org/2000/svg"
@@ -321,19 +368,49 @@ export function Login() {
           {/* Card */}
           <div className="w-full max-w-md relative z-10 p-6">
             <Card
-              className={`border-slate-200 shadow-xl transition-all duration-700 ${animateCard ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+              className={`${
+                isChristmasMode
+                  ? 'login-christmas-card border-red-200 shadow-2xl'
+                  : 'border-slate-200 shadow-xl'
+              } transition-all duration-700 ${animateCard ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
             >
               <CardHeader className="space-y-1 pb-4">
-                <div className="flex justify-center mb-2">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Shield className="h-6 w-6 text-blue-600" />
+                <div className="flex justify-center mb-2 relative">
+                  {isChristmasMode && (
+                    <span
+                      className="absolute -top-2 -right-2 text-2xl animate-bounce"
+                      aria-hidden="true"
+                    >
+                      🎄
+                    </span>
+                  )}
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      isChristmasMode ? 'bg-red-100' : 'bg-blue-100'
+                    }`}
+                  >
+                    <Shield
+                      className={`h-6 w-6 ${
+                        isChristmasMode ? 'text-red-600' : 'text-blue-600'
+                      }`}
+                    />
                   </div>
                 </div>
-                <CardTitle className="text-xl font-medium text-center text-slate-800">
-                  Welcome back
+                <CardTitle
+                  className={`text-xl font-medium text-center ${
+                    isChristmasMode ? 'text-red-700' : 'text-slate-800'
+                  }`}
+                >
+                  {isChristmasMode ? '🎅 Welcome back!' : 'Welcome back'}
                 </CardTitle>
-                <CardDescription className="text-center text-slate-500">
-                  Enter your credentials to access your account
+                <CardDescription
+                  className={`text-center ${
+                    isChristmasMode ? 'text-red-600' : 'text-slate-500'
+                  }`}
+                >
+                  {isChristmasMode
+                    ? 'Enter your credentials to access your festive account ❄️'
+                    : 'Enter your credentials to access your account'}
                 </CardDescription>
               </CardHeader>
 
@@ -413,7 +490,11 @@ export function Login() {
                     {/* Submit Button */}
                     <Button
                       type="submit"
-                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                      className={`w-full h-11 text-white font-medium ${
+                        isChristmasMode
+                          ? 'bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-xl'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -422,7 +503,11 @@ export function Login() {
                           Signing in...
                         </div>
                       ) : (
-                        'Sign In'
+                        <span className="flex items-center justify-center gap-2">
+                          {isChristmasMode && <span>🎄</span>}
+                          Sign In
+                          {isChristmasMode && <span>❄️</span>}
+                        </span>
                       )}
                     </Button>
                   </form>
