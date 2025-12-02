@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://creditor.onrender.com',
+        target: 'http://localhost:9000',
         changeOrigin: true,
         secure: false,
         rewrite: path => path.replace(/^\/api/, ''),

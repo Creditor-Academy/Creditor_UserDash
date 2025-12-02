@@ -25,8 +25,9 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { currentUserId } from '@/data/currentUser';
-import { getUserRole, fetchUserProfile } from '@/services/userService';
+import { getUserRole } from '@/services/userService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 import api from '@/services/apiClient';
 import {
   Tooltip,
@@ -171,36 +172,11 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
+  const { userProfile } = useUser();
   const [moreOpen, setMoreOpen] = useState(false);
-  const [organizationName, setOrganizationName] = useState('');
 
-  // Fetch organization name from API
-  useEffect(() => {
-    const fetchOrganizationName = async () => {
-      try {
-        // First, get user profile to get organization_id
-        const userProfile = await fetchUserProfile();
-        const organizationId = userProfile?.organization_id;
-
-        if (organizationId) {
-          // Fetch organization details using organization_id
-          const response = await api.get(`/api/org/org/${organizationId}`, {
-            withCredentials: true,
-          });
-
-          // Extract name from response - handle different response structures
-          const orgData = response.data?.data || response.data;
-          if (orgData?.name) {
-            setOrganizationName(orgData.name);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching organization name:', error);
-      }
-    };
-
-    fetchOrganizationName();
-  }, []);
+  // Get organization name directly from userProfile context
+  const organizationName = userProfile?.organizations?.name || '';
 
   const isActive = path => {
     if (path === '/dashboard') {

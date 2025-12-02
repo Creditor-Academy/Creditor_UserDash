@@ -242,6 +242,9 @@ export function Login() {
         // Set authentication state
         setAuth(response.data.accessToken);
 
+        // Dispatch userLoggedIn event to trigger UserContext profile loading
+        window.dispatchEvent(new Event('userLoggedIn'));
+
         // Fetch user profile to check roles
         try {
           const profile = await fetchUserProfile();

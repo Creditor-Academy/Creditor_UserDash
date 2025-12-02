@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ui/theme-provider';
-import { Toaster } from '@/components/ui/toaster';
 
 import DashboardLayout from '@/layouts/DashboardLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -113,8 +112,8 @@ import ScenarioTakePage from '@/pages/ScenarioTakePage';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
-import SuperAdminDashboard from '@/pages/SuperAdmin/Dashboard';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
+import SuperAdminApp from '@/superadmin/SuperAdminApp';
 // import  ModuleView  from "@/pages/ModuleView";
 import LessonView from '@lessonbuilder/pages/LessonView';
 import InstructionalDesign from '@/pages/InstructionalDesign';
@@ -191,10 +190,7 @@ function App() {
 
               {/* SuperAdmin routes */}
               <Route element={<SuperAdminRoute />}>
-                <Route
-                  path="/superadmin/dashboard"
-                  element={<SuperAdminDashboard />}
-                />
+                <Route path="/superadmin/*" element={<SuperAdminApp />} />
               </Route>
 
               {/* Platform routes */}
@@ -610,7 +606,6 @@ function App() {
               <Route path="/games" element={<Games />} />
             </Routes>
             <PageTransitionOverlay />
-            <Toaster />
           </CreditsProvider>
         </UserProvider>
       </AuthProvider>
