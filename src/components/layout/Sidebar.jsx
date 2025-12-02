@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 const SidebarItem = ({
   icon: Icon,
@@ -173,6 +174,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { isChristmasMode } = useContext(SeasonalThemeContext);
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -290,9 +292,11 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   className="text-blue-600 christmas-logo-icon"
                 />
               </div>
-              <span className="sidebar-logo-hat" aria-hidden="true">
-                🎅
-              </span>
+              {isChristmasMode && (
+                <span className="sidebar-logo-hat" aria-hidden="true">
+                  🎅
+                </span>
+              )}
             </div>
             <div className="flex flex-col">
               <span className="text-white text-base leading-tight font-bold">
@@ -325,9 +329,11 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                         className="text-blue-600 christmas-logo-icon"
                       />
                     </div>
-                    <span className="sidebar-logo-hat" aria-hidden="true">
-                      🎅
-                    </span>
+                    {isChristmasMode && (
+                      <span className="sidebar-logo-hat" aria-hidden="true">
+                        🎅
+                      </span>
+                    )}
                   </div>
                 </motion.button>
               </TooltipTrigger>
