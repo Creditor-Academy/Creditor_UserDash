@@ -47,6 +47,7 @@ import { SignUp } from '@/pages/Auth/SignUp';
 import { storeAccessToken } from '@/services/tokenService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import christmasImage from '@/assets/Chri.png';
+import christmasMusic from '@/assets/christmas-music.mp3';
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -192,6 +193,7 @@ export function Login() {
   const [isChristmasMode, setIsChristmasMode] = useState(true);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const audioRef = useRef(null); // Ref for Christmas music audio element
 
   useEffect(() => {
     // Check for Christmas mode from localStorage, default to true
@@ -219,9 +221,81 @@ export function Login() {
     return () => clearTimeout(t);
   }, []);
 
+  // Christmas music effect - plays only on login page
+  useEffect(() => {
+    if (!isChristmasMode) {
+      // Stop music if Christmas mode is disabled
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      return;
+    }
+
+    // Create and configure audio element
+    const audio = new Audio(christmasMusic);
+    audio.loop = true; // Loop the music
+    audio.volume = 0.3; // Set volume to 30% (adjust as needed)
+
+    // Handle first user interaction for autoplay-restricted browsers
+    const handleFirstInteraction = () => {
+      if (audio && audio.paused) {
+        audio.play().catch(err => console.log('Could not play music:', err));
+      }
+      // Remove listeners after first play
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+
+    // Try to play the music
+    const playPromise = audio.play();
+
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log('🎵 Christmas music started playing');
+        })
+        .catch(error => {
+          // Auto-play was prevented - browser requires user interaction
+          console.log(
+            'Music autoplay prevented. Will start on user interaction:',
+            error
+          );
+
+          // Add listeners for first user interaction
+          document.addEventListener('click', handleFirstInteraction);
+          document.addEventListener('keydown', handleFirstInteraction);
+          document.addEventListener('touchstart', handleFirstInteraction);
+        });
+    }
+
+    audioRef.current = audio;
+
+    // Cleanup: Stop and remove audio when component unmounts or Christmas mode changes
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      // Cleanup interaction listeners
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+  }, [isChristmasMode]);
+
   const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
+
+    // Stop Christmas music before login
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      console.log('🎵 Christmas music stopped (user logging in)');
+    }
 
     try {
       const trimmedEmail = email.trim();
