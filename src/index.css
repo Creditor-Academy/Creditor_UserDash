@@ -768,4 +768,113 @@
       align-items: flex-start;
     }
   }
+
+  /* Login Page Christmas Theme */
+  .login-christmas-theme {
+    background: linear-gradient(135deg, #fff4f4 0%, #f2fbf5 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-snowfall-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 20px,
+        rgba(255, 255, 255, 0.8),
+        transparent
+      ),
+      radial-gradient(
+        3px 3px at 0px 40px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 10px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      );
+    background-size: 80px 80px;
+    animation: snowfall 18s linear infinite;
+  }
+
+  .login-snowflakes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .login-snowflake {
+    position: absolute;
+    top: -20px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    animation: loginSnowfall linear infinite;
+    user-select: none;
+  }
+
+  @keyframes loginSnowfall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0.3;
+    }
+  }
+
+  .login-christmas-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(177, 18, 38, 0.2);
+    box-shadow:
+      0 25px 50px rgba(177, 18, 38, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  }
+
+  .login-christmas-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      135deg,
+      rgba(177, 18, 38, 0.3),
+      rgba(11, 107, 58, 0.3)
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .login-christmas-theme input[type='email'],
+  .login-christmas-theme input[type='password'] {
+    border-color: rgba(177, 18, 38, 0.3);
+  }
+
+  .login-christmas-theme input[type='email']:focus,
+  .login-christmas-theme input[type='password']:focus {
+    border-color: var(--christmas-red);
+    box-shadow: 0 0 0 3px rgba(177, 18, 38, 0.1);
+  }
+
+  .login-christmas-theme .text-blue-600 {
+    color: var(--christmas-red) !important;
+  }
+
+  .login-christmas-theme .text-blue-600:hover {
+    color: #820d1b !important;
+  }
 }
