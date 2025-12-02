@@ -96,7 +96,7 @@ export default defineConfig(({ mode }) => ({
     ),
   },
 }));
-
+// Public Resouce Section
 // #(Testing Backend)
 // # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
