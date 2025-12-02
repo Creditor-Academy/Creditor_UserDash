@@ -705,31 +705,6 @@ export function Dashboard() {
     return baseCount;
   }, [dashboardData.summary?.allEnrolledCoursesCount, visibleCards]);
 
-  // Generate snowflakes for animation
-  const snowflakes = useMemo(() => {
-    if (!isChristmasMode) return [];
-
-    // Create 100 snowflakes with varied properties
-    return Array.from({ length: 100 }, (_, i) => {
-      const size = 3 + Math.random() * 6; // Size between 3-9px
-      const left = Math.random() * 100; // Random horizontal position
-      const delay = Math.random() * 2; // Start delay 0-2s for staggered effect
-      const duration = 8 + Math.random() * 7; // Fall duration 8-15s (varied speeds)
-      const drift = (Math.random() - 0.5) * 60; // Horizontal drift -30px to +30px
-      const opacity = 0.5 + Math.random() * 0.5; // Opacity 0.5-1.0
-
-      return {
-        id: i,
-        left: `${left}%`,
-        size: `${size}px`,
-        delay: `${delay}s`,
-        duration: `${duration}s`,
-        drift: `${drift}px`,
-        opacity,
-      };
-    });
-  }, [isChristmasMode]);
-
   const CourseShimmerCard = () => (
     <div className="h-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
       <div className="aspect-[16/9] relative bg-gray-200 overflow-hidden">
@@ -797,33 +772,10 @@ export function Dashboard() {
       }`}
     >
       {isChristmasMode && (
-        <>
-          <div
-            className="snowfall-layer pointer-events-none"
-            aria-hidden="true"
-          />
-          {/* Snowflake Animation Container */}
-          <div
-            className="snowflakes-container pointer-events-none"
-            aria-hidden="true"
-          >
-            {snowflakes.map(flake => (
-              <div
-                key={flake.id}
-                className="snowflake"
-                style={{
-                  left: flake.left,
-                  width: flake.size,
-                  height: flake.size,
-                  animationDelay: flake.delay,
-                  animationDuration: flake.duration,
-                  opacity: flake.opacity,
-                  '--snowflake-drift': flake.drift,
-                }}
-              />
-            ))}
-          </div>
-        </>
+        <div
+          className="snowfall-layer pointer-events-none"
+          aria-hidden="true"
+        />
       )}
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">

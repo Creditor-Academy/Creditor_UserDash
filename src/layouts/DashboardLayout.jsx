@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Sidebar from '@/components/layout/Sidebar';
@@ -77,6 +77,31 @@ export function DashboardLayout() {
     });
   };
 
+  // Generate snowflakes for animation - covers entire layout including sidebar
+  const snowflakes = useMemo(() => {
+    if (!isChristmasMode) return [];
+
+    // Create 100 snowflakes with varied properties
+    return Array.from({ length: 100 }, (_, i) => {
+      const size = 3 + Math.random() * 6; // Size between 3-9px
+      const left = Math.random() * 100; // Random horizontal position
+      const delay = Math.random() * 2; // Start delay 0-2s for staggered effect
+      const duration = 8 + Math.random() * 7; // Fall duration 8-15s (varied speeds)
+      const drift = (Math.random() - 0.5) * 60; // Horizontal drift -30px to +30px
+      const opacity = 0.5 + Math.random() * 0.5; // Opacity 0.5-1.0
+
+      return {
+        id: i,
+        left: `${left}%`,
+        size: `${size}px`,
+        delay: `${delay}s`,
+        duration: `${duration}s`,
+        drift: `${drift}px`,
+        opacity,
+      };
+    });
+  }, [isChristmasMode]);
+
   return (
     <SeasonalThemeContext.Provider
       value={{ isChristmasMode, toggleChristmasMode }}
@@ -89,6 +114,29 @@ export function DashboardLayout() {
             isChristmasMode ? 'christmas-theme' : ''
           }`}
         >
+          {/* Snowflake Animation - covers entire layout including sidebar */}
+          {isChristmasMode && (
+            <div
+              className="snowflakes-container pointer-events-none"
+              aria-hidden="true"
+            >
+              {snowflakes.map(flake => (
+                <div
+                  key={flake.id}
+                  className="snowflake"
+                  style={{
+                    left: flake.left,
+                    width: flake.size,
+                    height: flake.size,
+                    animationDelay: flake.delay,
+                    animationDuration: flake.duration,
+                    opacity: flake.opacity,
+                    '--snowflake-drift': flake.drift,
+                  }}
+                />
+              ))}
+            </div>
+          )}
           {/* Sidebar - mobile drawer and desktop fixed */}
           <div
             className={
