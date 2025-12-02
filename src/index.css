@@ -806,8 +806,14 @@
     box-shadow: 0 12px 18px rgba(139, 0, 0, 0.4);
   }
 
-  .christmas-theme button[class*='border-blue-'],
-  .christmas-theme .border-blue-200 {
+  /* Fix: Buttons with both bg-blue and border-blue should keep white text */
+  .christmas-theme button[class*='bg-blue-'][class*='border-blue-'],
+  .christmas-theme button.bg-blue-600.border-blue-600 {
+    color: #fff !important;
+  }
+
+  .christmas-theme button[class*='border-blue-']:not([class*='bg-blue-']),
+  .christmas-theme .border-blue-200:not([class*='bg-blue-']) {
     border-color: var(--christmas-red) !important;
     color: var(--christmas-red) !important;
   }

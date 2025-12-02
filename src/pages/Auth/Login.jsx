@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -294,6 +294,31 @@ export function Login() {
     navigate('/'); // Navigate directly to homepage
   };
 
+  // Generate snowflakes for animation - same as Dashboard
+  const snowflakes = useMemo(() => {
+    if (!isChristmasMode) return [];
+
+    // Create 100 snowflakes with varied properties
+    return Array.from({ length: 100 }, (_, i) => {
+      const size = 3 + Math.random() * 6; // Size between 3-9px
+      const left = Math.random() * 100; // Random horizontal position
+      const delay = Math.random() * 2; // Start delay 0-2s for staggered effect
+      const duration = 8 + Math.random() * 7; // Fall duration 8-15s (varied speeds)
+      const drift = (Math.random() - 0.5) * 60; // Horizontal drift -30px to +30px
+      const opacity = 0.5 + Math.random() * 0.5; // Opacity 0.5-1.0
+
+      return {
+        id: i,
+        left: `${left}%`,
+        size: `${size}px`,
+        delay: `${delay}s`,
+        duration: `${duration}s`,
+        drift: `${drift}px`,
+        opacity,
+      };
+    });
+  }, [isChristmasMode]);
+
   return (
     <div
       className={`min-h-screen relative overflow-hidden ${
@@ -301,28 +326,34 @@ export function Login() {
       }`}
     >
       {isChristmasMode && (
-        <div className="login-snowfall-layer" aria-hidden="true" />
+        <>
+          <div className="login-snowfall-layer" aria-hidden="true" />
+          {/* Snowflake Animation - same as Dashboard */}
+          <div
+            className="snowflakes-container pointer-events-none"
+            aria-hidden="true"
+          >
+            {snowflakes.map(flake => (
+              <div
+                key={flake.id}
+                className="snowflake"
+                style={{
+                  left: flake.left,
+                  width: flake.size,
+                  height: flake.size,
+                  animationDelay: flake.delay,
+                  animationDuration: flake.duration,
+                  opacity: flake.opacity,
+                  '--snowflake-drift': flake.drift,
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
       <div className="relative flex min-h-screen">
         {/* Left Illustration */}
         <div className="hidden lg:flex w-1/2 items-center justify-center p-10 relative">
-          {isChristmasMode && (
-            <div className="login-snowflakes-container" aria-hidden="true">
-              {Array.from({ length: 20 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="login-snowflake"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    animationDelay: `${Math.random() * 5}s`,
-                    animationDuration: `${5 + Math.random() * 5}s`,
-                  }}
-                >
-                  ❄️
-                </span>
-              ))}
-            </div>
-          )}
           <img
             src={christmasImage}
             alt="Christmas login illustration"

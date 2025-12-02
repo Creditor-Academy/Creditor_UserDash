@@ -798,7 +798,7 @@ export function Dashboard() {
               </div>
               <div className="christmas-hero-visual">
                 <img
-                  src="https://www.marthastewart.com/thmb/QLJ2ymBE9wpzU11WirJx_yBH5vI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/muted-ornaments-christmas-tree-102821018-2896471d00c34f6fa95b8aa822dfbdb2.jpg"
+                  src="https://cdn.pixabay.com/animation/2024/10/16/09/27/09-27-15-148_512.gif"
                   alt="Festive tree with gifts"
                   loading="lazy"
                 />
