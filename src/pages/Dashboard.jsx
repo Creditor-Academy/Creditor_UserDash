@@ -1203,11 +1203,12 @@ export function Dashboard() {
                             </p>
                             <div className="mt-4 flex items-center gap-2">
                               <Button
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                className="bg-[#d10000] hover:bg-[#b00000] text-white"
                                 onClick={() => setShowConsultBooking(true)}
                               >
                                 Book session
                               </Button>
+
                               <Button
                                 variant="outline"
                                 className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
@@ -1251,11 +1252,12 @@ export function Dashboard() {
                             </p>
                             <div className="mt-4 flex items-center gap-2">
                               <Button
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-[#d10000] hover:bg-[#b00000] text-white"
                                 onClick={() => setShowWebsiteModal(true)}
                               >
                                 Get started
                               </Button>
+
                               <Button
                                 variant="outline"
                                 className="bg-white text-black border-gray-300 hover:bg-gray-50 hover:text-black"
