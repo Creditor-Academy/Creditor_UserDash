@@ -123,6 +123,50 @@ export async function getAllSponsorAds() {
 }
 
 /**
+ * Fetch sponsor ads for learner dashboard
+ * Backend tracks impressions automatically on this request
+ * @returns {Promise<Array>} Array of active ads
+ */
+export async function fetchDashboardSponsorAds() {
+  try {
+    const response = await api.get('/api/sponsor/ads/dashboard');
+    const data =
+      response.data?.ads ||
+      response.data?.data?.ads ||
+      response.data?.data ||
+      response.data;
+    console.log('✅ Dashboard sponsor ads:', data);
+    return data || [];
+  } catch (error) {
+    console.error('❌ Failed to fetch dashboard sponsor ads:', error);
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.userMessage ||
+      error.message;
+    throw new Error(
+      backendMessage ||
+        `Failed to fetch dashboard sponsor ads (${error.response?.status || 'Unknown'})`
+    );
+  }
+}
+
+/**
+ * Track sponsor ad click for learner dashboard
+ * @param {string} adId - Sponsor ad id
+ */
+export async function trackSponsorAdClick(adId) {
+  if (!adId) return;
+  try {
+    await api.post(`/api/sponsor/ads/${adId}/click`);
+    console.log('✅ Tracked sponsor ad click', adId);
+  } catch (error) {
+    console.error('❌ Failed to track sponsor ad click:', error);
+    // We don't throw here to avoid disrupting UI; logging is enough
+  }
+}
+
+/**
  * Update a sponsor ad
  * @param {string} adId - Ad ID
  * @param {Object} adData - Updated ad data

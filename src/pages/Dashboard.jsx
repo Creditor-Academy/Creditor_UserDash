@@ -43,6 +43,7 @@ import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import SponsorBanner from '@/components/sponsorAds/SponsorBanner';
 import SponsorSidebarAd from '@/components/sponsorAds/SponsorSidebarAd';
 import SponsorAdPopup from '@/components/sponsorAds/SponsorAdPopup';
+import SponsorDashboardAds from '@/components/sponsorAds/SponsorDashboardAds';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -821,6 +822,9 @@ export function Dashboard() {
               <SponsorBanner ad={dashboardBannerAd} />
             </div>
           )}
+          <div className="mb-8">
+            <SponsorDashboardAds />
+          </div>
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
             {/* Left section - greeting and latest updates */}
