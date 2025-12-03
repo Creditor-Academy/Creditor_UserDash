@@ -407,7 +407,7 @@ export function LiveClasses() {
         // Don't open the link here - let the modal handle it with countdown
         return;
       }
-
+      //hello
       // For other errors, silently fail and still allow joining the meeting
       // No toast shown as per requirements
       console.error('Failed to mark attendance:', error);
