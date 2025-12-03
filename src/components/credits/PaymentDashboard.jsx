@@ -317,7 +317,12 @@ const PaymentDashboard = () => {
   const [filterDate, setFilterDate] = useState('');
   const [page, setPage] = useState(1);
   const perPage = 10;
-  const [activeTab, setActiveTab] = useState('users'); // 'users', 'history', 'analytics'
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'history', 'analytics', 'usage'
+  const [usageDateFrom, setUsageDateFrom] = useState('');
+  const [usageDateTo, setUsageDateTo] = useState('');
+  const [usageCourseFilter, setUsageCourseFilter] = useState('all');
+  const [exportDateFrom, setExportDateFrom] = useState('');
+  const [exportDateTo, setExportDateTo] = useState('');
   const [userDetailModal, setUserDetailModal] = useState({
     open: false,
     user: null,
@@ -325,6 +330,13 @@ const PaymentDashboard = () => {
   const [userUsageModal, setUserUsageModal] = useState({
     open: false,
     user: null,
+  });
+  const [exportConfirmModal, setExportConfirmModal] = useState({
+    open: false,
+    data: null,
+    stats: null,
+    dateFrom: null,
+    dateTo: null,
   });
   const [changingMembership, setChangingMembership] = useState(null);
   const [creditHistory, setCreditHistory] = useState({}); // userId -> history array
@@ -432,7 +444,16 @@ const PaymentDashboard = () => {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, filterStatus, filterCredits, filterTxnType, filterDate]);
+  }, [
+    search,
+    filterStatus,
+    filterCredits,
+    filterTxnType,
+    filterDate,
+    usageDateFrom,
+    usageDateTo,
+    usageCourseFilter,
+  ]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -531,6 +552,167 @@ const PaymentDashboard = () => {
     }
     return list;
   }, [allHistory, filterDate, filterTxnType, users, search]);
+
+  // Get all usage records
+  const allUsageRecords = useMemo(() => {
+    return allHistory.filter(h => h.type === 'usage');
+  }, [allHistory]);
+
+  // Get unique courses/items for filter
+  const uniqueCourses = useMemo(() => {
+    const courses = new Set();
+    allUsageRecords.forEach(h => {
+      const courseName =
+        h.catalogItem ||
+        h.lessonName ||
+        h.description ||
+        h.serviceType ||
+        'Other';
+      courses.add(courseName);
+    });
+    return Array.from(courses).sort();
+  }, [allUsageRecords]);
+
+  // Filtered usage records
+  const filteredUsageRecords = useMemo(() => {
+    let list = allUsageRecords;
+
+    // Filter by date range
+    if (usageDateFrom) {
+      const fromDate = new Date(usageDateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      list = list.filter(h => {
+        const d = new Date(h.date);
+        if (Number.isNaN(d.getTime())) return false;
+        d.setHours(0, 0, 0, 0);
+        return d >= fromDate;
+      });
+    }
+    if (usageDateTo) {
+      const toDate = new Date(usageDateTo);
+      toDate.setHours(23, 59, 59, 999);
+      list = list.filter(h => {
+        const d = new Date(h.date);
+        if (Number.isNaN(d.getTime())) return false;
+        d.setHours(0, 0, 0, 0);
+        return d <= toDate;
+      });
+    }
+
+    // Filter by course
+    if (usageCourseFilter !== 'all') {
+      list = list.filter(h => {
+        const courseName =
+          h.catalogItem ||
+          h.lessonName ||
+          h.description ||
+          h.serviceType ||
+          'Other';
+        return courseName === usageCourseFilter;
+      });
+    }
+
+    // Filter by search term
+    const term = search.trim().toLowerCase();
+    if (term) {
+      list = list.filter(
+        h =>
+          (h.userName || '').toLowerCase().includes(term) ||
+          (h.userEmail || '').toLowerCase().includes(term) ||
+          (h.description || '').toLowerCase().includes(term) ||
+          (h.catalogItem || '').toLowerCase().includes(term) ||
+          (h.lessonName || '').toLowerCase().includes(term)
+      );
+    }
+
+    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [allUsageRecords, usageDateFrom, usageDateTo, usageCourseFilter, search]);
+
+  // Calculate export statistics
+  const exportStats = useMemo(() => {
+    const getStatsForRange = (dateFrom, dateTo) => {
+      let data = allUsageRecords;
+
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        data = data.filter(h => {
+          const d = new Date(h.date);
+          if (Number.isNaN(d.getTime())) return false;
+          d.setHours(0, 0, 0, 0);
+          return d >= fromDate;
+        });
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        data = data.filter(h => {
+          const d = new Date(h.date);
+          if (Number.isNaN(d.getTime())) return false;
+          d.setHours(0, 0, 0, 0);
+          return d <= toDate;
+        });
+      }
+
+      const totalRecords = data.length;
+      const datesWithUsage = new Set();
+      data.forEach(h => {
+        const d = new Date(h.date);
+        if (!Number.isNaN(d.getTime())) {
+          datesWithUsage.add(d.toISOString().slice(0, 10));
+        }
+      });
+
+      let daysWithNoUsage = 0;
+      let dateRangeDays = 0;
+      if (dateFrom && dateTo) {
+        const start = new Date(dateFrom);
+        const end = new Date(dateTo);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      } else if (dateFrom) {
+        const start = new Date(dateFrom);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      } else if (dateTo) {
+        const start = new Date(data[data.length - 1]?.date || new Date());
+        const end = new Date(dateTo);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      }
+
+      return {
+        totalRecords,
+        datesWithUsage: datesWithUsage.size,
+        daysWithNoUsage,
+        dateRangeDays,
+        dateFrom,
+        dateTo,
+      };
+    };
+
+    return {
+      all: getStatsForRange(null, null),
+      filtered: getStatsForRange(exportDateFrom || null, exportDateTo || null),
+      current: getStatsForRange(usageDateFrom || null, usageDateTo || null),
+    };
+  }, [
+    allUsageRecords,
+    exportDateFrom,
+    exportDateTo,
+    usageDateFrom,
+    usageDateTo,
+  ]);
 
   // Analytics: purchases by course (top N), lapses, and lightweight AI suggestions
   const analytics = useMemo(() => {
@@ -829,6 +1011,121 @@ const PaymentDashboard = () => {
     }
   };
 
+  const exportAllUsage = (dateFrom = null, dateTo = null) => {
+    try {
+      let dataToExport = allUsageRecords;
+
+      // Apply date range filter if provided
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        dataToExport = dataToExport.filter(h => {
+          const d = new Date(h.date);
+          if (Number.isNaN(d.getTime())) return false;
+          d.setHours(0, 0, 0, 0);
+          return d >= fromDate;
+        });
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        dataToExport = dataToExport.filter(h => {
+          const d = new Date(h.date);
+          if (Number.isNaN(d.getTime())) return false;
+          d.setHours(0, 0, 0, 0);
+          return d <= toDate;
+        });
+      }
+
+      // Calculate statistics for warning
+      const datesWithUsage = new Set();
+      dataToExport.forEach(h => {
+        const d = new Date(h.date);
+        if (!Number.isNaN(d.getTime())) {
+          datesWithUsage.add(d.toISOString().slice(0, 10));
+        }
+      });
+
+      let daysWithNoUsage = 0;
+      let dateRangeDays = 0;
+      if (dateFrom && dateTo) {
+        const start = new Date(dateFrom);
+        const end = new Date(dateTo);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      }
+
+      // Show modal with statistics
+      setExportConfirmModal({
+        open: true,
+        data: dataToExport,
+        stats: {
+          totalRecords: dataToExport.length,
+          datesWithUsage: datesWithUsage.size,
+          daysWithNoUsage,
+          dateRangeDays,
+        },
+        dateFrom,
+        dateTo,
+      });
+    } catch (e) {
+      console.error('Export error (all usage):', e);
+      alert('Unable to prepare export data.');
+    }
+  };
+
+  const performExport = () => {
+    try {
+      const { data, dateFrom, dateTo } = exportConfirmModal;
+      if (!data) return;
+
+      const rows = data.map(u => ({
+        Date: formatDate(u.date),
+        UserName: u.userName || 'Unknown',
+        UserEmail: u.userEmail || '',
+        Description: u.description || '',
+        UsageType: u.usageType || '',
+        CatalogItem: u.catalogItem || '',
+        LessonName: u.lessonName || '',
+        ServiceType: u.serviceType || '',
+        Consultant: u.consultant || '',
+        Credits: Number(u.credits) || 0,
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Usage');
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      const dateRangeStr =
+        dateFrom && dateTo
+          ? `-${dateFrom}-to-${dateTo}`
+          : dateFrom
+            ? `-from-${dateFrom}`
+            : dateTo
+              ? `-to-${dateTo}`
+              : '';
+      XLSX.writeFile(wb, `all-usage${dateRangeStr}-${ts}.xlsx`);
+
+      // Close modal and show success
+      setExportConfirmModal({
+        open: false,
+        data: null,
+        stats: null,
+        dateFrom: null,
+        dateTo: null,
+      });
+      alert(
+        `✅ Successfully exported ${data.length} usage record${data.length !== 1 ? 's' : ''}!`
+      );
+    } catch (e) {
+      console.error('Export error:', e);
+      alert('Unable to export usage data.');
+    }
+  };
+
   const exportUserUsage = (user, scope = 'records') => {
     if (!user) return;
     try {
@@ -1062,6 +1359,16 @@ const PaymentDashboard = () => {
             >
               <FaHistory className="inline mr-2" />
               Transaction History
+            </button>
+            <button
+              onClick={() => setActiveTab('usage')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'usage'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Usage
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
@@ -1405,6 +1712,185 @@ const PaymentDashboard = () => {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'usage' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search by user name, email, or item"
+                  className="flex-1 min-w-[220px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+                <input
+                  type="date"
+                  value={usageDateFrom}
+                  onChange={e => setUsageDateFrom(e.target.value)}
+                  placeholder="From Date"
+                  className="text-sm rounded-md border border-gray-300 px-3 py-2 bg-white"
+                />
+                <input
+                  type="date"
+                  value={usageDateTo}
+                  onChange={e => setUsageDateTo(e.target.value)}
+                  placeholder="To Date"
+                  className="text-sm rounded-md border border-gray-300 px-3 py-2 bg-white"
+                />
+                <select
+                  value={usageCourseFilter}
+                  onChange={e => setUsageCourseFilter(e.target.value)}
+                  className="text-sm rounded-md border px-3 py-2 bg-white"
+                >
+                  <option value="all">All Courses/Items</option>
+                  {uniqueCourses.map(course => (
+                    <option key={course} value={course}>
+                      {course}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <details className="group inline-block">
+                    <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm">
+                      <FaDownload /> Export
+                    </summary>
+                    <div className="absolute right-0 mt-2 w-64 bg-white border rounded-lg shadow-lg p-2 z-10">
+                      <button
+                        onClick={() => {
+                          exportAllUsage();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                      >
+                        All Usages
+                      </button>
+                      <div className="border-t my-1"></div>
+                      <div className="p-2 space-y-2">
+                        <div className="text-xs font-semibold text-gray-700">
+                          Date Filter:
+                        </div>
+                        <input
+                          type="date"
+                          value={exportDateFrom}
+                          onChange={e => setExportDateFrom(e.target.value)}
+                          className="w-full text-xs rounded-md border border-gray-300 px-2 py-1"
+                          placeholder="From Date"
+                        />
+                        <input
+                          type="date"
+                          value={exportDateTo}
+                          onChange={e => setExportDateTo(e.target.value)}
+                          className="w-full text-xs rounded-md border border-gray-300 px-2 py-1"
+                          placeholder="To Date"
+                        />
+                        <button
+                          onClick={() => {
+                            exportAllUsage(
+                              exportDateFrom || null,
+                              exportDateTo || null
+                            );
+                            setExportDateFrom('');
+                            setExportDateTo('');
+                          }}
+                          className="w-full px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs hover:bg-blue-700"
+                        >
+                          Export Filtered
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto">
+                {filteredUsageRecords.length === 0 ? (
+                  <div className="p-6 text-center text-gray-600">
+                    No usage records found
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredUsageRecords.map((usage, i) => {
+                      const itemName =
+                        usage.catalogItem ||
+                        usage.lessonName ||
+                        usage.description ||
+                        usage.serviceType ||
+                        'Unknown Item';
+                      return (
+                        <div
+                          key={i}
+                          className="rounded-lg border px-4 py-3 hover:bg-gray-50"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">
+                                {usage.userName}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {usage.userEmail}
+                              </div>
+                              <div className="text-sm text-gray-800 mt-1 font-medium">
+                                {itemName}
+                              </div>
+                              {usage.usageType && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Type: {usage.usageType}
+                                </div>
+                              )}
+                              {usage.consultant && (
+                                <div className="text-xs text-gray-500">
+                                  Consultant: {usage.consultant}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold text-lg text-red-600">
+                                -{Math.abs(usage.credits || 0)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {formatDate(usage.date)}
+                              </div>
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                                Usage
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 border-t mt-4 flex-wrap gap-2">
+                <div className="text-sm text-gray-600">
+                  <span className="font-semibold">
+                    {filteredUsageRecords.length}
+                  </span>{' '}
+                  usage record
+                  {filteredUsageRecords.length !== 1 ? 's' : ''} found
+                  {usageDateFrom && usageDateTo && (
+                    <span className="ml-2">
+                      • {exportStats.current.datesWithUsage} date
+                      {exportStats.current.datesWithUsage !== 1 ? 's' : ''} with
+                      usage
+                      {exportStats.current.daysWithNoUsage > 0 && (
+                        <span className="text-amber-700 ml-1">
+                          • ⚠️ {exportStats.current.daysWithNoUsage} day
+                          {exportStats.current.daysWithNoUsage !== 1 ? 's' : ''}{' '}
+                          with no usage
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+                {usageDateFrom &&
+                  usageDateTo &&
+                  exportStats.current.daysWithNoUsage > 0 && (
+                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                      Some dates in the selected range have no usage records
+                    </div>
+                  )}
               </div>
             </div>
           )}
@@ -2098,6 +2584,157 @@ const PaymentDashboard = () => {
                   </>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Confirmation Modal */}
+      {exportConfirmModal.open && exportConfirmModal.stats && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() =>
+              setExportConfirmModal({
+                open: false,
+                data: null,
+                stats: null,
+                dateFrom: null,
+                dateTo: null,
+              })
+            }
+          />
+          <div className="relative bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
+            <div className="p-6 border-b">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="text-xl font-semibold text-gray-900">
+                    Export Usage Records
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {exportConfirmModal.dateFrom && exportConfirmModal.dateTo
+                      ? `Exporting usage records from ${formatDate(exportConfirmModal.dateFrom)} to ${formatDate(exportConfirmModal.dateTo)}`
+                      : exportConfirmModal.dateFrom
+                        ? `Exporting usage records from ${formatDate(exportConfirmModal.dateFrom)}`
+                        : exportConfirmModal.dateTo
+                          ? `Exporting usage records until ${formatDate(exportConfirmModal.dateTo)}`
+                          : 'Exporting all usage records'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExportConfirmModal({
+                      open: false,
+                      data: null,
+                      stats: null,
+                      dateFrom: null,
+                      dateTo: null,
+                    })
+                  }
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              {exportConfirmModal.dateFrom &&
+                exportConfirmModal.dateTo &&
+                exportConfirmModal.stats.daysWithNoUsage > 0 && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-600 text-lg">⚠️</span>
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-amber-900">
+                          Warning
+                        </div>
+                        <div className="text-xs text-amber-800 mt-1">
+                          {exportConfirmModal.stats.daysWithNoUsage} day
+                          {exportConfirmModal.stats.daysWithNoUsage !== 1
+                            ? 's'
+                            : ''}{' '}
+                          in the selected date range have no usage records.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              <div className="space-y-3 mb-6">
+                <div className="text-sm font-semibold text-gray-900">
+                  Summary:
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-sm text-gray-600">
+                      Total records:
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {exportConfirmModal.stats.totalRecords}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-sm text-gray-600">
+                      Dates with usage:
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {exportConfirmModal.stats.datesWithUsage}
+                    </span>
+                  </div>
+                  {exportConfirmModal.dateFrom && exportConfirmModal.dateTo && (
+                    <>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Total days in range:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {exportConfirmModal.stats.dateRangeDays}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-sm text-gray-600">
+                          Days with no usage:
+                        </span>
+                        <span
+                          className={`text-sm font-semibold ${
+                            exportConfirmModal.stats.daysWithNoUsage > 0
+                              ? 'text-amber-700'
+                              : 'text-gray-900'
+                          }`}
+                        >
+                          {exportConfirmModal.stats.daysWithNoUsage}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExportConfirmModal({
+                      open: false,
+                      data: null,
+                      stats: null,
+                      dateFrom: null,
+                      dateTo: null,
+                    })
+                  }
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={performExport}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium"
+                >
+                  Export
+                </button>
+              </div>
             </div>
           </div>
         </div>
