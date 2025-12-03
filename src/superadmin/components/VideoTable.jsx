@@ -1,19 +1,11 @@
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
-interface Video {
-  id: number;
-  thumbnail: string;
-  title: string;
-  category: string;
-  views: string;
-  duration: string;
-}
-
 export default function VideoTable() {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
-  const videos: Video[] = [
+
+  const videos = [
     {
       id: 1,
       thumbnail:
@@ -123,6 +115,7 @@ export default function VideoTable() {
               >
                 {video.title}
               </h4>
+
               <span
                 className="inline-block px-3 md:px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-300"
                 style={{

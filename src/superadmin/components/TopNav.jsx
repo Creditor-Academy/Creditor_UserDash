@@ -18,12 +18,9 @@ export default function TopNav() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    // Clear authentication data
     localStorage.removeItem('authToken');
     localStorage.removeItem('superadminData');
     sessionStorage.clear();
-
-    // Redirect to login page
     window.location.href = '/login';
   };
 
@@ -61,6 +58,7 @@ export default function TopNav() {
       </div>
 
       <div className="flex items-center gap-4 ml-8">
+        {/* Notification */}
         <button
           className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 relative"
           style={{
@@ -82,6 +80,7 @@ export default function TopNav() {
           ></span>
         </button>
 
+        {/* Theme Switch */}
         <button
           className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300"
           style={{
@@ -105,6 +104,7 @@ export default function TopNav() {
           )}
         </button>
 
+        {/* Messages */}
         <button
           className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300"
           style={{
@@ -122,6 +122,7 @@ export default function TopNav() {
           <MessageSquare size={20} style={{ color: colors.text.muted }} />
         </button>
 
+        {/* Profile Menu */}
         <div className="relative ml-2">
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -137,7 +138,7 @@ export default function TopNav() {
             </div>
           </button>
 
-          {/* Profile Dropdown Menu */}
+          {/* Dropdown */}
           {isProfileMenuOpen && (
             <div
               className="absolute right-0 mt-2 w-48 rounded-xl shadow-2xl overflow-hidden z-50"
@@ -146,7 +147,6 @@ export default function TopNav() {
                 border: `1px solid ${colors.border}`,
               }}
             >
-              {/* Profile Header */}
               <div
                 className="px-4 py-3 border-b"
                 style={{ borderColor: colors.border }}
@@ -165,10 +165,9 @@ export default function TopNav() {
                 </p>
               </div>
 
-              {/* Menu Items */}
               <div className="py-2">
                 <button
-                  className="w-full px-4 py-2 flex items-center gap-3 transition-colors hover:bg-opacity-50"
+                  className="w-full px-4 py-2 flex items-center gap-3"
                   style={{ color: colors.text.primary }}
                   onMouseEnter={e =>
                     (e.currentTarget.style.backgroundColor = colors.bg.hover)
@@ -182,7 +181,7 @@ export default function TopNav() {
                 </button>
 
                 <button
-                  className="w-full px-4 py-2 flex items-center gap-3 transition-colors hover:bg-opacity-50"
+                  className="w-full px-4 py-2 flex items-center gap-3"
                   style={{ color: colors.text.primary }}
                   onMouseEnter={e =>
                     (e.currentTarget.style.backgroundColor = colors.bg.hover)
@@ -201,18 +200,16 @@ export default function TopNav() {
                 ></div>
 
                 <button
-                  onClick={() => {
-                    handleLogout();
-                  }}
-                  className="w-full px-4 py-2 flex items-center gap-3 transition-colors"
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 flex items-center gap-3"
                   style={{ color: '#EF4444' }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor =
-                      'rgba(239, 68, 68, 0.1)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  onMouseEnter={e =>
+                    (e.currentTarget.style.backgroundColor =
+                      'rgba(239, 68, 68, 0.1)')
+                  }
+                  onMouseLeave={e =>
+                    (e.currentTarget.style.backgroundColor = 'transparent')
+                  }
                 >
                   <LogOut size={16} />
                   <span className="text-sm font-medium">Logout</span>
@@ -221,7 +218,6 @@ export default function TopNav() {
             </div>
           )}
 
-          {/* Backdrop to close menu */}
           {isProfileMenuOpen && (
             <div
               className="fixed inset-0 z-40"

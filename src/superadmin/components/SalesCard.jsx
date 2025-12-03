@@ -86,10 +86,12 @@ export default function SalesCard() {
               />
             </linearGradient>
           </defs>
+
           <path
             d="M 0 40 Q 50 25, 100 30 T 200 15 L 200 50 L 0 50 Z"
             fill="url(#salesGradient)"
           />
+
           <path
             d="M 0 40 Q 50 25, 100 30 T 200 15"
             stroke="#F4D444"

@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Users,
-  ShoppingCart,
   Building2,
   Headset,
   CreditCard,
@@ -10,18 +9,12 @@ import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 import { useState } from 'react';
 
-interface NavItem {
-  icon: React.ReactNode;
-  label: string;
-  path: string;
-}
-
 export default function Sidebar() {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [activePage, setActivePage] = useState('dashboard');
 
-  const navItems: NavItem[] = [
+  const navItems = [
     {
       icon: <LayoutDashboard size={22} />,
       label: 'Dashboard',
@@ -41,7 +34,7 @@ export default function Sidebar() {
     { icon: <CreditCard size={22} />, label: 'Billing', path: 'billing' },
   ];
 
-  const handleNavClick = (path: string) => {
+  const handleNavClick = path => {
     setActivePage(path);
     window.dispatchEvent(
       new CustomEvent('navigatePage', { detail: { page: path } })

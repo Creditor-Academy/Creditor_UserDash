@@ -1,13 +1,8 @@
-import { ReactNode } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import Sidebar from './Sidebar';
 import TopNav from './TopNav';
 
-interface AdminLayoutProps {
-  children: ReactNode;
-}
-
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout({ children }) {
   const { theme } = useTheme();
 
   return (

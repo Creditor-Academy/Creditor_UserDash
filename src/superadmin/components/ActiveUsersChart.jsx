@@ -17,7 +17,7 @@ export default function ActiveUsersChart() {
 
   const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const createPath = (yKey: 'y1' | 'y2') => {
+  const createPath = yKey => {
     const points = dataPoints
       .map((point, i) => {
         const x = (i / (dataPoints.length - 1)) * 280;
@@ -49,6 +49,7 @@ export default function ActiveUsersChart() {
         >
           Active Users
         </h3>
+
         <div className="flex gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <div
@@ -62,6 +63,7 @@ export default function ActiveUsersChart() {
               This Week
             </span>
           </div>
+
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full"
@@ -95,6 +97,7 @@ export default function ActiveUsersChart() {
                 style={{ stopColor: '#F4D444', stopOpacity: 0 }}
               />
             </linearGradient>
+
             <filter id="glow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur" />
               <feMerge>
@@ -132,6 +135,7 @@ export default function ActiveUsersChart() {
           {dataPoints.map((point, i) => {
             const x = (i / (dataPoints.length - 1)) * 280;
             const y = 100 - point.y1;
+
             return (
               <circle
                 key={i}
@@ -139,7 +143,9 @@ export default function ActiveUsersChart() {
                 cy={y}
                 r="4"
                 fill="#FFFFFF"
-                style={{ filter: 'drop-shadow(0 0 6px rgba(244,212,68,0.8))' }}
+                style={{
+                  filter: 'drop-shadow(0 0 6px rgba(244,212,68,0.8))',
+                }}
               />
             );
           })}

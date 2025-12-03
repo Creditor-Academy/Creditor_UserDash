@@ -1,14 +1,5 @@
-import { LucideIcon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
-
-interface MetricCardProps {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  color: string;
-  subtitle?: string;
-}
 
 export default function MetricCard({
   icon: Icon,
@@ -16,7 +7,7 @@ export default function MetricCard({
   value,
   color,
   subtitle,
-}: MetricCardProps) {
+}) {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
 

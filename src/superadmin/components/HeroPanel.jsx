@@ -1,11 +1,7 @@
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
-interface HeroPanelProps {
-  onAddOrganization: () => void;
-}
-
-export default function HeroPanel({ onAddOrganization }: HeroPanelProps) {
+export default function HeroPanel({ onAddOrganization }) {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
 

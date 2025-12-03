@@ -3,17 +3,7 @@ import { X, AlertCircle, CheckCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
-interface AddOrganizationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
-
-export default function AddOrganizationModal({
-  isOpen,
-  onClose,
-  onSuccess,
-}: AddOrganizationModalProps) {
+export default function AddOrganizationModal({ isOpen, onClose, onSuccess }) {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -29,18 +19,16 @@ export default function AddOrganizationModal({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -53,7 +41,6 @@ export default function AddOrganizationModal({
         );
       }
 
-      // Get the access token from localStorage
       const accessToken = localStorage.getItem('authToken');
       if (!accessToken) {
         throw new Error('Access token not found. Please login again.');
@@ -81,7 +68,6 @@ export default function AddOrganizationModal({
 
       setSuccess(true);
 
-      // Reset form and close modal after success
       setTimeout(() => {
         setFormData({
           name: '',
@@ -97,11 +83,9 @@ export default function AddOrganizationModal({
         onClose();
       }, 1500);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'An error occurred while creating the organization';
-      setError(errorMessage);
+      setError(
+        err.message || 'An error occurred while creating the organization'
+      );
       console.error('Error creating organization:', err);
     } finally {
       setIsLoading(false);
@@ -110,7 +94,6 @@ export default function AddOrganizationModal({
 
   const renderForm = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Error Message */}
       {error && (
         <div
           className="p-4 rounded-lg flex items-start gap-3"
@@ -135,7 +118,6 @@ export default function AddOrganizationModal({
         </div>
       )}
 
-      {/* Success Message */}
       {success && (
         <div
           className="p-4 rounded-lg flex items-start gap-3"
@@ -176,7 +158,7 @@ export default function AddOrganizationModal({
           className="w-full px-4 py-2 rounded-lg border transition-colors"
           style={{
             backgroundColor: colors.bg.primary,
-            borderColor: colors.border || 'rgba(255,255,255,0.1)',
+            borderColor: colors.border,
             color: colors.text.primary,
           }}
           required
@@ -198,7 +180,7 @@ export default function AddOrganizationModal({
           className="w-full px-4 py-2 rounded-lg border transition-colors min-h-[100px]"
           style={{
             backgroundColor: colors.bg.primary,
-            borderColor: colors.border || 'rgba(255,255,255,0.1)',
+            borderColor: colors.border,
             color: colors.text.primary,
           }}
           required
@@ -221,16 +203,13 @@ export default function AddOrganizationModal({
           className="w-full px-4 py-2 rounded-lg border transition-colors"
           style={{
             backgroundColor: colors.bg.primary,
-            borderColor: colors.border || 'rgba(255,255,255,0.1)',
+            borderColor: colors.border,
             color: colors.text.primary,
           }}
         />
       </div>
 
-      <div
-        className="pt-4 border-t"
-        style={{ borderColor: colors.border || 'rgba(255,255,255,0.1)' }}
-      >
+      <div className="pt-4 border-t" style={{ borderColor: colors.border }}>
         <h4
           className="text-md font-semibold mb-3"
           style={{ color: colors.text.primary }}
@@ -255,7 +234,7 @@ export default function AddOrganizationModal({
               className="w-full px-4 py-2 rounded-lg border transition-colors"
               style={{
                 backgroundColor: colors.bg.primary,
-                borderColor: colors.border || 'rgba(255,255,255,0.1)',
+                borderColor: colors.border,
                 color: colors.text.primary,
               }}
               required
@@ -278,7 +257,7 @@ export default function AddOrganizationModal({
               className="w-full px-4 py-2 rounded-lg border transition-colors"
               style={{
                 backgroundColor: colors.bg.primary,
-                borderColor: colors.border || 'rgba(255,255,255,0.1)',
+                borderColor: colors.border,
                 color: colors.text.primary,
               }}
               required
@@ -301,7 +280,7 @@ export default function AddOrganizationModal({
               className="w-full px-4 py-2 rounded-lg border transition-colors"
               style={{
                 backgroundColor: colors.bg.primary,
-                borderColor: colors.border || 'rgba(255,255,255,0.1)',
+                borderColor: colors.border,
                 color: colors.text.primary,
               }}
               required
@@ -324,7 +303,7 @@ export default function AddOrganizationModal({
               className="w-full px-4 py-2 rounded-lg border transition-colors"
               style={{
                 backgroundColor: colors.bg.primary,
-                borderColor: colors.border || 'rgba(255,255,255,0.1)',
+                borderColor: colors.border,
                 color: colors.text.primary,
               }}
               required
@@ -342,11 +321,12 @@ export default function AddOrganizationModal({
           style={{
             backgroundColor: colors.bg.primary,
             color: colors.text.primary,
-            border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+            border: `1px solid ${colors.border}`,
           }}
         >
           Cancel
         </button>
+
         <button
           type="submit"
           disabled={isLoading || success}
@@ -373,10 +353,9 @@ export default function AddOrganizationModal({
         style={{ backgroundColor: colors.bg.secondary }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div
           className="flex items-center justify-between p-6 border-b"
-          style={{ borderColor: colors.border || 'rgba(255,255,255,0.1)' }}
+          style={{ borderColor: colors.border }}
         >
           <h2
             className="text-2xl font-bold"
@@ -394,7 +373,6 @@ export default function AddOrganizationModal({
           </button>
         </div>
 
-        {/* Form Content */}
         <div className="p-6">{renderForm()}</div>
       </div>
     </div>
