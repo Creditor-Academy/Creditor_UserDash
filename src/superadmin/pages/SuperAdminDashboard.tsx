@@ -20,6 +20,21 @@ function SuperAdminDashboardContent() {
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
+  const [orgData, setOrgData] = useState<{
+    totalOrganizations: number;
+    percentAdded: string;
+  } | null>(null);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [userData, setUserData] = useState<{
+    totalUsers: number;
+    percentAdded: string;
+  } | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [activeUsersData, setActiveUsersData] = useState<{
+    activeUsers: number;
+    growthRate: string;
+  } | null>(null);
+  const [activeUsersLoading, setActiveUsersLoading] = useState(true);
 
   useEffect(() => {
     const handleNavigation = (event: Event) => {
@@ -29,6 +44,113 @@ function SuperAdminDashboardContent() {
 
     window.addEventListener('navigatePage', handleNavigation);
     return () => window.removeEventListener('navigatePage', handleNavigation);
+  }, []);
+
+  useEffect(() => {
+    const fetchOrgData = async () => {
+      try {
+        setOrgLoading(true);
+        const apiBaseUrl =
+          import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        const url = `${apiBaseUrl}/api/org/countOrg`;
+        const accessToken = localStorage.getItem('authToken');
+
+        console.log('Fetching organization data from:', url);
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const result = await response.json();
+        console.log('Organization data response:', result);
+        if (result.success && result.data) {
+          setOrgData({
+            totalOrganizations: result.data.totalOrganizations,
+            percentAdded: result.data.percentAdded,
+          });
+        } else {
+          console.warn('Unexpected response format:', result);
+        }
+      } catch (error) {
+        console.error('Error fetching organization data:', error);
+      } finally {
+        setOrgLoading(false);
+      }
+    };
+
+    fetchOrgData();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setUserLoading(true);
+        const apiBaseUrl =
+          import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        const url = `${apiBaseUrl}/api/org/countUsers`;
+        const accessToken = localStorage.getItem('authToken');
+
+        console.log('Fetching user data from:', url);
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const result = await response.json();
+        console.log('User data response:', result);
+
+        if (result.success && result.data) {
+          setUserData({
+            totalUsers: result.data.totalUsers,
+            percentAdded: result.data.percentAdded,
+          });
+        } else {
+          console.warn('Unexpected response format:', result);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    const fetchActiveUsersData = async () => {
+      try {
+        setActiveUsersLoading(true);
+        const apiBaseUrl =
+          import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        const url = `${apiBaseUrl}/api/org/activeUsers`;
+        const accessToken = localStorage.getItem('authToken');
+
+        console.log('Fetching active users data from:', url);
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const result = await response.json();
+        console.log('Active users data response:', result);
+
+        if (result.success && result.data) {
+          setActiveUsersData({
+            activeUsers: result.data.activeUsers,
+            growthRate: result.data.growthRate,
+          });
+        } else {
+          console.warn('Unexpected response format:', result);
+        }
+      } catch (error) {
+        console.error('Error fetching active users data:', error);
+      } finally {
+        setActiveUsersLoading(false);
+      }
+    };
+
+    fetchActiveUsersData();
   }, []);
 
   const renderPage = () => {
@@ -56,24 +178,39 @@ function SuperAdminDashboardContent() {
                 <MetricCard
                   icon={Users}
                   label="Total Users"
-                  value="8,462"
+                  value={
+                    userLoading
+                      ? 'Loading...'
+                      : String(userData?.totalUsers || 0)
+                  }
                   color={colors.accent.blue}
+                  subtitle={userData?.percentAdded}
                 />
                 <MetricCard
                   icon={MousePointer}
-                  label="Total Clicks"
-                  value="124.5K"
+                  label="Total Organizations"
+                  value={
+                    orgLoading
+                      ? 'Loading...'
+                      : String(orgData?.totalOrganizations || 0)
+                  }
                   color={colors.accent.pink}
+                  subtitle={orgData?.percentAdded}
                 />
                 <MetricCard
                   icon={ShoppingBag}
-                  label="Total Sales"
-                  value="$54,230"
+                  label="Active Users"
+                  value={
+                    activeUsersLoading
+                      ? 'Loading...'
+                      : String(activeUsersData?.activeUsers || 0)
+                  }
                   color={colors.accent.orange}
+                  subtitle={activeUsersData?.growthRate}
                 />
                 <MetricCard
                   icon={Package}
-                  label="Total Items"
+                  label="Total Storage used"
                   value="1,845"
                   color={colors.accent.red}
                 />

@@ -7,6 +7,7 @@ interface MetricCardProps {
   label: string;
   value: string;
   color: string;
+  subtitle?: string;
 }
 
 export default function MetricCard({
@@ -14,6 +15,7 @@ export default function MetricCard({
   label,
   value,
   color,
+  subtitle,
 }: MetricCardProps) {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
@@ -50,11 +52,17 @@ export default function MetricCard({
       </p>
 
       <p
-        className="text-2xl md:text-4xl font-bold mb-4 transition-colors duration-300"
+        className="text-2xl md:text-4xl font-bold mb-2 transition-colors duration-300"
         style={{ color: colors.text.primary }}
       >
         {value}
       </p>
+
+      {subtitle && (
+        <p className="text-sm text-green-500 mb-4 transition-colors duration-300">
+          {subtitle}
+        </p>
+      )}
 
       <div
         className="h-1 rounded-full"
