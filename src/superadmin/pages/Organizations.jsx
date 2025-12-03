@@ -13,27 +13,17 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
-interface Organization {
-  id: string;
-  name: string;
-  industry: string;
-  email: string;
-  status: 'active' | 'pending' | 'suspended';
-  createdAt: string;
-  users: number;
-}
-
 export default function Organizations() {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Mock data - in a real app, this would be fetched from an API
   useEffect(() => {
-    const mockOrganizations: Organization[] = [
+    const mockOrganizations = [
       {
         id: '1',
         name: 'Acme Corp',
@@ -98,7 +88,7 @@ export default function Organizations() {
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = status => {
     switch (status) {
       case 'active':
         return (
@@ -184,8 +174,12 @@ export default function Organizations() {
         </div>
 
         <div
-          className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden"
-          style={{ borderColor: colors.border, borderWidth: '1px' }}
+          className="shadow rounded-lg overflow-hidden"
+          style={{
+            borderColor: colors.border,
+            borderWidth: '1px',
+            backgroundColor: colors.bg.secondary,
+          }}
         >
           <div className="overflow-x-auto">
             {isLoading ? (
@@ -205,8 +199,8 @@ export default function Organizations() {
                 </p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
                     <th
                       scope="col"
@@ -249,11 +243,22 @@ export default function Organizations() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody
+                  className="divide-y divide-gray-200"
+                  style={{ backgroundColor: colors.bg.secondary }}
+                >
                   {filteredOrganizations.map(org => (
                     <tr
                       key={org.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      style={{ backgroundColor: colors.bg.secondary }}
+                      onMouseEnter={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.hover)
+                      }
+                      onMouseLeave={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.secondary)
+                      }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

@@ -19,33 +19,22 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'manager' | 'user';
-  status: 'active' | 'inactive' | 'pending';
-  lastLogin: string;
-  joinDate: string;
-  organization: string;
-}
-
 // Status Badge Component
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status }) => {
   const statusConfig = {
     active: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-800 dark:text-green-400',
+      bg: 'bg-green-100',
+      text: 'text-green-800',
       label: 'Active',
     },
     inactive: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-800 dark:text-red-400',
+      bg: 'bg-red-100',
+      text: 'text-red-800',
       label: 'Inactive',
     },
     pending: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-      text: 'text-yellow-800 dark:text-yellow-400',
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
       label: 'Pending',
     },
   }[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
@@ -60,21 +49,21 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 // Role Badge Component
-const RoleBadge = ({ role }: { role: string }) => {
+const RoleBadge = ({ role }) => {
   const roleConfig = {
     admin: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-800 dark:text-blue-400',
+      bg: 'bg-blue-100',
+      text: 'text-blue-800',
       label: 'Admin',
     },
     manager: {
-      bg: 'bg-purple-100 dark:bg-purple-900/30',
-      text: 'text-purple-800 dark:text-purple-400',
+      bg: 'bg-purple-100',
+      text: 'text-purple-800',
       label: 'Manager',
     },
     user: {
-      bg: 'bg-gray-100 dark:bg-gray-800',
-      text: 'text-gray-800 dark:text-gray-300',
+      bg: 'bg-gray-100',
+      text: 'text-gray-800',
       label: 'User',
     },
   }[role] || { bg: 'bg-gray-100', text: 'text-gray-800', label: role };
@@ -91,17 +80,17 @@ const RoleBadge = ({ role }: { role: string }) => {
 const Users = () => {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // Mock data - in a real app, this would be fetched from an API
   useEffect(() => {
-    const mockUsers: User[] = [
+    const mockUsers = [
       {
         id: 'USR-001',
         name: 'Alex Johnson',
@@ -182,7 +171,13 @@ const Users = () => {
   );
 
   return (
-    <div className="ml-20 p-6 pt-24" style={{ color: colors.text.primary }}>
+    <div
+      className="ml-20 p-6 pt-24 min-h-screen"
+      style={{
+        color: colors.text.primary,
+        backgroundColor: colors.bg.primary,
+      }}
+    >
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between mb-8 mt-4">
         <div>
@@ -343,8 +338,12 @@ const Users = () => {
 
       {/* User Table */}
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden mt-8"
-        style={{ borderColor: colors.border, borderWidth: '1px' }}
+        className="rounded-2xl shadow-sm overflow-hidden mt-8"
+        style={{
+          borderColor: colors.border,
+          borderWidth: '1px',
+          backgroundColor: colors.bg.secondary,
+        }}
       >
         <div
           className="p-4 border-b flex items-center justify-between"
@@ -413,16 +412,20 @@ const Users = () => {
         </div>
 
         <div
-          className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden"
-          style={{ borderColor: colors.border, borderWidth: '1px' }}
+          className="shadow rounded-lg overflow-hidden"
+          style={{
+            borderColor: colors.border,
+            borderWidth: '1px',
+            backgroundColor: colors.bg.secondary,
+          }}
         >
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     <div className="flex items-center">
                       User
@@ -464,12 +467,23 @@ const Users = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody
+                className="divide-y divide-gray-200"
+                style={{ backgroundColor: colors.bg.secondary }}
+              >
                 {currentUsers.length > 0 ? (
                   currentUsers.map(user => (
                     <tr
                       key={user.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      style={{ backgroundColor: colors.bg.secondary }}
+                      onMouseEnter={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.hover)
+                      }
+                      onMouseLeave={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.secondary)
+                      }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

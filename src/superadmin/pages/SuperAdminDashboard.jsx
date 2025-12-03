@@ -20,25 +20,16 @@ function SuperAdminDashboardContent() {
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
-  const [orgData, setOrgData] = useState<{
-    totalOrganizations: number;
-    percentAdded: string;
-  } | null>(null);
+  const [orgData, setOrgData] = useState(null);
   const [orgLoading, setOrgLoading] = useState(true);
-  const [userData, setUserData] = useState<{
-    totalUsers: number;
-    percentAdded: string;
-  } | null>(null);
+  const [userData, setUserData] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
-  const [activeUsersData, setActiveUsersData] = useState<{
-    activeUsers: number;
-    growthRate: string;
-  } | null>(null);
+  const [activeUsersData, setActiveUsersData] = useState(null);
   const [activeUsersLoading, setActiveUsersLoading] = useState(true);
 
   useEffect(() => {
-    const handleNavigation = (event: Event) => {
-      const customEvent = event as CustomEvent;
+    const handleNavigation = event => {
+      const customEvent = event;
       setCurrentPage(customEvent.detail.page);
     };
 

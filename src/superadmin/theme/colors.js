@@ -47,5 +47,3 @@ export const lightTheme = {
     red: '#EF4444',
   },
 };
-
-export type Theme = typeof darkTheme;

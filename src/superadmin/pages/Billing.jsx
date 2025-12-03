@@ -20,21 +20,8 @@ import {
   FileText,
 } from 'lucide-react';
 
-interface Bill {
-  id: string;
-  invoiceNumber: string;
-  organization: string;
-  amount: number;
-  status: 'paid' | 'pending' | 'overdue' | 'cancelled';
-  dueDate: string;
-  issuedDate: string;
-  description: string;
-  paymentMethod?: string;
-  paidDate?: string;
-}
-
 // Status Badge Component
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status }) => {
   const statusConfig = {
     paid: {
       bg: 'bg-green-100 dark:bg-green-900/30',
@@ -68,17 +55,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 // Bill Detail Modal Component
-const BillDetailModal = ({
-  bill,
-  isOpen,
-  onClose,
-  onMarkAsPaid,
-}: {
-  bill: Bill | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onMarkAsPaid: (billId: string, paymentMethod: string) => void;
-}) => {
+const BillDetailModal = ({ bill, isOpen, onClose, onMarkAsPaid }) => {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -335,16 +312,16 @@ export default function Billing() {
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [selectedBill, setSelectedBill] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Mock data
   useEffect(() => {
-    const mockBills: Bill[] = [
+    const mockBills = [
       {
         id: 'BL-001',
         invoiceNumber: 'INV-2023-001',
@@ -438,7 +415,7 @@ export default function Billing() {
   );
 
   // Handle mark as paid
-  const handleMarkAsPaid = (billId: string, paymentMethod: string) => {
+  const handleMarkAsPaid = (billId, paymentMethod) => {
     setBills(
       bills.map(b =>
         b.id === billId
@@ -620,8 +597,12 @@ export default function Billing() {
 
         {/* Bills Table */}
         <div
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
-          style={{ borderColor: colors.border, borderWidth: '1px' }}
+          className="rounded-2xl shadow-sm overflow-hidden"
+          style={{
+            borderColor: colors.border,
+            borderWidth: '1px',
+            backgroundColor: colors.bg.secondary,
+          }}
         >
           {/* Table Header with Filters */}
           <div
@@ -719,12 +700,23 @@ export default function Billing() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody
+                className="divide-y divide-gray-200"
+                style={{ backgroundColor: colors.bg.secondary }}
+              >
                 {currentBills.length > 0 ? (
                   currentBills.map(bill => (
                     <tr
                       key={bill.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      style={{ backgroundColor: colors.bg.secondary }}
+                      onMouseEnter={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.hover)
+                      }
+                      onMouseLeave={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.secondary)
+                      }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div

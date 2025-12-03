@@ -20,41 +20,27 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-interface SupportTicket {
-  id: string;
-  title: string;
-  description: string;
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  organization: string;
-  assignedTo?: string;
-  resolution?: string;
-}
-
 // Status Badge Component
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status }) => {
   const statusConfig = {
     open: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-800 dark:text-blue-400',
+      bg: 'bg-blue-100',
+      text: 'text-blue-800',
       label: 'Open',
     },
     'in-progress': {
-      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-      text: 'text-yellow-800 dark:text-yellow-400',
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
       label: 'In Progress',
     },
     resolved: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-800 dark:text-green-400',
+      bg: 'bg-green-100',
+      text: 'text-green-800',
       label: 'Resolved',
     },
     closed: {
-      bg: 'bg-gray-100 dark:bg-gray-800',
-      text: 'text-gray-800 dark:text-gray-300',
+      bg: 'bg-gray-100',
+      text: 'text-gray-800',
       label: 'Closed',
     },
   }[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
@@ -69,26 +55,26 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 // Priority Badge Component
-const PriorityBadge = ({ priority }: { priority: string }) => {
+const PriorityBadge = ({ priority }) => {
   const priorityConfig = {
     low: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-800 dark:text-green-400',
+      bg: 'bg-green-100',
+      text: 'text-green-800',
       label: 'Low',
     },
     medium: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-      text: 'text-yellow-800 dark:text-yellow-400',
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
       label: 'Medium',
     },
     high: {
-      bg: 'bg-orange-100 dark:bg-orange-900/30',
-      text: 'text-orange-800 dark:text-orange-400',
+      bg: 'bg-orange-100',
+      text: 'text-orange-800',
       label: 'High',
     },
     critical: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-800 dark:text-red-400',
+      bg: 'bg-red-100',
+      text: 'text-red-800',
       label: 'Critical',
     },
   }[priority] || { bg: 'bg-gray-100', text: 'text-gray-800', label: priority };
@@ -103,17 +89,7 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
 };
 
 // Ticket Detail Modal Component
-const TicketDetailModal = ({
-  ticket,
-  isOpen,
-  onClose,
-  onResolve,
-}: {
-  ticket: SupportTicket | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onResolve: (ticketId: string, resolution: string) => void;
-}) => {
+const TicketDetailModal = ({ ticket, isOpen, onClose, onResolve }) => {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [resolution, setResolution] = useState('');
@@ -353,18 +329,16 @@ export default function SupportTicket() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [tickets, setTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(
-    null
-  );
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Mock data
   useEffect(() => {
-    const mockTickets: SupportTicket[] = [
+    const mockTickets = [
       {
         id: 'TKT-001',
         title: 'Login issues on mobile app',
@@ -460,7 +434,7 @@ export default function SupportTicket() {
   );
 
   // Handle resolve ticket
-  const handleResolveTicket = (ticketId: string, resolution: string) => {
+  const handleResolveTicket = (ticketId, resolution) => {
     setTickets(
       tickets.map(t =>
         t.id === ticketId
@@ -612,8 +586,12 @@ export default function SupportTicket() {
 
         {/* Tickets Table */}
         <div
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
-          style={{ borderColor: colors.border, borderWidth: '1px' }}
+          className="rounded-2xl shadow-sm overflow-hidden"
+          style={{
+            borderColor: colors.border,
+            borderWidth: '1px',
+            backgroundColor: colors.bg.secondary,
+          }}
         >
           {/* Table Header with Filters */}
           <div
@@ -691,12 +669,12 @@ export default function SupportTicket() {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Ticket ID
                   </th>
@@ -735,12 +713,23 @@ export default function SupportTicket() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody
+                className="divide-y divide-gray-200"
+                style={{ backgroundColor: colors.bg.secondary }}
+              >
                 {currentTickets.length > 0 ? (
                   currentTickets.map(ticket => (
                     <tr
                       key={ticket.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      style={{ backgroundColor: colors.bg.secondary }}
+                      onMouseEnter={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.hover)
+                      }
+                      onMouseLeave={e =>
+                        (e.currentTarget.style.backgroundColor =
+                          colors.bg.secondary)
+                      }
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div
