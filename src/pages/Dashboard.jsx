@@ -40,6 +40,9 @@ import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncement
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
+import LessonListenerUnlockModal from '@/components/lessonlistener/LessonListenerUnlockModal';
+import { isFeatureUnlocked } from '@/services/featureService';
+import { Mic, Lock } from 'lucide-react';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -53,6 +56,7 @@ import {
   bookWebsiteService,
   fetchUserWebsiteServices,
 } from '../services/websiteService';
+import SpeechDash from '@/assets/SpeechDash.png';
 
 export function Dashboard() {
   const { userProfile } = useUser();
@@ -178,6 +182,12 @@ export function Dashboard() {
   const [websiteHistory, setWebsiteHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
+
+  // Lesson Listener unlock state
+  const [showLessonListenerModal, setShowLessonListenerModal] = useState(false);
+  const [isLessonListenerUnlocked, setIsLessonListenerUnlocked] =
+    useState(false);
+  const [checkingUnlockStatus, setCheckingUnlockStatus] = useState(true);
 
   const API_BASE =
     import.meta.env.VITE_API_BASE_URL ||
@@ -315,6 +325,35 @@ export function Dashboard() {
     fetchUserOverview();
   }, []); // Remove userId dependency to prevent infinite loop
 
+  // Also check unlock status when userProfile becomes available (fallback)
+  useEffect(() => {
+    const checkUnlock = async () => {
+      if (userProfile?.id && checkingUnlockStatus) {
+        try {
+          console.log(
+            '[Dashboard] Fallback check - Checking lesson listener unlock status'
+          );
+          const unlocked = await isFeatureUnlocked(
+            userProfile.id,
+            'FEATURE',
+            'LESSON_LISTENER'
+          );
+          console.log(
+            '[Dashboard] Fallback check - Lesson listener unlocked:',
+            unlocked
+          );
+          setIsLessonListenerUnlocked(unlocked);
+          setCheckingUnlockStatus(false);
+        } catch (error) {
+          console.error('[Dashboard] Fallback check failed:', error);
+          setIsLessonListenerUnlocked(false);
+          setCheckingUnlockStatus(false);
+        }
+      }
+    };
+    checkUnlock();
+  }, [userProfile?.id]);
+
   // Recording course IDs to filter out from My Courses
   const RECORDING_COURSE_IDS = [
     'a188173c-23a6-4cb7-9653-6a1a809e9914', // Become Private Recordings
@@ -397,6 +436,43 @@ export function Dashboard() {
 
       // Fetch user history when profile is available
       fetchUserHistory();
+
+      // Check if lesson listener is unlocked
+      const checkLessonListenerUnlock = async () => {
+        if (userProfile?.id) {
+          setCheckingUnlockStatus(true);
+          try {
+            console.log(
+              '[Dashboard] Checking lesson listener unlock status for user:',
+              userProfile.id
+            );
+            const unlocked = await isFeatureUnlocked(
+              userProfile.id,
+              'FEATURE',
+              'LESSON_LISTENER'
+            );
+            console.log(
+              '[Dashboard] Lesson listener unlocked status:',
+              unlocked
+            );
+            setIsLessonListenerUnlocked(unlocked);
+          } catch (error) {
+            console.error(
+              '[Dashboard] Failed to check lesson listener unlock:',
+              error
+            );
+            // Default to showing the card if check fails
+            setIsLessonListenerUnlocked(false);
+          } finally {
+            setCheckingUnlockStatus(false);
+          }
+        } else {
+          // If no user profile, show the card (assume locked)
+          setIsLessonListenerUnlocked(false);
+          setCheckingUnlockStatus(false);
+        }
+      };
+      checkLessonListenerUnlock();
     }
   }, [memoizedUserProfile]);
 
@@ -1073,6 +1149,102 @@ export function Dashboard() {
           <div className="mb-8">
             <DashboardGroup />
           </div>
+          {/* Lesson Listener Feature Unlock */}
+          {(!isLessonListenerUnlocked || checkingUnlockStatus) && (
+            <div className="mb-8">
+              <div className="rounded-2xl shadow-lg border border-blue-200 overflow-hidden flex flex-col md:flex-row bg-white">
+                <img
+                  src={SpeechDash}
+                  alt="Lesson Listener preview"
+                  className="w-full md:w-2/5 h-64 md:h-auto object-cover"
+                  loading="lazy"
+                />
+                <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 md:p-8">
+                  {checkingUnlockStatus && (
+                    <div className="mb-4 text-center text-sm text-gray-500">
+                      Checking unlock status...
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <Mic className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-semibold text-gray-900">
+                          Lesson Listener
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          Transform your lessons into natural-sounding speech
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-700">
+                        Premium Feature
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mb-6 h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3">
+                        What You'll Get
+                      </h3>
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-gray-700">
+                            AI-powered voice synthesis with 9 professional
+                            voices
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-gray-700">
+                            Convert any lesson text into natural-sounding speech
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-gray-700">
+                            Listen to lessons while multitasking or on the go
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-gray-700">
+                            Unlimited usage once unlocked
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="bg-white/60 rounded-lg p-4 border border-blue-100">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm text-gray-600">
+                          Unlock Cost
+                        </span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          500
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mb-4">
+                        One-time payment to unlock forever
+                      </div>
+                      <Button
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        onClick={() => setShowLessonListenerModal(true)}
+                      >
+                        <Lock className="w-4 h-4 mr-2" />
+                        Unlock Lesson Listener
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Services using credits */}
           <div className="mb-8">
             <div className="rounded-2xl shadow-lg border border-gray-200 bg-white p-6 md:p-8">
@@ -1359,6 +1531,30 @@ export function Dashboard() {
           onClose={() => setShowCreditsModal(false)}
         />
       )}
+
+      {/* Lesson Listener Unlock Modal */}
+      <LessonListenerUnlockModal
+        open={showLessonListenerModal}
+        onOpenChange={setShowLessonListenerModal}
+        onUnlockSuccess={async () => {
+          // Refresh unlock status after successful unlock
+          if (userProfile?.id) {
+            try {
+              const unlocked = await isFeatureUnlocked(
+                userProfile.id,
+                'FEATURE',
+                'LESSON_LISTENER'
+              );
+              setIsLessonListenerUnlocked(unlocked);
+            } catch (error) {
+              console.error(
+                '[Dashboard] Failed to refresh unlock status:',
+                error
+              );
+            }
+          }
+        }}
+      />
 
       {/* Consultation Info Modal */}
       <Dialog open={showConsultInfo} onOpenChange={setShowConsultInfo}>

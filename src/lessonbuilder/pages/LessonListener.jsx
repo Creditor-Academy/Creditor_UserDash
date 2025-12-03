@@ -1,6 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Mic, ChevronLeft, Volume2, Loader2 } from 'lucide-react';
+import {
+  Mic,
+  ChevronLeft,
+  Volume2,
+  Loader2,
+  Lock,
+  AlertCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -16,6 +23,9 @@ import {
   createAudioUrl,
   revokeAudioUrl,
 } from '@/services/speechifyapi';
+import { useUser } from '@/contexts/UserContext';
+import { isFeatureUnlocked } from '@/services/featureService';
+import LessonListenerUnlockModal from '@/components/lessonlistener/LessonListenerUnlockModal';
 
 // Dummy text for speech synthesis
 const DUMMY_TEXT =
@@ -37,7 +47,13 @@ const SPEECH_VOICES = [
 const LessonListener = () => {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
+  const { userProfile } = useUser();
   const TOTAL_BARS = 60;
+
+  // Feature unlock state
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [checkingUnlock, setCheckingUnlock] = useState(true);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   // Visual voice avatars for display
   const voiceAvatars = [
@@ -62,6 +78,37 @@ const LessonListener = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [error, setError] = useState(null);
   const audioRef = useRef(null);
+
+  // Check if feature is unlocked
+  useEffect(() => {
+    const checkUnlockStatus = async () => {
+      if (userProfile?.id) {
+        setCheckingUnlock(true);
+        try {
+          const unlocked = await isFeatureUnlocked(
+            userProfile.id,
+            'FEATURE',
+            'LESSON_LISTENER'
+          );
+          setIsUnlocked(unlocked);
+          if (!unlocked) {
+            setShowUnlockModal(true);
+          }
+        } catch (error) {
+          console.error(
+            '[LessonListener] Failed to check unlock status:',
+            error
+          );
+          setIsUnlocked(false);
+        } finally {
+          setCheckingUnlock(false);
+        }
+      } else {
+        setCheckingUnlock(false);
+      }
+    };
+    checkUnlockStatus();
+  }, [userProfile?.id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -157,6 +204,88 @@ const LessonListener = () => {
       setIsLoading(false);
     }
   };
+
+  // Show locked state if not unlocked
+  if (checkingUnlock) {
+    return (
+      <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Checking feature access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isUnlocked) {
+    return (
+      <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-blue-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Lesson Listener is Locked
+          </h1>
+          <p className="text-lg text-gray-600 mb-6">
+            This premium feature allows you to convert your lessons into
+            natural-sounding speech with AI-powered voice synthesis. Unlock it
+            to access 9 professional voices and enhance your learning
+            experience.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <AlertCircle className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold text-blue-900">
+                Unlock Cost: 500 Credits
+              </span>
+            </div>
+            <p className="text-sm text-blue-700">
+              One-time payment to unlock forever
+            </p>
+          </div>
+          <div className="flex gap-4 justify-center">
+            <Button variant="outline" onClick={handleBack} className="px-6">
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Back to Lesson
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+              onClick={() => setShowUnlockModal(true)}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Unlock Feature
+            </Button>
+          </div>
+        </div>
+        <LessonListenerUnlockModal
+          open={showUnlockModal}
+          onOpenChange={setShowUnlockModal}
+          onUnlockSuccess={async () => {
+            // Refresh unlock status after successful unlock
+            if (userProfile?.id) {
+              try {
+                const unlocked = await isFeatureUnlocked(
+                  userProfile.id,
+                  'FEATURE',
+                  'LESSON_LISTENER'
+                );
+                setIsUnlocked(unlocked);
+                if (unlocked) {
+                  setShowUnlockModal(false);
+                }
+              } catch (error) {
+                console.error(
+                  '[LessonListener] Failed to refresh unlock status:',
+                  error
+                );
+              }
+            }
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col overflow-hidden">
