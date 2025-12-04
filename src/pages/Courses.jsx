@@ -357,7 +357,7 @@ export function Courses() {
                   </div>
                 </button>
                 <button
-                  className="relative px-6 py-3 text-sm font-medium rounded-lg text-gray-600"
+                  className="relative px-6 py-3 text-sm font-medium rounded-lg bg-[#d10000] hover:bg-[#b00000] text-white disabled:bg-[#a00000] disabled:text-white/70"
                   disabled
                 >
                   <div className="flex items-center gap-2">
@@ -450,7 +450,7 @@ export function Courses() {
               <button
                 className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeTab === 'courses'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                    ? 'bg-[#d10000] text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
                 onClick={() => setActiveTab('courses')}
@@ -466,7 +466,7 @@ export function Courses() {
               <button
                 className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeTab === 'lessons'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                    ? 'bg-[#d10000] text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
                 onClick={async () => {
@@ -673,7 +673,7 @@ export function Courses() {
                           >
                             <Button
                               variant="default"
-                              className="w-full text-sm sm:text-base"
+                              className="w-full text-sm sm:text-base bg-[#d10000] hover:bg-[#b00000]"
                             >
                               Continue Learning
                             </Button>
@@ -833,13 +833,16 @@ export function Courses() {
                                       to={`/dashboard/courses/${courseId}/modules/${module?.id}/lessons`}
                                       className="w-full"
                                     >
-                                      <Button className="w-full">
+                                      <Button className="w-full bg-[#d10000] hover:bg-[#b00000]">
                                         <Play size={16} className="mr-2" />
                                         View Lessons
                                       </Button>
                                     </Link>
                                   ) : (
-                                    <Button className="w-full" disabled>
+                                    <Button
+                                      className="w-full bg-[#d10000] hover:bg-[#b00000]"
+                                      disabled
+                                    >
                                       <Play size={16} className="mr-2" />
                                       View Lessons
                                     </Button>

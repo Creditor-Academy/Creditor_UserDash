@@ -1,9 +1,11 @@
 import api from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://creditor-backend-ceds.onrender.com';
 
 // Get group by ID
-export const getGroupById = async (groupId) => {
+export const getGroupById = async groupId => {
   try {
     const response = await api.get(`/groups/${groupId}`);
     return response.data;
@@ -14,7 +16,7 @@ export const getGroupById = async (groupId) => {
 };
 
 // Get group members
-export const getGroupMembers = async (groupId) => {
+export const getGroupMembers = async groupId => {
   try {
     const response = await api.get(`/groups/${groupId}/members`);
     return response.data;
@@ -36,25 +38,35 @@ export const getGroupMembers = async (groupId) => {
 export async function createCourseGroup(payload) {
   try {
     // Normalize possible image field aliases so backend variants capture it
-    const image = payload.thumbnail || payload.banner || payload.image_url || payload.imageUrl || payload.image;
+    const image =
+      payload.thumbnail ||
+      payload.banner ||
+      payload.image_url ||
+      payload.imageUrl ||
+      payload.image;
     const body = {
       ...payload,
-      ...(image ? {
-        thumbnail: image,
-        banner: image,
-        image_url: image,
-        imageUrl: image,
-        image: image,
-      } : {}),
+      ...(image
+        ? {
+            thumbnail: image,
+            banner: image,
+            image_url: image,
+            imageUrl: image,
+            image: image,
+          }
+        : {}),
     };
-    console.log("📤 groupService: Creating course group:", body);
+    console.log('📤 groupService: Creating course group:', body);
     const response = await api.post('/groups/course', body, {
       withCredentials: true,
     });
-    console.log("✅ groupService: Course group created successfully:", response.data);
+    console.log(
+      '✅ groupService: Course group created successfully:',
+      response.data
+    );
     return response.data;
   } catch (error) {
-    console.error("❌ groupService: Error creating course group:", error);
+    console.error('❌ groupService: Error creating course group:', error);
     throw error;
   }
 }
@@ -65,17 +77,17 @@ export async function createCourseGroup(payload) {
  */
 export async function getGroups() {
   try {
-    console.log("📤 groupService: Fetching groups");
-    
+    console.log('📤 groupService: Fetching groups');
+
     const response = await api.get(`/groups`);
-    
-    console.log("✅ groupService: Groups fetched successfully:", response.data);
+
+    console.log('✅ groupService: Groups fetched successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching group members:', error);
     throw error;
   }
-};
+}
 
 // Add member to group
 export const addGroupMember = async (groupId, userId = null) => {
@@ -92,19 +104,26 @@ export const addGroupMember = async (groupId, userId = null) => {
 // (Removed duplicate getGroups definitions)
 
 // Create new group
-export const createGroup = async (groupData) => {
+export const createGroup = async groupData => {
   try {
     // send common aliases for the image so backend variations still capture it
-    const image = groupData.thumbnail || groupData.banner || groupData.image_url || groupData.imageUrl || groupData.image;
+    const image =
+      groupData.thumbnail ||
+      groupData.banner ||
+      groupData.image_url ||
+      groupData.imageUrl ||
+      groupData.image;
     const payload = {
       ...groupData,
-      ...(image ? {
-        thumbnail: image,
-        banner: image,
-        image_url: image,
-        imageUrl: image,
-        image: image,
-      } : {}),
+      ...(image
+        ? {
+            thumbnail: image,
+            banner: image,
+            image_url: image,
+            imageUrl: image,
+            image: image,
+          }
+        : {}),
     };
     const response = await api.post(`/groups`, payload);
     return response.data;
@@ -117,16 +136,23 @@ export const createGroup = async (groupData) => {
 // Update an existing group
 export const updateGroup = async (groupId, update) => {
   try {
-    const image = update.thumbnail || update.banner || update.image_url || update.imageUrl || update.image;
+    const image =
+      update.thumbnail ||
+      update.banner ||
+      update.image_url ||
+      update.imageUrl ||
+      update.image;
     const payload = {
       ...update,
-      ...(image ? {
-        thumbnail: image,
-        banner: image,
-        image_url: image,
-        imageUrl: image,
-        image: image,
-      } : {}),
+      ...(image
+        ? {
+            thumbnail: image,
+            banner: image,
+            image_url: image,
+            imageUrl: image,
+            image: image,
+          }
+        : {}),
     };
     const response = await api.put(`/groups/${groupId}`, payload);
     return response.data;
@@ -140,26 +166,36 @@ export const updateGroup = async (groupId, update) => {
 export const getGroupMessages = async (groupId, page = 1, limit = 50) => {
   try {
     const response = await api.get(`/groups/${groupId}/messages`, {
-      params: { page, limit }
+      params: { page, limit },
     });
     return response.data;
   } catch (error) {
     console.error('Error fetching group messages:', error);
     throw error;
   }
-}
+};
 
 // Send a group message
 // Supports JSON payload for text messages and FormData for image/file messages
-export const sendGroupMessage = async (groupId, payload, isMultipart = false) => {
+export const sendGroupMessage = async (
+  groupId,
+  payload,
+  isMultipart = false
+) => {
   try {
-    const isFormData = isMultipart || (typeof FormData !== 'undefined' && payload instanceof FormData);
+    const isFormData =
+      isMultipart ||
+      (typeof FormData !== 'undefined' && payload instanceof FormData);
     const config = isFormData
       ? { headers: { 'Content-Type': 'multipart/form-data' } }
       : { headers: { 'Content-Type': 'application/json' } };
 
     const body = isFormData ? payload : payload; // axios handles both
-    const response = await api.post(`/groups/${groupId}/messages`, body, config);
+    const response = await api.post(
+      `/groups/${groupId}/messages`,
+      body,
+      config
+    );
     return response.data;
   } catch (error) {
     console.error('Error sending group message:', error);
@@ -171,9 +207,12 @@ export const sendGroupMessage = async (groupId, payload, isMultipart = false) =>
 export const createGroupPoll = async (groupId, poll) => {
   try {
     // Backend expects poll_question, poll_expires_at, poll_allow_multiple, poll_is_anonymous, options: string[]
-    const pollExpiresAt = poll.durationMinutes && Number(poll.durationMinutes) > 0
-      ? new Date(Date.now() + Number(poll.durationMinutes) * 60 * 1000).toISOString()
-      : undefined;
+    const pollExpiresAt =
+      poll.durationMinutes && Number(poll.durationMinutes) > 0
+        ? new Date(
+            Date.now() + Number(poll.durationMinutes) * 60 * 1000
+          ).toISOString()
+        : undefined;
 
     const payload = {
       poll_question: poll.question,
@@ -200,7 +239,8 @@ export const createGroupPoll = async (groupId, poll) => {
     }
   } catch (error) {
     const status = error?.response?.status;
-    const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+    const msg =
+      error?.response?.data?.message || error?.message || 'Unknown error';
     console.error('Error creating poll:', status, msg);
     // Fallback: some backends accept polls as a message with type POLL
     if (status === 404) {
@@ -211,7 +251,11 @@ export const createGroupPoll = async (groupId, poll) => {
         });
         return response.data;
       } catch (fallbackErr) {
-        console.error('Fallback create poll via messages failed:', fallbackErr?.response?.status, fallbackErr?.response?.data?.message || fallbackErr?.message);
+        console.error(
+          'Fallback create poll via messages failed:',
+          fallbackErr?.response?.status,
+          fallbackErr?.response?.data?.message || fallbackErr?.message
+        );
         throw fallbackErr;
       }
     }
@@ -219,14 +263,24 @@ export const createGroupPoll = async (groupId, poll) => {
   }
 };
 
-export const voteGroupPoll = async (groupId, pollId, { messageId, optionId }) => {
+export const voteGroupPoll = async (
+  groupId,
+  pollId,
+  { messageId, optionId }
+) => {
   try {
     try {
-      const response = await api.post(`/groups/${groupId}/polls/${pollId}/vote`, { message_id: messageId, option_id: optionId });
+      const response = await api.post(
+        `/groups/${groupId}/polls/${pollId}/vote`,
+        { message_id: messageId, option_id: optionId }
+      );
       return response.data;
     } catch (err1) {
       if (err1?.response?.status === 404) {
-        const response = await api.post(`/${groupId}/polls/${pollId}/vote`, { message_id: messageId, option_id: optionId });
+        const response = await api.post(`/${groupId}/polls/${pollId}/vote`, {
+          message_id: messageId,
+          option_id: optionId,
+        });
         return response.data;
       }
       throw err1;
@@ -258,7 +312,10 @@ export const getGroupPoll = async (groupId, pollId) => {
 // PIN
 export const pinGroupMessage = async (groupId, messageId, pinned) => {
   try {
-    const response = await api.post(`/groups/${groupId}/messages/${messageId}/pin`, { pinned });
+    const response = await api.post(
+      `/groups/${groupId}/messages/${messageId}/pin`,
+      { pinned }
+    );
     return response.data;
   } catch (error) {
     console.error('Error pinning message:', error);
@@ -282,7 +339,7 @@ export const pinGroupPoll = async (groupId, pollId) => {
 };
 
 // GET PINNED POLLS
-export const getPinnedPolls = async (groupId) => {
+export const getPinnedPolls = async groupId => {
   try {
     // Prefer /groups prefix, fallback to no prefix
     try {
@@ -315,15 +372,15 @@ export const getPinnedPolls = async (groupId) => {
  */
 export async function createGroupPost(postData) {
   try {
-    console.log("📤 groupService: Creating group post:", postData);
-    
+    console.log('📤 groupService: Creating group post:', postData);
+
     // Determine if we're sending FormData (file upload) or JSON
     const isFormData = postData instanceof FormData;
-    
+
     const config = {
       withCredentials: true,
     };
-    
+
     // If it's FormData, let axios handle the Content-Type header automatically
     // If it's JSON, set the Content-Type to application/json
     if (!isFormData) {
@@ -331,20 +388,22 @@ export async function createGroupPost(postData) {
         'Content-Type': 'application/json',
       };
     }
-    
+
     const response = await api.post(`/groups/createPost`, postData, config);
-    console.log("✅ groupService: Group post created:", response.data);
+    console.log('✅ groupService: Group post created:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error sending group message:', error);
     throw error;
   }
-};
+}
 
 // Delete group message
 export const deleteGroupMessage = async (groupId, messageId) => {
   try {
-    const response = await api.delete(`/groups/${groupId}/messages/${messageId}`);
+    const response = await api.delete(
+      `/groups/${groupId}/messages/${messageId}`
+    );
     return response.data;
   } catch (error) {
     console.error('Error deleting group message:', error);
@@ -355,7 +414,9 @@ export const deleteGroupMessage = async (groupId, messageId) => {
 // Edit group message (owner or admin)
 export const editGroupMessage = async (groupId, messageId, { content }) => {
   try {
-    const response = await api.put(`/groups/${groupId}/messages/${messageId}`, { content });
+    const response = await api.put(`/groups/${groupId}/messages/${messageId}`, {
+      content,
+    });
     return response.data;
   } catch (error) {
     console.error('Error editing group message:', error);
@@ -364,7 +425,7 @@ export const editGroupMessage = async (groupId, messageId, { content }) => {
 };
 
 // Get group posts
-export const getGroupPosts = async (groupId) => {
+export const getGroupPosts = async groupId => {
   try {
     const response = await api.get(`/groups/${groupId}/posts`);
     return response.data;
@@ -377,7 +438,10 @@ export const getGroupPosts = async (groupId) => {
 // Add comment to post
 export const addComment = async (postId, commentData) => {
   try {
-    const response = await api.post(`/groups/posts/${postId}/comments`, commentData);
+    const response = await api.post(
+      `/groups/posts/${postId}/comments`,
+      commentData
+    );
     return response.data;
   } catch (error) {
     console.error('Error adding comment:', error);
@@ -388,7 +452,10 @@ export const addComment = async (postId, commentData) => {
 // Edit comment by commentId
 export const editComment = async (commentId, commentData) => {
   try {
-    const response = await api.put(`/groups/comments/${commentId}`, commentData);
+    const response = await api.put(
+      `/groups/comments/${commentId}`,
+      commentData
+    );
     return response.data;
   } catch (error) {
     console.error('Error editing comment:', error);
@@ -397,7 +464,7 @@ export const editComment = async (commentId, commentData) => {
 };
 
 // Delete comment (admin can delete any, user can delete own)
-export const deleteComment = async (commentId) => {
+export const deleteComment = async commentId => {
   try {
     const response = await api.delete(`/groups/comments/${commentId}`);
     return response.data;
@@ -426,16 +493,20 @@ export const createAnnouncement = async (groupId, announcementData) => {
     const formData = new FormData();
     formData.append('title', announcementData.title);
     formData.append('content', announcementData.content);
-    
+
     if (announcementData.media) {
       formData.append('media', announcementData.media);
     }
 
-    const response = await api.post(`/groups/${groupId}/announcements`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post(
+      `/groups/${groupId}/announcements`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     console.error('Error creating announcement:', error);
@@ -444,7 +515,7 @@ export const createAnnouncement = async (groupId, announcementData) => {
 };
 
 // Get announcements
-export const getAnnouncements = async (groupId) => {
+export const getAnnouncements = async groupId => {
   try {
     const response = await api.get(`/groups/${groupId}/announcements`);
     return response.data;
@@ -455,7 +526,7 @@ export const getAnnouncements = async (groupId) => {
 };
 
 // Get single announcement
-export const getAnnouncementById = async (announcementId) => {
+export const getAnnouncementById = async announcementId => {
   try {
     const response = await api.get(`/groups/announcements/${announcementId}`);
     return response.data;
@@ -469,25 +540,38 @@ export const getAnnouncementById = async (announcementId) => {
 export const updateAnnouncement = async (announcementId, announcementData) => {
   try {
     // Accept either FormData or plain object
-    const formData = announcementData instanceof FormData ? announcementData : (() => {
-      const fd = new FormData();
-      if (announcementData?.title !== undefined && announcementData?.title !== null) {
-        fd.append('title', announcementData.title);
-      }
-      if (announcementData?.content !== undefined && announcementData?.content !== null) {
-        fd.append('content', announcementData.content);
-      }
-      if (announcementData?.media) {
-        fd.append('media', announcementData.media);
-      }
-      return fd;
-    })();
+    const formData =
+      announcementData instanceof FormData
+        ? announcementData
+        : (() => {
+            const fd = new FormData();
+            if (
+              announcementData?.title !== undefined &&
+              announcementData?.title !== null
+            ) {
+              fd.append('title', announcementData.title);
+            }
+            if (
+              announcementData?.content !== undefined &&
+              announcementData?.content !== null
+            ) {
+              fd.append('content', announcementData.content);
+            }
+            if (announcementData?.media) {
+              fd.append('media', announcementData.media);
+            }
+            return fd;
+          })();
 
-    const response = await api.put(`/groups/announcements/${announcementId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.put(
+      `/groups/announcements/${announcementId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     console.error('Error updating announcement:', error);
@@ -496,9 +580,11 @@ export const updateAnnouncement = async (announcementId, announcementData) => {
 };
 
 // Delete announcement
-export const deleteAnnouncement = async (announcementId) => {
+export const deleteAnnouncement = async announcementId => {
   try {
-    const response = await api.delete(`/groups/announcements/${announcementId}`);
+    const response = await api.delete(
+      `/groups/announcements/${announcementId}`
+    );
     return response.data;
   } catch (error) {
     console.error('Error deleting announcement:', error);
@@ -507,18 +593,22 @@ export const deleteAnnouncement = async (announcementId) => {
 };
 
 // Check if user is admin of a specific group
-export const isUserGroupAdmin = async (groupId) => {
+export const isUserGroupAdmin = async groupId => {
   try {
     const response = await api.get(`/groups/${groupId}/members`);
     const members = response.data?.data || response.data || [];
     const currentUserId = localStorage.getItem('userId');
-    
+
     // Check if current user is in the members list with ADMIN role
-    const currentUserMember = members.find(member => 
-      (member.user?.id || member.user_id || member.id) === currentUserId
+    const currentUserMember = members.find(
+      member =>
+        (member.user?.id || member.user_id || member.id) === currentUserId
     );
-    
-    return currentUserMember?.role === 'ADMIN' || currentUserMember?.is_admin === true;
+
+    return (
+      currentUserMember?.role === 'ADMIN' ||
+      currentUserMember?.is_admin === true
+    );
   } catch (error) {
     console.error('Error checking group admin status:', error);
     return false;
@@ -526,7 +616,7 @@ export const isUserGroupAdmin = async (groupId) => {
 };
 
 // Add like to post
-export const addLike = async (postId) => {
+export const addLike = async postId => {
   try {
     const response = await api.post(`/groups/posts/${postId}/likes`);
     return response.data;
@@ -537,7 +627,7 @@ export const addLike = async (postId) => {
 };
 
 // Remove like from post
-export const removeLike = async (postId) => {
+export const removeLike = async postId => {
   try {
     const response = await api.delete(`/groups/posts/${postId}/likes`);
     return response.data;
@@ -548,7 +638,7 @@ export const removeLike = async (postId) => {
 };
 
 // Delete a specific group post by postId (admin only)
-export const deleteGroupPost = async (postId) => {
+export const deleteGroupPost = async postId => {
   try {
     const response = await api.delete(`/groups/posts/${postId}`);
     return response.data;
@@ -559,7 +649,7 @@ export const deleteGroupPost = async (postId) => {
 };
 
 // Delete a group by ID (explicit local endpoint as requested)
-export const deleteGroupById = async (groupId) => {
+export const deleteGroupById = async groupId => {
   try {
     const response = await api.delete(`/groups/${groupId}`, {
       withCredentials: true,
@@ -575,9 +665,12 @@ export const deleteGroupById = async (groupId) => {
 // Delete a member from a group
 export const deleteGroupMember = async (groupId, memberId) => {
   try {
-    const response = await api.delete(`/groups/${groupId}/members/${memberId}`, {
-      withCredentials: true,
-    });
+    const response = await api.delete(
+      `/groups/${groupId}/members/${memberId}`,
+      {
+        withCredentials: true,
+      }
+    );
     return response.data;
   } catch (error) {
     console.error('Error deleting group member:', error);
@@ -586,7 +679,7 @@ export const deleteGroupMember = async (groupId, memberId) => {
 };
 
 // Leave group (current user leaves the group)
-export const leaveGroup = async (groupId) => {
+export const leaveGroup = async groupId => {
   try {
     const response = await api.post(`/groups/${groupId}/leave`);
     return response.data;
@@ -601,13 +694,16 @@ export const leaveGroup = async (groupId) => {
  * @param {string|number} courseId - The course ID
  * @returns {Promise<Object>} Response with course groups data
  */
-export const getCourseGroups = async (courseId) => {
+export const getCourseGroups = async courseId => {
   try {
-    console.log("📤 groupService: Fetching groups for course:", courseId);
-    
+    console.log('📤 groupService: Fetching groups for course:', courseId);
+
     const response = await api.get(`/groups/course/${courseId}`);
-    
-    console.log("✅ groupService: Course groups fetched successfully:", response.data);
+
+    console.log(
+      '✅ groupService: Course groups fetched successfully:',
+      response.data
+    );
     return response.data;
   } catch (error) {
     console.error('Error fetching course groups:', error);
@@ -623,13 +719,20 @@ export const getCourseGroups = async (courseId) => {
  */
 export const addMultipleGroupMembers = async (groupId, userIds) => {
   try {
-    console.log("📤 groupService: Adding multiple members to group:", groupId, userIds);
-    
+    console.log(
+      '📤 groupService: Adding multiple members to group:',
+      groupId,
+      userIds
+    );
+
     const response = await api.post(`/groups/${groupId}/addMembers`, {
-      userIds: userIds
+      userIds: userIds,
     });
-    
-    console.log("✅ groupService: Multiple members added successfully:", response.data);
+
+    console.log(
+      '✅ groupService: Multiple members added successfully:',
+      response.data
+    );
     return response.data;
   } catch (error) {
     console.error('Error adding multiple group members:', error);
