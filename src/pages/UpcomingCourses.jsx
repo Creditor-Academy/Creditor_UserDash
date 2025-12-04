@@ -181,11 +181,11 @@ function UpcomingCourses() {
               key={course}
               onClick={() => setSelectedCourse(course)}
               className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#d10000] 
                 ${
                   selectedCourse === course
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md ring-1 ring-blue-500/40 hover:shadow-lg hover:brightness-105'
-                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-blue-200 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
+                    ? 'bg-[#d10000] text-white border-transparent shadow-md ring-1 ring-[#d10000]/40 hover:shadow-lg hover:brightness-105'
+                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#d10000]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
                 }
               `}
               aria-pressed={selectedCourse === course}
@@ -221,18 +221,13 @@ function UpcomingCourses() {
         ref={scrollRef}
         className="flex space-x-6 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar pb-6 px-1"
       >
-        {visibleCourses.map((item, index) => (
+        {visibleCourses.map(item => (
           <div
             key={item.id}
-            className={`flex-shrink-0 w-80 rounded-xl border border-white/20 overflow-hidden snap-start 
-              transition-all duration-500 group hover:opacity-100
-              ${index > 1 ? 'opacity-80' : 'opacity-100'} 
-              hover:shadow-2xl hover:-translate-y-2 hover:z-10 hover:border-blue-300/50`}
+            className="flex-shrink-0 w-80 rounded-xl border border-white/40 overflow-hidden snap-start 
+              transition-all duration-500 group hover:shadow-2xl hover:-translate-y-2 hover:z-10 bg-white"
             style={{
-              background:
-                'linear-gradient(to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0.05))',
-              backdropFilter: 'blur(12px)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 8px 24px 0 rgba(0, 0, 0, 0.12)',
             }}
           >
             {/* Image with frosted glass overlay */}

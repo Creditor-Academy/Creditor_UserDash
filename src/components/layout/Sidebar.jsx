@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 const SidebarItem = ({
   icon: Icon,
@@ -66,14 +67,16 @@ const SidebarItem = ({
       <button
         onClick={handleClick}
         className={cn(
-          'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left',
+          'sidebar-menu-item flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left',
           active
-            ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500 shadow-sm font-medium'
+            ? 'sidebar-menu-item-active bg-blue-50 text-blue-600 border-l-4 border-blue-500 shadow-sm font-medium'
             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
         )}
       >
         <Icon size={collapsed ? 24 : 20} />
-        {!collapsed && <span className="font-medium">{label}</span>}
+        {!collapsed && (
+          <span className="font-medium sidebar-menu-label">{label}</span>
+        )}
       </button>
     );
   }
@@ -87,10 +90,10 @@ const SidebarItem = ({
               <button
                 onClick={handleClick}
                 className={cn(
-                  'flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left',
+                  'sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left',
                   collapsed ? 'justify-center px-2' : '',
                   active
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
+                    ? 'sidebar-menu-item-active bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
                 )}
               >
@@ -106,7 +109,7 @@ const SidebarItem = ({
                 {!collapsed && (
                   <span
                     className={cn(
-                      'transition-colors duration-200',
+                      'sidebar-menu-label transition-colors duration-200',
                       active
                         ? 'font-semibold text-blue-700'
                         : 'text-gray-700 group-hover:text-gray-900'
@@ -121,10 +124,10 @@ const SidebarItem = ({
                 to={href}
                 onClick={handleClick}
                 className={cn(
-                  'flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group',
+                  'sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group',
                   collapsed ? 'justify-center px-2' : '',
                   active
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
+                    ? 'sidebar-menu-item-active bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
                 )}
               >
@@ -140,7 +143,7 @@ const SidebarItem = ({
                 {!collapsed && (
                   <span
                     className={cn(
-                      'transition-colors duration-200',
+                      'sidebar-menu-label transition-colors duration-200',
                       active
                         ? 'font-semibold text-blue-700'
                         : 'text-gray-700 group-hover:text-gray-900'
@@ -171,6 +174,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { isChristmasMode } = useContext(SeasonalThemeContext);
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -257,7 +261,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
 
   return (
     <motion.div
-      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
+      className="sidebar-panel h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
       variants={sidebarVariants}
       animate={collapsed ? 'collapsed' : 'expanded'}
       initial={false}
@@ -265,10 +269,11 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       {/* Header */}
       <div
         className={cn(
-          'flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
+          'sidebar-header relative flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
           collapsed ? 'justify-center' : 'justify-between'
         )}
       >
+        <div className="sidebar-lights" aria-hidden="true" />
         {!collapsed && (
           <motion.button
             onClick={handleLogoClick}
@@ -280,8 +285,18 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <BookOpen size={22} className="text-blue-600" />
+            <div className="relative sidebar-logo-mark">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                <BookOpen
+                  size={22}
+                  className="text-blue-600 christmas-logo-icon"
+                />
+              </div>
+              {isChristmasMode && (
+                <span className="sidebar-logo-hat" aria-hidden="true">
+                  🎅
+                </span>
+              )}
             </div>
             <div className="flex flex-col">
               <span className="text-white text-base leading-tight font-bold">
@@ -307,8 +322,18 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                    <BookOpen size={22} className="text-blue-600" />
+                  <div className="relative sidebar-logo-mark">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                      <BookOpen
+                        size={22}
+                        className="text-blue-600 christmas-logo-icon"
+                      />
+                    </div>
+                    {isChristmasMode && (
+                      <span className="sidebar-logo-hat" aria-hidden="true">
+                        🎅
+                      </span>
+                    )}
                   </div>
                 </motion.button>
               </TooltipTrigger>

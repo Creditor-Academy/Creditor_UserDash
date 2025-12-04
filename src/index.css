@@ -312,4 +312,642 @@
       transform: translate(0px, 0px) scale(1);
     }
   }
+
+  :root {
+    --christmas-red: #b11226;
+    --christmas-red-dark: #8b0000;
+    --christmas-red-medium: #a00000;
+    --christmas-red-light: #c11226;
+    --christmas-red-lighter: #e8d4d6;
+    --christmas-red-lightest: #f5e8e9;
+    --christmas-snow: #1a0000;
+  }
+
+  .christmas-theme .dashboard-shell {
+    background: linear-gradient(
+      135deg,
+      #f5e8e9 0%,
+      #e8d4d6 25%,
+      #e0c4c7 50%,
+      #e8d4d6 75%,
+      #f5e8e9 100%
+    );
+  }
+
+  .christmas-surface {
+    background: linear-gradient(
+      135deg,
+      #f5e8e9 0%,
+      #e8d4d6 25%,
+      #e0c4c7 50%,
+      #e8d4d6 75%,
+      #f5e8e9 100%
+    );
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-surface > main {
+    position: relative;
+    z-index: 2;
+  }
+
+  .snowfall-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 20px,
+        rgba(255, 255, 255, 0.8),
+        transparent
+      ),
+      radial-gradient(
+        3px 3px at 0px 40px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 10px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      );
+    background-size: 80px 80px;
+    /* Slightly faster background snowfall for a more lively effect */
+    animation: snowfall 12s linear infinite;
+  }
+
+  @keyframes snowfall {
+    0% {
+      background-position:
+        0 0,
+        0 0,
+        0 0;
+    }
+    100% {
+      background-position:
+        0 80px,
+        0 120px,
+        0 60px;
+    }
+  }
+
+  /* Snowflake Animation Container */
+  .snowflakes-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 35; /* Above sidebar (z-30) but below modals */
+    pointer-events: none;
+  }
+
+  /* Individual Snowflake */
+  .snowflake {
+    position: absolute;
+    top: -10px;
+    background: white;
+    border-radius: 50%;
+    box-shadow:
+      0 0 10px rgba(255, 255, 255, 0.8),
+      0 0 20px rgba(255, 255, 255, 0.6),
+      0 0 30px rgba(255, 255, 255, 0.4);
+    animation: snowflake-fall linear infinite;
+  }
+
+  /* Snowflake Fall Animation */
+  @keyframes snowflake-fall {
+    0% {
+      transform: translateY(0) translateX(0) rotate(0deg);
+    }
+    100% {
+      transform: translateY(100vh) translateX(var(--snowflake-drift, 0px))
+        rotate(360deg);
+    }
+  }
+
+  .christmas-hero-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: linear-gradient(
+      135deg,
+      #8b0000 0%,
+      #a00000 25%,
+      #b11226 50%,
+      #a00000 75%,
+      #8b0000 100%
+    );
+    color: #fff;
+    box-shadow: 0 25px 45px rgba(139, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-hero-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.25),
+      transparent 45%
+    );
+    pointer-events: none;
+  }
+
+  .christmas-hero-content {
+    flex: 1 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .christmas-hero-content h1 {
+    font-size: clamp(1.5rem, 3vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+
+  .christmas-hero-content p {
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 36rem;
+  }
+
+  .christmas-hero-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .christmas-hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .gift-pill,
+  .snow-pill {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+  }
+
+  .christmas-hero-visual {
+    flex: 0 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .christmas-hero-visual img {
+    width: 100%;
+    max-width: 280px;
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .floating-snow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      3px 3px at 30px 30px,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    animation: gentleSnow 12s linear infinite;
+  }
+
+  @keyframes gentleSnow {
+    0% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(20px);
+    }
+  }
+
+  .christmas-challenge-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1.75rem;
+    border-radius: 1.25rem;
+    background: var(--christmas-red);
+    color: #fff;
+    box-shadow: 0 20px 30px rgba(255, 77, 79, 0.2);
+  }
+
+  .christmas-challenge-card h2 {
+    font-size: 1.6rem;
+    margin: 0.25rem 0;
+  }
+
+  .challenge-badges {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .challenge-badges > div {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .challenge-badges .badge-icon {
+    font-size: 1.4rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-panel {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-lights {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(255, 65, 65, 0.967) 0 12px,
+      rgba(222, 27, 27, 0) 12px 16px
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-logo-mark {
+    display: inline-block;
+  }
+
+  .sidebar-logo-hat {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    pointer-events: none;
+  }
+
+  .christmas-theme .sidebar-panel {
+    background: linear-gradient(180deg, #f5e8e9 0%, #e8d4d6 50%, #f5e8e9 100%);
+    border-right-color: rgba(177, 18, 38, 0.2);
+  }
+
+  .christmas-theme .sidebar-header {
+    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 18px 35px rgba(139, 0, 0, 0.5);
+    color: #fff;
+  }
+
+  .christmas-theme .sidebar-header .text-blue-100,
+  .christmas-theme .sidebar-header .text-blue-600 {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .christmas-logo-icon {
+    color: #b11226 !important;
+    opacity: 0;
+  }
+
+  .christmas-theme .sidebar-lights {
+    opacity: 1;
+  }
+
+  .christmas-theme .sidebar-logo-hat {
+    opacity: 1;
+    animation: santaBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes santaBounce {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+  }
+
+  /* Profile Header Text in Christmas Theme */
+  .christmas-theme .profile-header-text .profile-name,
+  .christmas-theme .profile-header-text .profile-email {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .profile-header-text:hover .profile-name,
+  .christmas-theme .profile-header-text:hover .profile-email {
+    color: #8b0000 !important;
+  }
+
+  .sidebar-menu-item {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .sidebar-menu-item-active {
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.15);
+  }
+
+  .christmas-theme .sidebar-menu-item-active {
+    background: rgba(255, 255, 255, 0.15);
+    border-left-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+  }
+
+  .christmas-theme .sidebar-menu-label::after {
+    content: '❄️';
+    margin-left: 0.35rem;
+    font-size: 0.8rem;
+    opacity: 0.6;
+  }
+
+  .christmas-toggle-btn {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    transition:
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .christmas-theme .christmas-toggle-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--christmas-red);
+  }
+
+  .christmas-theme .christmas-toggle-btn:hover {
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.25);
+  }
+
+  .christmas-theme .app-header {
+    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 15px 40px rgba(139, 0, 0, 0.5);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-theme .christmas-app-header::after {
+    content: none;
+  }
+
+  .christmas-theme .app-header .text-gray-600,
+  .christmas-theme .app-header .text-gray-700,
+  .christmas-theme .app-header .text-gray-900 {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  .christmas-theme .app-header .text-blue-600 {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .app-header .bg-white,
+  .christmas-theme .app-header .bg-white\/80,
+  .christmas-theme .app-header .bg-white\/95 {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .christmas-theme .app-header .hover\:bg-gray-50:hover,
+  .christmas-theme .app-header .hover\:bg-gray-100:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .christmas-theme .app-header .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  .christmas-course-card {
+    border-color: rgba(255, 107, 107, 0.3);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .christmas-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px rgba(255, 107, 107, 0.18);
+  }
+
+  .course-holiday-label {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--christmas-red);
+    color: #fff;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 5px 10px rgba(255, 107, 107, 0.25);
+  }
+
+  .course-snowflake {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 1.1rem;
+    animation: twinkle 4s ease-in-out infinite;
+    opacity: 0.8;
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translateY(4px) rotate(10deg);
+      opacity: 1;
+    }
+  }
+
+  .christmas-theme button[class*='bg-blue-'],
+  .christmas-theme .bg-blue-600 {
+    background-color: var(--christmas-red) !important;
+    color: #fff !important;
+  }
+
+  .christmas-theme button[class*='bg-blue-']:hover,
+  .christmas-theme .bg-blue-600:hover {
+    background-color: #8b0000 !important;
+    box-shadow: 0 12px 18px rgba(139, 0, 0, 0.4);
+  }
+
+  /* Fix: Buttons with both bg-blue and border-blue should keep white text */
+  .christmas-theme button[class*='bg-blue-'][class*='border-blue-'],
+  .christmas-theme button.bg-blue-600.border-blue-600 {
+    color: #fff !important;
+  }
+
+  .christmas-theme button[class*='border-blue-']:not([class*='bg-blue-']),
+  .christmas-theme .border-blue-200:not([class*='bg-blue-']) {
+    border-color: var(--christmas-red) !important;
+    color: var(--christmas-red) !important;
+  }
+
+  .christmas-theme .progress-bar,
+  .christmas-theme .bg-gradient-to-r.from-blue-50 {
+    background-color: rgba(255, 107, 107, 0.2);
+  }
+
+  @media (max-width: 640px) {
+    .christmas-hero-banner {
+      padding: 1.5rem;
+    }
+
+    .challenge-badges {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* Login Page Christmas Theme */
+  .login-christmas-theme {
+    background: linear-gradient(
+      135deg,
+      #8b0000 0%,
+      #a00000 25%,
+      #b11226 50%,
+      #a00000 75%,
+      #8b0000 100%
+    );
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-snowfall-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 20px,
+        rgba(255, 255, 255, 0.8),
+        transparent
+      ),
+      radial-gradient(
+        3px 3px at 0px 40px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 10px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      );
+    background-size: 80px 80px;
+    animation: snowfall 18s linear infinite;
+  }
+
+  .login-snowflakes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .login-snowflake {
+    position: absolute;
+    top: -20px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    animation: loginSnowfall linear infinite;
+    user-select: none;
+  }
+
+  @keyframes loginSnowfall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0.3;
+    }
+  }
+
+  .login-christmas-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+      0 25px 50px rgba(139, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  }
+
+  .login-christmas-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      135deg,
+      rgba(177, 18, 38, 0.3),
+      rgba(11, 107, 58, 0.3)
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .login-christmas-theme input[type='email'],
+  .login-christmas-theme input[type='password'] {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .login-christmas-theme input[type='email']:focus,
+  .login-christmas-theme input[type='password']:focus {
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  }
+
+  .login-christmas-theme .text-blue-600 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .login-christmas-theme .text-blue-600:hover {
+    color: #fff !important;
+  }
 }
