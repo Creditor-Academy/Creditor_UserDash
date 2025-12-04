@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   FaSearch,
   FaCoins,
@@ -312,6 +318,375 @@ const PaymentDashboard = () => {
     open: false,
     user: null,
   });
+  const [creditHistory, setCreditHistory] = useState({}); // userId -> history array
+  const dateInputRef = useRef(null);
+  const [transactionsError, setTransactionsError] = useState('');
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [usageError, setUsageError] = useState('');
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [editTransactionModal, setEditTransactionModal] = useState({
+    open: false,
+    record: null,
+    amount: '',
+    reason: '',
+    error: '',
+  });
+  const [deleteTransactionModal, setDeleteTransactionModal] = useState({
+    open: false,
+    record: null,
+    error: '',
+  });
+  const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
+  const [isDeletingTransaction, setIsDeletingTransaction] = useState(false);
+
+  const fetchGrantDeductTransactions = useCallback(
+    async currentUsers => {
+      if (!Array.isArray(currentUsers) || currentUsers.length === 0) return;
+      setTransactionsError('');
+      setTransactionsLoading(true);
+
+      try {
+        const response = await api.get('/payment-order/grant-deduct', {
+          params: { type: 'all' },
+          withCredentials: true,
+        });
+
+        const records = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
+
+        if (!Array.isArray(records) || records.length === 0) {
+          return;
+        }
+
+        const userLookup = new Map(
+          currentUsers.map(user => [String(user.id), user])
+        );
+
+        setCreditHistory(prev => {
+          const next = { ...prev };
+
+          records.forEach(record => {
+            const userId = String(
+              record.user_id || record.userId || record.userid || ''
+            );
+            if (!userId) return;
+
+            const txnId =
+              record.id ||
+              `${userId}-${record.created_at || record.createdAt || record.timestamp || ''}-${record.amount}-${record.type}`;
+
+            const recordType = (record.type || '').toString().toLowerCase();
+            const mappedType =
+              recordType === 'credit'
+                ? 'grant'
+                : recordType === 'debit'
+                  ? 'deduct'
+                  : record.type || 'transaction';
+
+            const entry = {
+              transactionId: txnId,
+              userId,
+              userName: userLookup.get(userId)?.name || 'Unknown',
+              userEmail: userLookup.get(userId)?.email || '',
+              type: mappedType,
+              date:
+                record.created_at ||
+                record.createdAt ||
+                record.updated_at ||
+                record.timestamp ||
+                new Date().toISOString(),
+              credits: Number(record.amount) || 0,
+              description:
+                record.reason ||
+                (mappedType === 'grant'
+                  ? 'Credits granted'
+                  : mappedType === 'deduct'
+                    ? 'Credits deducted'
+                    : 'Credit transaction'),
+            };
+
+            const existingRaw = next[userId];
+            let existingEntries = [];
+
+            if (Array.isArray(existingRaw)) {
+              existingEntries = existingRaw.slice();
+            } else if (existingRaw && typeof existingRaw === 'object') {
+              const usage = Array.isArray(existingRaw.usage)
+                ? existingRaw.usage
+                : [];
+              const transactions = Array.isArray(existingRaw.transactions)
+                ? existingRaw.transactions
+                : [];
+              existingEntries = [...usage, ...transactions];
+            }
+
+            if (
+              entry.transactionId &&
+              existingEntries.some(
+                item => item.transactionId === entry.transactionId
+              )
+            ) {
+              return;
+            }
+
+            next[userId] = [entry, ...existingEntries].sort(
+              (a, b) => new Date(b.date) - new Date(a.date)
+            );
+          });
+
+          return next;
+        });
+      } catch (error) {
+        console.error(
+          'Failed to fetch grant/deduct transactions:',
+          error?.response?.data || error?.message || error
+        );
+        setTransactionsError('Failed to load credit transactions.');
+      } finally {
+        setTransactionsLoading(false);
+      }
+    },
+    [setCreditHistory]
+  );
+
+  const fetchUsageRecords = useCallback(
+    async currentUsers => {
+      if (!Array.isArray(currentUsers) || currentUsers.length === 0) return;
+      setUsageError('');
+      setUsageLoading(true);
+
+      try {
+        const response = await api.get('/payment-order/credits/allusage', {
+          // No excludedUserIds for now – can be wired later if needed
+          withCredentials: true,
+        });
+
+        const records = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
+
+        if (!Array.isArray(records) || records.length === 0) {
+          return;
+        }
+
+        const userLookup = new Map(
+          currentUsers.map(user => [String(user.id), user])
+        );
+
+        setCreditHistory(prev => {
+          const next = { ...prev };
+
+          records.forEach(record => {
+            const userId = String(
+              record.user_id ||
+                record.userId ||
+                record.userid ||
+                record.user?._id ||
+                ''
+            );
+            if (!userId) return;
+
+            const existingRaw = next[userId];
+            let existingEntries = [];
+
+            if (Array.isArray(existingRaw)) {
+              existingEntries = existingRaw.slice();
+            } else if (existingRaw && typeof existingRaw === 'object') {
+              const usageArr = Array.isArray(existingRaw.usage)
+                ? existingRaw.usage
+                : [];
+              const txArr = Array.isArray(existingRaw.transactions)
+                ? existingRaw.transactions
+                : [];
+              existingEntries = [...usageArr, ...txArr];
+            }
+
+            const usageType =
+              record.usage_type || record.usageType || record.type || 'Usage';
+
+            const entry = {
+              userId,
+              userName:
+                userLookup.get(userId)?.name ||
+                record.user?.first_name ||
+                'Unknown',
+              userEmail: userLookup.get(userId)?.email || '',
+              type: 'usage',
+              date:
+                record.used_at ||
+                record.created_at ||
+                record.createdAt ||
+                record.timestamp ||
+                new Date().toISOString(),
+              credits:
+                Number(record.credits) ||
+                Number(record.amount) ||
+                Number(record.value) ||
+                0,
+              description:
+                record.description ||
+                record.reason ||
+                record.note ||
+                usageType ||
+                'Credit usage',
+              usageType,
+            };
+
+            next[userId] = [entry, ...existingEntries].sort(
+              (a, b) => new Date(b.date) - new Date(a.date)
+            );
+          });
+
+          return next;
+        });
+      } catch (error) {
+        console.error(
+          'Failed to fetch credit usage records:',
+          error?.response?.data || error?.message || error
+        );
+        setUsageError('Failed to load credit usage records.');
+      } finally {
+        setUsageLoading(false);
+      }
+    },
+    [setCreditHistory]
+  );
+
+  const openEditTransactionModal = record => {
+    if (!record?.transactionId) return;
+    setEditTransactionModal({
+      open: true,
+      record,
+      amount: String(Math.abs(record.credits ?? '')),
+      reason: record.description || '',
+      error: '',
+    });
+  };
+
+  const handleTransactionUpdate = async () => {
+    if (!editTransactionModal.record?.transactionId || isUpdatingTransaction)
+      return;
+
+    const amountValue = Number(editTransactionModal.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setEditTransactionModal(prev => ({
+        ...prev,
+        error: 'Enter a valid amount greater than 0.',
+      }));
+      return;
+    }
+
+    setIsUpdatingTransaction(true);
+    setEditTransactionModal(prev => ({ ...prev, error: '' }));
+
+    try {
+      await api.patch(
+        `/payment-order/grant-deduct/${editTransactionModal.record.transactionId}`,
+        {
+          amount: amountValue,
+          reason: editTransactionModal.reason,
+        },
+        { withCredentials: true }
+      );
+
+      const userId = editTransactionModal.record.userId;
+      const transactionId = editTransactionModal.record.transactionId;
+      const newReason = editTransactionModal.reason;
+
+      setCreditHistory(prev => {
+        const next = { ...prev };
+        if (Array.isArray(next[userId])) {
+          next[userId] = next[userId].map(entry =>
+            entry.transactionId === transactionId
+              ? {
+                  ...entry,
+                  credits: amountValue,
+                  description:
+                    newReason || entry.description || 'Credit transaction',
+                }
+              : entry
+          );
+        }
+        return next;
+      });
+
+      setEditTransactionModal({
+        open: false,
+        record: null,
+        amount: '',
+        reason: '',
+        error: '',
+      });
+    } catch (error) {
+      setEditTransactionModal(prev => ({
+        ...prev,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to update transaction.',
+      }));
+    } finally {
+      setIsUpdatingTransaction(false);
+    }
+  };
+
+  const openDeleteTransactionModal = record => {
+    if (!record?.transactionId) return;
+    setDeleteTransactionModal({
+      open: true,
+      record,
+      error: '',
+    });
+  };
+
+  const handleTransactionDelete = async () => {
+    if (!deleteTransactionModal.record?.transactionId || isDeletingTransaction)
+      return;
+
+    setIsDeletingTransaction(true);
+    setDeleteTransactionModal(prev => ({ ...prev, error: '' }));
+
+    try {
+      await api.delete(
+        `/payment-order/grant-deduct/${deleteTransactionModal.record.transactionId}`,
+        { withCredentials: true }
+      );
+
+      const userId = deleteTransactionModal.record.userId;
+      const transactionId = deleteTransactionModal.record.transactionId;
+
+      setCreditHistory(prev => {
+        const next = { ...prev };
+        if (Array.isArray(next[userId])) {
+          next[userId] = next[userId].filter(
+            entry => entry.transactionId !== transactionId
+          );
+        }
+        return next;
+      });
+
+      setDeleteTransactionModal({
+        open: false,
+        record: null,
+        error: '',
+      });
+    } catch (error) {
+      setDeleteTransactionModal(prev => ({
+        ...prev,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Failed to delete transaction.',
+      }));
+    } finally {
+      setIsDeletingTransaction(false);
+    }
+  };
   const [userUsageModal, setUserUsageModal] = useState({
     open: false,
     user: null,
@@ -324,8 +699,6 @@ const PaymentDashboard = () => {
     dateTo: null,
   });
   const [changingMembership, setChangingMembership] = useState(null);
-  const [creditHistory, setCreditHistory] = useState({}); // userId -> history array
-  const dateInputRef = useRef(null);
 
   // Load real data
   useEffect(() => {
@@ -410,14 +783,10 @@ const PaymentDashboard = () => {
 
         setUsers(usersWithMembership);
 
-        // Generate dummy history for each user (keeping existing history functionality)
+        // Initialize empty history for each real user; will populate with real transactions later
         const historyMap = {};
         usersWithMembership.forEach(user => {
-          historyMap[user.id] = generateDummyHistory(
-            user.id,
-            user.name,
-            user.email
-          );
+          historyMap[user.id] = [];
         });
         setCreditHistory(historyMap);
       } catch (e) {
@@ -443,6 +812,12 @@ const PaymentDashboard = () => {
 
     loadUsers();
   }, []);
+
+  useEffect(() => {
+    if (!users || users.length === 0) return;
+    fetchGrantDeductTransactions(users);
+    fetchUsageRecords(users);
+  }, [users, fetchGrantDeductTransactions, fetchUsageRecords]);
 
   const enriched = useMemo(() => {
     return users.map(u => {
@@ -2022,6 +2397,16 @@ const PaymentDashboard = () => {
                   </button>
                 </div>
               </div>
+              {transactionsLoading && (
+                <div className="mb-3 px-4 py-2 rounded-lg bg-blue-50 text-sm text-blue-700 border border-blue-100">
+                  Loading credit transactions…
+                </div>
+              )}
+              {transactionsError && (
+                <div className="mb-3 px-4 py-2 rounded-lg bg-red-50 text-sm text-red-700 border border-red-100">
+                  {transactionsError}
+                </div>
+              )}
               <div className="space-y-3">
                 {filteredHistory.length === 0 ? (
                   <div className="p-6 text-center text-gray-600">
@@ -2074,6 +2459,25 @@ const PaymentDashboard = () => {
                           >
                             {h.type}
                           </span>
+                          {h.transactionId &&
+                            (h.type === 'grant' || h.type === 'deduct') && (
+                              <div className="flex items-center justify-end gap-2 mt-2 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTransactionModal(h)}
+                                  className="px-2 py-1 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openDeleteTransactionModal(h)}
+                                  className="px-2 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -2252,6 +2656,17 @@ const PaymentDashboard = () => {
                   </details>
                 </div>
               </div>
+
+              {usageLoading && (
+                <div className="px-4 py-2 rounded-lg bg-blue-50 text-sm text-blue-700 border border-blue-100">
+                  Loading usage records…
+                </div>
+              )}
+              {usageError && (
+                <div className="px-4 py-2 rounded-lg bg-red-50 text-sm text-red-700 border border-red-100">
+                  {usageError}
+                </div>
+              )}
 
               <div className="max-h-[60vh] overflow-y-auto">
                 {filteredUsageRecords.length === 0 ? (
@@ -3072,6 +3487,186 @@ const PaymentDashboard = () => {
                   </>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTransactionModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() =>
+              isUpdatingTransaction
+                ? null
+                : setEditTransactionModal({
+                    open: false,
+                    record: null,
+                    amount: '',
+                    reason: '',
+                    error: '',
+                  })
+            }
+          />
+          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h4 className="text-xl font-semibold text-gray-900">
+                  Edit Transaction
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {editTransactionModal.record?.type === 'grant'
+                    ? 'Grant record'
+                    : 'Deduct record'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  isUpdatingTransaction
+                    ? null
+                    : setEditTransactionModal({
+                        open: false,
+                        record: null,
+                        amount: '',
+                        reason: '',
+                        error: '',
+                      })
+                }
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Amount
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={editTransactionModal.amount}
+              onChange={e =>
+                setEditTransactionModal(prev => ({
+                  ...prev,
+                  amount: e.target.value,
+                }))
+              }
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4"
+            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason
+            </label>
+            <textarea
+              rows={3}
+              value={editTransactionModal.reason}
+              onChange={e =>
+                setEditTransactionModal(prev => ({
+                  ...prev,
+                  reason: e.target.value,
+                }))
+              }
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4 text-sm"
+              placeholder="Enter reason or note"
+            />
+            {editTransactionModal.error && (
+              <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                {editTransactionModal.error}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  isUpdatingTransaction
+                    ? null
+                    : setEditTransactionModal({
+                        open: false,
+                        record: null,
+                        amount: '',
+                        reason: '',
+                        error: '',
+                      })
+                }
+                className="px-4 py-2 rounded-md border hover:bg-gray-50"
+                disabled={isUpdatingTransaction}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleTransactionUpdate}
+                className={`px-4 py-2 rounded-md text-white ${
+                  isUpdatingTransaction
+                    ? 'bg-blue-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {isUpdatingTransaction ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTransactionModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() =>
+              isDeletingTransaction
+                ? null
+                : setDeleteTransactionModal({
+                    open: false,
+                    record: null,
+                    error: '',
+                  })
+            }
+          />
+          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-sm p-5">
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete Transaction
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              This will permanently remove the selected{' '}
+              {deleteTransactionModal.record?.type} record for{' '}
+              <span className="font-semibold">
+                {deleteTransactionModal.record?.userName}
+              </span>
+              .
+            </p>
+            {deleteTransactionModal.error && (
+              <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                {deleteTransactionModal.error}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  isDeletingTransaction
+                    ? null
+                    : setDeleteTransactionModal({
+                        open: false,
+                        record: null,
+                        error: '',
+                      })
+                }
+                className="px-4 py-2 rounded-md border hover:bg-gray-50"
+                disabled={isDeletingTransaction}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleTransactionDelete}
+                className={`px-4 py-2 rounded-md text-white ${
+                  isDeletingTransaction
+                    ? 'bg-red-300 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {isDeletingTransaction ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
           </div>
         </div>

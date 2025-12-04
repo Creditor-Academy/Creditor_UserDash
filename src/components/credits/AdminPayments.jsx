@@ -62,6 +62,7 @@ const AdminPayments = () => {
   const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [grantCreditsAmount, setGrantCreditsAmount] = useState('');
+  const [grantReason, setGrantReason] = useState('');
   const [userDetailModal, setUserDetailModal] = useState({
     open: false,
     user: null,
@@ -71,6 +72,7 @@ const AdminPayments = () => {
   const [deductCreditsAmount, setDeductCreditsAmount] = useState(10);
   const [isDeducting, setIsDeducting] = useState(false);
   const [deductMessage, setDeductMessage] = useState('');
+  const [deductReason, setDeductReason] = useState('');
 
   // Services search and filter states
   const [consultationsSearch, setConsultationsSearch] = useState('');
@@ -577,6 +579,31 @@ const AdminPayments = () => {
       setServicesError('Failed to load services data');
     } finally {
       setServicesLoading(false);
+    }
+  };
+
+  const logCreditTransaction = async ({ userId, amount, type, reason }) => {
+    try {
+      const transactionId =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `txn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      await api.post(
+        '/payment-order/grant-deduct',
+        {
+          id: transactionId,
+          user_id: userId,
+          amount,
+          type,
+          reason,
+        },
+        { withCredentials: true }
+      );
+    } catch (error) {
+      console.error(
+        '[AdminPayments] Failed to log credit transaction:',
+        error?.response?.data || error?.message
+      );
     }
   };
 
@@ -1810,6 +1837,7 @@ const AdminPayments = () => {
                       return;
                     }
                     setGrantCreditsAmount('');
+                    setGrantReason('');
                     setGrantModal({ open: true });
                   }}
                   className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
@@ -1837,6 +1865,7 @@ const AdminPayments = () => {
                       return;
                     }
                     setDeductModal({ open: true });
+                    setDeductReason('');
                   }}
                   className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
                     selectedUserIds.length !== 1
@@ -2181,7 +2210,10 @@ const AdminPayments = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div
                 className="absolute inset-0 bg-black/30"
-                onClick={() => setGrantModal({ open: false })}
+                onClick={() => {
+                  setGrantModal({ open: false });
+                  setGrantReason('');
+                }}
               />
               <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
                 <h4 className="text-xl font-semibold text-gray-900 mb-2">
@@ -2200,6 +2232,16 @@ const AdminPayments = () => {
                   min="1"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4"
                 />
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason (optional)
+                </label>
+                <textarea
+                  value={grantReason}
+                  onChange={e => setGrantReason(e.target.value)}
+                  rows={2}
+                  placeholder="Describe why credits were granted"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4 text-sm"
+                />
                 {grantMessage && (
                   <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
                     {grantMessage}
@@ -2208,7 +2250,10 @@ const AdminPayments = () => {
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => {
-                      if (!isGranting) setGrantModal({ open: false });
+                      if (!isGranting) {
+                        setGrantModal({ open: false });
+                        setGrantReason('');
+                      }
                     }}
                     className="px-4 py-2 rounded-md border hover:bg-gray-50"
                     disabled={isGranting}
@@ -2238,6 +2283,18 @@ const AdminPayments = () => {
                             credits: creditsValue,
                           },
                           { withCredentials: true }
+                        );
+                        const grantReasonText =
+                          grantReason.trim() || 'Manual grant';
+                        await Promise.all(
+                          selectedUserIds.map(userId =>
+                            logCreditTransaction({
+                              userId,
+                              amount: creditsValue,
+                              type: 'credit',
+                              reason: grantReasonText,
+                            })
+                          )
                         );
                         // Reflect change locally
                         setRealUsers(prev =>
@@ -2285,7 +2342,10 @@ const AdminPayments = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center">
               <div
                 className="absolute inset-0 bg-black/30"
-                onClick={() => setDeductModal({ open: false })}
+                onClick={() => {
+                  setDeductModal({ open: false });
+                  setDeductReason('');
+                }}
               />
               <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
                 <h4 className="text-xl font-semibold text-gray-900 mb-2">
@@ -2310,6 +2370,16 @@ const AdminPayments = () => {
                   min="1"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-200 mb-4"
                 />
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason (optional)
+                </label>
+                <textarea
+                  value={deductReason}
+                  onChange={e => setDeductReason(e.target.value)}
+                  rows={2}
+                  placeholder="Describe why credits were deducted"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-200 mb-4 text-sm"
+                />
                 {deductMessage && (
                   <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
                     {deductMessage}
@@ -2318,7 +2388,10 @@ const AdminPayments = () => {
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => {
-                      if (!isDeducting) setDeductModal({ open: false });
+                      if (!isDeducting) {
+                        setDeductModal({ open: false });
+                        setDeductReason('');
+                      }
                     }}
                     className="px-4 py-2 rounded-md border hover:bg-gray-50"
                     disabled={isDeducting}
@@ -2331,15 +2404,24 @@ const AdminPayments = () => {
                       try {
                         setDeductMessage('');
                         setIsDeducting(true);
+                        const targetUserId = selectedUserIds[0];
                         // Call backend to deduct credits
                         await api.post(
                           '/payment-order/admin/credits/deduct',
                           {
-                            userId: selectedUserIds[0],
+                            userId: targetUserId,
                             credits: deductCreditsAmount,
                           },
                           { withCredentials: true }
                         );
+                        const deductReasonText =
+                          deductReason.trim() || 'Manual deduction';
+                        await logCreditTransaction({
+                          userId: targetUserId,
+                          amount: deductCreditsAmount,
+                          type: 'debit',
+                          reason: deductReasonText,
+                        });
                         // Reflect change locally
                         setRealUsers(prev =>
                           prev.map(u =>
