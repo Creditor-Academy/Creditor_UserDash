@@ -25,6 +25,8 @@ import {
   CartesianGrid,
 } from 'recharts';
 import * as XLSX from 'xlsx';
+import { fetchAllUsersAdmin } from '@/services/userService';
+import { api } from '@/services/apiClient';
 function formatDate(value) {
   try {
     if (!value) return '—';
@@ -52,38 +54,21 @@ function daysLeft(expiresAt) {
 }
 
 function membershipUI(data) {
-  const d = daysLeft(data?.expiresAt || data?.nextBillingDate);
-  const Status = (data?.status || '').toString().toLowerCase() === 'active';
-  if (!Status || d == null)
+  const status = (data?.status || '').toString().toLowerCase();
+  if (status === 'active')
     return {
-      label: 'Expired',
-      tone: 'red',
-      bg: 'bg-red-50',
-      text: 'text-red-700',
-      bar: 0,
-    };
-  if (d <= 2)
-    return {
-      label: 'Expired',
-      tone: 'red',
-      bg: 'bg-red-50',
-      text: 'text-red-700',
-      bar: 0,
-    };
-  if (d <= 7)
-    return {
-      label: 'Expiring Soon',
-      tone: 'yellow',
-      bg: 'bg-amber-50',
-      text: 'text-amber-800',
-      bar: Math.max(10, Math.min(80, Math.round((d / 30) * 100))),
+      label: 'Active',
+      tone: 'green',
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-700',
+      bar: 100,
     };
   return {
-    label: 'Active',
-    tone: 'green',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    bar: Math.max(20, Math.min(100, Math.round((d / 30) * 100))),
+    label: 'Inactive',
+    tone: 'red',
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    bar: 0,
   };
 }
 
@@ -342,27 +327,121 @@ const PaymentDashboard = () => {
   const [creditHistory, setCreditHistory] = useState({}); // userId -> history array
   const dateInputRef = useRef(null);
 
-  // Load dummy data
+  // Load real data
   useEffect(() => {
     setLoading(true);
     setError('');
 
-    // Use dummy users
-    const dummyUsers = DEFAULT_USERS;
-    setUsers(dummyUsers);
+    const loadUsers = async () => {
+      try {
+        // Fetch real users and credits data
+        const [fetched, creditsRes] = await Promise.all([
+          fetchAllUsersAdmin(),
+          api
+            .get('/payment-order/admin/credits', { withCredentials: true })
+            .catch(() => ({ data: { data: [] } })),
+        ]);
 
-    // Generate dummy history for each user
-    const historyMap = {};
-    dummyUsers.forEach(user => {
-      historyMap[user.id] = generateDummyHistory(
-        user.id,
-        user.name,
-        user.email
-      );
-    });
-    setCreditHistory(historyMap);
+        const creditsArray = Array.isArray(creditsRes?.data?.data)
+          ? creditsRes.data.data
+          : Array.isArray(creditsRes?.data)
+            ? creditsRes.data
+            : [];
+        const idToCredits = new Map(
+          (creditsArray || []).map(c => [
+            String(c.id),
+            Number(c.total_credits) || 0,
+          ])
+        );
 
-    setLoading(false);
+        // Fetch membership status for each user from backend
+        const usersWithMembership = await Promise.all(
+          fetched.map(async u => {
+            const userId = u.id || u.user_id || u._id;
+            let membershipData = { status: 'CANCELLED', expiresAt: null };
+
+            try {
+              const membershipRes = await api.get(
+                `/payment-order/membership/status/${userId}`,
+                { withCredentials: true }
+              );
+              const membershipStatus = membershipRes?.data?.data;
+              if (membershipStatus && membershipStatus !== null) {
+                membershipData = {
+                  status:
+                    membershipStatus?.status?.toUpperCase() || 'CANCELLED',
+                  expiresAt: membershipStatus?.expiresAt || null,
+                };
+              }
+            } catch (err) {
+              console.warn(
+                `Failed to fetch membership for user ${userId}:`,
+                err
+              );
+            }
+
+            return {
+              id: userId,
+              name:
+                `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
+                u.name ||
+                u.username ||
+                u.email ||
+                'Unknown',
+              email: u.email || u.user_email || '',
+              membership: membershipData,
+              credits: (() => {
+                const idStr = String(userId || '');
+                const fromAdmin = idToCredits.has(idStr)
+                  ? idToCredits.get(idStr)
+                  : undefined;
+                const val =
+                  fromAdmin != null
+                    ? fromAdmin
+                    : u.total_credits != null
+                      ? u.total_credits
+                      : u.credits;
+                const num = Number(val);
+                return Number.isFinite(num) ? num : 0;
+              })(),
+            };
+          })
+        );
+
+        setUsers(usersWithMembership);
+
+        // Generate dummy history for each user (keeping existing history functionality)
+        const historyMap = {};
+        usersWithMembership.forEach(user => {
+          historyMap[user.id] = generateDummyHistory(
+            user.id,
+            user.name,
+            user.email
+          );
+        });
+        setCreditHistory(historyMap);
+      } catch (e) {
+        console.error('Failed to load users:', e);
+        setError('Failed to load users');
+
+        // Fallback to dummy data if API fails
+        const dummyUsers = DEFAULT_USERS;
+        setUsers(dummyUsers);
+        const historyMap = {};
+        dummyUsers.forEach(user => {
+          historyMap[user.id] = generateDummyHistory(
+            user.id,
+            user.name,
+            user.email
+          );
+        });
+        setCreditHistory(historyMap);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
   }, []);
 
   const enriched = useMemo(() => {
@@ -392,9 +471,7 @@ const PaymentDashboard = () => {
       const statusOk =
         filterStatus === 'all' ||
         (filterStatus === 'active' && u.membershipLabel === 'Active') ||
-        (filterStatus === 'expiring' &&
-          u.membershipLabel === 'Expiring Soon') ||
-        (filterStatus === 'expired' && u.membershipLabel === 'Expired');
+        (filterStatus === 'inactive' && u.membershipLabel === 'Inactive');
       let creditsOk = true;
       const v = Number(u.credits) || 0;
       if (filterCredits === 'zero') creditsOk = v === 0;
@@ -405,7 +482,7 @@ const PaymentDashboard = () => {
       else if (filterCredits === 'green') creditsOk = v >= 1000;
       return matches && statusOk && creditsOk;
     });
-    const weight = { Active: 0, 'Expiring Soon': 1, Expired: 2 };
+    const weight = { Active: 0, Inactive: 1 };
     return f.sort(
       (a, b) =>
         (weight[a.membershipLabel] ?? 99) - (weight[b.membershipLabel] ?? 99)
@@ -419,22 +496,110 @@ const PaymentDashboard = () => {
     return filtered.slice(start, start + perPage);
   }, [filtered, pageClamped, perPage]);
 
-  const changeMembership = (user, value) => {
+  const changeMembership = async (user, value) => {
     if (!user) return;
     setChangingMembership(user.id);
-    const next =
-      value === 'cancelled'
-        ? { status: 'CANCELLED', expiresAt: null }
-        : {
-            status: 'ACTIVE',
-            expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-          };
 
-    // Just update local state for dummy data
-    setUsers(prev =>
-      prev.map(u => (u.id === user.id ? { ...u, membership: next } : u))
-    );
-    setChangingMembership(null);
+    try {
+      if (value === 'cancelled') {
+        // Cancel membership
+        await api.patch(
+          `/payment-order/membership/${user.id}/cancel`,
+          {},
+          { withCredentials: true }
+        );
+      } else {
+        // Subscribe to membership
+        const subscriptionData = {
+          plan: value === 'monthly' ? 'monthly' : 'annual',
+          paymentMethod: 'credits',
+        };
+        await api.post(
+          `/payment-order/membership/subscribe/${user.id}`,
+          subscriptionData,
+          { withCredentials: true }
+        );
+      }
+
+      // Refresh user data after change
+      const [fetched, creditsRes] = await Promise.all([
+        fetchAllUsersAdmin(),
+        api
+          .get('/payment-order/admin/credits', { withCredentials: true })
+          .catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const creditsArray = Array.isArray(creditsRes?.data?.data)
+        ? creditsRes.data.data
+        : Array.isArray(creditsRes?.data)
+          ? creditsRes.data
+          : [];
+      const idToCredits = new Map(
+        (creditsArray || []).map(c => [
+          String(c.id),
+          Number(c.total_credits) || 0,
+        ])
+      );
+
+      // Update users with fresh membership data
+      const usersWithMembership = await Promise.all(
+        fetched.map(async u => {
+          const userId = u.id || u.user_id || u._id;
+          let membershipData = { status: 'CANCELLED', expiresAt: null };
+
+          try {
+            const membershipRes = await api.get(
+              `/payment-order/membership/status/${userId}`,
+              { withCredentials: true }
+            );
+            const membershipStatus = membershipRes?.data?.data;
+            if (membershipStatus && membershipStatus !== null) {
+              membershipData = {
+                status: membershipStatus?.status?.toUpperCase() || 'CANCELLED',
+                expiresAt: membershipStatus?.expiresAt || null,
+              };
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch membership for user ${userId}:`, err);
+          }
+
+          return {
+            id: userId,
+            name:
+              `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
+              u.name ||
+              u.username ||
+              u.email ||
+              'Unknown',
+            email: u.email || u.user_email || '',
+            membership: membershipData,
+            credits: (() => {
+              const idStr = String(userId || '');
+              const fromAdmin = idToCredits.has(idStr)
+                ? idToCredits.get(idStr)
+                : undefined;
+              const val =
+                fromAdmin != null
+                  ? fromAdmin
+                  : u.total_credits != null
+                    ? u.total_credits
+                    : u.credits;
+              const num = Number(val);
+              return Number.isFinite(num) ? num : 0;
+            })(),
+          };
+        })
+      );
+
+      setUsers(usersWithMembership);
+    } catch (error) {
+      console.error('Failed to change membership:', error);
+      alert(
+        `Failed to change membership: ${error?.response?.data?.message || error?.message || 'Unknown error'}`
+      );
+    } finally {
+      setChangingMembership(null);
+    }
   };
 
   const clearDateFilter = () => {
@@ -1079,35 +1244,102 @@ const PaymentDashboard = () => {
 
   const performExport = () => {
     try {
-      const { data, dateFrom, dateTo } = exportConfirmModal;
+      const { data, dateFrom, dateTo, isCourseExport, courseData, courseName } =
+        exportConfirmModal;
       if (!data) return;
 
-      const rows = data.map(u => ({
-        Date: formatDate(u.date),
-        UserName: u.userName || 'Unknown',
-        UserEmail: u.userEmail || '',
-        Description: u.description || '',
-        UsageType: u.usageType || '',
-        CatalogItem: u.catalogItem || '',
-        LessonName: u.lessonName || '',
-        ServiceType: u.serviceType || '',
-        Consultant: u.consultant || '',
-        Credits: Number(u.credits) || 0,
-      }));
+      if (isCourseExport && courseData) {
+        // Course-specific export
+        const wb = XLSX.utils.book_new();
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(rows);
-      XLSX.utils.book_append_sheet(wb, ws, 'Usage');
-      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      const dateRangeStr =
-        dateFrom && dateTo
-          ? `-${dateFrom}-to-${dateTo}`
-          : dateFrom
-            ? `-from-${dateFrom}`
-            : dateTo
-              ? `-to-${dateTo}`
-              : '';
-      XLSX.writeFile(wb, `all-usage${dateRangeStr}-${ts}.xlsx`);
+        // Summary sheet
+        const summaryRows = Array.from(courseData.values()).map(group => ({
+          'Course Name': group.courseName,
+          'Total Users': group.totalUsers.size,
+          'Total Credits Used': group.totalCredits,
+          'Total Purchases': group.records.length,
+        }));
+
+        const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+        XLSX.utils.book_append_sheet(wb, wsSummary, 'Course Summary');
+
+        // Detailed sheets for each course
+        courseData.forEach((group, courseName) => {
+          const detailRows = group.records.map(record => ({
+            'User ID': record.userId,
+            'User Name': record.userName || 'Unknown',
+            'User Email': record.userEmail || '',
+            Date: formatDate(record.date),
+            'Credits Used': Math.abs(Number(record.credits) || 0),
+            'Usage Type': record.usageType || '',
+            Description: record.description || '',
+            'Catalog Item': record.catalogItem || '',
+            'Lesson Name': record.lessonName || '',
+            'Service Type': record.serviceType || '',
+            Consultant: record.consultant || '',
+          }));
+
+          // Sanitize sheet name (Excel has restrictions)
+          const sheetName = courseName
+            .slice(0, 31)
+            .replace(/[\\/:*?"<>|]/g, '_');
+          const ws = XLSX.utils.json_to_sheet(detailRows);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        });
+
+        // Generate filename
+        const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        const courseStr = courseName
+          ? `-${courseName.slice(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}`
+          : '';
+        const dateRangeStr =
+          dateFrom && dateTo
+            ? `-${dateFrom}-to-${dateTo}`
+            : dateFrom
+              ? `-from-${dateFrom}`
+              : dateTo
+                ? `-to-${dateTo}`
+                : '';
+        const filename = `course-usage${courseStr}${dateRangeStr}-${ts}.xlsx`;
+
+        try {
+          XLSX.writeFile(wb, filename);
+        } catch (e) {
+          console.error('Export error:', e);
+          alert('Unable to export course usage data.');
+        }
+      } else {
+        // Regular export (existing logic)
+        const rows = data.map(u => ({
+          Date: formatDate(u.date),
+          UserName: u.userName || 'Unknown',
+          UserEmail: u.userEmail || '',
+          Description: u.description || '',
+          UsageType: u.usageType || '',
+          CatalogItem: u.catalogItem || '',
+          LessonName: u.lessonName || '',
+          ServiceType: u.serviceType || '',
+          Consultant: u.consultant || '',
+          Credits: Number(u.credits) || 0,
+        }));
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, 'Usage');
+        const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        const dateRangeStr =
+          dateFrom && dateTo
+            ? `-${dateFrom}-to-${dateTo}`
+            : dateFrom
+              ? `-from-${dateFrom}`
+              : dateTo
+                ? `-to-${dateTo}`
+                : '';
+        XLSX.writeFile(wb, `all-usage${dateRangeStr}-${ts}.xlsx`);
+        alert(
+          `✅ Successfully exported ${data.length} usage record${data.length !== 1 ? 's' : ''}!`
+        );
+      }
 
       // Close modal and show success
       setExportConfirmModal({
@@ -1116,10 +1348,10 @@ const PaymentDashboard = () => {
         stats: null,
         dateFrom: null,
         dateTo: null,
+        isCourseExport: false,
+        courseData: null,
+        courseName: null,
       });
-      alert(
-        `✅ Successfully exported ${data.length} usage record${data.length !== 1 ? 's' : ''}!`
-      );
     } catch (e) {
       console.error('Export error:', e);
       alert('Unable to export usage data.');
@@ -1185,6 +1417,149 @@ const PaymentDashboard = () => {
     } catch (e) {
       console.error('Export error (usage):', e);
       alert('Unable to export usage data.');
+    }
+  };
+
+  const exportUsageByCourse = (
+    courseName = null,
+    dateFrom = null,
+    dateTo = null
+  ) => {
+    try {
+      let dataToExport = allUsageRecords;
+
+      // Filter by course if specified
+      if (courseName) {
+        dataToExport = dataToExport.filter(h => {
+          const itemCourse =
+            h.catalogItem ||
+            h.lessonName ||
+            h.description ||
+            h.serviceType ||
+            'Other';
+          return itemCourse === courseName;
+        });
+      }
+
+      // Apply date range filter if provided
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        dataToExport = dataToExport.filter(h => {
+          const d = new Date(h.date);
+          if (Number.isNaN(d.getTime())) return false;
+          d.setHours(0, 0, 0, 0);
+          return d >= fromDate;
+        });
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        dataToExport = dataToExport.filter(h => {
+          const d = new Date(h.date);
+          if (Number.isNaN(d.getTime())) return false;
+          d.setHours(0, 0, 0, 0);
+          return d <= toDate;
+        });
+      }
+
+      if (dataToExport.length === 0) {
+        alert('No usage records found for the selected criteria.');
+        return;
+      }
+
+      // Calculate statistics for warning
+      const datesWithUsage = new Set();
+      dataToExport.forEach(h => {
+        const d = new Date(h.date);
+        if (!Number.isNaN(d.getTime())) {
+          datesWithUsage.add(d.toISOString().slice(0, 10));
+        }
+      });
+
+      let daysWithNoUsage = 0;
+      let dateRangeDays = 0;
+      if (dateFrom && dateTo) {
+        const start = new Date(dateFrom);
+        const end = new Date(dateTo);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      } else if (dateFrom) {
+        const start = new Date(dateFrom);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      } else if (dateTo) {
+        const start = new Date(
+          dataToExport[dataToExport.length - 1]?.date || new Date()
+        );
+        const end = new Date(dateTo);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(end - start);
+        dateRangeDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        daysWithNoUsage = dateRangeDays - datesWithUsage.size;
+      }
+
+      // Group by course for export
+      const courseGroups = new Map();
+      dataToExport.forEach(record => {
+        const course =
+          record.catalogItem ||
+          record.lessonName ||
+          record.description ||
+          record.serviceType ||
+          'Other';
+
+        if (!courseGroups.has(course)) {
+          courseGroups.set(course, {
+            courseName: course,
+            totalUsers: new Set(),
+            totalCredits: 0,
+            records: [],
+          });
+        }
+
+        const group = courseGroups.get(course);
+        group.totalUsers.add(record.userId);
+        group.totalCredits += Math.abs(Number(record.credits) || 0);
+        group.records.push(record);
+      });
+
+      // Store course data for export and show modal
+      setExportConfirmModal({
+        open: true,
+        data: dataToExport,
+        courseData: courseGroups,
+        isCourseExport: true,
+        courseName: courseName,
+        stats: {
+          totalRecords: dataToExport.length,
+          totalCourses: courseGroups.size,
+          totalUsers: Array.from(courseGroups.values()).reduce(
+            (sum, group) => sum + group.totalUsers.size,
+            0
+          ),
+          totalCredits: Array.from(courseGroups.values()).reduce(
+            (sum, group) => sum + group.totalCredits,
+            0
+          ),
+          datesWithUsage: datesWithUsage.size,
+          daysWithNoUsage,
+          dateRangeDays,
+          dateFrom,
+          dateTo,
+        },
+      });
+    } catch (e) {
+      console.error('Export error (course usage):', e);
+      alert('Unable to prepare course export data.');
     }
   };
 
@@ -1401,8 +1776,7 @@ const PaymentDashboard = () => {
                 >
                   <option value="all">All Memberships</option>
                   <option value="active">Active</option>
-                  <option value="expiring">Expiring Soon</option>
-                  <option value="expired">Expired</option>
+                  <option value="inactive">Inactive</option>
                 </select>
                 <select
                   value={filterCredits}
@@ -1508,13 +1882,6 @@ const PaymentDashboard = () => {
                                 </select>
                               );
                             })()}
-                            <div className="text-xs text-gray-600">
-                              Ends{' '}
-                              {formatDate(
-                                u.membership?.expiresAt ||
-                                  u.membership?.nextBillingDate
-                              )}
-                            </div>
                           </div>
                           {(() => {
                             const ui = creditUI(u.credits);
@@ -1768,6 +2135,75 @@ const PaymentDashboard = () => {
                       <div className="border-t my-1"></div>
                       <div className="p-2 space-y-2">
                         <div className="text-xs font-semibold text-gray-700">
+                          Export by Course:
+                        </div>
+                        <div className="relative group">
+                          <button
+                            onClick={() => {
+                              exportUsageByCourse();
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
+                          >
+                            All Courses (Summary + Details)
+                          </button>
+                        </div>
+                        <div className="relative group">
+                          <details className="group">
+                            <summary className="list-none cursor-pointer w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm flex items-center justify-between">
+                              <span>Select Specific Course</span>
+                              <span className="text-gray-400">▶</span>
+                            </summary>
+                            <div className="absolute left-0 mt-1 w-72 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-20">
+                              <div className="sticky top-0 bg-white border-b p-2">
+                                <input
+                                  type="text"
+                                  placeholder="Search courses..."
+                                  className="w-full text-xs rounded-md border border-gray-300 px-2 py-1"
+                                  onKeyUp={e => {
+                                    const searchTerm =
+                                      e.target.value.toLowerCase();
+                                    const items =
+                                      e.target.parentElement.parentElement.querySelectorAll(
+                                        '.course-item'
+                                      );
+                                    items.forEach(item => {
+                                      const text =
+                                        item.textContent.toLowerCase();
+                                      item.style.display = text.includes(
+                                        searchTerm
+                                      )
+                                        ? 'block'
+                                        : 'none';
+                                    });
+                                  }}
+                                />
+                              </div>
+                              {uniqueCourses.map(course => (
+                                <button
+                                  key={course}
+                                  onClick={() => {
+                                    exportUsageByCourse(course);
+                                    // Close the details menu
+                                    e.target.closest('details').open = false;
+                                  }}
+                                  className="course-item w-full text-left px-3 py-2 hover:bg-gray-50 text-sm truncate border-b"
+                                  title={course}
+                                >
+                                  {course}
+                                </button>
+                              ))}
+                              {uniqueCourses.length === 0 && (
+                                <div className="p-3 text-xs text-gray-500 text-center">
+                                  No courses found
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        </div>
+                      </div>
+                      <div className="border-t my-1"></div>
+                      <div className="p-2 space-y-2">
+                        <div className="text-xs font-semibold text-gray-700">
                           Date Filter:
                         </div>
                         <input
@@ -1796,6 +2232,20 @@ const PaymentDashboard = () => {
                           className="w-full px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs hover:bg-blue-700"
                         >
                           Export Filtered
+                        </button>
+                        <button
+                          onClick={() => {
+                            exportUsageByCourse(
+                              null,
+                              exportDateFrom || null,
+                              exportDateTo || null
+                            );
+                            setExportDateFrom('');
+                            setExportDateTo('');
+                          }}
+                          className="w-full px-3 py-1.5 rounded-md bg-green-600 text-white text-xs hover:bg-green-700"
+                        >
+                          Export Courses by Date
                         </button>
                       </div>
                     </div>
@@ -1877,7 +2327,9 @@ const PaymentDashboard = () => {
                       {exportStats.current.daysWithNoUsage > 0 && (
                         <span className="text-amber-700 ml-1">
                           • ⚠️ {exportStats.current.daysWithNoUsage} day
-                          {exportStats.current.daysWithNoUsage !== 1 ? 's' : ''}{' '}
+                          {exportStats.current.daysWithNoUsage !== 1
+                            ? 's'
+                            : ''}{' '}
                           with no usage
                         </span>
                       )}
@@ -2048,36 +2500,94 @@ const PaymentDashboard = () => {
                   <div className="text-sm text-gray-600 capitalize">
                     Showing: {usageCategory}
                   </div>
-                  <div className="relative">
-                    <details className="group inline-block">
-                      <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm">
-                        <FaDownload /> Export Usage
-                      </summary>
-                      <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg p-1 z-10">
-                        <button
-                          onClick={() => exportUsage('all')}
-                          className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
-                        >
-                          All
-                        </button>
-                        {[
-                          'catalog',
-                          'courses',
-                          'modules',
-                          'lessons',
-                          'consultation',
-                          'website',
-                        ].map(c => (
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <details className="group inline-block">
+                        <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 text-sm">
+                          <FaDownload /> Export Usage
+                        </summary>
+                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg p-1 z-10">
                           <button
-                            key={c}
-                            onClick={() => exportUsage(c)}
-                            className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm capitalize"
+                            onClick={() => exportUsage('all')}
+                            className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
                           >
-                            {c}
+                            All
                           </button>
-                        ))}
-                      </div>
-                    </details>
+                          {[
+                            'catalog',
+                            'courses',
+                            'modules',
+                            'lessons',
+                            'consultation',
+                            'website',
+                          ].map(c => (
+                            <button
+                              key={c}
+                              onClick={() => exportUsage(c)}
+                              className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm capitalize"
+                            >
+                              {c}
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                    <div className="relative">
+                      <details className="group inline-block">
+                        <summary className="list-none cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 text-sm">
+                          <FaDownload /> Export by Course
+                        </summary>
+                        <div className="absolute right-0 mt-2 w-72 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-20">
+                          <div className="sticky top-0 bg-white border-b p-2">
+                            <input
+                              type="text"
+                              placeholder="Search courses..."
+                              className="w-full text-xs rounded-md border border-gray-300 px-2 py-1"
+                              onKeyUp={e => {
+                                const searchTerm = e.target.value.toLowerCase();
+                                const items =
+                                  e.target.parentElement.parentElement.querySelectorAll(
+                                    '.course-item-analytics'
+                                  );
+                                items.forEach(item => {
+                                  const text = item.textContent.toLowerCase();
+                                  item.style.display = text.includes(searchTerm)
+                                    ? 'block'
+                                    : 'none';
+                                });
+                              }}
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              exportUsageByCourse();
+                              e.target.closest('details').open = false;
+                            }}
+                            className="course-item-analytics w-full text-left px-3 py-2 hover:bg-gray-50 text-sm border-b font-semibold"
+                          >
+                            All Courses (Summary + Details)
+                          </button>
+                          {uniqueCourses.map(course => (
+                            <button
+                              key={course}
+                              onClick={() => {
+                                exportUsageByCourse(course);
+                                e.target.closest('details').open = false;
+                              }}
+                              className="course-item-analytics w-full text-left px-3 py-2 hover:bg-gray-50 text-sm truncate border-b"
+                              title={course}
+                            >
+                              {course}
+                            </button>
+                          ))}
+                          {uniqueCourses.length === 0 && (
+                            <div className="p-3 text-xs text-gray-500 text-center">
+                              No courses found
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    </div>
                   </div>
                 </div>
 
@@ -2294,28 +2804,6 @@ const PaymentDashboard = () => {
                       );
                       return <span className={ui.text}>{ui.label}</span>;
                     })()}
-                  </div>
-                </div>
-                <div className="border rounded-lg p-3">
-                  <div className="text-sm text-gray-600">Last Paid</div>
-                  <div className="text-lg font-semibold">
-                    {(() => {
-                      const hist = creditHistory[userDetailModal.user.id] || [];
-                      const historyList = Array.isArray(hist) ? hist : [];
-                      const lastGrant = historyList
-                        .filter(h => h.type === 'grant')
-                        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                      return formatDate(lastGrant?.date);
-                    })()}
-                  </div>
-                </div>
-                <div className="border rounded-lg p-3">
-                  <div className="text-sm text-gray-600">Expires</div>
-                  <div className="text-lg font-semibold">
-                    {formatDate(
-                      userDetailModal.user.membership?.expiresAt ||
-                        userDetailModal.user.membership?.nextBillingDate
-                    )}
                   </div>
                 </div>
               </div>
@@ -2609,16 +3097,22 @@ const PaymentDashboard = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900">
-                    Export Usage Records
+                    {exportConfirmModal.isCourseExport
+                      ? 'Export Course Usage Records'
+                      : 'Export Usage Records'}
                   </h4>
                   <p className="text-sm text-gray-600 mt-1">
-                    {exportConfirmModal.dateFrom && exportConfirmModal.dateTo
-                      ? `Exporting usage records from ${formatDate(exportConfirmModal.dateFrom)} to ${formatDate(exportConfirmModal.dateTo)}`
-                      : exportConfirmModal.dateFrom
-                        ? `Exporting usage records from ${formatDate(exportConfirmModal.dateFrom)}`
-                        : exportConfirmModal.dateTo
-                          ? `Exporting usage records until ${formatDate(exportConfirmModal.dateTo)}`
-                          : 'Exporting all usage records'}
+                    {exportConfirmModal.isCourseExport
+                      ? exportConfirmModal.courseName
+                        ? `Exporting usage records for course: ${exportConfirmModal.courseName}`
+                        : `Exporting usage records for ${exportConfirmModal.stats?.totalCourses || 0} course${(exportConfirmModal.stats?.totalCourses || 0) !== 1 ? 's' : ''}`
+                      : exportConfirmModal.dateFrom && exportConfirmModal.dateTo
+                        ? `Exporting usage records from ${formatDate(exportConfirmModal.dateFrom)} to ${formatDate(exportConfirmModal.dateTo)}`
+                        : exportConfirmModal.dateFrom
+                          ? `Exporting usage records from ${formatDate(exportConfirmModal.dateFrom)}`
+                          : exportConfirmModal.dateTo
+                            ? `Exporting usage records until ${formatDate(exportConfirmModal.dateTo)}`
+                            : 'Exporting all usage records'}
                   </p>
                 </div>
                 <button
@@ -2630,6 +3124,9 @@ const PaymentDashboard = () => {
                       stats: null,
                       dateFrom: null,
                       dateTo: null,
+                      isCourseExport: false,
+                      courseData: null,
+                      courseName: null,
                     })
                   }
                   className="text-gray-400 hover:text-gray-600 text-xl leading-none"
@@ -2666,22 +3163,63 @@ const PaymentDashboard = () => {
                   Summary:
                 </div>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">
-                      Total records:
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {exportConfirmModal.stats.totalRecords}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">
-                      Dates with usage:
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {exportConfirmModal.stats.datesWithUsage}
-                    </span>
-                  </div>
+                  {exportConfirmModal.isCourseExport ? (
+                    <>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Total courses:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {exportConfirmModal.stats?.totalCourses || 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Total users:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {exportConfirmModal.stats?.totalUsers || 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Total credits used:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {(
+                            exportConfirmModal.stats?.totalCredits || 0
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Total records:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {exportConfirmModal.stats?.totalRecords || 0}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Total records:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {exportConfirmModal.stats.totalRecords}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">
+                          Dates with usage:
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {exportConfirmModal.stats.datesWithUsage}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   {exportConfirmModal.dateFrom && exportConfirmModal.dateTo && (
                     <>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
