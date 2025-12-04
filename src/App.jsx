@@ -115,6 +115,7 @@ import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
 // import  ModuleView  from "@/pages/ModuleView";
 import LessonView from '@lessonbuilder/pages/LessonView';
+import LessonResourcesPage from '@/pages/LessonResourcesPage';
 import InstructionalDesign from '@/pages/InstructionalDesign';
 import PricingPage from '@/pages/Pricing';
 import ExpertAthena from './pages/Expert_athena';
@@ -386,6 +387,10 @@ function App() {
                       path="modules/:moduleId/lessons"
                       element={<LessonView />}
                     />
+                    <Route
+                      path="modules/:moduleId/lessons/:lessonId/resources"
+                      element={<LessonResourcesPage />}
+                    />
                     <Route path="module/:moduleId">
                       <Route index element={<ModuleDetail />} />
                       <Route path="lessons" element={<ModuleLessonsView />} />
@@ -398,6 +403,10 @@ function App() {
                         <Route path="detail" element={<LessonDetail />} />
                         <Route path="builder" element={<LessonBuilder />} />
                         <Route path="preview" element={<LessonPreview />} />
+                        <Route
+                          path="resources"
+                          element={<LessonResourcesPage />}
+                        />
                       </Route>
                     </Route>
                   </Route>

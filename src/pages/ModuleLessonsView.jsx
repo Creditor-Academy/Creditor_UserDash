@@ -23,6 +23,8 @@ import {
   Upload,
   Link,
   ExternalLink,
+  FolderOpen,
+  Trash2 as Trash2Icon,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -122,6 +124,18 @@ const ModuleLessonsView = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [thumbnailMode, setThumbnailMode] = useState('url'); // 'url' or 'upload'
   const [editingContext, setEditingContext] = useState(null); // 'create' or 'update'
+
+  // Lesson resources state
+  const [showResourcesDialog, setShowResourcesDialog] = useState(false);
+  const [selectedLessonForResources, setSelectedLessonForResources] =
+    useState(null);
+  const [lessonResources, setLessonResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+  const [uploadingResource, setUploadingResource] = useState(false);
+  const [resourceFile, setResourceFile] = useState(null);
+  const [resourceTitle, setResourceTitle] = useState('');
+  const [resourceDescription, setResourceDescription] = useState('');
+  const [deletingResourceId, setDeletingResourceId] = useState(null);
 
   // Fetch module and lessons data
   useEffect(() => {
@@ -984,6 +998,170 @@ const ModuleLessonsView = () => {
     }
   };
 
+  // Dummy resources data
+  const getDummyResources = lessonId => {
+    // Return dummy resources based on lesson ID
+    return [
+      {
+        id: '1',
+        title: 'Sample PDF Document',
+        description: 'A sample PDF resource for this lesson',
+        fileName: 'sample-document.pdf',
+        fileType: 'application/pdf',
+        fileSize: 1024000, // 1MB
+        url: 'https://example.com/resources/sample-document.pdf',
+        uploadDate: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        title: 'Video Tutorial',
+        description: 'Instructional video for this lesson',
+        fileName: 'tutorial-video.mp4',
+        fileType: 'video/mp4',
+        fileSize: 5242880, // 5MB
+        url: 'https://example.com/resources/tutorial-video.mp4',
+        uploadDate: new Date(Date.now() - 86400000).toISOString(),
+      },
+    ];
+  };
+
+  // Lesson Resources Handlers
+  const handleOpenResourcesDialog = async lesson => {
+    setSelectedLessonForResources(lesson);
+    setShowResourcesDialog(true);
+    setResourceFile(null);
+    setResourceTitle('');
+    setResourceDescription('');
+    // Use dummy data instead of API call
+    setLoadingResources(true);
+    setTimeout(() => {
+      const dummyResources = getDummyResources(lesson.id);
+      setLessonResources(dummyResources);
+      setLoadingResources(false);
+    }, 300);
+  };
+
+  const handleCloseResourcesDialog = () => {
+    setShowResourcesDialog(false);
+    setSelectedLessonForResources(null);
+    setLessonResources([]);
+    setResourceFile(null);
+    setResourceTitle('');
+    setResourceDescription('');
+  };
+
+  const handleResourceFileChange = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 500 * 1024 * 1024; // 500MB
+    if (file.size > maxSize) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select a file under 500MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setResourceFile(file);
+    if (!resourceTitle) {
+      setResourceTitle(file.name);
+    }
+  };
+
+  const handleUploadResource = async () => {
+    if (!selectedLessonForResources) {
+      toast({
+        title: 'Select a Lesson',
+        description: 'Please select a lesson before uploading resources.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!resourceFile) {
+      toast({
+        title: 'Select a File',
+        description: 'Please choose a file to upload.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUploadingResource(true);
+
+      // Simulate upload delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Create dummy resource object
+      const newResource = {
+        id: Date.now().toString(),
+        title: resourceTitle || resourceFile.name,
+        description: resourceDescription,
+        fileName: resourceFile.name,
+        fileType: resourceFile.type,
+        fileSize: resourceFile.size,
+        url: URL.createObjectURL(resourceFile),
+        uploadDate: new Date().toISOString(),
+      };
+
+      // Add to resources list (dummy data)
+      setLessonResources(prev => [newResource, ...prev]);
+
+      toast({
+        title: 'Success',
+        description: 'Resource uploaded successfully!',
+      });
+
+      // Reset form
+      setResourceFile(null);
+      setResourceTitle('');
+      setResourceDescription('');
+      if (document.getElementById('resource-file-input')) {
+        document.getElementById('resource-file-input').value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading resource:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload resource. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingResource(false);
+    }
+  };
+
+  const handleDeleteResource = async resourceId => {
+    if (!selectedLessonForResources) return;
+
+    try {
+      setDeletingResourceId(resourceId);
+
+      // Simulate delete delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Remove from resources list (dummy data)
+      setLessonResources(prev => prev.filter(r => r.id !== resourceId));
+
+      toast({
+        title: 'Success',
+        description: 'Resource deleted successfully!',
+      });
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete resource. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingResourceId(null);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6 flex items-center gap-4">
@@ -1132,7 +1310,7 @@ const ModuleLessonsView = () => {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="pt-0">
+              <CardFooter className="pt-0 flex flex-col gap-2">
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
@@ -1141,13 +1319,13 @@ const ModuleLessonsView = () => {
                   <Play className="h-4 w-4" /> View Lesson
                 </Button>
                 <div
-                  className="flex items-center space-x-2 ml-4"
+                  className="flex items-center justify-center gap-2 w-full"
                   onClick={e => e.stopPropagation()}
                 >
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
+                    className="h-8 w-8 flex-shrink-0 text-blue-600 hover:bg-blue-50 border-blue-200"
                     onClick={e => {
                       e.stopPropagation();
                       handleOpenUpdateDialog(lesson);
@@ -1160,7 +1338,7 @@ const ModuleLessonsView = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-red-600 hover:bg-red-50 border-red-200"
+                    className="h-8 w-8 flex-shrink-0 text-red-600 hover:bg-red-50 border-red-200"
                     onClick={e => {
                       e.stopPropagation();
                       setLessonToDelete(lesson);
@@ -1172,7 +1350,7 @@ const ModuleLessonsView = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-green-600 hover:bg-green-50 border-green-200"
+                    className="h-8 w-8 flex-shrink-0 text-green-600 hover:bg-green-50 border-green-200"
                     onClick={e => {
                       e.stopPropagation();
                       handleOpenScormDialog(lesson);
@@ -1180,6 +1358,18 @@ const ModuleLessonsView = () => {
                   >
                     <Plus className="h-4 w-4" />
                     <span className="sr-only">Add SCORM</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0 text-purple-600 hover:bg-purple-50 border-purple-200"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleOpenResourcesDialog(lesson);
+                    }}
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="sr-only">Upload Resources</span>
                   </Button>
                 </div>
               </CardFooter>
@@ -1850,6 +2040,206 @@ const ModuleLessonsView = () => {
           title="Edit Thumbnail Image"
         />
       )}
+
+      {/* Upload Resources Dialog */}
+      <Dialog
+        open={showResourcesDialog}
+        onOpenChange={open => !open && handleCloseResourcesDialog()}
+      >
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLessonForResources
+                ? `Manage Resources for "${selectedLessonForResources.title || 'Lesson'}"`
+                : 'Upload Resources'}
+            </DialogTitle>
+            <DialogDescription>
+              Upload and manage resources for this lesson. Students can download
+              these resources.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 py-4">
+            {/* Upload Section */}
+            <div className="space-y-4 border-b pb-4">
+              <h3 className="text-lg font-semibold">Upload New Resource</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-file-input">File *</Label>
+                <Input
+                  id="resource-file-input"
+                  type="file"
+                  onChange={handleResourceFileChange}
+                  disabled={uploadingResource}
+                  className="cursor-pointer"
+                />
+                {resourceFile && (
+                  <p className="text-xs text-gray-600">
+                    Selected: {resourceFile.name} (
+                    {(resourceFile.size / (1024 * 1024)).toFixed(2)} MB)
+                  </p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Maximum file size: 500MB. Supported formats: PDF, Images,
+                  Videos, Documents.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-title">Title *</Label>
+                <Input
+                  id="resource-title"
+                  value={resourceTitle}
+                  onChange={e => setResourceTitle(e.target.value)}
+                  placeholder="Enter resource title"
+                  disabled={uploadingResource}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-description">Description</Label>
+                <Textarea
+                  id="resource-description"
+                  value={resourceDescription}
+                  onChange={e => setResourceDescription(e.target.value)}
+                  placeholder="Enter resource description (optional)"
+                  rows={3}
+                  disabled={uploadingResource}
+                />
+              </div>
+
+              <Button
+                onClick={handleUploadResource}
+                disabled={!resourceFile || !resourceTitle || uploadingResource}
+                className="w-full"
+              >
+                {uploadingResource ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Resource
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Existing Resources Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Existing Resources</h3>
+
+              {loadingResources ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : lessonResources.length > 0 ? (
+                <div className="space-y-2">
+                  {lessonResources.map((resource, index) => {
+                    const resourceUrl =
+                      resource.url ||
+                      resource.fileUrl ||
+                      resource.assetUrl ||
+                      resource.asset_url ||
+                      resource.Location;
+                    const fileName =
+                      resource.fileName ||
+                      resource.filename ||
+                      resource.title ||
+                      `Resource ${index + 1}`;
+
+                    return (
+                      <Card key={resource.id || resource._id || index}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm mb-1 line-clamp-1">
+                                {resource.title || fileName}
+                              </h4>
+                              {resource.description && (
+                                <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                                  {resource.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span>{fileName}</span>
+                                {resource.fileSize && (
+                                  <span>
+                                    {(
+                                      resource.fileSize /
+                                      (1024 * 1024)
+                                    ).toFixed(2)}{' '}
+                                    MB
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {resourceUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(
+                                      resourceUrl,
+                                      '_blank',
+                                      'noopener,noreferrer'
+                                    )
+                                  }
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteResource(
+                                    resource.id || resource._id
+                                  )
+                                }
+                                disabled={
+                                  deletingResourceId ===
+                                  (resource.id || resource._id)
+                                }
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                {deletingResourceId ===
+                                (resource.id || resource._id) ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2Icon className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No resources uploaded yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCloseResourcesDialog}
+              disabled={uploadingResource}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
