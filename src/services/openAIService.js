@@ -1,6 +1,6 @@
 // OpenAI Service - Single Provider Solution
 // Simplified AI service using only OpenAI for all AI operations
-import OpenAI from 'openai';
+// import OpenAI from 'openai';
 
 /**
  * OpenAI Service - Handles all AI operations using OpenAI API
