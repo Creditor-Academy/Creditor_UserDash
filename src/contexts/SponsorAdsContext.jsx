@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import mockSponsorAds from '@/data/mockSponsorAds';
+import { getAllSponsorAds } from '@/services/sponsorAdsService';
 
 const STORAGE_KEY = 'lms_sponsor_ads';
 const TIER_PRIORITY = {
@@ -16,6 +17,14 @@ const TIER_PRIORITY = {
 };
 
 const SponsorAdsContext = createContext(null);
+
+const POSITION_TO_PLACEMENT = {
+  DASHBOARD: 'dashboard_banner',
+  SIDEBAR: 'dashboard_sidebar',
+  COURSE_PLAYER: 'course_player_sidebar',
+  COURSE_LISTING: 'course_listing_tile',
+  POPUP: 'popup',
+};
 
 const applyRuntimeStatus = ad => {
   if (!ad) return 'Inactive';
@@ -42,6 +51,27 @@ const hydrateAd = ad => ({
   dailyImpressions: [],
   ...ad,
 });
+
+const normalizeBackendAd = ad =>
+  hydrateAd({
+    id: ad.id,
+    sponsorName: ad.sponsor_name || ad.sponsorName,
+    title: ad.title,
+    description: ad.description,
+    mediaUrl: ad.image_url || ad.mediaUrl,
+    mediaType: 'image',
+    placement:
+      POSITION_TO_PLACEMENT[ad.position] || ad.placement || 'dashboard_banner',
+    ctaUrl: ad.link_url,
+    ctaText: ad.link_url ? 'Learn more' : '',
+    startDate: ad.start_date || ad.startDate,
+    endDate: ad.end_date || ad.endDate,
+    tier: ad.tier || 'Gold',
+    status: ad.status === 'ACTIVE' ? 'Active' : ad.status || 'Active',
+    impressions: ad.view_count ?? ad.impressions ?? 0,
+    clicks: ad.click_count ?? ad.clicks ?? 0,
+    organizationId: ad.organization_id ?? ad.organizationId ?? null,
+  });
 
 const loadInitialAds = () => {
   if (typeof window === 'undefined') {
@@ -96,10 +126,47 @@ const sortByPriority = (a, b) => {
 
 export const SponsorAdsProvider = ({ children }) => {
   const [ads, setAds] = useState(loadInitialAds);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
 
   useEffect(() => {
     persistAds(ads);
   }, [ads]);
+
+  const refreshAds = useCallback(async () => {
+    try {
+      setIsSyncing(true);
+      const response = await getAllSponsorAds();
+      const backendAds = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : response?.ads;
+      if (backendAds && backendAds.length) {
+        setAds(backendAds.map(normalizeBackendAd));
+        setHasLoadedFromBackend(true);
+        return backendAds;
+      }
+      return backendAds;
+    } catch (error) {
+      console.warn(
+        '[SponsorAds] Failed to sync from backend, using local data',
+        error
+      );
+      if (!hasLoadedFromBackend) {
+        setAds(loadInitialAds());
+      }
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [hasLoadedFromBackend]);
+
+  useEffect(() => {
+    refreshAds().catch(() => {
+      // already logged; fallback handled by refreshAds
+    });
+  }, [refreshAds]);
 
   const addAd = useCallback(adPayload => {
     setAds(prev => [
@@ -231,6 +298,8 @@ export const SponsorAdsProvider = ({ children }) => {
       getPrimaryAdForPlacement,
       analytics,
       getRuntimeStatus: applyRuntimeStatus,
+      refreshAds,
+      isSyncing,
     }),
     [
       ads,
@@ -241,6 +310,8 @@ export const SponsorAdsProvider = ({ children }) => {
       getActiveAdsByPlacement,
       getPrimaryAdForPlacement,
       analytics,
+      refreshAds,
+      isSyncing,
     ]
   );
 

@@ -96,7 +96,7 @@ const initialForm = {
 };
 
 export const SponsorAdCreate = () => {
-  const { addAd } = useSponsorAds();
+  const { addAd, refreshAds } = useSponsorAds();
   const [formState, setFormState] = useState(initialForm);
   const [mediaPreview, setMediaPreview] = useState('');
   const [mediaFile, setMediaFile] = useState(null);
@@ -219,6 +219,7 @@ export const SponsorAdCreate = () => {
       }
 
       toast.success('Sponsor ad created successfully!');
+      refreshAds?.().catch(() => {});
       setFormState(initialForm);
       setMediaPreview('');
       setMediaFile(null);
