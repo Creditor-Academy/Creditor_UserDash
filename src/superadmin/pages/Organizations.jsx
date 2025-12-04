@@ -14,6 +14,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 import apiConfig from '../../config/apiConfig';
+import AddOrganizationModal from '../components/AddOrganizationModal';
 
 export default function Organizations() {
   const { theme } = useTheme();
@@ -28,6 +29,11 @@ export default function Organizations() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orgToDelete, setOrgToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [isLoadingOrgDetails, setIsLoadingOrgDetails] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editingOrg, setEditingOrg] = useState(null);
 
   // Fetch organizations from API
   useEffect(() => {
@@ -90,6 +96,42 @@ export default function Organizations() {
     indexOfLastOrg
   );
   const totalPages = Math.ceil(filteredOrganizations.length / itemsPerPage);
+
+  // View organization details
+  const handleViewClick = async (org, e) => {
+    if (e) e.stopPropagation();
+    setViewModalOpen(true);
+    setIsLoadingOrgDetails(true);
+    try {
+      const baseURL = apiConfig.backend.baseURL;
+      const response = await fetch(`${baseURL}/api/org/org/${org.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSelectedOrg(data.data);
+    } catch (err) {
+      console.error('Error fetching organization details:', err);
+      setSelectedOrg(org);
+    } finally {
+      setIsLoadingOrgDetails(false);
+    }
+  };
+
+  // Edit organization
+  const handleEditClick = (org, e) => {
+    if (e) e.stopPropagation();
+    setEditingOrg(org);
+    setAddModalOpen(true);
+  };
 
   // Delete organization
   const handleDeleteClick = (org, e) => {
@@ -199,80 +241,232 @@ export default function Organizations() {
 
   return (
     <main
-      className="ml-20 pt-24 p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto"
+      className="ml-20 pt-24 p-6 flex-1 overflow-y-auto"
       style={{ backgroundColor: colors.bg.primary }}
     >
-      <div className="max-w-[1600px] mx-auto space-y-6 md:space-y-8 pb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-6">
-          <div style={{ color: colors.text.primary }}>
-            <h1 className="text-3xl font-bold">Organizations</h1>
-            <p
-              className="text-sm mt-1"
-              style={{ color: colors.text.secondary }}
-            >
-              Manage all organizations and their details
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search organizations..."
-                className="block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                style={{
-                  backgroundColor: colors.bg.primary,
-                  borderColor: colors.border,
-                  color: colors.text.primary,
-                }}
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="relative">
-              <select
-                className="appearance-none block pl-3 pr-10 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                style={{
-                  backgroundColor: colors.bg.primary,
-                  borderColor: colors.border,
-                  color: colors.text.primary,
-                }}
-                value={filter}
-                onChange={e => setFilter(e.target.value)}
+      <div className="max-w-[1600px] mx-auto pb-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1
+                className="text-3xl font-bold"
+                style={{ color: colors.text.primary }}
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <Filter className="h-4 w-4 text-gray-400" />
-              </div>
+                Organizations
+              </h1>
+              <p
+                className="text-sm mt-2"
+                style={{ color: colors.text.secondary }}
+              >
+                Manage all organizations and their details
+              </p>
             </div>
           </div>
         </div>
 
+        {/* Table Container */}
         <div
-          className="shadow rounded-lg overflow-hidden"
+          className="rounded-2xl shadow-lg overflow-hidden"
           style={{
             borderColor: colors.border,
             borderWidth: '1px',
             backgroundColor: colors.bg.secondary,
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
           }}
         >
+          {/* Filters Section */}
+          <div className="p-6 border-b" style={{ borderColor: colors.border }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                className="text-xl font-semibold"
+                style={{ color: colors.text.primary }}
+              >
+                All Organizations
+              </h2>
+              <span
+                className="text-sm px-3 py-1 rounded-full"
+                style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  color: '#3B82F6',
+                }}
+              >
+                {filteredOrganizations.length} organizations
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative flex-1 min-w-xs">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, admin, or email..."
+                  className="w-full pl-11 pr-4 py-2.5 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  style={{
+                    backgroundColor: colors.bg.secondary,
+                    borderColor: colors.border,
+                    color: colors.text.primary,
+                    borderWidth: '1px',
+                  }}
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="relative">
+                <select
+                  className="appearance-none pl-4 pr-10 py-2.5 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all duration-200"
+                  style={{
+                    backgroundColor: colors.bg.secondary,
+                    borderColor: colors.border,
+                    color: colors.text.primary,
+                    borderWidth: '1px',
+                  }}
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="pending">Pending</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+                <Filter
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 pointer-events-none"
+                  style={{ color: colors.text.secondary }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Table Content */}
           <div className="overflow-x-auto">
             {isLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                <p
-                  className="mt-2 text-sm"
-                  style={{ color: colors.text.secondary }}
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead style={{ backgroundColor: colors.bg.hover }}>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      S.No.
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Organization Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Admin Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Total Users
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  className="divide-y divide-gray-200"
+                  style={{ backgroundColor: colors.bg.secondary }}
                 >
-                  Loading organizations...
-                </p>
-              </div>
+                  {[...Array(5)].map((_, index) => (
+                    <tr
+                      key={`skeleton-${index}`}
+                      style={{ backgroundColor: colors.bg.secondary }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className="h-4 w-8 rounded animate-pulse"
+                          style={{
+                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                          }}
+                        ></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div
+                            className="h-10 w-10 rounded-full animate-pulse"
+                            style={{
+                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            }}
+                          ></div>
+                          <div className="ml-4 flex-1">
+                            <div
+                              className="h-4 w-24 rounded animate-pulse"
+                              style={{
+                                backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-2">
+                          <div
+                            className="h-4 w-20 rounded animate-pulse"
+                            style={{
+                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            }}
+                          ></div>
+                          <div
+                            className="h-3 w-28 rounded animate-pulse"
+                            style={{
+                              backgroundColor: 'rgba(200, 200, 200, 0.2)',
+                            }}
+                          ></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className="h-6 w-16 rounded-full animate-pulse"
+                          style={{
+                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                          }}
+                        ></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className="h-6 w-20 rounded-full animate-pulse"
+                          style={{
+                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                          }}
+                        ></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className="h-4 w-20 rounded animate-pulse"
+                          style={{
+                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                          }}
+                        ></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex justify-center items-center space-x-2">
+                          <div
+                            className="h-8 w-8 rounded-lg animate-pulse"
+                            style={{
+                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            }}
+                          ></div>
+                          <div
+                            className="h-8 w-8 rounded-lg animate-pulse"
+                            style={{
+                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            }}
+                          ></div>
+                          <div
+                            className="h-8 w-8 rounded-lg animate-pulse"
+                            style={{
+                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            }}
+                          ></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : filteredOrganizations.length === 0 ? (
               <div className="p-8 text-center">
                 {error ? (
@@ -290,46 +484,28 @@ export default function Organizations() {
               </div>
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead style={{ backgroundColor: colors.bg.hover }}>
                   <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       S.No.
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Organization Name
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Admin Name
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Total Users
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Created
                     </th>
-                    <th scope="col" className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -341,14 +517,17 @@ export default function Organizations() {
                     <tr
                       key={org.id}
                       style={{ backgroundColor: colors.bg.secondary }}
-                      onMouseEnter={e =>
-                        (e.currentTarget.style.backgroundColor =
-                          colors.bg.hover)
-                      }
-                      onMouseLeave={e =>
-                        (e.currentTarget.style.backgroundColor =
-                          colors.bg.secondary)
-                      }
+                      className="transition-colors duration-150 border-b"
+                      onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = colors.bg.hover;
+                        e.currentTarget.style.boxShadow =
+                          '0 2px 8px rgba(0, 0, 0, 0.05)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor =
+                          colors.bg.secondary;
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div
@@ -402,33 +581,38 @@ export default function Organizations() {
                           ? new Date(org.created_at).toLocaleDateString()
                           : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center space-x-2 justify-end">
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex justify-center items-center space-x-2">
                           <button
-                            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={e => handleViewClick(org, e)}
+                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150"
                             title="View"
                           >
                             <Eye
-                              className="h-4 w-4"
+                              className="h-5 w-5"
                               style={{ color: colors.text.secondary }}
                             />
                           </button>
                           <button
-                            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={e => handleEditClick(org, e)}
+                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150"
                             title="Edit"
                           >
                             <Edit
-                              className="h-4 w-4"
+                              className="h-5 w-5"
                               style={{ color: colors.text.secondary }}
                             />
                           </button>
                           <button
                             onClick={e => handleDeleteClick(org, e)}
-                            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 text-red-500"
+                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition-colors duration-150"
                             title="Delete"
                             disabled={isDeleting}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2
+                              className="h-5 w-5"
+                              style={{ color: '#EF4444' }}
+                            />
                           </button>
                         </div>
                       </td>
@@ -438,7 +622,11 @@ export default function Organizations() {
               </table>
             )}
           </div>
-          <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+          {/* Pagination */}
+          <div
+            className="px-6 py-4 flex items-center justify-between border-t"
+            style={{ borderColor: colors.border }}
+          >
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={prevPage}
@@ -560,6 +748,355 @@ export default function Organizations() {
         </div>
       </div>
 
+      {/* View Organization Modal */}
+      {viewModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+            style={{ backgroundColor: colors.bg.secondary }}
+          >
+            {isLoadingOrgDetails ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                <p style={{ color: colors.text.secondary }}>
+                  Loading organization details...
+                </p>
+              </div>
+            ) : selectedOrg ? (
+              <>
+                {/* Header with Background */}
+                <div
+                  className="px-8 pt-8 pb-6 border-b"
+                  style={{
+                    borderColor: colors.border,
+                    background: `linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)`,
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      {selectedOrg.logo_url ? (
+                        <img
+                          src={selectedOrg.logo_url}
+                          alt={selectedOrg.name}
+                          className="h-20 w-20 rounded-xl object-cover shadow-md flex-shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="h-20 w-20 rounded-xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0 shadow-md"
+                          style={{ backgroundColor: '#3B82F6' }}
+                        >
+                          {selectedOrg.name?.charAt(0)?.toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h2
+                          className="text-3xl font-bold"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.name}
+                        </h2>
+                        <p
+                          style={{ color: colors.text.secondary }}
+                          className="text-sm mt-2 leading-relaxed"
+                        >
+                          {selectedOrg.description ||
+                            'No description available'}
+                        </p>
+                        <div className="mt-3">
+                          {getStatusBadge(selectedOrg.status)}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setViewModalOpen(false)}
+                      className="text-gray-400 hover:text-gray-600 text-3xl leading-none flex-shrink-0 ml-4"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+
+                {/* Details Content */}
+                <div className="p-8">
+                  {/* Key Metrics Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    {/* Users */}
+                    <div
+                      className="p-4 rounded-xl border"
+                      style={{
+                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                        borderColor: 'rgba(59, 130, 246, 0.2)',
+                      }}
+                    >
+                      <p
+                        className="text-xs font-semibold uppercase"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        User Limit
+                      </p>
+                      <p
+                        className="text-2xl font-bold mt-2"
+                        style={{ color: '#3B82F6' }}
+                      >
+                        {selectedOrg.user_limit || 'N/A'}
+                      </p>
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        users
+                      </p>
+                    </div>
+
+                    {/* Storage */}
+                    <div
+                      className="p-4 rounded-xl border"
+                      style={{
+                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                        borderColor: 'rgba(16, 185, 129, 0.2)',
+                      }}
+                    >
+                      <p
+                        className="text-xs font-semibold uppercase"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        Storage Limit
+                      </p>
+                      <p
+                        className="text-2xl font-bold mt-2"
+                        style={{ color: '#10B981' }}
+                      >
+                        {selectedOrg.storage_limit
+                          ? `${(selectedOrg.storage_limit / 1000000000).toFixed(2)}`
+                          : 'N/A'}
+                      </p>
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        GB
+                      </p>
+                    </div>
+
+                    {/* Credits */}
+                    <div
+                      className="p-4 rounded-xl border"
+                      style={{
+                        backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                        borderColor: 'rgba(245, 158, 11, 0.2)',
+                      }}
+                    >
+                      <p
+                        className="text-xs font-semibold uppercase"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        Available Credits
+                      </p>
+                      <p
+                        className="text-2xl font-bold mt-2"
+                        style={{ color: '#F59E0B' }}
+                      >
+                        {selectedOrg.credit || 0}
+                      </p>
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        credits
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div
+                    className="border-t mb-8"
+                    style={{ borderColor: colors.border }}
+                  ></div>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                      {/* Organization ID */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Organization ID
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.id}
+                        </p>
+                      </div>
+
+                      {/* Status */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Status
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.status}
+                        </p>
+                      </div>
+
+                      {/* Monthly Price */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Monthly Price
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          $
+                          {parseFloat(selectedOrg.monthly_price || 0).toFixed(
+                            2
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Created At */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Created At
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.created_at
+                            ? new Date(
+                                selectedOrg.created_at
+                              ).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })
+                            : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-6">
+                      {/* Annual Price */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Annual Price
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          $
+                          {parseFloat(selectedOrg.annual_price || 0).toFixed(2)}
+                        </p>
+                      </div>
+
+                      {/* Updated At */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Last Updated
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.updated_at
+                            ? new Date(
+                                selectedOrg.updated_at
+                              ).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })
+                            : 'N/A'}
+                        </p>
+                      </div>
+
+                      {/* Placeholder for balance */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Account Status
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.status === 'ACTIVE'
+                            ? 'Active & Verified'
+                            : selectedOrg.status}
+                        </p>
+                      </div>
+
+                      {/* Placeholder */}
+                      <div></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="px-8 py-6 border-t flex justify-end gap-3"
+                  style={{ borderColor: colors.border }}
+                >
+                  <button
+                    onClick={() => setViewModalOpen(false)}
+                    className="px-8 py-2.5 rounded-lg font-medium transition-all duration-200"
+                    style={{
+                      backgroundColor: '#3B82F6',
+                      color: 'white',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = '#2563EB';
+                      e.currentTarget.style.boxShadow =
+                        '0 4px 12px rgba(59, 130, 246, 0.3)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = '#3B82F6';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p style={{ color: colors.text.secondary }}>
+                  Failed to load organization details
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Dialog - Always Light Mode */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -594,6 +1131,42 @@ export default function Organizations() {
           </div>
         </div>
       )}
+
+      {/* Add/Edit Organization Modal */}
+      <AddOrganizationModal
+        isOpen={addModalOpen}
+        onClose={() => {
+          setAddModalOpen(false);
+          setEditingOrg(null);
+        }}
+        onSuccess={() => {
+          // Refresh organizations list
+          setCurrentPage(1);
+          const fetchOrganizations = async () => {
+            try {
+              const baseURL = apiConfig.backend.baseURL;
+              const response = await fetch(`${baseURL}/api/org/allOrg`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+              });
+
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+
+              const data = await response.json();
+              setOrganizations(Array.isArray(data.data) ? data.data : []);
+            } catch (err) {
+              console.error('Error fetching organizations:', err);
+            }
+          };
+          fetchOrganizations();
+        }}
+        editingOrg={editingOrg}
+      />
     </main>
   );
 }
