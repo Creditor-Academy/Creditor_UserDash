@@ -104,24 +104,6 @@ export default function TopNav() {
           )}
         </button>
 
-        {/* Messages */}
-        <button
-          className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300"
-          style={{
-            backgroundColor:
-              theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-          }}
-          onMouseEnter={e =>
-            (e.currentTarget.style.backgroundColor = colors.bg.hover)
-          }
-          onMouseLeave={e =>
-            (e.currentTarget.style.backgroundColor =
-              theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')
-          }
-        >
-          <MessageSquare size={20} style={{ color: colors.text.muted }} />
-        </button>
-
         {/* Profile Menu */}
         <div className="relative ml-2">
           <button
