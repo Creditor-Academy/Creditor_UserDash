@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import caTextLogo from '@/assets/CA_text_logo.png';
+import caManLogo from '@/assets/CA_man_logo.png';
 
 const SidebarItem = ({
   icon: Icon,
@@ -286,26 +288,19 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative sidebar-logo-mark">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                <BookOpen
-                  size={22}
-                  className="text-blue-600 christmas-logo-icon"
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img
+                  src={caManLogo}
+                  alt="Creditor Academy Logo"
+                  className="w-full h-full object-contain p-1"
                 />
               </div>
-              {isChristmasMode && (
-                <span className="sidebar-logo-hat" aria-hidden="true">
-                  🎅
-                </span>
-              )}
             </div>
-            <div className="flex flex-col">
-              <span className="text-white text-base leading-tight font-bold">
-                Creditor
-              </span>
-              <span className="text-blue-100 text-sm leading-tight font-medium">
-                Academy
-              </span>
-            </div>
+            <img
+              src={caTextLogo}
+              alt="Creditor Academy"
+              className="h-8 w-auto object-contain"
+            />
           </motion.button>
         )}
 
@@ -323,17 +318,13 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className="relative sidebar-logo-mark">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                      <BookOpen
-                        size={22}
-                        className="text-blue-600 christmas-logo-icon"
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                      <img
+                        src={caManLogo}
+                        alt="Creditor Academy Logo"
+                        className="w-full h-full object-contain p-1"
                       />
                     </div>
-                    {isChristmasMode && (
-                      <span className="sidebar-logo-hat" aria-hidden="true">
-                        🎅
-                      </span>
-                    )}
                   </div>
                 </motion.button>
               </TooltipTrigger>
