@@ -78,7 +78,7 @@ export default function Organizations() {
 
     const statusMap = {
       ACTIVE: 'active',
-      PENDING: 'pending',
+      // PENDING: 'pending',
       SUSPENDED: 'suspended',
     };
 
@@ -219,16 +219,16 @@ export default function Organizations() {
         icon: <CheckCircle className="w-3 h-3 mr-1" />,
         bg: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       },
-      pending: {
-        text: 'Pending',
-        icon: <Clock className="w-3 h-3 mr-1" />,
-        bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      },
-      PENDING: {
-        text: 'Pending',
-        icon: <Clock className="w-3 h-3 mr-1" />,
-        bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      },
+      // pending: {
+      //   text: 'Pending',
+      //   icon: <Clock className="w-3 h-3 mr-1" />,
+      //   bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      // },
+      // PENDING: {
+      //   text: 'Pending',
+      //   icon: <Clock className="w-3 h-3 mr-1" />,
+      //   bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      // },
       suspended: {
         text: 'Suspended',
         icon: <XCircle className="w-3 h-3 mr-1" />,
@@ -363,7 +363,7 @@ export default function Organizations() {
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
-                  <option value="pending">Pending</option>
+                  {/* <option value="pending">Pending</option> */}
                   <option value="suspended">Suspended</option>
                 </select>
                 <Filter
