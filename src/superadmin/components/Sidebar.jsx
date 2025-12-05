@@ -50,7 +50,10 @@ export default function Sidebar() {
         <img
           src="/logoathena.webp"
           alt="Athena Logo"
-          className="w-12 h-12 object-contain"
+          className="w-15 h-15 object-contain drop-shadow-lg"
+          style={{
+            filter: 'drop-shadow(0 4px 6px rgba(197, 21, 21, 0.15))',
+          }}
         />
       </div>
 

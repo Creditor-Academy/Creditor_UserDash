@@ -379,214 +379,91 @@ function SuperAdminDashboardContent() {
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-4"
+                    className="text-lg font-semibold mb-6"
                     style={{ color: colors.text.primary }}
                   >
-                    Upcoming Events
+                    Storage Used
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex items-end justify-between mb-4">
+                        <div>
+                          <p
+                            style={{ color: colors.text.muted }}
+                            className="text-sm mb-1"
+                          >
+                            Total Storage
+                          </p>
+                          <p
+                            style={{ color: colors.accent.blue }}
+                            className="text-3xl font-bold"
+                          >
+                            1,845 GB
+                          </p>
+                        </div>
+                        <p
+                          style={{ color: colors.text.muted }}
+                          className="text-sm"
+                        >
+                          of 2,000 GB
+                        </p>
+                      </div>
+                      <div
+                        className="w-full h-3 rounded-full"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                      >
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: '92%',
+                            background:
+                              'linear-gradient(90deg, #3B82F6, #1D4ED8)',
+                          }}
+                        ></div>
+                      </div>
+                      <p
+                        style={{ color: colors.text.muted }}
+                        className="text-xs mt-2"
+                      >
+                        92% used
+                      </p>
+                    </div>
                     <div
-                      className="flex items-start gap-3 pb-3 border-b border-opacity-10"
+                      className="grid grid-cols-2 gap-4 pt-4 border-t border-opacity-10"
                       style={{
                         borderColor: colors.border || 'rgba(255,255,255,0.1)',
                       }}
                     >
-                      <div
-                        className="w-2 h-2 rounded-full mt-2"
-                        style={{ backgroundColor: colors.accent.blue }}
-                      ></div>
                       <div>
                         <p
-                          style={{ color: colors.text.primary }}
-                          className="font-medium"
+                          style={{ color: colors.text.muted }}
+                          className="text-xs mb-1"
                         >
-                          Maintenance Window
+                          Available
                         </p>
                         <p
-                          style={{ color: colors.text.muted }}
-                          className="text-sm"
+                          style={{ color: colors.accent.green }}
+                          className="text-lg font-semibold"
                         >
-                          Dec 10, 2024
+                          155 GB
                         </p>
                       </div>
-                    </div>
-                    <div
-                      className="flex items-start gap-3 pb-3 border-b border-opacity-10"
-                      style={{
-                        borderColor: colors.border || 'rgba(255,255,255,0.1)',
-                      }}
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full mt-2"
-                        style={{ backgroundColor: colors.accent.orange }}
-                      ></div>
                       <div>
                         <p
-                          style={{ color: colors.text.primary }}
-                          className="font-medium"
-                        >
-                          Billing Cycle
-                        </p>
-                        <p
                           style={{ color: colors.text.muted }}
-                          className="text-sm"
+                          className="text-xs mb-1"
                         >
-                          Dec 15, 2024
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="w-2 h-2 rounded-full mt-2"
-                        style={{ backgroundColor: colors.accent.pink }}
-                      ></div>
-                      <div>
-                        <p
-                          style={{ color: colors.text.primary }}
-                          className="font-medium"
-                        >
-                          System Update
+                          Used
                         </p>
                         <p
-                          style={{ color: colors.text.muted }}
-                          className="text-sm"
+                          style={{ color: colors.accent.orange }}
+                          className="text-lg font-semibold"
                         >
-                          Dec 20, 2024
+                          1,845 GB
                         </p>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
-                  style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3
-                      style={{ color: colors.text.primary }}
-                      className="font-semibold"
-                    >
-                      Total Users
-                    </h3>
-                    <Users size={20} style={{ color: colors.accent.blue }} />
-                  </div>
-                  <p
-                    style={{ color: colors.accent.blue }}
-                    className="text-3xl font-bold mb-2"
-                  >
-                    25
-                  </p>
-                  <p
-                    style={{ color: colors.accent.green }}
-                    className="text-sm font-medium"
-                  >
-                    +12.0% added this month
-                  </p>
-                </div>
-
-                <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
-                  style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3
-                      style={{ color: colors.text.primary }}
-                      className="font-semibold"
-                    >
-                      Total Organizations
-                    </h3>
-                    <MousePointer
-                      size={20}
-                      style={{ color: colors.accent.pink }}
-                    />
-                  </div>
-                  <p
-                    style={{ color: colors.accent.pink }}
-                    className="text-3xl font-bold mb-2"
-                  >
-                    8
-                  </p>
-                  <p
-                    style={{ color: colors.accent.green }}
-                    className="text-sm font-medium"
-                  >
-                    +37.5% added this month
-                  </p>
-                </div>
-
-                <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
-                  style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3
-                      style={{ color: colors.text.primary }}
-                      className="font-semibold"
-                    >
-                      Active Users
-                    </h3>
-                    <TrendingUp
-                      size={20}
-                      style={{ color: colors.accent.orange }}
-                    />
-                  </div>
-                  <p
-                    style={{ color: colors.accent.orange }}
-                    className="text-3xl font-bold mb-2"
-                  >
-                    13
-                  </p>
-                  <p
-                    style={{ color: colors.accent.green }}
-                    className="text-sm font-medium"
-                  >
-                    +85.7% from last month
-                  </p>
-                </div>
-
-                <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
-                  style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3
-                      style={{ color: colors.text.primary }}
-                      className="font-semibold"
-                    >
-                      Total Storage
-                    </h3>
-                    <ShoppingBag
-                      size={20}
-                      style={{ color: colors.accent.red }}
-                    />
-                  </div>
-                  <p
-                    style={{ color: colors.accent.red }}
-                    className="text-3xl font-bold mb-2"
-                  >
-                    1,845
-                  </p>
-                  <p
-                    style={{ color: colors.text.muted }}
-                    className="text-sm font-medium"
-                  >
-                    GB used
-                  </p>
                 </div>
               </div>
 
