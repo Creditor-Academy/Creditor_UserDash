@@ -127,9 +127,28 @@ export default function Organizations() {
   };
 
   // Edit organization
-  const handleEditClick = (org, e) => {
+  const handleEditClick = async (org, e) => {
     if (e) e.stopPropagation();
-    setEditingOrg(org);
+    try {
+      const baseURL = apiConfig.backend.baseURL;
+      const response = await fetch(`${baseURL}/api/org/org/${org.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setEditingOrg(data.data);
+    } catch (err) {
+      console.error('Error fetching organization details:', err);
+      setEditingOrg(org);
+    }
     setAddModalOpen(true);
   };
 
@@ -262,6 +281,24 @@ export default function Organizations() {
                 Manage all organizations and their details
               </p>
             </div>
+            <button
+              onClick={() => {
+                setEditingOrg(null);
+                setAddModalOpen(true);
+              }}
+              className="px-6 py-2.5 rounded-lg text-white font-semibold transition-all hover:shadow-lg uppercase tracking-wider"
+              style={{
+                background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+              }}
+              onMouseEnter={e =>
+                (e.currentTarget.style.transform = 'translateY(-2px)')
+              }
+              onMouseLeave={e =>
+                (e.currentTarget.style.transform = 'translateY(0)')
+              }
+            >
+              + Add Organization
+            </button>
           </div>
         </div>
 

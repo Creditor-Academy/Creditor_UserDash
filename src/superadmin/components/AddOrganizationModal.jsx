@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
@@ -24,11 +24,16 @@ export default function AddOrganizationModal({
     storage_limit: '',
     credit: '',
     status: 'ACTIVE',
+    admin_name: '',
+    admin_email: '',
+    admin_password: '',
+    admin_phone: '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Load editing org data when modal opens
   useEffect(() => {
@@ -37,12 +42,22 @@ export default function AddOrganizationModal({
         name: editingOrg.name || '',
         description: editingOrg.description || '',
         logo_url: editingOrg.logo_url || '',
-        monthly_price: editingOrg.monthly_price || '',
-        annual_price: editingOrg.annual_price || '',
-        user_limit: editingOrg.user_limit || '',
-        storage_limit: editingOrg.storage_limit || '',
-        credit: editingOrg.credit || '',
+        monthly_price: editingOrg.monthly_price
+          ? String(editingOrg.monthly_price)
+          : '',
+        annual_price: editingOrg.annual_price
+          ? String(editingOrg.annual_price)
+          : '',
+        user_limit: editingOrg.user_limit ? String(editingOrg.user_limit) : '',
+        storage_limit: editingOrg.storage_limit
+          ? String(editingOrg.storage_limit)
+          : '',
+        credit: editingOrg.credit ? String(editingOrg.credit) : '',
         status: editingOrg.status || 'ACTIVE',
+        admin_name: '',
+        admin_email: '',
+        admin_password: '',
+        admin_phone: '',
       });
     } else {
       setFormData({
@@ -55,11 +70,30 @@ export default function AddOrganizationModal({
         storage_limit: '',
         credit: '',
         status: 'ACTIVE',
+        admin_name: '',
+        admin_email: '',
+        admin_password: '',
+        admin_phone: '',
       });
     }
     setError(null);
     setSuccess(false);
+    setShowPassword(false);
   }, [isOpen, editingOrg, isEditMode]);
+
+  // Clear autofilled admin fields after modal opens (browser autofill workaround)
+  useEffect(() => {
+    if (isOpen && !isEditMode) {
+      const timer = setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          admin_email: '',
+          admin_password: '',
+        }));
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isEditMode]);
 
   const handleInputChange = e => {
     const { name, value } = e.target;
@@ -90,12 +124,41 @@ export default function AddOrganizationModal({
 
       if (isEditMode) {
         url = `${apiBaseUrl}/api/org/orgUpdate/${editingOrg.id}`;
-        method = 'PUT';
+        method = 'PATCH';
         successMessage = 'Organization updated successfully!';
       } else {
         url = `${apiBaseUrl}/api/org/create`;
         method = 'POST';
         successMessage = 'Organization created successfully!';
+      }
+
+      // Convert string fields to appropriate types
+      const dataToSend = {
+        name: formData.name,
+        description: formData.description,
+        logo_url: formData.logo_url,
+        monthly_price: formData.monthly_price
+          ? parseFloat(formData.monthly_price)
+          : null,
+        annual_price: formData.annual_price
+          ? parseFloat(formData.annual_price)
+          : null,
+        user_limit: formData.user_limit
+          ? parseInt(formData.user_limit, 10)
+          : null,
+        storage_limit: formData.storage_limit
+          ? parseInt(formData.storage_limit, 10)
+          : null,
+        credit: formData.credit ? parseInt(formData.credit, 10) : null,
+        status: formData.status,
+      };
+
+      // Add admin details only for create mode
+      if (!isEditMode) {
+        dataToSend.admin_name = formData.admin_name;
+        dataToSend.admin_email = formData.admin_email;
+        dataToSend.admin_password = formData.admin_password;
+        dataToSend.admin_phone = formData.admin_phone;
       }
 
       const response = await fetch(url, {
@@ -104,7 +167,7 @@ export default function AddOrganizationModal({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -297,7 +360,6 @@ export default function AddOrganizationModal({
               name="monthly_price"
               value={formData.monthly_price}
               onChange={handleInputChange}
-              placeholder="999.99"
               step="0.01"
               min="0"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
@@ -324,7 +386,6 @@ export default function AddOrganizationModal({
               name="annual_price"
               value={formData.annual_price}
               onChange={handleInputChange}
-              placeholder="9999.99"
               step="0.01"
               min="0"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
@@ -351,7 +412,6 @@ export default function AddOrganizationModal({
               name="user_limit"
               value={formData.user_limit}
               onChange={handleInputChange}
-              placeholder="100"
               min="0"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
               style={{
@@ -377,7 +437,6 @@ export default function AddOrganizationModal({
               name="storage_limit"
               value={formData.storage_limit}
               onChange={handleInputChange}
-              placeholder="1000000000"
               min="0"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
               style={{
@@ -403,7 +462,6 @@ export default function AddOrganizationModal({
               name="credit"
               value={formData.credit}
               onChange={handleInputChange}
-              placeholder="5000"
               min="0"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
               style={{
@@ -445,116 +503,142 @@ export default function AddOrganizationModal({
         </div>
       </div>
 
-      {/* <div className="pt-6 border-t" style={{ borderColor: colors.border }}>
-        <h4
-          className="text-lg font-bold mb-4 uppercase tracking-wider"
-          style={{ color: colors.text.primary }}
-        >
-          Admin Details
-        </h4>
+      {/* Admin Details Section - Only show in create mode */}
+      {!isEditMode && (
+        <div className="pt-6 border-t" style={{ borderColor: colors.border }}>
+          <h4
+            className="text-lg font-bold mb-4 uppercase tracking-wider"
+            style={{ color: colors.text.primary }}
+          >
+            Admin Details
+          </h4>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2 uppercase tracking-wider"
-              style={{ color: colors.text.secondary }}
-            >
-              Admin Name *
-            </label>
-            <input
-              type="text"
-              name="admin_name"
-              value={formData.admin_name}
-              onChange={handleInputChange}
-              placeholder="Admin's full name"
-              className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
-              style={{
-                backgroundColor: colors.bg.primary,
-                borderColor: colors.border,
-                color: colors.text.primary,
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = '#3B82F6'}
-              onBlur={e => e.currentTarget.style.borderColor = colors.border}
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label
+                className="block text-sm font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: colors.text.secondary }}
+              >
+                Admin Name *
+              </label>
+              <input
+                type="text"
+                name="admin_name"
+                value={formData.admin_name}
+                onChange={handleInputChange}
+                placeholder="Admin's full name"
+                className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
+                onBlur={e =>
+                  (e.currentTarget.style.borderColor = colors.border)
+                }
+                required
+              />
+            </div>
 
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2 uppercase tracking-wider"
-              style={{ color: colors.text.secondary }}
-            >
-              Admin Email *
-            </label>
-            <input
-              type="email"
-              name="admin_email"
-              value={formData.admin_email}
-              onChange={handleInputChange}
-              placeholder="admin@organization.com"
-              className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
-              style={{
-                backgroundColor: colors.bg.primary,
-                borderColor: colors.border,
-                color: colors.text.primary,
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = '#3B82F6'}
-              onBlur={e => e.currentTarget.style.borderColor = colors.border}
-              required
-            />
-          </div>
+            <div>
+              <label
+                className="block text-sm font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: colors.text.secondary }}
+              >
+                Admin Email *
+              </label>
+              <input
+                type="email"
+                name="admin_email"
+                value={formData.admin_email}
+                onChange={handleInputChange}
+                placeholder="admin@organization.com"
+                autoComplete="new-email"
+                data-form-type="other"
+                className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
+                onBlur={e =>
+                  (e.currentTarget.style.borderColor = colors.border)
+                }
+                required
+              />
+            </div>
 
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2 uppercase tracking-wider"
-              style={{ color: colors.text.secondary }}
-            >
-              {isEditMode ? 'New Password (leave blank to keep current)' : 'Admin Password'} *
-            </label>
-            <input
-              type="password"
-              name="admin_password"
-              value={formData.admin_password}
-              onChange={handleInputChange}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
-              style={{
-                backgroundColor: colors.bg.primary,
-                borderColor: colors.border,
-                color: colors.text.primary,
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = '#3B82F6'}
-              onBlur={e => e.currentTarget.style.borderColor = colors.border}
-              required={!isEditMode}
-            />
-          </div>
+            <div>
+              <label
+                className="block text-sm font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: colors.text.secondary }}
+              >
+                Admin Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="admin_password"
+                  value={formData.admin_password}
+                  onChange={handleInputChange}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  data-form-type="other"
+                  className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0 pr-12"
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    borderColor: colors.border,
+                    color: colors.text.primary,
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
+                  onBlur={e =>
+                    (e.currentTarget.style.borderColor = colors.border)
+                  }
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  style={{ color: colors.text.secondary }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2 uppercase tracking-wider"
-              style={{ color: colors.text.secondary }}
-            >
-              Admin Phone *
-            </label>
-            <input
-              type="tel"
-              name="admin_phone"
-              value={formData.admin_phone}
-              onChange={handleInputChange}
-              placeholder="+1 (555) 000-0000"
-              className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
-              style={{
-                backgroundColor: colors.bg.primary,
-                borderColor: colors.border,
-                color: colors.text.primary,
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = '#3B82F6'}
-              onBlur={e => e.currentTarget.style.borderColor = colors.border}
-              required
-            />
+            <div>
+              <label
+                className="block text-sm font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: colors.text.secondary }}
+              >
+                Admin Phone *
+              </label>
+              <input
+                type="tel"
+                name="admin_phone"
+                value={formData.admin_phone}
+                onChange={handleInputChange}
+                placeholder="+1 (555) 000-0000"
+                className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
+                onBlur={e =>
+                  (e.currentTarget.style.borderColor = colors.border)
+                }
+                required
+              />
+            </div>
           </div>
         </div>
-      </div> */}
+      )}
 
       <div
         className="flex justify-end gap-3 pt-6 border-t"
@@ -616,13 +700,13 @@ export default function AddOrganizationModal({
       onClick={onClose}
     >
       <div
-        className="rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
         style={{ backgroundColor: colors.bg.secondary }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between p-8 border-b"
+          className="flex items-center justify-between p-8 border-b sticky top-0 z-10"
           style={{
             borderColor: colors.border,
             background: `linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)`,
@@ -655,7 +739,7 @@ export default function AddOrganizationModal({
         </div>
 
         {/* Form Content */}
-        <div className="p-8">{renderForm()}</div>
+        <div className="p-8 overflow-y-auto flex-1">{renderForm()}</div>
       </div>
     </div>
   );
