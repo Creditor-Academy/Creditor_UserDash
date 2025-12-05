@@ -55,6 +55,7 @@ const MySponsorAdsPage = () => {
   });
   const [viewingAd, setViewingAd] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 600);
@@ -99,9 +100,17 @@ const MySponsorAdsPage = () => {
     }
   };
 
-  const handleDelete = ad => {
-    deleteAd(ad.id);
-    toast.success('Ad removed');
+  const handleDelete = async ad => {
+    try {
+      setDeletingId(ad.id);
+      await deleteAd(ad.id);
+      toast.success('Ad removed');
+    } catch (error) {
+      console.error('Failed to delete ad', error);
+      toast.error('Failed to delete ad');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleToggle = ad => {

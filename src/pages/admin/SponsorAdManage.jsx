@@ -80,6 +80,7 @@ export const SponsorAdManage = () => {
     ctaText: '',
     ctaUrl: '',
   });
+  const [deletingId, setDeletingId] = useState(null);
 
   const filteredAds = useMemo(() => {
     let list = ads;
@@ -133,6 +134,17 @@ export const SponsorAdManage = () => {
     if (editingAd) {
       updateAd(editingAd.id, editState);
       setEditingAd(null);
+    }
+  };
+
+  const handleDelete = async id => {
+    try {
+      setDeletingId(id);
+      await deleteAd(id);
+    } catch (error) {
+      console.error('Failed to delete ad', error);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -348,9 +360,10 @@ export const SponsorAdManage = () => {
                         variant="outline"
                         size="sm"
                         className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => deleteAd(ad.id)}
+                        onClick={() => handleDelete(ad.id)}
+                        disabled={deletingId === ad.id}
                       >
-                        Delete
+                        {deletingId === ad.id ? 'Deleting...' : 'Delete'}
                       </Button>
                     </div>
                   </TableCell>

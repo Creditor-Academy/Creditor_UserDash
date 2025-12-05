@@ -6,8 +6,10 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import mockSponsorAds from '@/data/mockSponsorAds';
-import { getAllSponsorAds } from '@/services/sponsorAdsService';
+import {
+  getAllSponsorAds,
+  deleteSponsorAd as deleteSponsorAdApi,
+} from '@/services/sponsorAdsService';
 
 const STORAGE_KEY = 'lms_sponsor_ads';
 const TIER_PRIORITY = {
@@ -75,7 +77,7 @@ const normalizeBackendAd = ad =>
 
 const loadInitialAds = () => {
   if (typeof window === 'undefined') {
-    return mockSponsorAds.map(hydrateAd);
+    return [];
   }
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -85,7 +87,7 @@ const loadInitialAds = () => {
   } catch (error) {
     console.warn('[SponsorAds] Failed to parse stored ads', error);
   }
-  return mockSponsorAds.map(hydrateAd);
+  return [];
 };
 
 const persistAds = ads => {
@@ -139,9 +141,11 @@ export const SponsorAdsProvider = ({ children }) => {
       const response = await getAllSponsorAds();
       const backendAds = Array.isArray(response?.data)
         ? response.data
-        : Array.isArray(response)
-          ? response
-          : response?.ads;
+        : Array.isArray(response?.ads)
+          ? response.ads
+          : Array.isArray(response)
+            ? response
+            : [];
       if (backendAds && backendAds.length) {
         setAds(backendAds.map(normalizeBackendAd));
         setHasLoadedFromBackend(true);
@@ -169,27 +173,15 @@ export const SponsorAdsProvider = ({ children }) => {
   }, [refreshAds]);
 
   const addAd = useCallback(adPayload => {
-    setAds(prev => [
-      {
-        id: `ad_${Date.now()}`,
-        status: 'Active',
-        impressions: Math.floor(Math.random() * 4000) + 1000,
-        clicks: Math.floor(Math.random() * 400) + 60,
-        dailyImpressions: Array.from(
-          { length: 7 },
-          () => Math.floor(Math.random() * 300) + 120
-        ),
-        ...adPayload,
-      },
-      ...prev,
-    ]);
+    setAds(prev => [hydrateAd(adPayload), ...prev]);
   }, []);
 
   const updateAd = useCallback((id, updates) => {
     setAds(prev => prev.map(ad => (ad.id === id ? { ...ad, ...updates } : ad)));
   }, []);
 
-  const deleteAd = useCallback(id => {
+  const deleteAd = useCallback(async id => {
+    await deleteSponsorAdApi(id);
     setAds(prev => prev.filter(ad => ad.id !== id));
   }, []);
 
