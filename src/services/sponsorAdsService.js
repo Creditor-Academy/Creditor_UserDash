@@ -123,20 +123,19 @@ export async function getAllSponsorAds() {
 }
 
 /**
- * Fetch sponsor ads for learner dashboard
+ * Fetch sponsor ads for user dashboard
  * Backend tracks impressions automatically on this request
  * @returns {Promise<Array>} Array of active ads
  */
 export async function fetchDashboardSponsorAds() {
   try {
-    const response = await api.get('/api/sponsor/ads/dashboard');
-    const data =
-      response.data?.ads ||
-      response.data?.data?.ads ||
-      response.data?.data ||
-      response.data;
-    console.log('✅ Dashboard sponsor ads:', data);
-    return data || [];
+    const response = await api.get('/api/user/dashboard/ads');
+
+    // Handle the response structure: { code: 200, data: { ads: [...] }, success: true, message: "..." }
+    const ads = response.data?.data?.ads || response.data?.ads || [];
+
+    console.log('✅ Dashboard sponsor ads fetched:', ads);
+    return ads;
   } catch (error) {
     console.error('❌ Failed to fetch dashboard sponsor ads:', error);
     const backendMessage =
@@ -152,13 +151,13 @@ export async function fetchDashboardSponsorAds() {
 }
 
 /**
- * Track sponsor ad click for learner dashboard
+ * Track sponsor ad click for user dashboard
  * @param {string} adId - Sponsor ad id
  */
 export async function trackSponsorAdClick(adId) {
   if (!adId) return;
   try {
-    await api.post(`/api/sponsor/ads/${adId}/click`);
+    await api.post(`/api/user/dashboard/ads/${adId}/click`);
     console.log('✅ Tracked sponsor ad click', adId);
   } catch (error) {
     console.error('❌ Failed to track sponsor ad click:', error);
