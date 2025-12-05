@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -15,6 +15,7 @@ import ClassRecording from './ClassRecording';
 import { getAuthHeader } from '../../services/authHeader'; // adjust path as needed
 import { markEventAttendance } from '../../services/attendanceService';
 import { toast } from 'sonner';
+import AttendanceAlreadyMarkedModal from './AttendanceAlreadyMarkedModal';
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
@@ -94,6 +95,14 @@ export function LiveClasses() {
   const [cancelledEvents, setCancelledEvents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [joiningEventId, setJoiningEventId] = useState(null); // Track which event is being joined
+  const [isAlreadyMarkedModalOpen, setIsAlreadyMarkedModalOpen] =
+    useState(false);
+  const [alreadyMarkedMessage, setAlreadyMarkedMessage] = useState('');
+  const [joinLinkForModal, setJoinLinkForModal] = useState(''); // Store join link for the modal
+  const processingEventsRef = useRef(new Set()); // Track events currently being processed to prevent duplicate calls
+  const alreadyMarkedEventsRef = useRef(new Map()); // Track events that have already been marked: eventId -> errorMessage
+  const eventJoinLinksRef = useRef(new Map()); // Track join links for each event: eventId -> joinLink
 
   const userTimezone =
     localStorage.getItem('userTimezone') || 'America/Los_Angeles';
@@ -300,33 +309,119 @@ export function LiveClasses() {
     }
   };
 
-  const handleJoinClass = async event => {
+  const handleJoinClass = useCallback(async event => {
+    // For recurring events, use originalEventId instead of the synthetic id
+    // The synthetic id format is like "123_occurrence_0" which the backend doesn't recognize
+    const eventId =
+      event.isRecurring && event.originalEventId
+        ? event.originalEventId
+        : event.id;
+
+    // Use the display id (synthetic id for recurring events) for UI state tracking
+    const displayEventId = event.id;
+
+    // If this event has already been marked, immediately show modal without calling API
+    if (alreadyMarkedEventsRef.current.has(eventId)) {
+      const message =
+        alreadyMarkedEventsRef.current.get(eventId) ||
+        'Attendance for this event Already marked';
+      const link =
+        eventJoinLinksRef.current.get(eventId) ||
+        event.description ||
+        event.zoomLink ||
+        '';
+      setAlreadyMarkedMessage(message);
+      setJoinLinkForModal(link);
+      setIsAlreadyMarkedModalOpen(true);
+      return;
+    }
+
+    // Prevent multiple simultaneous calls for the same event using ref
+    if (processingEventsRef.current.has(eventId)) {
+      console.log('Already processing attendance for event:', eventId);
+      return;
+    }
+
+    const joinLink = event.description || event.zoomLink || '';
+
+    // Store the join link for this event (use eventId for consistency)
+    eventJoinLinksRef.current.set(eventId, joinLink);
+
     try {
+      // Mark as processing in both state and ref
+      setJoiningEventId(displayEventId); // Use displayEventId for UI state
+      processingEventsRef.current.add(eventId); // Use eventId for API tracking
+
       // Mark attendance first
-      await markEventAttendance(event.id);
+      // For recurring events, pass the occurrence startTime so backend knows which occurrence
+      if (event.isRecurring && event.startTime) {
+        await markEventAttendance(eventId, event.startTime);
+      } else {
+        await markEventAttendance(eventId);
+      }
+
+      // Attendance marked successfully
       toast.success('Attendance marked successfully!');
 
-      // Then open the zoom link
-      const joinLink = event.description || event.zoomLink || '';
+      // Note: We don't add to alreadyMarkedEventsRef on success
+      // because the user might click again, and we want to check with backend
+      // Only add when we get "already marked" error
+
+      // Then open the zoom link after attendance is marked
       if (joinLink) {
         window.open(joinLink, '_blank');
       }
     } catch (error) {
       console.error('Error marking attendance:', error);
 
-      // Show error message but still allow joining the meeting
-      toast.error(
+      // Check if attendance is already marked
+      // Check multiple possible error response structures
+      const errorMessage =
+        error.responseData?.errorMessage ||
+        error.response?.data?.errorMessage ||
+        error.responseData?.message ||
+        error.response?.data?.message ||
         error.message ||
-          'Failed to mark attendance, but you can still join the meeting'
-      );
+        '';
 
-      // Open the zoom link even if attendance marking fails
-      const joinLink = event.description || event.zoomLink || '';
+      const errorMessageLower = errorMessage.toLowerCase();
+      const isAlreadyMarked =
+        error.isAlreadyMarked ||
+        errorMessageLower.includes('already marked') ||
+        (error.response?.status === 500 &&
+          errorMessageLower.includes('attendance') &&
+          errorMessageLower.includes('already'));
+
+      if (isAlreadyMarked) {
+        // Store the exact backend error message for future reference
+        // Use eventId (originalEventId for recurring events) for tracking
+        const message =
+          errorMessage || 'Attendance for this event Already marked';
+        alreadyMarkedEventsRef.current.set(eventId, message);
+
+        // Show modal with the exact backend message and join link
+        setAlreadyMarkedMessage(message);
+        setJoinLinkForModal(joinLink);
+        setIsAlreadyMarkedModalOpen(true);
+
+        // Don't open the link here - let the modal handle it with countdown
+        return;
+      }
+
+      // For other errors, silently fail and still allow joining the meeting
+      // No toast shown as per requirements
+      console.error('Failed to mark attendance:', error);
+
+      // Open the zoom link even if attendance marking fails (for other errors)
       if (joinLink) {
         window.open(joinLink, '_blank');
       }
+    } finally {
+      // Clear joining state and remove from processing set
+      setJoiningEventId(null);
+      processingEventsRef.current.delete(eventId); // Use eventId (originalEventId for recurring events)
     }
-  };
+  }, []); // Empty dependency array since we use ref for tracking
 
   const handleViewAllRecordings = () => {
     window.open(import.meta.env.VITE_RECORDINGS_DRIVE_URL, '_blank');
@@ -480,7 +575,7 @@ export function LiveClasses() {
                         <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-shrink-0">
                           <Button
                             onClick={() => handleJoinClass(event)}
-                            disabled={!isLive}
+                            disabled={!isLive || joiningEventId === event.id}
                             className={`${
                               isLive
                                 ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 animate-pulse'
@@ -488,10 +583,19 @@ export function LiveClasses() {
                             } text-white transition-all duration-300 w-full sm:w-auto`}
                             size="sm"
                           >
-                            <Video className="w-4 h-4 mr-2" />
-                            {isLive ? 'Join Now' : 'Class Not Started'}
-                            {isLive && (
-                              <ExternalLink className="w-3 h-3 ml-1" />
+                            {joiningEventId === event.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Joining
+                              </>
+                            ) : (
+                              <>
+                                <Video className="w-4 h-4 mr-2" />
+                                {isLive ? 'Join Now' : 'Class Not Started'}
+                                {isLive && (
+                                  <ExternalLink className="w-3 h-3 ml-1" />
+                                )}
+                              </>
                             )}
                           </Button>
                           {isUpcoming && (
@@ -681,6 +785,16 @@ export function LiveClasses() {
         isOpen={isAttendanceModalOpen}
         onClose={() => setIsAttendanceModalOpen(false)}
       /> */}
+      <AttendanceAlreadyMarkedModal
+        isOpen={isAlreadyMarkedModalOpen}
+        onClose={() => {
+          setIsAlreadyMarkedModalOpen(false);
+          setAlreadyMarkedMessage('');
+          setJoinLinkForModal('');
+        }}
+        errorMessage={alreadyMarkedMessage}
+        joinLink={joinLinkForModal}
+      />
     </div>
   );
 }

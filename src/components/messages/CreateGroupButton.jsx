@@ -1,22 +1,30 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Loader2, Search, Users, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { fetchAllUsers, getUserRole } from "@/services/userService";
-import { getAllConversations } from "@/services/messageService";
-import { createPrivateGroup, getMyPrivateGroup } from "@/services/privateGroupService";
-import getSocket from "@/services/socketClient";
+} from '@/components/ui/dialog';
+import { Loader2, Search, Users, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { fetchAllUsers, getUserRole } from '@/services/userService';
+import { getAllConversations } from '@/services/messageService';
+import {
+  createPrivateGroup,
+  getMyPrivateGroup,
+} from '@/services/privateGroupService';
+import getSocket from '@/services/socketClient';
 
 /**
  * CreateGroupButton
@@ -24,45 +32,49 @@ import getSocket from "@/services/socketClient";
  * - Enforces one-group-per-user rule via conversations check
  * - On success, invokes optional onCreated callback with { id, name, memberCount, ... }
  */
-export default function CreateGroupButton({ className = "", onCreated }) {
+export default function CreateGroupButton({ className = '', onCreated }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loadingInit, setLoadingInit] = useState(false);
   const [userHasGroup, setUserHasGroup] = useState(false);
 
   // Form state
-  const [groupName, setGroupName] = useState("");
-  const [groupDescription, setGroupDescription] = useState("");
+  const [groupName, setGroupName] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
-  const [imageDataUrl, setImageDataUrl] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [imageDataUrl, setImageDataUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [useUrl, setUseUrl] = useState(false);
 
   // Directory state
   const [allUsers, setAllUsers] = useState([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all"); // 'all' | 'admin' | 'instructor'
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all'); // 'all' | 'admin' | 'instructor'
 
   // Derived
   const filteredUsers = useMemo(() => {
-    const q = (search || "").toLowerCase();
-    const roleMatches = (u) => {
-      if (roleFilter === "all") return true;
-      const role = String(u.role || "").toLowerCase();
-      if (roleFilter === "admin") return role.includes("admin");
-      if (roleFilter === "instructor") return role.includes("instructor");
+    const q = (search || '').toLowerCase();
+    const roleMatches = u => {
+      if (roleFilter === 'all') return true;
+      const role = String(u.role || '').toLowerCase();
+      if (roleFilter === 'admin') return role.includes('admin');
+      if (roleFilter === 'instructor') return role.includes('instructor');
       return true;
     };
     return (allUsers || [])
       .filter(u => roleMatches(u))
-      .filter(u => (u.name || "").toLowerCase().includes(q) && !selectedMemberIds.includes(u.id));
+      .filter(
+        u =>
+          (u.name || '').toLowerCase().includes(q) &&
+          !selectedMemberIds.includes(u.id)
+      );
   }, [allUsers, search, selectedMemberIds, roleFilter]);
 
   // Initialize on first open: fetch conversations + users + private group
-  const handleOpen = async (nextOpen) => {
+  const handleOpen = async nextOpen => {
     setOpen(nextOpen);
     if (!nextOpen) return;
     setLoadingInit(true);
@@ -72,69 +84,92 @@ export default function CreateGroupButton({ className = "", onCreated }) {
         fetchAllUsers().catch(() => []),
         getMyPrivateGroup().catch(() => null),
       ]);
-      
+
       // Check if user has a group (either from conversations or private group)
-      const hasGroupFromConvos = Array.isArray(convos) && convos.some(c => c?.isGroup);
+      const hasGroupFromConvos =
+        Array.isArray(convos) && convos.some(c => c?.isGroup);
       const hasPrivateGroup = privateGroupRes?.success && privateGroupRes?.data;
       const hasGroup = hasGroupFromConvos || hasPrivateGroup;
       setUserHasGroup(Boolean(hasGroup));
-      
+
       const currentUserId = String(localStorage.getItem('userId') || '');
-      const normalized = (users || []).map(u => {
-        // Extract user role from user_roles array
-        let userRole = 'User';
-        if (u.user_roles && Array.isArray(u.user_roles) && u.user_roles.length > 0) {
-          const roles = u.user_roles.map(r => r.role);
-          // Priority order: admin > instructor > user
-          if (roles.includes('admin')) {
-            userRole = 'Admin';
-          } else if (roles.includes('instructor')) {
-            userRole = 'Instructor';
-          } else {
-            userRole = roles[0] || 'User';
+      const normalized = (users || [])
+        .map(u => {
+          // Extract user role from user_roles array
+          let userRole = 'User';
+          if (
+            u.user_roles &&
+            Array.isArray(u.user_roles) &&
+            u.user_roles.length > 0
+          ) {
+            const roles = u.user_roles.map(r => r.role);
+            // Priority order: admin > instructor > user
+            if (roles.includes('admin')) {
+              userRole = 'Admin';
+            } else if (roles.includes('instructor')) {
+              userRole = 'Instructor';
+            } else {
+              userRole = roles[0] || 'User';
+            }
           }
-        }
-        
-        return {
-          id: u.id || u._id || u.user_id || u.userId,
-          name: [u.first_name, u.last_name].filter(Boolean).join(" ") || u.name || u.email || "User",
-          avatar: u.image || u.avatar || "",
-          role: userRole,
-        };
-      }).filter(u => u.id && String(u.id) !== currentUserId); // Exclude current user
+
+          return {
+            id: u.id || u._id || u.user_id || u.userId,
+            name:
+              [u.first_name, u.last_name].filter(Boolean).join(' ') ||
+              u.name ||
+              u.email ||
+              'User',
+            avatar: u.image || u.avatar || '',
+            role: userRole,
+          };
+        })
+        .filter(u => u.id && String(u.id) !== currentUserId); // Exclude current user
       setAllUsers(normalized);
     } finally {
       setLoadingInit(false);
     }
   };
 
-  const toggleMember = (userId) => {
-    setSelectedMemberIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
+  const toggleMember = userId => {
+    setSelectedMemberIds(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
   };
 
   const resetForm = () => {
-    setGroupName("");
-    setGroupDescription("");
+    setGroupName('');
+    setGroupDescription('');
     setSelectedMemberIds([]);
-    setSearch("");
+    setSearch('');
     if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
     setImageFile(null);
-    setImagePreviewUrl("");
-    setImageDataUrl("");
-    setImageUrl("");
+    setImagePreviewUrl('');
+    setImageDataUrl('');
+    setImageUrl('');
     setUseUrl(false);
   };
 
   const handleCreate = async () => {
     if (!groupName.trim() || selectedMemberIds.length === 0) {
-      toast({ title: "Error", description: "Add a name and at least one member", variant: "destructive" });
+      toast({
+        title: 'Error',
+        description: 'Add a name and at least one member',
+        variant: 'destructive',
+      });
       return;
     }
     if (userHasGroup) {
-      toast({ title: "Limit reached", description: "You can only create one group", variant: "destructive" });
+      toast({
+        title: 'Limit reached',
+        description: 'You can only create one group',
+        variant: 'destructive',
+      });
       return;
     }
-    
+
     // Check user role before attempting to create group (allow: user, admin, instructor)
     const roleValue = getUserRole();
     const roles = Array.isArray(roleValue) ? roleValue : [roleValue];
@@ -142,40 +177,44 @@ export default function CreateGroupButton({ className = "", onCreated }) {
     const allowed = ['user', 'admin', 'instructor'];
     const isAllowed = lowerRoles.some(r => allowed.includes(r));
     if (!isAllowed) {
-      const displayRole = (lowerRoles[0] || 'unknown');
-      toast({ 
-        title: "Permission Denied", 
-        description: `Your role (${displayRole}) is not allowed to create private groups`, 
-        variant: "destructive" 
+      const displayRole = lowerRoles[0] || 'unknown';
+      toast({
+        title: 'Permission Denied',
+        description: `Your role (${displayRole}) is not allowed to create private groups`,
+        variant: 'destructive',
       });
       return;
     }
-    
+
     setIsCreatingGroup(true);
     try {
       let res;
-      
+
       // Use FormData if uploading a file, otherwise use JSON payload
       if (!useUrl && imageFile) {
         // Use FormData for file upload
         const formData = new FormData();
         formData.append('name', groupName.trim());
         formData.append('description', groupDescription.trim());
-        
+
         // Try multiple approaches for array handling
         // Approach 1: Each ID as separate entry (most common for FormData)
         selectedMemberIds.forEach(userId => {
           formData.append('invited_user_ids', userId);
         });
-        
+
         formData.append('media', imageFile); // Backend expects 'media' for local files
-        
+
         // Debug: Log FormData contents
         console.log('Creating group with FormData:');
         for (let pair of formData.entries()) {
-          console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File(${pair[1].name})` : pair[1]));
+          console.log(
+            pair[0] +
+              ': ' +
+              (pair[1] instanceof File ? `File(${pair[1].name})` : pair[1])
+          );
         }
-        
+
         res = await createPrivateGroup(formData);
       } else {
         // Use JSON payload for URL or no image
@@ -185,34 +224,36 @@ export default function CreateGroupButton({ className = "", onCreated }) {
           invited_user_ids: selectedMemberIds,
           ...(useUrl && imageUrl.trim() ? { thumbnail: imageUrl.trim() } : {}),
         };
-        
+
         res = await createPrivateGroup(payload);
       }
-      
+
       // Create private group using the API
       if (!(res?.success && res?.data?.id)) {
-        throw new Error(res?.message || "Failed to create private group");
+        throw new Error(res?.message || 'Failed to create private group');
       }
-      
+
       const groupId = res.data.id;
-      
+
       // Members are already invited via invited_user_ids during group creation
       // No need to call addPrivateGroupMembers separately
-      
+
       // Emit WebSocket events for real-time updates
       const socket = getSocket();
       socket.emit('privateGroupCreated', { group: res.data });
-      
+
       if (selectedMemberIds.length > 0) {
-        const addedUsers = allUsers.filter(user => selectedMemberIds.includes(user.id));
+        const addedUsers = allUsers.filter(user =>
+          selectedMemberIds.includes(user.id)
+        );
         // Include group data so new members can see the group details
-        socket.emit('privateGroupMembersAdded', { 
-          groupId, 
+        socket.emit('privateGroupMembersAdded', {
+          groupId,
           users: addedUsers,
-          group: res.data 
+          group: res.data,
         });
       }
-      
+
       // Emit a system message for group creation
       socket.emit('newGroupMessage', {
         groupId,
@@ -225,11 +266,11 @@ export default function CreateGroupButton({ className = "", onCreated }) {
           sender: {
             first_name: 'System',
             name: 'System',
-            image: null
-          }
-        }
+            image: null,
+          },
+        },
       });
-      
+
       const created = {
         id: `private_group_${groupId}`,
         name: res.data.name,
@@ -239,31 +280,37 @@ export default function CreateGroupButton({ className = "", onCreated }) {
         isAdmin: true,
         conversationId: groupId,
         room: `private_group_${groupId}`,
-        lastMessage: "Group created",
-        lastMessageType: "system",
-        lastMessageFrom: "System",
+        lastMessage: 'Group created',
+        lastMessageType: 'system',
+        lastMessageFrom: 'System',
         lastMessageAt: new Date().toISOString(),
-        avatar: res.data.thumbnail || "",
+        avatar: res.data.thumbnail || '',
         description: res.data.description,
       };
-      
-      toast({ title: "Group created" });
-      if (typeof onCreated === "function") {
-        try { onCreated(created); } catch {}
+
+      toast({ title: 'Group created' });
+      if (typeof onCreated === 'function') {
+        try {
+          onCreated(created);
+        } catch {}
       }
       resetForm();
       setOpen(false);
     } catch (err) {
       console.error('Create group error:', err);
-      let errorMessage = "Failed to create group";
-      
+      let errorMessage = 'Failed to create group';
+
       if (err?.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err?.message) {
         errorMessage = err.message;
       }
-      
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setIsCreatingGroup(false);
     }
@@ -276,7 +323,7 @@ export default function CreateGroupButton({ className = "", onCreated }) {
           <TooltipTrigger asChild>
             <Button
               size="sm"
-              className={`bg-purple-600 hover:bg-purple-700 text-white ${className} ${userHasGroup ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`bg-[#d10000] hover:bg-[#b00000] text-white ${className} ${userHasGroup ? 'opacity-50 cursor-not-allowed' : ''}`}
               title="Create Group"
               onClick={() => !userHasGroup && handleOpen(true)}
               disabled={userHasGroup}
@@ -285,7 +332,9 @@ export default function CreateGroupButton({ className = "", onCreated }) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{userHasGroup ? "You can only create one group" : "Create Group"}</p>
+            <p>
+              {userHasGroup ? 'You can only create one group' : 'Create Group'}
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -310,32 +359,34 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                 <Input
                   placeholder="Enter group name..."
                   value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
+                  onChange={e => setGroupName(e.target.value)}
                   className="h-9"
                 />
               </div>
 
               {/* Group Image Upload Section (Always visible) */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Group Image (Optional)</label>
-                
+                <label className="text-sm font-medium">
+                  Group Image (Optional)
+                </label>
+
                 {/* Toggle between URL and File Upload */}
                 <div className="flex items-center gap-2 mb-3">
                   <Button
                     type="button"
-                    variant={!useUrl ? "default" : "outline"}
+                    variant={!useUrl ? 'default' : 'outline'}
                     size="sm"
                     className="h-8 px-3"
                     onClick={() => {
                       setUseUrl(false);
-                      setImageUrl("");
+                      setImageUrl('');
                     }}
                   >
                     Choose File
                   </Button>
                   <Button
                     type="button"
-                    variant={useUrl ? "default" : "outline"}
+                    variant={useUrl ? 'default' : 'outline'}
                     size="sm"
                     className="h-8 px-3"
                     onClick={() => {
@@ -343,10 +394,14 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                       // Clear file upload when switching to URL
                       if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
                       setImageFile(null);
-                      setImagePreviewUrl("");
-                      setImageDataUrl("");
-                      const el = document.getElementById("group-image-input");
-                      if (el) { try { el.value = ""; } catch {} }
+                      setImagePreviewUrl('');
+                      setImageDataUrl('');
+                      const el = document.getElementById('group-image-input');
+                      if (el) {
+                        try {
+                          el.value = '';
+                        } catch {}
+                      }
                     }}
                   >
                     Use URL
@@ -358,7 +413,7 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={e => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     setImageFile(file);
@@ -367,17 +422,21 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                     setImagePreviewUrl(objectUrl);
                     const reader = new FileReader();
                     reader.onload = () => {
-                      try { setImageDataUrl(String(reader.result || "")); } catch {}
+                      try {
+                        setImageDataUrl(String(reader.result || ''));
+                      } catch {}
                     };
                     reader.readAsDataURL(file);
                   }}
                 />
-                
+
                 {!useUrl ? (
                   <Button
                     variant="outline"
                     type="button"
-                    onClick={() => document.getElementById("group-image-input")?.click()}
+                    onClick={() =>
+                      document.getElementById('group-image-input')?.click()
+                    }
                     className="w-full"
                   >
                     Choose File
@@ -386,18 +445,20 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                   <Input
                     placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
                     value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
+                    onChange={e => setImageUrl(e.target.value)}
                     className="h-9"
                   />
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Description (Optional)</label>
+                <label className="text-sm font-medium">
+                  Description (Optional)
+                </label>
                 <Input
                   placeholder="Enter group description..."
                   value={groupDescription}
-                  onChange={(e) => setGroupDescription(e.target.value)}
+                  onChange={e => setGroupDescription(e.target.value)}
                   className="h-9"
                 />
               </div>
@@ -408,20 +469,30 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                   <div className="flex items-center gap-1">
                     <Button
                       type="button"
-                      variant={roleFilter === "admin" ? "default" : "outline"}
+                      variant={roleFilter === 'admin' ? 'default' : 'outline'}
                       size="sm"
                       className="h-7 px-2"
-                      onClick={() => setRoleFilter(prev => prev === "admin" ? "all" : "admin")}
+                      onClick={() =>
+                        setRoleFilter(prev =>
+                          prev === 'admin' ? 'all' : 'admin'
+                        )
+                      }
                       title="Show only Admins"
                     >
                       Admin
                     </Button>
                     <Button
                       type="button"
-                      variant={roleFilter === "instructor" ? "default" : "outline"}
+                      variant={
+                        roleFilter === 'instructor' ? 'default' : 'outline'
+                      }
                       size="sm"
                       className="h-7 px-2"
-                      onClick={() => setRoleFilter(prev => prev === "instructor" ? "all" : "instructor")}
+                      onClick={() =>
+                        setRoleFilter(prev =>
+                          prev === 'instructor' ? 'all' : 'instructor'
+                        )
+                      }
                       title="Show only Instructors"
                     >
                       Instructors
@@ -431,10 +502,14 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder={roleFilter === "all" ? "Search users to add..." : `Search ${roleFilter}s...`}
+                    placeholder={
+                      roleFilter === 'all'
+                        ? 'Search users to add...'
+                        : `Search ${roleFilter}s...`
+                    }
                     className="pl-8 h-9 text-sm"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={e => setSearch(e.target.value)}
                   />
                 </div>
               </div>
@@ -442,19 +517,29 @@ export default function CreateGroupButton({ className = "", onCreated }) {
               {/* Selected Members - Scrollable */}
               {selectedMemberIds.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Selected Members ({selectedMemberIds.length})</label>
+                  <label className="text-sm font-medium">
+                    Selected Members ({selectedMemberIds.length})
+                  </label>
                   <div className="max-h-[92px] overflow-y-auto no-scrollbar border rounded p-1 flex flex-wrap gap-2">
-                    {selectedMemberIds.map((memberId) => {
+                    {selectedMemberIds.map(memberId => {
                       const m = allUsers.find(u => u.id === memberId);
                       if (!m) return null;
                       return (
-                        <div key={memberId} className="flex-shrink-0 flex items-center gap-2 bg-primary/10 text-primary px-2 py-1 rounded-full text-sm">
+                        <div
+                          key={memberId}
+                          className="flex-shrink-0 flex items-center gap-2 bg-primary/10 text-primary px-2 py-1 rounded-full text-sm"
+                        >
                           <Avatar className="h-5 w-5">
                             <AvatarImage src={m.avatar} />
-                            <AvatarFallback className="text-xs">{m.name?.[0] || "U"}</AvatarFallback>
+                            <AvatarFallback className="text-xs">
+                              {m.name?.[0] || 'U'}
+                            </AvatarFallback>
                           </Avatar>
                           <span>{m.name}</span>
-                          <button onClick={() => toggleMember(memberId)} className="text-primary/70 hover:text-primary">
+                          <button
+                            onClick={() => toggleMember(memberId)}
+                            className="text-primary/70 hover:text-primary"
+                          >
                             <X className="h-3 w-3" />
                           </button>
                         </div>
@@ -468,7 +553,7 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                 <label className="text-sm font-medium">Available Users</label>
                 <ScrollArea className="h-48 border rounded-md">
                   <div className="space-y-1 p-2">
-                    {filteredUsers.map((user) => (
+                    {filteredUsers.map(user => (
                       <div
                         key={user.id}
                         className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-accent"
@@ -476,11 +561,15 @@ export default function CreateGroupButton({ className = "", onCreated }) {
                       >
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user.avatar} />
-                          <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
+                          <AvatarFallback>
+                            {user.name?.[0] || 'U'}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="font-medium text-sm">{user.name}</div>
-                          <div className="text-xs text-muted-foreground">{user.role || "User"}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {user.role || 'User'}
+                          </div>
                         </div>
                         <Checkbox
                           checked={selectedMemberIds.includes(user.id)}
@@ -495,14 +584,21 @@ export default function CreateGroupButton({ className = "", onCreated }) {
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   variant="outline"
-                  onClick={() => { resetForm(); setOpen(false); }}
+                  onClick={() => {
+                    resetForm();
+                    setOpen(false);
+                  }}
                   disabled={isCreatingGroup}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleCreate}
-                  disabled={isCreatingGroup || !groupName.trim() || selectedMemberIds.length === 0}
+                  disabled={
+                    isCreatingGroup ||
+                    !groupName.trim() ||
+                    selectedMemberIds.length === 0
+                  }
                   className="flex items-center gap-2"
                 >
                   {isCreatingGroup ? (

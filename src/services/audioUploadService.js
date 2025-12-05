@@ -1,7 +1,9 @@
 // Audio Upload Service using the same resource API
 import api from './apiClient';
- 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://creditor-backend-ceds.onrender.com';
 const RESOURCE_UPLOAD_API = `${API_BASE}/api/resource/upload-resource`;
 
 /**
@@ -27,7 +29,8 @@ export async function uploadAudio(file, options = {}) {
     const formData = new FormData();
     formData.append(fieldName, file);
     if (options.folder) formData.append('folder', options.folder);
-    if (typeof options.public !== 'undefined') formData.append('public', String(options.public));
+    if (typeof options.public !== 'undefined')
+      formData.append('public', String(options.public));
     formData.append('type', options.type || 'audio');
 
     const response = await api.post(RESOURCE_UPLOAD_API, formData, {
@@ -38,7 +41,8 @@ export async function uploadAudio(file, options = {}) {
     if (response?.data) {
       const { data, url, success, message } = response.data;
       const finalUrl = data?.url || url;
-      const isSuccess = typeof success === 'boolean' ? success : Boolean(finalUrl);
+      const isSuccess =
+        typeof success === 'boolean' ? success : Boolean(finalUrl);
       if (!isSuccess) throw new Error(message || 'Upload failed');
       return {
         success: true,
@@ -50,16 +54,18 @@ export async function uploadAudio(file, options = {}) {
       };
     }
     throw new Error('Upload failed');
-
   } catch (error) {
     console.error('Error uploading audio:', error);
     if (error.response) {
-      const errorMessage = error.response.data?.message ||
-                           error.response.data?.error ||
-                           `Upload failed with status ${error.response.status}`;
+      const errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        `Upload failed with status ${error.response.status}`;
       throw new Error(errorMessage);
     } else if (error.request) {
-      throw new Error('Network error. Please check your connection and try again.');
+      throw new Error(
+        'Network error. Please check your connection and try again.'
+      );
     } else {
       throw new Error(error.message || 'An unexpected error occurred');
     }
@@ -69,5 +75,3 @@ export async function uploadAudio(file, options = {}) {
 export default {
   uploadAudio,
 };
-
-
