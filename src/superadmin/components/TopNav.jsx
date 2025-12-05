@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Search,
   Bell,
@@ -13,11 +14,87 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 
+// Helper function to get initials from name
+const getInitials = name => {
+  if (!name) return 'U';
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+};
+
 export default function TopNav() {
   const { theme, toggleTheme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [userData, setUserData] = useState({
+    name: 'Loading...',
+    email: 'loading...',
+    firstName: '',
+    lastName: '',
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token =
+          localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL || ''}/api/user/getUserProfile`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.data && response.data.data) {
+          const user = response.data.data;
+          setUserData({
+            name:
+              user.full_name ||
+              `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+              'User',
+            email: user.email || 'No email',
+            firstName: user.first_name || '',
+            lastName: user.last_name || '',
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+        setError('Failed to load profile data');
+        // Fallback to local storage if available
+        const storedUser = localStorage.getItem('superadminData');
+        if (storedUser) {
+          try {
+            const user = JSON.parse(storedUser);
+            setUserData({
+              name: user.name || 'User',
+              email: user.email || 'No email',
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+            });
+          } catch (e) {
+            console.error('Error parsing stored user data:', e);
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -118,7 +195,7 @@ export default function TopNav() {
             title="Profile Menu"
           >
             <div className="w-full h-full flex items-center justify-center text-white font-semibold">
-              SA
+              {isLoading ? '...' : getInitials(userData.name)}
             </div>
           </button>
 
@@ -136,16 +213,18 @@ export default function TopNav() {
                 style={{ borderColor: colors.border }}
               >
                 <p
-                  className="text-sm font-semibold"
+                  className="text-sm font-semibold truncate"
                   style={{ color: colors.text.primary }}
+                  title={userData.name}
                 >
-                  Super Admin
+                  {isLoading ? 'Loading...' : userData.name}
                 </p>
                 <p
-                  className="text-xs mt-1"
+                  className="text-xs mt-1 truncate"
                   style={{ color: colors.text.secondary }}
+                  title={userData.email}
                 >
-                  admin@system.com
+                  {isLoading ? 'loading...' : userData.email}
                 </p>
               </div>
 
@@ -168,7 +247,7 @@ export default function TopNav() {
                   <span className="text-sm">Profile</span>
                 </button>
 
-                <button
+                {/* <button
                   className="w-full px-4 py-2 flex items-center gap-3"
                   style={{ color: colors.text.primary }}
                   onMouseEnter={e =>
@@ -180,7 +259,7 @@ export default function TopNav() {
                 >
                   <Settings size={16} />
                   <span className="text-sm">Settings</span>
-                </button>
+                </button> */}
 
                 <div
                   className="my-1"

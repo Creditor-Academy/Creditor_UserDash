@@ -15,6 +15,11 @@ import {
   UserCheck,
   UserX,
   ArrowUpDown,
+  X,
+  Mail,
+  Building2,
+  Calendar,
+  LogIn,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
@@ -77,6 +82,453 @@ const RoleBadge = ({ role }) => {
   );
 };
 
+// Skeleton Loader Component
+const SkeletonLoader = ({ colors }) => (
+  <div className="space-y-6">
+    {/* Profile Skeleton */}
+    <div className="flex items-center space-x-4">
+      <div
+        className="h-20 w-20 rounded-full animate-pulse"
+        style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+      ></div>
+      <div className="flex-1 space-y-2">
+        <div
+          className="h-6 w-32 rounded animate-pulse"
+          style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+        ></div>
+        <div
+          className="h-4 w-24 rounded animate-pulse"
+          style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+        ></div>
+      </div>
+    </div>
+
+    {/* Contact Info Skeleton */}
+    <div
+      className="p-4 rounded-xl space-y-3"
+      style={{
+        backgroundColor: colors.bg.hover,
+        borderColor: colors.border,
+        borderWidth: '1px',
+      }}
+    >
+      <div
+        className="h-5 w-32 rounded animate-pulse"
+        style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+      ></div>
+      {[1, 2].map(i => (
+        <div key={i} className="flex items-center space-x-3">
+          <div
+            className="h-5 w-5 rounded animate-pulse"
+            style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+          ></div>
+          <div className="flex-1 space-y-1">
+            <div
+              className="h-3 w-12 rounded animate-pulse"
+              style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+            ></div>
+            <div
+              className="h-4 w-40 rounded animate-pulse"
+              style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+            ></div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Organization Skeleton */}
+    <div
+      className="p-4 rounded-xl space-y-3"
+      style={{
+        backgroundColor: colors.bg.hover,
+        borderColor: colors.border,
+        borderWidth: '1px',
+      }}
+    >
+      <div
+        className="h-5 w-32 rounded animate-pulse"
+        style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+      ></div>
+      <div className="flex items-center space-x-3">
+        <div
+          className="h-5 w-5 rounded animate-pulse"
+          style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+        ></div>
+        <div className="flex-1 space-y-1">
+          <div
+            className="h-3 w-12 rounded animate-pulse"
+            style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+          ></div>
+          <div
+            className="h-4 w-32 rounded animate-pulse"
+            style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// User Details Modal Component
+const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
+  if (!isOpen) return null;
+
+  const formatDate = dateString => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getInitials = name => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getUserRole = user => {
+    if (!user) return 'No role assigned';
+    if (
+      user.user_roles &&
+      Array.isArray(user.user_roles) &&
+      user.user_roles.length > 0
+    ) {
+      return (
+        user.user_roles[0].charAt(0).toUpperCase() + user.user_roles[0].slice(1)
+      );
+    }
+    if (user.role) {
+      return user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    }
+    return 'No role assigned';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div
+        className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        style={{
+          backgroundColor: colors.bg.secondary,
+          borderColor: colors.border,
+          borderWidth: '1px',
+        }}
+      >
+        {/* Header */}
+        <div
+          className="sticky top-0 flex items-center justify-between p-6 border-b"
+          style={{
+            backgroundColor: colors.bg.secondary,
+            borderColor: colors.border,
+          }}
+        >
+          <h2
+            className="text-2xl font-bold"
+            style={{ color: colors.text.primary }}
+          >
+            User Details
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X className="h-6 w-6" style={{ color: colors.text.secondary }} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {isLoading ? (
+            <SkeletonLoader colors={colors} />
+          ) : (
+            <div className="space-y-6">
+              {/* Profile Section */}
+              <div className="flex items-center space-x-4">
+                <div
+                  className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  }}
+                >
+                  {getInitials(user.first_name || 'User')}
+                </div>
+                <div>
+                  <h3
+                    className="text-2xl font-bold"
+                    style={{ color: colors.text.primary }}
+                  >
+                    {user.first_name} {user.last_name}
+                  </h3>
+                  <p
+                    className="text-sm mt-1"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {getUserRole(user)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div
+                className="p-4 rounded-xl"
+                style={{
+                  backgroundColor: colors.bg.hover,
+                  borderColor: colors.border,
+                  borderWidth: '1px',
+                }}
+              >
+                <h4
+                  className="text-lg font-semibold mb-4"
+                  style={{ color: colors.text.primary }}
+                >
+                  Contact Information
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Mail className="h-5 w-5" style={{ color: '#3B82F6' }} />
+                    <div>
+                      <p
+                        className="text-xs"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        Email
+                      </p>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: colors.text.primary }}
+                      >
+                        {user.email || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Phone className="h-5 w-5" style={{ color: '#10B981' }} />
+                    <div>
+                      <p
+                        className="text-xs"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        Phone
+                      </p>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: colors.text.primary }}
+                      >
+                        {user.phone || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Organization Information */}
+              <div
+                className="p-4 rounded-xl"
+                style={{
+                  backgroundColor: colors.bg.hover,
+                  borderColor: colors.border,
+                  borderWidth: '1px',
+                }}
+              >
+                <h4
+                  className="text-lg font-semibold mb-4"
+                  style={{ color: colors.text.primary }}
+                >
+                  Organization
+                </h4>
+                <div className="flex items-center space-x-3">
+                  <Building2 className="h-5 w-5" style={{ color: '#F59E0B' }} />
+                  <div>
+                    <p
+                      className="text-xs"
+                      style={{ color: colors.text.secondary }}
+                    >
+                      Organization Name
+                    </p>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: colors.text.primary }}
+                    >
+                      {user.organization?.name || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Information */}
+              <div
+                className="p-4 rounded-xl"
+                style={{
+                  backgroundColor: colors.bg.hover,
+                  borderColor: colors.border,
+                  borderWidth: '1px',
+                }}
+              >
+                <h4
+                  className="text-lg font-semibold mb-4"
+                  style={{ color: colors.text.primary }}
+                >
+                  Account Information
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Calendar
+                      className="h-5 w-5"
+                      style={{ color: '#8B5CF6' }}
+                    />
+                    <div>
+                      <p
+                        className="text-xs"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        Member Since
+                      </p>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: colors.text.primary }}
+                      >
+                        {user.created_at ? formatDate(user.created_at) : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <LogIn className="h-5 w-5" style={{ color: '#EC4899' }} />
+                    <div>
+                      <p
+                        className="text-xs"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        Last Login
+                      </p>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: colors.text.primary }}
+                      >
+                        {user.login_activity && user.login_activity.length > 0
+                          ? formatDate(user.login_activity[0].createdAt)
+                          : 'Never'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Login Activity */}
+              {user.login_activity && user.login_activity.length > 0 && (
+                <div
+                  className="p-4 rounded-xl"
+                  style={{
+                    backgroundColor: colors.bg.hover,
+                    borderColor: colors.border,
+                    borderWidth: '1px',
+                  }}
+                >
+                  <h4
+                    className="text-lg font-semibold mb-4"
+                    style={{ color: colors.text.primary }}
+                  >
+                    Recent Login Activity (Last 5)
+                  </h4>
+                  <div className="space-y-2">
+                    {[...user.login_activity]
+                      .sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                      )
+                      .slice(0, 5)
+                      .map(activity => (
+                        <div
+                          key={activity.id}
+                          className="flex items-center justify-between p-2 rounded-lg"
+                          style={{
+                            backgroundColor: colors.bg.secondary,
+                            borderColor: colors.border,
+                            borderWidth: '1px',
+                          }}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: '#10B981' }}
+                            ></div>
+                            <span
+                              className="text-sm"
+                              style={{ color: colors.text.primary }}
+                            >
+                              {activity.action}
+                            </span>
+                          </div>
+                          <span
+                            className="text-xs"
+                            style={{ color: colors.text.secondary }}
+                          >
+                            {formatDate(activity.createdAt)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bio Section */}
+              {user.bio && (
+                <div
+                  className="p-4 rounded-xl"
+                  style={{
+                    backgroundColor: colors.bg.hover,
+                    borderColor: colors.border,
+                    borderWidth: '1px',
+                  }}
+                >
+                  <h4
+                    className="text-lg font-semibold mb-2"
+                    style={{ color: colors.text.primary }}
+                  >
+                    Bio
+                  </h4>
+                  <p
+                    className="text-sm"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {user.bio}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div
+          className="sticky bottom-0 flex justify-end gap-3 p-6 border-t"
+          style={{
+            backgroundColor: colors.bg.secondary,
+            borderColor: colors.border,
+          }}
+        >
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-lg font-medium transition-colors"
+            style={{
+              backgroundColor: colors.bg.hover,
+              color: colors.text.primary,
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Users = () => {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
@@ -90,6 +542,9 @@ const Users = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
 
   // Fetch users from API
   useEffect(() => {
@@ -183,6 +638,38 @@ const Users = () => {
     fetchUsers();
   }, []);
 
+  // Fetch user details when eye button is clicked
+  const handleViewUser = async userId => {
+    try {
+      setUserDetailsLoading(true);
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+      const url = `${apiBaseUrl}/api/org/orgprofile/${userId}`;
+      const accessToken = localStorage.getItem('authToken');
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setSelectedUser(result.data);
+        setShowUserModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      alert('Failed to load user details');
+    } finally {
+      setUserDetailsLoading(false);
+    }
+  };
+
   // Get unique organizations for filter dropdown
   const uniqueOrganizations = [
     ...new Set(users.map(user => user.organization)),
@@ -242,6 +729,18 @@ const Users = () => {
         backgroundColor: colors.bg.primary,
       }}
     >
+      {/* User Details Modal */}
+      <UserDetailsModal
+        isOpen={showUserModal}
+        user={selectedUser}
+        onClose={() => {
+          setShowUserModal(false);
+          setSelectedUser(null);
+        }}
+        colors={colors}
+        isLoading={userDetailsLoading}
+      />
+
       {/* Header */}
       <div className="mb-8 mt-4">
         <div className="flex items-center justify-between mb-2">
@@ -702,7 +1201,9 @@ const Users = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center items-center space-x-2">
                           <button
-                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150"
+                            onClick={() => handleViewUser(user.id)}
+                            disabled={userDetailsLoading}
+                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150 disabled:opacity-50"
                             title="View"
                           >
                             <Eye

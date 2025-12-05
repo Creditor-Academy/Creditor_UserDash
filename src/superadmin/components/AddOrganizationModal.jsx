@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
+import SuccessFailureDialog from './SuccessFailureDialog';
 
 export default function AddOrganizationModal({
   isOpen,
@@ -34,6 +35,10 @@ export default function AddOrganizationModal({
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState('success');
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogMessage, setDialogMessage] = useState('');
 
   // Load editing org data when modal opens
   useEffect(() => {
@@ -189,8 +194,19 @@ export default function AddOrganizationModal({
         data
       );
 
-      setSuccess(true);
+      // Show success dialog
+      setDialogType('success');
+      setDialogTitle(
+        isEditMode ? 'Organization Updated!' : 'Organization Created!'
+      );
+      setDialogMessage(
+        isEditMode
+          ? 'Your organization has been updated successfully.'
+          : 'Your organization has been created successfully.'
+      );
+      setDialogOpen(true);
 
+      // Close modal and refresh after dialog closes
       setTimeout(() => {
         setFormData({
           name: '',
@@ -204,12 +220,18 @@ export default function AddOrganizationModal({
         setSuccess(false);
         onSuccess?.();
         onClose();
-      }, 1500);
+      }, 3500); // Wait for dialog to auto-close (3s) + buffer
     } catch (err) {
-      setError(
+      const errorMessage =
         err.message ||
-          `An error occurred while ${isEditMode ? 'updating' : 'creating'} the organization`
-      );
+        `An error occurred while ${isEditMode ? 'updating' : 'creating'} the organization`;
+
+      // Show error dialog
+      setDialogType('error');
+      setDialogTitle('Operation Failed');
+      setDialogMessage(errorMessage);
+      setDialogOpen(true);
+
       console.error(
         `Error ${isEditMode ? 'updating' : 'creating'} organization:`,
         err
@@ -221,54 +243,6 @@ export default function AddOrganizationModal({
 
   const renderForm = () => (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {error && (
-        <div
-          className="p-4 rounded-lg flex items-start gap-3"
-          style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderColor: '#EF4444',
-            borderWidth: '1px',
-          }}
-        >
-          <AlertCircle
-            size={20}
-            style={{ color: '#EF4444', marginTop: '2px' }}
-          />
-          <div>
-            <p className="font-medium" style={{ color: '#EF4444' }}>
-              Error
-            </p>
-            <p className="text-sm mt-1" style={{ color: '#DC2626' }}>
-              {error}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {success && (
-        <div
-          className="p-4 rounded-lg flex items-start gap-3 animate-pulse"
-          style={{
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            borderColor: '#10B981',
-            borderWidth: '1px',
-          }}
-        >
-          <CheckCircle
-            size={20}
-            style={{ color: '#10B981', marginTop: '2px' }}
-          />
-          <div>
-            <p className="font-medium" style={{ color: '#10B981' }}>
-              Success
-            </p>
-            <p className="text-sm mt-1" style={{ color: '#059669' }}>
-              Organization {isEditMode ? 'updated' : 'created'} successfully!
-            </p>
-          </div>
-        </div>
-      )}
-
       <div>
         <label
           className="block text-sm font-semibold mb-2 uppercase tracking-wider"
@@ -700,52 +674,62 @@ export default function AddOrganizationModal({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
+    <>
+      <SuccessFailureDialog
+        isOpen={dialogOpen}
+        type={dialogType}
+        title={dialogTitle}
+        message={dialogMessage}
+        onClose={() => setDialogOpen(false)}
+        autoCloseDuration={3000}
+      />
       <div
-        className="rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-        style={{ backgroundColor: colors.bg.secondary }}
-        onClick={e => e.stopPropagation()}
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
       >
-        {/* Header */}
         <div
-          className="flex items-center justify-between p-8 border-b sticky top-0 z-10"
-          style={{
-            borderColor: colors.border,
-            background: `linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)`,
-          }}
+          className="rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+          style={{ backgroundColor: colors.bg.secondary }}
+          onClick={e => e.stopPropagation()}
         >
-          <div>
-            <h2
-              className="text-3xl font-bold"
-              style={{ color: colors.text.primary }}
-            >
-              {isEditMode ? 'Edit Organization' : 'Add New Organization'}
-            </h2>
-            <p
-              className="text-sm mt-1"
-              style={{ color: colors.text.secondary }}
-            >
-              {isEditMode
-                ? 'Update organization details and admin information'
-                : 'Create a new organization with admin credentials'}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-opacity-20 rounded-lg transition-colors flex-shrink-0 ml-4"
-            style={{ color: colors.text.primary }}
-            aria-label="Close"
+          {/* Header */}
+          <div
+            className="flex items-center justify-between p-8 border-b sticky top-0 z-10"
+            style={{
+              borderColor: colors.border,
+              background: `linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)`,
+            }}
           >
-            <X size={28} />
-          </button>
-        </div>
+            <div>
+              <h2
+                className="text-3xl font-bold"
+                style={{ color: colors.text.primary }}
+              >
+                {isEditMode ? 'Edit Organization' : 'Add New Organization'}
+              </h2>
+              <p
+                className="text-sm mt-1"
+                style={{ color: colors.text.secondary }}
+              >
+                {isEditMode
+                  ? 'Update organization details and admin information'
+                  : 'Create a new organization with admin credentials'}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-opacity-20 rounded-lg transition-colors flex-shrink-0 ml-4"
+              style={{ color: colors.text.primary }}
+              aria-label="Close"
+            >
+              <X size={28} />
+            </button>
+          </div>
 
-        {/* Form Content */}
-        <div className="p-8 overflow-y-auto flex-1">{renderForm()}</div>
+          {/* Form Content */}
+          <div className="p-8 overflow-y-auto flex-1">{renderForm()}</div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
