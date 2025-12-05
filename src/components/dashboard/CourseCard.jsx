@@ -51,13 +51,13 @@ export function CourseCard({
     <div
       className={`dashboard-course-card ${isChristmasMode ? 'christmas-course-card' : ''}`}
     >
-      <div className="flex flex-col overflow-hidden rounded-lg border bg-card min-h-[220px] relative">
+      <div className="flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
         {isChristmasMode && (
           <div className="course-holiday-label">🎄 Holiday Special</div>
         )}
         <div
           className="w-full relative overflow-hidden bg-muted"
-          style={{ height: '110px' }}
+          style={{ height: '190px' }}
         >
           <img
             src={
@@ -66,7 +66,7 @@ export function CourseCard({
             }
             alt={title}
             className="object-cover w-full h-full"
-            style={{ height: '110px' }}
+            style={{ height: '190px' }}
           />
           {isChristmasMode && (
             <span className="course-snowflake" aria-hidden="true">
@@ -94,7 +94,7 @@ export function CourseCard({
         </div>
         <div className="flex flex-col flex-1 p-3 relative">
           <h3 className="font-semibold text-base line-clamp-1">{title}</h3>
-          <p className="text-muted-foreground line-clamp-2 text-xs mt-1 mb-2">
+          <p className="text-muted-foreground line-clamp-4 text-sm mt-1 mb-2">
             {description}
           </p>
 

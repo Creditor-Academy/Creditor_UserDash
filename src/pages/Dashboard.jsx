@@ -56,6 +56,69 @@ import {
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function Dashboard() {
+  const importantUpdateStyles = `
+    .important-updates-wrapper {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .important-update-card {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      min-height: fit-content;
+      box-sizing: border-box;
+      padding: clamp(10px, 1.6vw, 18px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      overflow-x: visible;
+    }
+    .important-update-card h4 {
+      font-size: clamp(14px, 1.3vw, 18px);
+      line-height: 1.2;
+    }
+    .important-update-card p {
+      font-size: clamp(12px, 1.05vw, 15px);
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    .important-update-card button {
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+    @media (max-width: 768px) {
+      .important-update-card {
+        padding: clamp(10px, 4vw, 18px);
+      }
+    }
+    @media (min-width: 1440px) {
+      .important-updates-wrapper {
+        max-width: 720px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+    .important-updates-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+      scroll-behavior: smooth;
+    }
+    .important-updates-scroll::-webkit-scrollbar {
+      height: 6px;
+      background: transparent;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .important-updates-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .important-updates-scroll:hover::-webkit-scrollbar {
+      opacity: 1;
+    }
+  `;
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
   const { isChristmasMode } = useContext(SeasonalThemeContext);
@@ -753,7 +816,7 @@ export function Dashboard() {
     setScrollIndex(newIndex);
     if (courseScrollRef.current) {
       const cardWidth = courseScrollRef.current.firstChild?.offsetWidth || 320;
-      const scrollAmount = newIndex * (cardWidth + 24); // 24px gap
+      const scrollAmount = newIndex * (cardWidth + 16); // 16px gap (gap-4)
       courseScrollRef.current.scrollTo({
         left: scrollAmount,
         behavior: 'smooth',
@@ -942,8 +1005,8 @@ export function Dashboard() {
               </div>
 
               {/* My Courses Section (carousel with arrows) */}
-              <div className="mb-4 relative">
-                <div className="flex items-center justify-between mb-4">
+              <div className="mb-6 relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
                   <h2 className="text-2xl font-bold text-gray-800">
                     {courseSectionTitle}
                   </h2>
@@ -965,14 +1028,14 @@ export function Dashboard() {
                 {coursesLoading ? (
                   <div className="relative">
                     <div
-                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden px-1 custom-horizontal-scroll w-full"
+                      className="flex gap-4 overflow-x-auto sm:overflow-x-hidden px-1 pb-1 custom-horizontal-scroll w-full"
                       aria-label="Loading your courses"
                     >
                       {Array.from({ length: shimmerCardCount }).map(
                         (_, idx) => (
                           <div
                             key={`course-shimmer-${idx}`}
-                            className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
+                            className="w-full min-w-0 sm:min-w-[296px] sm:max-w-[296px] flex-shrink-0"
                           >
                             <CourseShimmerCard />
                           </div>
@@ -996,13 +1059,13 @@ export function Dashboard() {
                     {/* Cards Row */}
                     <div
                       ref={courseScrollRef}
-                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 custom-horizontal-scroll w-full"
+                      className="flex gap-4 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 pb-1 custom-horizontal-scroll w-full"
                       style={{ scrollBehavior: 'smooth' }}
                     >
                       {userCourses.map(course => (
                         <div
                           key={course.id}
-                          className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
+                          className="w-full min-w-0 sm:min-w-[296px] sm:max-w-[296px] flex-shrink-0"
                         >
                           <CourseCard {...course} course={course} />
                         </div>
@@ -1075,8 +1138,9 @@ export function Dashboard() {
               </div> */}
 
               {/* Important Updates Section */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
-                <div className="mb-3">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper">
+                <style>{importantUpdateStyles}</style>
+                <div className="mb-2">
                   <div className="flex items-center gap-2 mb-2">
                     <Award className="h-5 w-5 text-emerald-600" />
                     <h3 className="text-lg font-bold text-gray-800">
@@ -1089,24 +1153,24 @@ export function Dashboard() {
                     dedicated leads below.
                   </p>
                 </div>
-                <div className="space-y-3">
+                <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory important-updates-scroll">
                   {/* Athena LMS and Login Issues */}
-                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-indigo-200">
-                    <div className="flex items-start gap-3">
+                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white transition-all duration-300 hover:shadow-md hover:border-indigo-200 flex-shrink-0 snap-center important-update-card h-full">
+                    <div className="flex items-start gap-3 h-full">
                       <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                         <MonitorPlay className="h-5 w-5 text-white" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-gray-900 mb-1">
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
                           Athena LMS and Login Issues
                         </h4>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           If you're experiencing challenges with Athena LMS
                           access or login, reach out to our Platform Lead for
                           expert assistance.
                         </p>
                         <Button
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
                               'https://calendly.com/hashmi-creditoracademy',
@@ -1122,22 +1186,22 @@ export function Dashboard() {
                   </div>
 
                   {/* Payments, Credits, and Debits Issues */}
-                  <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-emerald-200">
-                    <div className="flex items-start gap-3">
+                  <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white transition-all duration-300 hover:shadow-md hover:border-emerald-200 flex-shrink-0 snap-center important-update-card h-full">
+                    <div className="flex items-start gap-3 h-full">
                       <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
                         <CheckCircle className="h-5 w-5 text-white" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-gray-900 mb-1">
-                          Payments, Credits, and Debits Issues
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
+                          Credits, and Debits Issues
                         </h4>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           For any queries or issues related to payments,
                           credits, or debits, consult our Payment Lead to ensure
                           smooth and accurate handling.
                         </p>
                         <Button
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
                               'https://calendly.com/mausam-creditoracademy',
@@ -1155,13 +1219,8 @@ export function Dashboard() {
               </div>
 
               {/* Calendar */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
-                <h3 className="text-lg font-bold text-gray-800 mb-3">
-                  Your Calendar
-                </h3>
-                <div className="flex justify-center">
-                  <DashboardCalendar />
-                </div>
+              <div className="w-full">
+                <DashboardCalendar />
               </div>
 
               {/* Todo */}
