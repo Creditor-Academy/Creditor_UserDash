@@ -3182,55 +3182,121 @@ const PaymentDashboard = () => {
                   </div>
                 </div>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3">
-                    Top Purchases
-                  </h3>
-                  <div className="h-64">
+                <div className="border rounded-lg p-4 bg-gradient-to-br from-white to-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900 text-lg">
+                      Top Purchases
+                    </h3>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {chartData.purchaseBar.length} items
+                    </span>
+                  </div>
+                  <div className="h-80">
                     {chartData.purchaseBar.length === 0 ? (
                       <div className="h-full flex items-center justify-center text-gray-500">
-                        No purchase data available
+                        <div className="text-center">
+                          <svg
+                            className="w-16 h-16 mx-auto mb-2 text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                            />
+                          </svg>
+                          <p className="text-sm">No purchase data available</p>
+                        </div>
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={chartData.purchaseBar}
-                          layout="vertical"
                           margin={{
-                            left: 120,
-                            right: 30,
+                            left: 10,
+                            right: 20,
                             top: 20,
-                            bottom: 20,
+                            bottom: 60,
                           }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" />
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#E5E7EB"
+                            vertical={false}
+                          />
                           <XAxis
-                            type="number"
-                            allowDecimals={false}
-                            tick={{ fontSize: 12 }}
+                            dataKey="name"
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
+                            tick={{ fontSize: 11, fill: '#6B7280' }}
+                            interval={0}
                           />
                           <YAxis
-                            type="category"
-                            dataKey="name"
-                            width={110}
-                            tick={{ fontSize: 11 }}
-                            tickFormatter={v => {
-                              if (typeof v !== 'string') return v;
-                              return v.length > 25 ? v.slice(0, 22) + '...' : v;
-                            }}
+                            allowDecimals={false}
+                            tick={{ fontSize: 12, fill: '#374151' }}
+                            axisLine={{ stroke: '#D1D5DB' }}
+                            tickLine={{ stroke: '#D1D5DB' }}
                           />
                           <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#1F2937',
+                              border: 'none',
+                              borderRadius: '8px',
+                              color: '#F9FAFB',
+                              padding: '10px 14px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            }}
                             formatter={(value, name) => [
-                              `${value} purchase${value !== 1 ? 's' : ''}`,
+                              `${value.toLocaleString()} purchase${value !== 1 ? 's' : ''}`,
                               name,
                             ]}
+                            labelStyle={{
+                              color: '#9CA3AF',
+                              marginBottom: '6px',
+                              fontWeight: 600,
+                            }}
                           />
                           <Bar
                             dataKey="count"
                             name="Purchases"
-                            fill="#3B82F6"
-                            radius={[0, 8, 8, 0]}
-                          />
+                            radius={[8, 8, 0, 0]}
+                            barSize={50}
+                          >
+                            {chartData.purchaseBar.map((entry, index) => {
+                              // Create a gradient color scheme
+                              const colors = [
+                                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                                'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                                'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                              ];
+                              // Use solid colors that work with Cell component
+                              const solidColors = [
+                                '#667eea',
+                                '#f5576c',
+                                '#4facfe',
+                                '#43e97b',
+                                '#fa709a',
+                                '#30cfd0',
+                                '#a8edea',
+                                '#ff9a9e',
+                              ];
+                              return (
+                                <Cell
+                                  key={`purchase-${index}`}
+                                  fill={solidColors[index % solidColors.length]}
+                                />
+                              );
+                            })}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     )}
