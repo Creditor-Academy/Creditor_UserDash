@@ -9,6 +9,7 @@ import React, {
 import {
   getAllSponsorAds,
   deleteSponsorAd as deleteSponsorAdApi,
+  updateSponsorAd as updateSponsorAdApi,
 } from '@/services/sponsorAdsService';
 
 const STORAGE_KEY = 'lms_sponsor_ads';
@@ -26,6 +27,14 @@ const POSITION_TO_PLACEMENT = {
   COURSE_PLAYER: 'course_player_sidebar',
   COURSE_LISTING: 'course_listing_tile',
   POPUP: 'popup',
+};
+
+const PLACEMENT_TO_POSITION = {
+  dashboard_banner: 'DASHBOARD',
+  dashboard_sidebar: 'SIDEBAR',
+  course_player_sidebar: 'COURSE_PLAYER',
+  course_listing_tile: 'COURSE_LISTING',
+  popup: 'POPUP',
 };
 
 const applyRuntimeStatus = ad => {
@@ -176,9 +185,38 @@ export const SponsorAdsProvider = ({ children }) => {
     setAds(prev => [hydrateAd(adPayload), ...prev]);
   }, []);
 
-  const updateAd = useCallback((id, updates) => {
-    setAds(prev => prev.map(ad => (ad.id === id ? { ...ad, ...updates } : ad)));
-  }, []);
+  const updateAd = useCallback(
+    async (id, updates = {}) => {
+      // Optimistic UI update
+      setAds(prev =>
+        prev.map(ad => (ad.id === id ? { ...ad, ...updates } : ad))
+      );
+
+      // Build payload for backend
+      const current = ads.find(ad => ad.id === id) || {};
+      const merged = { ...current, ...updates };
+
+      const payload = {
+        title: merged.title,
+        description: merged.description,
+        linkUrl: merged.ctaUrl,
+        sponsorName: merged.sponsorName,
+        startDate: merged.startDate,
+        endDate: merged.endDate,
+        position:
+          PLACEMENT_TO_POSITION[merged.placement] ||
+          merged.position ||
+          'DASHBOARD',
+        organizationId: merged.organizationId ?? null,
+        mediaFile: merged.mediaUrl,
+      };
+
+      await updateSponsorAdApi(id, payload);
+      // Re-sync from backend to ensure counts/status are accurate
+      await refreshAds();
+    },
+    [ads, refreshAds]
+  );
 
   const deleteAd = useCallback(async id => {
     await deleteSponsorAdApi(id);

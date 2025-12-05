@@ -157,7 +157,7 @@ export async function fetchDashboardSponsorAds() {
 export async function trackSponsorAdClick(adId) {
   if (!adId) return;
   try {
-    await api.post(`/api/user/dashboard/ads/${adId}/click`);
+    await api.post(`/api/user/ads/${adId}/click`);
     console.log('✅ Tracked sponsor ad click', adId);
   } catch (error) {
     console.error('❌ Failed to track sponsor ad click:', error);
