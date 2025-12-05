@@ -514,6 +514,16 @@ const KeyCapabilities = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Bottom Left Image */}
+      <div className="absolute bottom-0 left-0 z-0 pointer-events-none">
+        <img
+          src="/21446-removebg-preview.png"
+          alt="Decorative element"
+          className="w-48 h-auto opacity-80"
+          style={{ transform: 'translateY(20%)' }}
+        />
+      </div>
     </section>
   );
 };

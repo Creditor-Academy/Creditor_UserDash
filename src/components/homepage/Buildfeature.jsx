@@ -166,12 +166,17 @@ const Buildfeature = () => {
       <section
         className="relative py-12"
         style={{
-          background:
-            'linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)',
+          backgroundImage: 'url("/winter-landscape-with-deer-snow.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
         }}
       >
         {/* Decorative background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Light overlay to brighten the background */}
+          <div className="absolute inset-0 bg-white/50"></div>
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-400/5 rounded-full blur-3xl" />
           {/* Grid pattern */}
@@ -214,12 +219,14 @@ const Buildfeature = () => {
                     </h2>
 
                     {/* Description */}
-                    <p
-                      className="text-base text-gray-700 leading-relaxed max-w-lg"
-                      style={{ fontFamily: 'Arial, sans-serif' }}
-                    >
-                      {feature.description}
-                    </p>
+                    <div className="bg-white bg-opacity-60 p-4 rounded-lg max-w-lg">
+                      <p
+                        className="text-base text-gray-700 leading-relaxed"
+                        style={{ fontFamily: 'Arial, sans-serif' }}
+                      >
+                        {feature.description}
+                      </p>
+                    </div>
 
                     {/* Feature List */}
                     <div className="space-y-3 mt-6 pt-2">
@@ -351,12 +358,14 @@ const Buildfeature = () => {
                       >
                         <div className="px-6 pb-6">
                           {/* Description */}
-                          <p
-                            className="text-base text-gray-700 leading-relaxed mb-6"
-                            style={{ fontFamily: 'Arial, sans-serif' }}
-                          >
-                            {feature.description}
-                          </p>
+                          <div className="bg-white bg-opacity-60 p-4 rounded-lg mb-6">
+                            <p
+                              className="text-base text-gray-700 leading-relaxed"
+                              style={{ fontFamily: 'Arial, sans-serif' }}
+                            >
+                              {feature.description}
+                            </p>
+                          </div>
 
                           {/* Feature List */}
                           <div className="space-y-3">
