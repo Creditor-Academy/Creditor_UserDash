@@ -1002,23 +1002,6 @@ export function Dashboard() {
                 )}
               </div>
 
-              {/* Upcoming Courses Section */}
-              <div className="mb-4">
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
-                  <div className="mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                      Upcoming This Week
-                    </h2>
-                    <p className="text-gray-500 text-sm">
-                      New content launching soon
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <UpcomingCourses />
-                  </div>
-                </div>
-              </div>
-
               {/* Latest Updates Section */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -1165,6 +1148,7 @@ export function Dashboard() {
               <LiveClasses />
             </div>
           </div>
+          <UpcomingCourses />
           {/* Groups Preview Section */}
           <div className="mb-6">
             <DashboardGroup />
