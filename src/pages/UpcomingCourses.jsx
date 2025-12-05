@@ -165,17 +165,11 @@ function UpcomingCourses() {
   }, []);
 
   return (
-    <div className="mb-16 relative max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="mb-8 px-1">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Upcoming This Week
-          </h2>
-          <p className="text-gray-500">New content launching soon</p>
-        </div>
+    <div className="relative w-full">
+      {/* Header - removed as it's now in parent */}
+      <div className="mb-4 px-1">
         {/* Course filters placed below header */}
-        <div className="mt-4 flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
           {courseFilters.map(course => (
             <button
               key={course}
@@ -200,31 +194,31 @@ function UpcomingCourses() {
       {canScrollLeft && (
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll left"
         >
-          <ChevronLeft className="h-5 w-5 text-gray-700" />
+          <ChevronLeft className="h-4 w-4 text-gray-700" />
         </button>
       )}
       {canScrollRight && (
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-2.5 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll right"
         >
-          <ChevronRight className="h-5 w-5 text-gray-700" />
+          <ChevronRight className="h-4 w-4 text-gray-700" />
         </button>
       )}
 
       {/* Cards Container */}
       <div
         ref={scrollRef}
-        className="flex space-x-6 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar pb-6 px-1"
+        className="flex space-x-4 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar pb-2 px-1"
       >
         {visibleCourses.map((item, index) => (
           <div
             key={item.id}
-            className={`flex-shrink-0 w-80 rounded-xl border border-white/20 overflow-hidden snap-start 
+            className={`flex-shrink-0 w-72 sm:w-80 rounded-xl border border-white/20 overflow-hidden snap-start 
               transition-all duration-500 group hover:opacity-100
               ${index > 1 ? 'opacity-80' : 'opacity-100'} 
               hover:shadow-2xl hover:-translate-y-2 hover:z-10 hover:border-blue-300/50`}

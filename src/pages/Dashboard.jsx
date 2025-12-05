@@ -767,14 +767,14 @@ export function Dashboard() {
             onExtendMembership={() => setShowCreditsModal(true)}
           />
           {/* Top grid section - align greeting with latest updates */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}
-            <div className="xl:col-span-8 space-y-8">
+            <div className="xl:col-span-8 space-y-4">
               {/* Enhanced Greeting Section */}
               <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200">
                 <div className="animate-gradient-shift absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10"></div>
                 <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
-                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-3">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
                       <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
@@ -812,7 +812,7 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4 px-1">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
@@ -902,8 +902,8 @@ export function Dashboard() {
               </div>
 
               {/* My Courses Section (carousel with arrows) */}
-              <div className="mb-8 relative">
-                <div className="flex items-center justify-between mb-6">
+              <div className="mb-4 relative">
+                <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-gray-800">
                     My Courses
                   </h2>
@@ -1002,6 +1002,23 @@ export function Dashboard() {
                 )}
               </div>
 
+              {/* Upcoming Courses Section */}
+              <div className="mb-4">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
+                  <div className="mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                      Upcoming This Week
+                    </h2>
+                    <p className="text-gray-500 text-sm">
+                      New content launching soon
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <UpcomingCourses />
+                  </div>
+                </div>
+              </div>
+
               {/* Latest Updates Section */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -1024,7 +1041,7 @@ export function Dashboard() {
             </div>
 
             {/* Right section - enhanced sidebar widgets */}
-            <div className="xl:col-span-4 space-y-6">
+            <div className="xl:col-span-4 space-y-4">
               {/* Announcements*/}
               {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1035,8 +1052,8 @@ export function Dashboard() {
               </div> */}
 
               {/* Important Updates Section */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="mb-4">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
+                <div className="mb-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Award className="h-5 w-5 text-emerald-600" />
                     <h3 className="text-lg font-bold text-gray-800">
@@ -1049,7 +1066,7 @@ export function Dashboard() {
                     dedicated leads below.
                   </p>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Athena LMS and Login Issues */}
                   <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 transition-all duration-300 hover:shadow-md hover:border-indigo-200">
                     <div className="flex items-start gap-3">
@@ -1115,8 +1132,8 @@ export function Dashboard() {
               </div>
 
               {/* Calendar */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5">
+                <h3 className="text-lg font-bold text-gray-800 mb-3">
                   Your Calendar
                 </h3>
                 <div className="flex justify-center">
@@ -1132,14 +1149,14 @@ export function Dashboard() {
             </div>
           </div>
           {/* Catalog Banner Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-            <div className="text-center mb-6"></div>
+          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+            <div className="text-center mb-4"></div>
             <DashboardCarousel />
           </div>
 
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 <MonitorPlay className="h-6 w-6 text-purple-500" />
                 <h2 className="text-2xl font-bold text-gray-800">
                   Learning Sessions
@@ -1148,13 +1165,12 @@ export function Dashboard() {
               <LiveClasses />
             </div>
           </div>
-          <UpcomingCourses />
           {/* Groups Preview Section */}
-          <div className="mb-8">
+          <div className="mb-6">
             <DashboardGroup />
           </div>
           {/* Services using credits */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="rounded-2xl shadow-lg border border-gray-200 bg-white p-6 md:p-8">
               {/* Simple, compact header */}
               <div className="flex items-start justify-between mb-4">
