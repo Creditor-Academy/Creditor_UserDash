@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Bell,
@@ -15,6 +16,7 @@ import { darkTheme, lightTheme } from '../theme/colors';
 export default function TopNav() {
   const { theme, toggleTheme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
+  const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -167,6 +169,10 @@ export default function TopNav() {
 
               <div className="py-2">
                 <button
+                  onClick={() => {
+                    navigate('/superadmin/profile');
+                    setIsProfileMenuOpen(false);
+                  }}
                   className="w-full px-4 py-2 flex items-center gap-3"
                   style={{ color: colors.text.primary }}
                   onMouseEnter={e =>

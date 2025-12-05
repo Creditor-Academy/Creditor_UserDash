@@ -124,7 +124,7 @@ export default function AddOrganizationModal({
 
       if (isEditMode) {
         url = `${apiBaseUrl}/api/org/orgUpdate/${editingOrg.id}`;
-        method = 'PATCH';
+        method = 'PUT';
         successMessage = 'Organization updated successfully!';
       } else {
         url = `${apiBaseUrl}/api/org/create`;
@@ -136,22 +136,27 @@ export default function AddOrganizationModal({
       const dataToSend = {
         name: formData.name,
         description: formData.description,
-        logo_url: formData.logo_url,
+        logo_url: formData.logo_url || null,
         monthly_price: formData.monthly_price
           ? parseFloat(formData.monthly_price)
-          : null,
+          : undefined,
         annual_price: formData.annual_price
           ? parseFloat(formData.annual_price)
-          : null,
+          : undefined,
         user_limit: formData.user_limit
           ? parseInt(formData.user_limit, 10)
-          : null,
+          : undefined,
         storage_limit: formData.storage_limit
           ? parseInt(formData.storage_limit, 10)
-          : null,
-        credit: formData.credit ? parseInt(formData.credit, 10) : null,
+          : undefined,
+        credit: formData.credit ? parseInt(formData.credit, 10) : undefined,
         status: formData.status,
       };
+
+      // Remove undefined values from the request
+      Object.keys(dataToSend).forEach(
+        key => dataToSend[key] === undefined && delete dataToSend[key]
+      );
 
       // Add admin details only for create mode
       if (!isEditMode) {
