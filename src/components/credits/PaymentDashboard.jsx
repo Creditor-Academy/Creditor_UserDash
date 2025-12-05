@@ -3616,21 +3616,6 @@ const PaymentDashboard = () => {
                   )}
                 </div>
               </div>
-
-              {/* AI suggestions */}
-              <div className="bg-white rounded-xl border p-4">
-                <div className="text-sm font-semibold text-gray-800 mb-2">
-                  Insights & Recommendations
-                </div>
-                <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-                  {analytics.suggestions.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                  {analytics.suggestions.length === 0 && (
-                    <li>No notable trends detected. Keep monitoring.</li>
-                  )}
-                </ul>
-              </div>
             </div>
           )}
         </div>
