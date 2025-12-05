@@ -46,17 +46,12 @@ export default function Sidebar() {
       className="w-20 h-screen fixed left-0 top-0 flex flex-col items-center py-8 gap-6 transition-colors duration-300 overflow-visible"
       style={{ backgroundColor: colors.bg.secondary, zIndex: 1000 }}
     >
-      <div
-        className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-        style={{
-          background: 'linear-gradient(135deg, #FF7A3D, #A065F4)',
-          boxShadow: '0 8px 24px rgba(255,122,61,0.3)',
-        }}
-      >
-        <div
-          className="w-7 h-7 rounded-lg transition-colors duration-300"
-          style={{ backgroundColor: colors.bg.secondary }}
-        ></div>
+      <div className="mb-4">
+        <img
+          src="/logoathena.webp"
+          alt="Athena Logo"
+          className="w-12 h-12 object-contain"
+        />
       </div>
 
       {navItems.map((item, index) => (
