@@ -1173,7 +1173,7 @@ export function Dashboard() {
                           className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://calendly.com/hashmi-creditoracademy',
+                              'https://us06web.zoom.us/j/88306593264?pwd=rnaRnrQSQZN8e2Q2iQ032KAKcZlGkx.1',
                               '_blank',
                               'noopener,noreferrer'
                             )
@@ -1204,7 +1204,7 @@ export function Dashboard() {
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://calendly.com/mausam-creditoracademy',
+                              'https://us06web.zoom.us/j/4365343341?pwd=MVI6yhd83hpFTSMqeya2rLQEcbNA4k.1',
                               '_blank',
                               'noopener,noreferrer'
                             )
