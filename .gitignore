@@ -40,3 +40,5 @@ ai-provider-config.js
 *.njsproj
 *.sln
 *.sw?
+*.md
+*.txt

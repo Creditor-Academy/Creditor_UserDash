@@ -13,7 +13,6 @@ export default defineConfig(({ mode }) => ({
         target: 'http://localhost:9000',
         changeOrigin: true,
         secure: false,
-        rewrite: path => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('proxy error', err);
@@ -81,7 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://testbackend-hcoy.onrender.com'
+      'http://localhost:9000'
     ),
     // AI Service API Keys - Injected at build time
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
