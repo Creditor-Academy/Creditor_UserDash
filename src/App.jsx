@@ -58,6 +58,7 @@ import DemoQuizPage from '@/pages/DemoQuizPage';
 import CalendarPage from '@/pages/CalendarPage';
 import TodoPage from '@/pages/TodoPage';
 import ClassRecordings from '@/pages/ClassRecordings';
+import Attendance from '@/pages/Attendance';
 import CertificatePage from '../src/pages/CertificatePage';
 import SurveyInstructionPage from '@/pages/SurveyInstructionPage';
 import DebateInstructionPage from '@/pages/DebateInstructionPage';
@@ -533,6 +534,7 @@ function App() {
                 <Route path="class-recordings" element={<ClassRecordings />} />
                 <Route path="announcements" element={<Announcements />} />
                 <Route path="calendar" element={<CalendarPage />} />
+                <Route path="attendance" element={<Attendance />} />
                 <Route path="todo" element={<TodoPage />} />
                 <Route path="chatbot" element={<Chatbot />} />
                 <Route path="faqs" element={<FAQs />} />

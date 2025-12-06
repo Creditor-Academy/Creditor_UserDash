@@ -7,7 +7,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useCredits } from '@/contexts/CreditsContext';
 import { Mic, CheckCircle, Lock, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -109,7 +108,6 @@ const VOICE_OPTIONS = [
 ];
 
 const LessonListenerUnlockModal = ({ open, onOpenChange, onUnlockSuccess }) => {
-  const { balance, membership, unlockContent, refreshBalance } = useCredits();
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -127,17 +125,9 @@ const LessonListenerUnlockModal = ({ open, onOpenChange, onUnlockSuccess }) => {
   };
 
   const handleUnlock = async () => {
-    if (!membership?.isActive)
-      return setError('You need an active membership to unlock features.');
-    if (balance < LESSON_LISTENER_COST)
-      return setError(
-        `You need ${LESSON_LISTENER_COST} credits to unlock this feature.`
-      );
-
+    setError('');
     setIsUnlocking(true);
     try {
-      await unlockContent('FEATURE', 'LESSON_LISTENER', LESSON_LISTENER_COST);
-      await refreshBalance?.();
       setSuccess(true);
       setTimeout(() => {
         onUnlockSuccess?.();

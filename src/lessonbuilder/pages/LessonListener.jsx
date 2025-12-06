@@ -1,47 +1,146 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Mic,
   ChevronLeft,
-  Volume2,
   Loader2,
   Lock,
   AlertCircle,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  speechify,
-  createAudioUrl,
-  revokeAudioUrl,
-} from '@/services/speechifyapi';
 import { useUser } from '@/contexts/UserContext';
-import { isFeatureUnlocked } from '@/services/featureService';
 import LessonListenerUnlockModal from '@/components/lessonlistener/LessonListenerUnlockModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Dummy text for speech synthesis
-const DUMMY_TEXT =
-  'Welcome to our intelligent learning platform. This is a demonstration of AI-powered voice synthesis. The system can convert any text into natural-sounding speech using advanced neural networks. You can select from multiple voices, each with unique characteristics, to find the perfect match for your learning experience.';
+// Voice options with full details
+const VOICE_OPTIONS = [
+  {
+    id: '21m00Tcm4TlvDq8ikWAM',
+    name: 'Rachel',
+    characteristics: ['Clear', 'Professional', 'Warm'],
+    tagline: 'Calm instructor, great for structured walkthroughs',
+    img: 'https://i.pravatar.cc/150?img=40',
+  },
+  {
+    id: 'AZnzlk1XvdvUeBnXmlld',
+    name: 'Domi',
+    characteristics: ['Energetic', 'Engaging', 'Motivational'],
+    tagline: 'High-energy coach for quick momentum',
+    img: 'https://i.pravatar.cc/150?img=60',
+  },
+  {
+    id: 'EXAVITQu4vr4xnSDxMaL',
+    name: 'Bella',
+    characteristics: ['Soft', 'Friendly', 'Approachable'],
+    tagline: 'Supportive guide for foundational topics',
+    img: 'https://i.pravatar.cc/150?img=32',
+  },
+  {
+    id: 'ErXwobaYiN019PkySvjV',
+    name: 'Antoni',
+    characteristics: ['Confident', 'Clear', 'Authoritative'],
+    tagline: 'Authoritative presenter for technical details',
+    img: 'https://i.pravatar.cc/150?img=12',
+  },
+  {
+    id: 'MF3mGyEYCl7XYWbV9V6O',
+    name: 'Elli',
+    characteristics: ['Vibrant', 'Youthful', 'Interactive'],
+    tagline: 'Interactive partner for back-and-forth learning',
+    img: 'https://i.pravatar.cc/150?img=47',
+  },
+  {
+    id: 'TxGEqnHWrfWFTfGW9XjX',
+    name: 'Josh',
+    characteristics: ['Casual', 'Conversational', 'Relaxed'],
+    tagline: 'Casual explainer for conversational lessons',
+    img: 'https://i.pravatar.cc/150?img=68',
+  },
+  {
+    id: 'VR6AewLTigWG4xSOukaG',
+    name: 'Arnold',
+    characteristics: ['Deep', 'Authoritative', 'Professional'],
+    tagline: 'Executive tone for strategy and decisioning',
+    img: 'https://i.pravatar.cc/150?img=5',
+  },
+  {
+    id: 'pNInz6obpgDQGcFmaJgB',
+    name: 'Adam',
+    characteristics: ['Balanced', 'Versatile', 'Adaptable'],
+    tagline: 'Versatile choice for mixed content',
+    img: 'https://i.pravatar.cc/150?img=20',
+  },
+  {
+    id: 'yoZ06aMxZJJ28mfd3POQ',
+    name: 'Sam',
+    characteristics: ['Friendly', 'Approachable', 'Natural'],
+    tagline: 'Natural, approachable tone for everyday topics',
+    img: 'https://i.pravatar.cc/150?img=15',
+  },
+];
 
-// ElevenLabs voice options for speech synthesis
-const SPEECH_VOICES = [
-  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' },
-  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella' },
-  { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni' },
-  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli' },
-  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh' },
-  { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold' },
-  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam' },
-  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam' },
+const LESSON_BLOCKS = [
+  {
+    type: 'headline',
+    title: 'Credit Optimization Blueprint',
+    subtitle: 'Build a plan to raise your score and lower your costs',
+    details: [
+      'Focus: utilization, payment history, inquiries, and account mix.',
+      'Outcome: predictable, low-variance score gains over 90 days.',
+      'Constraint: avoid new hard pulls unless they materially lower APR.',
+    ],
+  },
+  {
+    type: 'textImage',
+    title: 'Utilization Wins',
+    body: 'Keep revolving utilization under 10-30% across cards. Distribute balances, request limit increases, and schedule mid-cycle payments to keep reported utilization low.',
+    details: [
+      'Target: total and per-card utilization under 10% for reporting dates.',
+      'Move balances away from cards with tight limits to spread exposure.',
+      'Request soft-pull limit increases on clean accounts every 90 days.',
+    ],
+    image:
+      'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    type: 'timeline',
+    title: '90-Day Credit Sprint',
+    steps: [
+      'Week 1: Pull reports, dispute clear errors, set autopay',
+      'Week 2-3: Pay down high-utilization cards, add mid-cycle payments',
+      'Week 4-6: Add a no-fee card or authorized user for more capacity',
+      'Week 7-12: Keep utilization low, avoid hard pulls, age accounts',
+    ],
+    highlights: [
+      'Anchor statement dates; pay 3-5 days before to control reported balance.',
+      'Stagger payments so every high-APR card gets touched twice per cycle.',
+      'If adding a card, prefer no-fee, soft-pull prequal, and high limit potential.',
+    ],
+  },
+  {
+    type: 'checklist',
+    title: 'Optimization Checklist',
+    items: [
+      'Set autopay to at least statement minimums',
+      'Schedule two payments per cycle on high-balance cards',
+      'Dispute obvious errors (duplicates, misreported limits)',
+      'Avoid new hard inquiries unless essential',
+    ],
+    notes: [
+      'Keep one small recurring charge on low-utilization cards to show activity.',
+      'If a dispute is filed, track bureau responses and follow up within 30 days.',
+      'Pause new financing unless it directly lowers utilization or APR.',
+    ],
+  },
+  {
+    type: 'cta',
+    title: 'Next Up',
+    action: 'Plan your next statement date actions',
+    note: 'Pick 2 cards to pay mid-cycle and update limits if eligible',
+    detail:
+      'Capture statement dates, set two mid-cycle payments, and pre-request soft limit increases on clean tradelines.',
+  },
 ];
 
 const LessonListener = () => {
@@ -55,59 +154,22 @@ const LessonListener = () => {
   const [checkingUnlock, setCheckingUnlock] = useState(true);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
 
-  // Visual voice avatars for display
-  const voiceAvatars = [
-    { id: 1, img: 'https://i.pravatar.cc/150?img=40', label: 'Mentor' },
-    { id: 2, img: 'https://i.pravatar.cc/150?img=60', label: 'Instructor' },
-    { id: 3, img: 'https://i.pravatar.cc/150?img=32', label: 'Narrator' },
-    { id: 4, img: 'https://i.pravatar.cc/150?img=12', label: 'Guide' },
-    { id: 5, img: 'https://i.pravatar.cc/150?img=47', label: 'Teacher' },
-    { id: 6, img: 'https://i.pravatar.cc/150?img=68', label: 'Coach' },
-  ];
-
   const [bars, setBars] = useState(
     Array.from({ length: TOTAL_BARS }, () => Math.random() * 50 + 15)
   );
-  const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Speech synthesis state
-  const [text, setText] = useState(DUMMY_TEXT);
-  const [selectedVoiceId, setSelectedVoiceId] = useState(SPEECH_VOICES[0].id);
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
-  const [error, setError] = useState(null);
-  const audioRef = useRef(null);
+  // Experience state
+  const [mode, setMode] = useState('select'); // select | blocks
+  const [selectedVoiceId, setSelectedVoiceId] = useState(null);
+  const [stack, setStack] = useState(LESSON_BLOCKS);
+  const [activeBlockIndex, setActiveBlockIndex] = useState(0);
 
   // Check if feature is unlocked
   useEffect(() => {
-    const checkUnlockStatus = async () => {
-      if (userProfile?.id) {
-        setCheckingUnlock(true);
-        try {
-          const unlocked = await isFeatureUnlocked(
-            userProfile.id,
-            'FEATURE',
-            'LESSON_LISTENER'
-          );
-          setIsUnlocked(unlocked);
-          if (!unlocked) {
-            setShowUnlockModal(true);
-          }
-        } catch (error) {
-          console.error(
-            '[LessonListener] Failed to check unlock status:',
-            error
-          );
-          setIsUnlocked(false);
-        } finally {
-          setCheckingUnlock(false);
-        }
-      } else {
-        setCheckingUnlock(false);
-      }
-    };
-    checkUnlockStatus();
+    // Always require unlock when entering the page; no API call
+    setIsUnlocked(false);
+    setShowUnlockModal(true);
+    setCheckingUnlock(false);
   }, [userProfile?.id]);
 
   useEffect(() => {
@@ -119,91 +181,32 @@ const LessonListener = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll carousel - show 3 at a time, so max index is voiceAvatars.length - 3
-  useEffect(() => {
-    const maxIndex = voiceAvatars.length - 3; // 6 - 3 = 3 (shows: 0-2, 1-3, 2-4, 3-5)
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % (maxIndex + 1));
-    }, 5000); // Change every 5 seconds (slower)
-    return () => clearInterval(interval);
-  }, [voiceAvatars.length]);
-
   const handleBack = () => {
     navigate(
       `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/preview`
     );
   };
 
-  // Cleanup audio URL on unmount
-  useEffect(() => {
-    return () => {
-      if (audioUrl) {
-        revokeAudioUrl(audioUrl);
-      }
-    };
-  }, [audioUrl]);
-
-  // Handle audio playback end
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      const handleEnded = () => {
-        setCurrentlyPlaying(null);
-      };
-      audio.addEventListener('ended', handleEnded);
-      return () => {
-        audio.removeEventListener('ended', handleEnded);
-      };
-    }
-  }, [audioUrl]);
-
-  const handleSpeak = async () => {
-    if (!text.trim()) {
-      setError('Please enter some text to convert to speech.');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setCurrentlyPlaying(null);
-
-    // Clean up previous audio URL
-    if (audioUrl) {
-      revokeAudioUrl(audioUrl);
-      setAudioUrl(null);
-    }
-
-    // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
-
-    try {
-      const selectedVoice = SPEECH_VOICES.find(v => v.id === selectedVoiceId);
-      const audioBlob = await speechify(text, selectedVoiceId);
-      const url = createAudioUrl(audioBlob);
-
-      setAudioUrl(url);
-      setCurrentlyPlaying(selectedVoice?.name || 'Unknown');
-
-      // Auto-play the audio
-      if (audioRef.current) {
-        audioRef.current.src = url;
-        audioRef.current.play().catch(err => {
-          console.error('Error playing audio:', err);
-          setError(
-            'Failed to play audio. Please check your browser permissions.'
-          );
-        });
-      }
-    } catch (err) {
-      console.error('Speech synthesis error:', err);
-      setError(err.message || 'Failed to generate speech. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleStart = () => {
+    if (!selectedVoiceId) return;
+    setMode('blocks');
   };
+
+  const handleNextBlock = () => {
+    setStack(prev => {
+      if (!prev.length) return prev;
+      const [first, ...rest] = prev;
+      return [...rest, first];
+    });
+    setActiveBlockIndex(0);
+  };
+
+  // Reset stack when entering blocks mode
+  useEffect(() => {
+    if (mode !== 'blocks') return;
+    setStack(LESSON_BLOCKS);
+    setActiveBlockIndex(0);
+  }, [mode]);
 
   // Show locked state if not unlocked
   if (checkingUnlock) {
@@ -261,26 +264,9 @@ const LessonListener = () => {
         <LessonListenerUnlockModal
           open={showUnlockModal}
           onOpenChange={setShowUnlockModal}
-          onUnlockSuccess={async () => {
-            // Refresh unlock status after successful unlock
-            if (userProfile?.id) {
-              try {
-                const unlocked = await isFeatureUnlocked(
-                  userProfile.id,
-                  'FEATURE',
-                  'LESSON_LISTENER'
-                );
-                setIsUnlocked(unlocked);
-                if (unlocked) {
-                  setShowUnlockModal(false);
-                }
-              } catch (error) {
-                console.error(
-                  '[LessonListener] Failed to refresh unlock status:',
-                  error
-                );
-              }
-            }
+          onUnlockSuccess={() => {
+            setIsUnlocked(true);
+            setShowUnlockModal(false);
           }}
         />
       </div>
@@ -333,140 +319,295 @@ const LessonListener = () => {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-20">
-        <div className="w-full max-w-5xl grid md:grid-cols-2 items-center gap-16">
-          {/* Left: Content */}
-          <div className="space-y-6">
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight text-gray-900">
-              Listen to your lessons{' '}
-              <span className="text-blue-600">in intelligent voices</span>
-            </h1>
-            <p className="text-lg text-gray-600 leading-relaxed max-w-lg">
-              Experience AI-assisted learning that adapts tone, clarity, and
-              pace — designed for your understanding.
-            </p>
-
-            {/* Speech Synthesis Controls */}
-            <div className="space-y-4 mt-8 p-6 bg-white/80 backdrop-blur-sm rounded-lg border border-blue-100 shadow-sm">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="text-input"
-                  className="text-base font-semibold text-gray-700"
-                >
-                  Text to Convert
-                </Label>
-                <Textarea
-                  id="text-input"
-                  value={text}
-                  onChange={e => setText(e.target.value)}
-                  placeholder="Enter text to convert to speech..."
-                  className="min-h-[120px] resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="voice-select"
-                  className="text-base font-semibold text-gray-700"
-                >
-                  Select Voice
-                </Label>
-                <Select
-                  value={selectedVoiceId}
-                  onValueChange={setSelectedVoiceId}
-                >
-                  <SelectTrigger id="voice-select" className="w-full">
-                    <SelectValue placeholder="Select a voice" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SPEECH_VOICES.map(voice => (
-                      <SelectItem key={voice.id} value={voice.id}>
-                        {voice.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={handleSpeak}
-                disabled={isLoading || !text.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+      <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-5xl">
+          <AnimatePresence mode="wait">
+            {mode === 'select' ? (
+              <motion.div
+                key="voice-select"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.35 }}
+                className="mx-auto max-w-3xl bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-xl p-8 text-center space-y-6"
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Speech...
-                  </>
-                ) : (
-                  <>
-                    <Volume2 className="mr-2 h-4 w-4" />
-                    Speak
-                  </>
-                )}
-              </Button>
-
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-                  {error}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">
+                    Voice Selection
+                  </p>
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                    Choose Your Lesson Voice
+                  </h1>
+                  <p className="text-gray-600 text-sm">
+                    Let’s make learning sound better.
+                  </p>
                 </div>
-              )}
 
-              {currentlyPlaying && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700 flex items-center">
-                  <Volume2 className="mr-2 h-4 w-4" />
-                  <span>
-                    Playing voice: <strong>{currentlyPlaying}</strong>
-                  </span>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {VOICE_OPTIONS.map(voice => {
+                    const isSelected = selectedVoiceId === voice.id;
+                    return (
+                      <motion.button
+                        key={voice.id}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setSelectedVoiceId(voice.id)}
+                        className={`relative w-32 h-40 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-3 px-3 ${
+                          isSelected
+                            ? 'border-gray-900 bg-gray-50 shadow-lg shadow-gray-200/80'
+                            : 'border-gray-200 hover:border-gray-400 bg-white hover:shadow-md'
+                        }`}
+                      >
+                        <div className="relative">
+                          <img
+                            src={voice.img}
+                            alt={voice.name}
+                            className="w-14 h-14 rounded-full object-cover border border-gray-200"
+                          />
+                          {isSelected && (
+                            <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px] shadow-md">
+                              <Check className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {voice.name}
+                        </div>
+                        <p className="text-[11px] text-gray-600 text-center leading-snug">
+                          {voice.tagline}
+                        </p>
+                        <div className="flex gap-1 flex-wrap justify-center">
+                          {voice.characteristics.slice(0, 2).map(tag => (
+                            <span
+                              key={tag}
+                              className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </motion.button>
+                    );
+                  })}
                 </div>
-              )}
 
-              {/* Hidden audio element for playback */}
-              <audio ref={audioRef} style={{ display: 'none' }} />
-            </div>
-          </div>
-
-          {/* Right: Mic + voice avatars - Straight horizontal layout */}
-          <div className="relative flex flex-col items-center justify-center space-y-8">
-            {/* Mic */}
-            <div className="relative w-32 h-32 rounded-full bg-white border-2 border-blue-200 flex items-center justify-center shadow-lg shadow-blue-200/50">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 opacity-50"></div>
-              <Mic className="w-8 h-8 text-blue-600 relative z-10" />
-              {/* Pulse effect */}
-              <div className="absolute inset-0 rounded-full bg-blue-400 opacity-20 animate-ping"></div>
-            </div>
-
-            {/* Voice avatars - Carousel showing 3 at a time */}
-            <div className="relative w-full max-w-2xl overflow-hidden mx-auto">
-              <div
-                className="flex items-center transition-transform duration-1000 ease-in-out"
-                style={{
-                  transform: `translateX(-${currentIndex * (100 / 3)}%)`,
-                  width: `${(voiceAvatars.length / 3) * 100}%`,
-                }}
-              >
-                {voiceAvatars.map((v, i) => (
-                  <div
-                    key={v.id}
-                    className="flex-shrink-0 flex flex-col items-center space-y-2 group cursor-pointer px-2"
-                    style={{ width: `${100 / voiceAvatars.length}%` }}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: selectedVoiceId ? 1 : 0.4 }}
+                  className="pt-2"
+                >
+                  <Button
+                    onClick={handleStart}
+                    disabled={!selectedVoiceId}
+                    className="w-full md:w-auto px-10 py-4 text-lg font-semibold bg-gray-900 hover:bg-gray-800 text-white shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-full bg-blue-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-                      <img
-                        src={v.img}
-                        alt={v.label}
-                        className="w-20 h-20 rounded-full border-2 border-blue-300 shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:border-blue-500"
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors whitespace-nowrap">
-                      {v.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+                    Start Lesson
+                  </Button>
+                </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="lesson-blocks"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.35 }}
+                className="space-y-6"
+              >
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-gray-700 font-semibold">
+                    Lesson Blocks
+                  </p>
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Your lesson is unfolding
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Cards overlay and cycle as you progress.
+                  </p>
+                </div>
+
+                <div className="relative h-[520px] max-w-3xl mx-auto">
+                  <AnimatePresence>
+                    {stack.slice(0, 3).map((block, idx) => {
+                      const depth = 3 - idx;
+                      return (
+                        <motion.div
+                          key={`${block.title}-${idx}`}
+                          initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                          animate={{
+                            opacity: 1,
+                            y: idx * 16,
+                            scale: 1 - idx * 0.03,
+                          }}
+                          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                          transition={{ duration: 0.35 }}
+                          className="absolute inset-0"
+                          style={{ zIndex: depth }}
+                        >
+                          <div className="rounded-2xl border border-gray-200 shadow-xl bg-white p-6 h-full flex flex-col justify-between">
+                            <div className="space-y-4">
+                              {block.type === 'headline' && (
+                                <div className="space-y-2">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">
+                                    Start
+                                  </div>
+                                  <h3 className="text-2xl font-bold text-gray-900">
+                                    {block.title}
+                                  </h3>
+                                  <p className="text-gray-600 text-sm">
+                                    {block.subtitle}
+                                  </p>
+                                  {block.details && (
+                                    <ul className="text-gray-700 text-sm leading-relaxed space-y-1 list-disc list-inside">
+                                      {block.details.map(item => (
+                                        <li key={item}>{item}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )}
+
+                              {block.type === 'textImage' && (
+                                <div className="grid md:grid-cols-2 gap-4 md:gap-6 items-center">
+                                  <div className="space-y-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">
+                                      Concept
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                      {block.title}
+                                    </h3>
+                                    <p className="text-gray-700 text-sm leading-relaxed">
+                                      {block.body}
+                                    </p>
+                                    {block.details && (
+                                      <ul className="text-gray-700 text-sm leading-relaxed space-y-1 list-disc list-inside">
+                                        {block.details.map(item => (
+                                          <li key={item}>{item}</li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                  </div>
+                                  <div className="relative h-40 rounded-xl overflow-hidden">
+                                    <img
+                                      src={block.image}
+                                      alt={block.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/10" />
+                                  </div>
+                                </div>
+                              )}
+
+                              {block.type === 'timeline' && (
+                                <div className="space-y-3">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">
+                                    Flow
+                                  </div>
+                                  <h3 className="text-xl font-bold text-gray-900">
+                                    {block.title}
+                                  </h3>
+                                  <div className="flex flex-col gap-3">
+                                    {block.steps.map((step, sIdx) => (
+                                      <div
+                                        key={step}
+                                        className="flex items-start gap-3"
+                                      >
+                                        <div className="w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-semibold">
+                                          {sIdx + 1}
+                                        </div>
+                                        <div className="text-gray-700 text-sm leading-relaxed">
+                                          {step}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {block.highlights && (
+                                    <ul className="text-gray-700 text-sm leading-relaxed space-y-1 list-disc list-inside pt-1">
+                                      {block.highlights.map(item => (
+                                        <li key={item}>{item}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )}
+
+                              {block.type === 'checklist' && (
+                                <div className="space-y-3">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">
+                                    Quick Wins
+                                  </div>
+                                  <h3 className="text-xl font-bold text-gray-900">
+                                    {block.title}
+                                  </h3>
+                                  <div className="grid sm:grid-cols-2 gap-2">
+                                    {block.items.map(item => (
+                                      <div
+                                        key={item}
+                                        className="flex items-start gap-2 rounded-lg border border-gray-200 px-3 py-2 bg-gray-50"
+                                      >
+                                        <Check className="w-4 h-4 text-gray-900 mt-0.5" />
+                                        <span className="text-sm text-gray-700 leading-snug">
+                                          {item}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {block.notes && (
+                                    <ul className="text-gray-700 text-sm leading-relaxed space-y-1 list-disc list-inside">
+                                      {block.notes.map(item => (
+                                        <li key={item}>{item}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )}
+
+                              {block.type === 'cta' && (
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                                  <div className="space-y-1 text-center md:text-left">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold">
+                                      Next Step
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                      {block.title}
+                                    </h3>
+                                    <p className="text-gray-600 text-sm">
+                                      {block.note}
+                                    </p>
+                                    {block.detail && (
+                                      <p className="text-gray-700 text-sm leading-relaxed">
+                                        {block.detail}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Button className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3">
+                                    {block.action}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 text-right pt-4">
+                              Swipe / Next to continue
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleNextBlock}
+                    className="px-6 py-3 border-gray-300 text-gray-800 hover:bg-gray-100"
+                  >
+                    Next Block
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

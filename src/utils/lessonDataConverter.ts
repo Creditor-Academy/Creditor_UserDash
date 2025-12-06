@@ -98,60 +98,71 @@ export function convertToModernLessonFormat(
   const modernContent: ModernLessonContent = {};
 
   // Extract introduction
-  modernContent.introduction = lessonData.introduction || 
-                              lessonData.intro || 
-                              lessonData.description ||
-                              'Welcome to this lesson. Let\'s explore the key concepts together.';
+  modernContent.introduction =
+    lessonData.introduction ||
+    lessonData.intro ||
+    lessonData.description ||
+    "Welcome to this lesson. Let's explore the key concepts together.";
 
   // Process content blocks
-  const mainContentPoints: Array<{ point: string; description: string; example?: string }> = [];
-  const qaItems: Array<{ question: string; answer: string; difficulty?: 'easy' | 'medium' | 'hard' }> = [];
+  const mainContentPoints: Array<{
+    point: string;
+    description: string;
+    example?: string;
+  }> = [];
+  const qaItems: Array<{
+    question: string;
+    answer: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+  }> = [];
   const keyTakeaways: string[] = [];
-  
+
   blocks.forEach((block, index) => {
     switch (block.type) {
       case 'text':
         if (block.content || block.html_css) {
           const content = block.content || block.html_css || '';
           const cleanContent = content.replace(/<[^>]*>/g, '').trim();
-          
+
           if (cleanContent) {
             mainContentPoints.push({
               point: `Learning Point ${index + 1}`,
-              description: cleanContent.substring(0, 200) + (cleanContent.length > 200 ? '...' : ''),
+              description:
+                cleanContent.substring(0, 200) +
+                (cleanContent.length > 200 ? '...' : ''),
             });
           }
         }
         break;
-      
+
       case 'statement':
         if (block.content || block.html_css) {
           const content = block.content || block.html_css || '';
           const cleanContent = content.replace(/<[^>]*>/g, '').trim();
-          
+
           if (cleanContent) {
             keyTakeaways.push(cleanContent);
           }
         }
         break;
-      
+
       case 'video':
         if (block.videoUrl || block.details?.video_url) {
           modernContent.multimedia = modernContent.multimedia || {};
           modernContent.multimedia.video = {
             url: block.videoUrl || block.details?.video_url || '',
-            duration: '5 min'
+            duration: '5 min',
           };
         }
         break;
-      
+
       case 'image':
         if (block.imageUrl || block.details?.image_url) {
           modernContent.multimedia = modernContent.multimedia || {};
           modernContent.multimedia.image = {
             url: block.imageUrl || block.details?.image_url || '',
             alt: block.imageTitle || block.details?.caption || 'Lesson image',
-            caption: block.imageDescription || block.details?.description || ''
+            caption: block.imageDescription || block.details?.description || '',
           };
         }
         break;
@@ -165,23 +176,29 @@ export function convertToModernLessonFormat(
 
   // Handle legacy lesson data structure
   if (lessonData.content && Array.isArray(lessonData.content)) {
-    const legacyContent = lessonData.content as Array<{ point?: string; description?: string; title?: string; subtopic?: string; content?: string }>;
-    
-    legacyContent.forEach((item) => {
+    const legacyContent = lessonData.content as Array<{
+      point?: string;
+      description?: string;
+      title?: string;
+      subtopic?: string;
+      content?: string;
+    }>;
+
+    legacyContent.forEach(item => {
       if (item.point && item.description) {
         mainContentPoints.push({
           point: item.point,
-          description: item.description
+          description: item.description,
         });
       } else if (item.title && item.content) {
         mainContentPoints.push({
           point: item.title,
-          description: item.content
+          description: item.content,
         });
       } else if (item.subtopic && item.content) {
         mainContentPoints.push({
           point: item.subtopic,
-          description: item.content
+          description: item.content,
         });
       }
     });
@@ -192,7 +209,7 @@ export function convertToModernLessonFormat(
     lessonData.subtopics.forEach((topic, index) => {
       mainContentPoints.push({
         point: `Topic ${index + 1}`,
-        description: topic
+        description: topic,
       });
     });
   }
@@ -203,7 +220,7 @@ export function convertToModernLessonFormat(
       qaItems.push({
         question: `Example ${index + 1}`,
         answer: example,
-        difficulty: 'easy' as const
+        difficulty: 'easy' as const,
       });
     });
   }
@@ -212,30 +229,35 @@ export function convertToModernLessonFormat(
   if (mainContentPoints.length > 0) {
     modernContent.mainContent = mainContentPoints;
   }
-  
+
   if (qaItems.length > 0) {
     modernContent.qa = qaItems;
   }
-  
+
   if (keyTakeaways.length > 0) {
     modernContent.keyTakeaways = keyTakeaways;
   }
 
   // Set summary
-  modernContent.summary = lessonData.summary || 
-                         'You have successfully completed this lesson and gained valuable knowledge.';
+  modernContent.summary =
+    lessonData.summary ||
+    'You have successfully completed this lesson and gained valuable knowledge.';
 
   // Generate objectives if not present
   if (!modernContent.objectives) {
     modernContent.objectives = [
       'Understand the core concepts covered in this lesson',
       'Apply the knowledge to practical scenarios',
-      'Demonstrate mastery of the key learning points'
+      'Demonstrate mastery of the key learning points',
     ];
   }
 
   // Handle images from legacy data
-  if (lessonData.images && Array.isArray(lessonData.images) && lessonData.images.length > 0) {
+  if (
+    lessonData.images &&
+    Array.isArray(lessonData.images) &&
+    lessonData.images.length > 0
+  ) {
     modernContent.multimedia = modernContent.multimedia || {};
     modernContent.multimedia.image = lessonData.images[0];
   }
@@ -243,7 +265,9 @@ export function convertToModernLessonFormat(
   return {
     id: lessonData.id,
     title: lessonData.title,
-    description: lessonData.description || 'A comprehensive lesson covering essential concepts',
+    description:
+      lessonData.description ||
+      'A comprehensive lesson covering essential concepts',
     duration: lessonData.duration || '15 min',
     instructor: lessonData.author || 'Course Instructor',
     createdAt: new Date().toISOString(),
@@ -251,7 +275,9 @@ export function convertToModernLessonFormat(
     metadata: {
       aiGenerated: isAILesson,
       generatedAt: isAILesson ? new Date().toISOString() : undefined,
-      contentTypes: blocks.map(b => b.type).filter((type, index, arr) => arr.indexOf(type) === index)
-    }
+      contentTypes: blocks
+        .map(b => b.type)
+        .filter((type, index, arr) => arr.indexOf(type) === index),
+    },
   };
 }
