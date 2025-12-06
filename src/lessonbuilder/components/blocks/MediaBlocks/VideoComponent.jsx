@@ -90,9 +90,9 @@ const VideoComponent = ({
         return;
       }
 
-      // Check file size (500MB limit)
-      if (file.size > 500 * 1024 * 1024) {
-        toast.error('Video file size should be less than 500MB');
+      // Check file size (3GB limit)
+      if (file.size > 3 * 1024 * 1024 * 1024) {
+        toast.error('Video file size should be less than 3GB');
         return;
       }
 
@@ -497,7 +497,7 @@ const VideoComponent = ({
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    MP4, WebM, OGG, AVI, MOV up to 500MB
+                    MP4, WebM, OGG, AVI, MOV up to 3 GB
                   </p>
                 </div>
               </div>
