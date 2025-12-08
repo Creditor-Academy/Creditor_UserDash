@@ -32,7 +32,7 @@
 //       ],
 //       sectionHeader: "Starter Includes:",
 //       cta: "Join Now",
-//       link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8",  
+//       link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8",
 //       popular: false,
 //       buttonStyle: 'white',
 //     },
@@ -56,7 +56,7 @@
 //       sectionHeader: 'Growth Includes:',
 //       cta: 'Join Now',
 //       popular: true,
-//       link: "https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2",  
+//       link: "https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2",
 //       featured: "Most Popular!",
 //       buttonStyle: "blue"
 //     },
@@ -514,7 +514,6 @@
 
 // export default Pricing;
 
-
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Info, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -529,10 +528,10 @@ const Pricing = () => {
       target:
         'Best for: Solo creators, tutors, and small teams. Launch Mode — Start simple, grow fast.',
       price: '$99',
-      originalPrice: '$149',
-      savings: 'Save $50',
-      period: 'per user/month',
-      billingNote: 'billed monthly',
+      originalPrice: '$99',
+      savings: '',
+      period: ' per user/month',
+      billingNote: 'monthly billing',
       features: [
         { text: '10GB of storage', info: false },
         { text: '100 AI credits per month', info: false },
@@ -547,7 +546,7 @@ const Pricing = () => {
         { text: 'Add-on flexibility (extra GB or AI credits)', info: false },
       ],
       sectionHeader: 'Starter Includes:',
-      cta: 'Get Started',
+      cta: 'Join Now',
       link: 'https://quickclick.com/r/0zx71t3oqnqkfdcmjd2gxuefe7it3i',
       popular: true,
       featured: 'Most Popular!',
@@ -623,150 +622,81 @@ const Pricing = () => {
   const goToSlide = index => setCurrentSlide(index);
 
   // Reusable Card UI (for both mobile + desktop)
-  const PlanCard = ({ plan }) => {
-    const isSpecialCard = plan.name === 'ATHENA' || plan.name === 'Starter';
+  const PlanCard = ({ plan }) => (
+    <div
+      className={`overflow-hidden h-full flex flex-col border shadow-lg rounded-lg bg-white transition-all duration-300 ${
+        plan.popular
+          ? 'border-yellow-400 border-4 shadow-2xl'
+          : 'border-gray-300'
+      }`}
+    >
+      {/* Most Popular Label */}
+      {plan.popular ? (
+        <div
+          className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
+          style={{
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+          }}
+        >
+          {plan.featured}
+        </div>
+      ) : (
+        <div className="h-14" />
+      )}
 
-    return (
-      <div className="relative">
-        {/* Hat Image Outside Top-Right Corner, Above Red Strip */}
-        {plan.name === 'ATHENA' && (
-          <div className="absolute -top-6 -right-4 w-28 h-28 sm:-top-8 sm:-right-6 sm:w-32 sm:h-32 md:-top-10 md:-right-8 md:w-40 md:h-40 lg:-top-12 lg:-right-10 lg:w-44 lg:h-44 z-20 hover:scale-105 transition-transform duration-300">
-            <img
-              src="/hat-removebg-preview.png"
-              alt="Athena hat"
-              className="w-full h-full object-contain drop-shadow-lg"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
-                transform: 'rotate(15deg)',
-              }}
-            />
+      <div className="p-6 flex-1 flex flex-col">
+        {/* Title + Target */}
+        <div className="mb-3 h-[160px] overflow-hidden">
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">
+            {plan.name}{' '}
+            {plan.nameHighlight && (
+              <span className="ml-2 px-3 py-1 bg-black text-white text-lg font-bold rounded">
+                {plan.nameHighlight}
+              </span>
+            )}
+          </h3>
+          <p className="text-sm text-gray-700">{plan.target}</p>
+        </div>
+
+        {/* Pricing */}
+        {!plan.isPlusCard && (
+          <div className="mb-4">
+            <div className="flex items-baseline gap-1">
+              <span className="text-5xl font-bold text-gray-900">
+                {plan.price}
+              </span>
+              <span className="text-gray-600 text-lg">{plan.period}</span>
+            </div>
+            <p className="text-sm text-gray-600">{plan.billingNote}</p>
           </div>
         )}
-        <div
-          className={`overflow-hidden h-full flex flex-col border shadow-lg rounded-lg transition-all duration-300 ${
-            plan.popular
-              ? 'border-yellow-400 border-4 shadow-2xl'
-              : 'border-gray-300'
-          } ${isSpecialCard ? 'bg-cover bg-center' : 'bg-white'}`}
-          style={
-            isSpecialCard
-              ? {
-                  backgroundImage: 'url(/santa_in_the_sky_1212.jpg)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                  position: 'relative',
-                  backgroundAttachment: 'fixed',
-                  backgroundBlendMode: 'normal',
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                }
-              : {}
-          }
+
+        {/* CTA Button */}
+        <a
+          href={plan.link}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full py-3 px-6 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition text-center mb-6"
         >
-          {isSpecialCard && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/10" />
-          )}
-          <div className="relative z-10">
-            {/* Amber-Red Strip for Athena Card */}
-            {plan.name === 'ATHENA' && (
-              <div className="h-5 bg-gradient-to-r from-amber-600 to-red-600 w-full relative z-10" />
-            )}
-            {/* Most Popular Label */}
-            {plan.popular ? (
-              <div
-                className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
-                style={{
-                  background:
-                    'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                }}
-              >
-                {plan.featured}
-              </div>
-            ) : (
-              <div className="h-8" />
-            )}
+          {plan.cta} →
+        </a>
 
-            <div className="px-6 pb-6 pt-1 flex-1 flex flex-col relative">
-              {/* Title + Target */}
-              <div className="h-[130px] overflow-hidden">
-                <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                  {plan.name}{' '}
-                  {plan.nameHighlight && (
-                    <span className="ml-2 px-3 py-1 bg-black text-white text-lg font-bold rounded">
-                      {plan.nameHighlight}
-                    </span>
-                  )}
-                </h3>
-                <p className="text-sm text-gray-700 pr-4">{plan.target}</p>
-              </div>
+        {/* Features */}
+        <div className="pt-6 border-t border-gray-200">
+          <h4 className="font-bold text-gray-900 mb-4">{plan.sectionHeader}</h4>
 
-              {/* Pricing */}
-              {!plan.isPlusCard ? (
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold text-gray-900">
-                      {plan.price}
-                    </span>
-                    <span className="text-gray-600">{plan.period}</span>
-                    {plan.savings && (
-                      <span className="ml-2 px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
-                        {plan.savings}
-                      </span>
-                    )}
-                  </div>
-                  {plan.originalPrice && plan.originalPrice !== plan.price && (
-                    <p className="text-sm text-gray-500 line-through">
-                      {plan.originalPrice}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-600 mt-1">
-                    {plan.billingNote}
-                  </p>
-                </div>
-              ) : (
-                <div className="h-24 mb-4 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-center">
-                    Custom Pricing Available
-                  </span>
-                </div>
-              )}
-
-              {/* CTA Button */}
-              <a
-                href={plan.link}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full py-3 px-6 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition text-center mb-6"
-              >
-                {plan.cta} →
-              </a>
-
-              {/* Features */}
-              <div className="pt-6 border-t border-gray-200">
-                <h4 className="font-bold text-gray-900 mb-4">
-                  {plan.sectionHeader}
-                </h4>
-
-                <ul className="space-y-3">
-                  {plan.features.map((f, idx) => (
-                    <li key={idx} className="flex gap-3">
-                      <span className="text-sm text-gray-800 flex-1">
-                        {f.text}
-                      </span>
-                      {f.info && <Info className="w-4 h-4 text-gray-900" />}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
+          <ul className="space-y-3">
+            {plan.features.map((f, idx) => (
+              <li key={idx} className="flex gap-3">
+                <span className="text-sm text-gray-800 flex-1">{f.text}</span>
+                {f.info && <Info className="w-4 h-4 text-gray-900" />}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   return (
     <section

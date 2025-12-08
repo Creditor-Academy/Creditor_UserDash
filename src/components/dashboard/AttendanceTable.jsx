@@ -1,5 +1,11 @@
-import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState, useMemo } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -7,33 +13,39 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
-  Search, 
-  ArrowUpDown, 
-  ArrowUp, 
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Search,
+  ArrowUpDown,
+  ArrowUp,
   ArrowDown,
   Download,
-  Filter
-} from "lucide-react";
-import { format, parseISO } from "date-fns";
+  Filter,
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
-const AttendanceTable = ({ 
-  records = [], 
-  timeRange = "monthly",
-  onTimeRangeChange 
+const AttendanceTable = ({
+  records = [],
+  timeRange = 'monthly',
+  onTimeRangeChange,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sortField, setSortField] = useState("date");
-  const [sortDirection, setSortDirection] = useState("desc");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortField, setSortField] = useState('date');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   // Sort and filter records
   const filteredAndSortedRecords = useMemo(() => {
@@ -42,15 +54,15 @@ const AttendanceTable = ({
     // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(
-        (record) =>
+        record =>
           record.className?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           record.instructor?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((record) => record.status === statusFilter);
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(record => record.status === statusFilter);
     }
 
     // Apply sorting
@@ -58,40 +70,40 @@ const AttendanceTable = ({
       let aValue, bValue;
 
       switch (sortField) {
-        case "date":
+        case 'date':
           aValue = new Date(a.date);
           bValue = new Date(b.date);
           break;
-        case "className":
-          aValue = a.className?.toLowerCase() || "";
-          bValue = b.className?.toLowerCase() || "";
+        case 'className':
+          aValue = a.className?.toLowerCase() || '';
+          bValue = b.className?.toLowerCase() || '';
           break;
-        case "status":
-          aValue = a.status || "";
-          bValue = b.status || "";
+        case 'status':
+          aValue = a.status || '';
+          bValue = b.status || '';
           break;
-        case "time":
-          aValue = a.time || "";
-          bValue = b.time || "";
+        case 'time':
+          aValue = a.time || '';
+          bValue = b.time || '';
           break;
         default:
           return 0;
       }
 
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
     return filtered;
   }, [records, searchQuery, statusFilter, sortField, sortDirection]);
 
-  const handleSort = (field) => {
+  const handleSort = field => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
@@ -99,30 +111,30 @@ const AttendanceTable = ({
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
     }
-    return sortDirection === "asc" ? (
+    return sortDirection === 'asc' ? (
       <ArrowUp className="h-4 w-4 ml-1" />
     ) : (
       <ArrowDown className="h-4 w-4 ml-1" />
     );
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = status => {
     switch (status) {
-      case "present":
+      case 'present':
         return (
           <Badge className="bg-green-500 hover:bg-green-600">
             <CheckCircle2 className="h-3 w-3 mr-1" />
             Present
           </Badge>
         );
-      case "late":
+      case 'late':
         return (
           <Badge className="bg-yellow-500 hover:bg-yellow-600">
             <AlertCircle className="h-3 w-3 mr-1" />
             Late
           </Badge>
         );
-      case "absent":
+      case 'absent':
         return (
           <Badge variant="destructive">
             <XCircle className="h-3 w-3 mr-1" />
@@ -169,7 +181,7 @@ const AttendanceTable = ({
             <Input
               placeholder="Search by class or instructor..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -198,7 +210,7 @@ const AttendanceTable = ({
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort("date")}
+                      onClick={() => handleSort('date')}
                     >
                       Date
                       <SortIcon field="date" />
@@ -209,7 +221,7 @@ const AttendanceTable = ({
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort("className")}
+                      onClick={() => handleSort('className')}
                     >
                       Class
                       <SortIcon field="className" />
@@ -220,7 +232,7 @@ const AttendanceTable = ({
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort("time")}
+                      onClick={() => handleSort('time')}
                     >
                       Time
                       <SortIcon field="time" />
@@ -232,7 +244,7 @@ const AttendanceTable = ({
                       variant="ghost"
                       size="sm"
                       className="h-8 -ml-3"
-                      onClick={() => handleSort("status")}
+                      onClick={() => handleSort('status')}
                     >
                       Status
                       <SortIcon field="status" />
@@ -241,10 +253,10 @@ const AttendanceTable = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedRecords.map((record) => (
+                {filteredAndSortedRecords.map(record => (
                   <TableRow key={record.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">
-                      {format(parseISO(record.date), "MMM d, yyyy")}
+                      {format(parseISO(record.date), 'MMM d, yyyy')}
                     </TableCell>
                     <TableCell>{record.className}</TableCell>
                     <TableCell>{record.time}</TableCell>
@@ -264,9 +276,9 @@ const AttendanceTable = ({
               No attendance records found
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {searchQuery || statusFilter !== "all"
-                ? "Try adjusting your filters"
-                : "No records available for the selected period"}
+              {searchQuery || statusFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'No records available for the selected period'}
             </p>
           </div>
         )}
@@ -274,7 +286,8 @@ const AttendanceTable = ({
         {/* Results count */}
         {filteredAndSortedRecords.length > 0 && (
           <div className="mt-4 text-sm text-muted-foreground">
-            Showing {filteredAndSortedRecords.length} of {records.length} records
+            Showing {filteredAndSortedRecords.length} of {records.length}{' '}
+            records
           </div>
         )}
       </CardContent>
@@ -283,4 +296,3 @@ const AttendanceTable = ({
 };
 
 export default AttendanceTable;
-

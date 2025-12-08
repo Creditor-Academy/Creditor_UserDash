@@ -1,0 +1,331 @@
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import mockSponsorAds from '@/data/mockSponsorAds';
+import { getAllSponsorAds } from '@/services/sponsorAdsService';
+
+const STORAGE_KEY = 'lms_sponsor_ads';
+const TIER_PRIORITY = {
+  Gold: 3,
+  Silver: 2,
+  Bronze: 1,
+};
+
+const SponsorAdsContext = createContext(null);
+
+const POSITION_TO_PLACEMENT = {
+  DASHBOARD: 'dashboard_banner',
+  SIDEBAR: 'dashboard_sidebar',
+  COURSE_PLAYER: 'course_player_sidebar',
+  COURSE_LISTING: 'course_listing_tile',
+  POPUP: 'popup',
+};
+
+const applyRuntimeStatus = ad => {
+  if (!ad) return 'Inactive';
+  if (ad.status === 'Deleted') return 'Deleted';
+  if (ad.status === 'Paused') return 'Paused';
+
+  const now = new Date();
+  const start = new Date(ad.startDate);
+  const end = new Date(ad.endDate);
+
+  if (Number.isFinite(start.getTime()) && start > now) {
+    return 'Scheduled';
+  }
+  if (Number.isFinite(end.getTime()) && end < now) {
+    return 'Expired';
+  }
+  return 'Active';
+};
+
+const hydrateAd = ad => ({
+  impressions: 0,
+  clicks: 0,
+  ctr: 0,
+  dailyImpressions: [],
+  ...ad,
+});
+
+const normalizeBackendAd = ad =>
+  hydrateAd({
+    id: ad.id,
+    sponsorName: ad.sponsor_name || ad.sponsorName,
+    title: ad.title,
+    description: ad.description,
+    mediaUrl: ad.image_url || ad.mediaUrl,
+    mediaType: 'image',
+    placement:
+      POSITION_TO_PLACEMENT[ad.position] || ad.placement || 'dashboard_banner',
+    ctaUrl: ad.link_url,
+    ctaText: ad.link_url ? 'Learn more' : '',
+    startDate: ad.start_date || ad.startDate,
+    endDate: ad.end_date || ad.endDate,
+    tier: ad.tier || 'Gold',
+    status: ad.status === 'ACTIVE' ? 'Active' : ad.status || 'Active',
+    impressions: ad.view_count ?? ad.impressions ?? 0,
+    clicks: ad.click_count ?? ad.clicks ?? 0,
+    organizationId: ad.organization_id ?? ad.organizationId ?? null,
+  });
+
+const loadInitialAds = () => {
+  if (typeof window === 'undefined') {
+    return mockSponsorAds.map(hydrateAd);
+  }
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored).map(hydrateAd);
+    }
+  } catch (error) {
+    console.warn('[SponsorAds] Failed to parse stored ads', error);
+  }
+  return mockSponsorAds.map(hydrateAd);
+};
+
+const persistAds = ads => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ads));
+  } catch (error) {
+    console.warn('[SponsorAds] Failed to persist ads', error);
+  }
+};
+
+const matchesTargeting = (ad, options = {}) => {
+  const { role, courseCategory, batch } = options;
+  if (ad.targetRoles?.length && role && !ad.targetRoles.includes(role)) {
+    return false;
+  }
+  if (
+    ad.targetCategories?.length &&
+    courseCategory &&
+    !ad.targetCategories.includes(courseCategory)
+  ) {
+    return false;
+  }
+  if (ad.targetBatches?.length && batch && !ad.targetBatches.includes(batch)) {
+    return false;
+  }
+  return true;
+};
+
+const sortByPriority = (a, b) => {
+  const tierDelta = (TIER_PRIORITY[b.tier] || 0) - (TIER_PRIORITY[a.tier] || 0);
+  if (tierDelta !== 0) return tierDelta;
+
+  const endA = new Date(a.endDate).getTime();
+  const endB = new Date(b.endDate).getTime();
+  return endA - endB;
+};
+
+export const SponsorAdsProvider = ({ children }) => {
+  const [ads, setAds] = useState(loadInitialAds);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
+
+  useEffect(() => {
+    persistAds(ads);
+  }, [ads]);
+
+  const refreshAds = useCallback(async () => {
+    try {
+      setIsSyncing(true);
+      const response = await getAllSponsorAds();
+      const backendAds = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : response?.ads;
+      if (backendAds && backendAds.length) {
+        setAds(backendAds.map(normalizeBackendAd));
+        setHasLoadedFromBackend(true);
+        return backendAds;
+      }
+      return backendAds;
+    } catch (error) {
+      console.warn(
+        '[SponsorAds] Failed to sync from backend, using local data',
+        error
+      );
+      if (!hasLoadedFromBackend) {
+        setAds(loadInitialAds());
+      }
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [hasLoadedFromBackend]);
+
+  useEffect(() => {
+    refreshAds().catch(() => {
+      // already logged; fallback handled by refreshAds
+    });
+  }, [refreshAds]);
+
+  const addAd = useCallback(adPayload => {
+    setAds(prev => [
+      {
+        id: `ad_${Date.now()}`,
+        status: 'Active',
+        impressions: Math.floor(Math.random() * 4000) + 1000,
+        clicks: Math.floor(Math.random() * 400) + 60,
+        dailyImpressions: Array.from(
+          { length: 7 },
+          () => Math.floor(Math.random() * 300) + 120
+        ),
+        ...adPayload,
+      },
+      ...prev,
+    ]);
+  }, []);
+
+  const updateAd = useCallback((id, updates) => {
+    setAds(prev => prev.map(ad => (ad.id === id ? { ...ad, ...updates } : ad)));
+  }, []);
+
+  const deleteAd = useCallback(id => {
+    setAds(prev => prev.filter(ad => ad.id !== id));
+  }, []);
+
+  const toggleAdStatus = useCallback(id => {
+    setAds(prev =>
+      prev.map(ad => {
+        if (ad.id !== id) return ad;
+        const currentStatus = applyRuntimeStatus(ad);
+        if (currentStatus === 'Expired') return ad;
+        return {
+          ...ad,
+          status: ad.status === 'Paused' ? 'Active' : 'Paused',
+        };
+      })
+    );
+  }, []);
+
+  const getActiveAdsByPlacement = useCallback(
+    (placement, options = {}) =>
+      ads
+        .filter(ad => ad.placement === placement)
+        .filter(ad => applyRuntimeStatus(ad) === 'Active')
+        .filter(ad => matchesTargeting(ad, options))
+        .sort(sortByPriority),
+    [ads]
+  );
+
+  const getPrimaryAdForPlacement = useCallback(
+    (placement, options = {}) => {
+      const active = getActiveAdsByPlacement(placement, options);
+      return active[0] || null;
+    },
+    [getActiveAdsByPlacement]
+  );
+
+  const analytics = useMemo(() => {
+    const totals = ads.reduce(
+      (acc, ad) => {
+        const impressions = Number(ad.impressions) || 0;
+        const clicks = Number(ad.clicks) || 0;
+        acc.impressions += impressions;
+        acc.clicks += clicks;
+        if (applyRuntimeStatus(ad) === 'Active') {
+          acc.activeAds += 1;
+        }
+        acc.impressionsByAd.push({
+          name: ad.title,
+          impressions,
+        });
+        acc.typeDistribution[ad.mediaType] =
+          (acc.typeDistribution[ad.mediaType] || 0) + impressions;
+        return acc;
+      },
+      {
+        impressions: 0,
+        clicks: 0,
+        activeAds: 0,
+        impressionsByAd: [],
+        typeDistribution: {},
+      }
+    );
+
+    const typeDistributionChart = Object.entries(totals.typeDistribution).map(
+      ([type, value]) => ({
+        name: type,
+        value,
+      })
+    );
+
+    const sevenDaySeries = Array.from({ length: 7 }).map((_, idx) => {
+      const dayTotal = ads.reduce((sum, ad) => {
+        if (!Array.isArray(ad.dailyImpressions)) return sum;
+        const value = ad.dailyImpressions[idx % ad.dailyImpressions.length];
+        return sum + (value || 0);
+      }, 0);
+      return {
+        day: `Day ${idx + 1}`,
+        impressions: dayTotal,
+      };
+    });
+
+    const ctr =
+      totals.impressions === 0
+        ? 0
+        : Number(((totals.clicks / totals.impressions) * 100).toFixed(2));
+
+    return {
+      totalImpressions: totals.impressions,
+      totalClicks: totals.clicks,
+      overallCTR: ctr,
+      activeAdsCount: totals.activeAds,
+      impressionsByAd: totals.impressionsByAd,
+      typeDistribution: typeDistributionChart,
+      dailyImpressions: sevenDaySeries,
+    };
+  }, [ads]);
+
+  const value = useMemo(
+    () => ({
+      ads,
+      addAd,
+      updateAd,
+      deleteAd,
+      toggleAdStatus,
+      getActiveAdsByPlacement,
+      getPrimaryAdForPlacement,
+      analytics,
+      getRuntimeStatus: applyRuntimeStatus,
+      refreshAds,
+      isSyncing,
+    }),
+    [
+      ads,
+      addAd,
+      updateAd,
+      deleteAd,
+      toggleAdStatus,
+      getActiveAdsByPlacement,
+      getPrimaryAdForPlacement,
+      analytics,
+      refreshAds,
+      isSyncing,
+    ]
+  );
+
+  return (
+    <SponsorAdsContext.Provider value={value}>
+      {children}
+    </SponsorAdsContext.Provider>
+  );
+};
+
+export const useSponsorAds = () => {
+  const context = useContext(SponsorAdsContext);
+  if (!context) {
+    throw new Error('useSponsorAds must be used within a SponsorAdsProvider');
+  }
+  return context;
+};

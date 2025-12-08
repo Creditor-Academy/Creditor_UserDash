@@ -1,23 +1,29 @@
-import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  TrendingUp, 
-  CheckCircle2, 
-  XCircle, 
+import React, { useState, useMemo } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Calendar,
+  Clock,
+  Users,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
   AlertCircle,
   CalendarDays,
   UserCheck,
-  FileText
-} from "lucide-react";
-import AttendanceCalendar from "./AttendanceCalendar";
-import AttendanceTable from "./AttendanceTable";
-import StudentAttendanceBreakdown from "./StudentAttendanceBreakdown";
+  FileText,
+} from 'lucide-react';
+import AttendanceCalendar from './AttendanceCalendar';
+import AttendanceTable from './AttendanceTable';
+import StudentAttendanceBreakdown from './StudentAttendanceBreakdown';
 
 // Mock data - Replace with real data from props/API
 const MOCK_ATTENDANCE_DATA = {
@@ -27,135 +33,138 @@ const MOCK_ATTENDANCE_DATA = {
     absentClasses: 5,
     lateClasses: 2,
     attendancePercentage: 84.4,
-    onTimePercentage: 88.9
+    onTimePercentage: 88.9,
   },
   recentRecords: [
     {
       id: 1,
-      date: "2024-01-15",
-      className: "Financial Literacy 101",
-      status: "present",
-      time: "10:00 AM",
-      instructor: "Dr. Sarah Johnson"
+      date: '2024-01-15',
+      className: 'Financial Literacy 101',
+      status: 'present',
+      time: '10:00 AM',
+      instructor: 'Dr. Sarah Johnson',
     },
     {
       id: 2,
-      date: "2024-01-14",
-      className: "Credit Building Basics",
-      status: "present",
-      time: "2:00 PM",
-      instructor: "Prof. Michael Chen"
+      date: '2024-01-14',
+      className: 'Credit Building Basics',
+      status: 'present',
+      time: '2:00 PM',
+      instructor: 'Prof. Michael Chen',
     },
     {
       id: 3,
-      date: "2024-01-13",
-      className: "Investment Strategies",
-      status: "late",
-      time: "11:00 AM",
-      instructor: "Dr. Sarah Johnson"
+      date: '2024-01-13',
+      className: 'Investment Strategies',
+      status: 'late',
+      time: '11:00 AM',
+      instructor: 'Dr. Sarah Johnson',
     },
     {
       id: 4,
-      date: "2024-01-12",
-      className: "Financial Literacy 101",
-      status: "absent",
-      time: "10:00 AM",
-      instructor: "Dr. Sarah Johnson"
+      date: '2024-01-12',
+      className: 'Financial Literacy 101',
+      status: 'absent',
+      time: '10:00 AM',
+      instructor: 'Dr. Sarah Johnson',
     },
     {
       id: 5,
-      date: "2024-01-11",
-      className: "Credit Building Basics",
-      status: "present",
-      time: "2:00 PM",
-      instructor: "Prof. Michael Chen"
-    }
+      date: '2024-01-11',
+      className: 'Credit Building Basics',
+      status: 'present',
+      time: '2:00 PM',
+      instructor: 'Prof. Michael Chen',
+    },
   ],
   studentBreakdown: [
     {
       id: 1,
-      studentName: "John Doe",
-      studentId: "STU001",
+      studentName: 'John Doe',
+      studentId: 'STU001',
       totalClasses: 45,
       attended: 40,
       absent: 3,
       late: 2,
       attendancePercentage: 88.9,
-      lastAttendance: "2024-01-15"
+      lastAttendance: '2024-01-15',
     },
     {
       id: 2,
-      studentName: "Jane Smith",
-      studentId: "STU002",
+      studentName: 'Jane Smith',
+      studentId: 'STU002',
       totalClasses: 45,
       attended: 42,
       absent: 2,
       late: 1,
       attendancePercentage: 93.3,
-      lastAttendance: "2024-01-15"
+      lastAttendance: '2024-01-15',
     },
     {
       id: 3,
-      studentName: "Bob Johnson",
-      studentId: "STU003",
+      studentName: 'Bob Johnson',
+      studentId: 'STU003',
       totalClasses: 45,
       attended: 35,
       absent: 8,
       late: 2,
       attendancePercentage: 77.8,
-      lastAttendance: "2024-01-14"
+      lastAttendance: '2024-01-14',
     },
     {
       id: 4,
-      studentName: "Alice Williams",
-      studentId: "STU004",
+      studentName: 'Alice Williams',
+      studentId: 'STU004',
       totalClasses: 45,
       attended: 44,
       absent: 1,
       late: 0,
       attendancePercentage: 97.8,
-      lastAttendance: "2024-01-15"
+      lastAttendance: '2024-01-15',
     },
     {
       id: 5,
-      studentName: "Charlie Brown",
-      studentId: "STU005",
+      studentName: 'Charlie Brown',
+      studentId: 'STU005',
       totalClasses: 45,
       attended: 30,
       absent: 12,
       late: 3,
       attendancePercentage: 66.7,
-      lastAttendance: "2024-01-12"
-    }
+      lastAttendance: '2024-01-12',
+    },
   ],
   calendarData: {
-    "2024-01-15": { status: "present", className: "Financial Literacy 101" },
-    "2024-01-14": { status: "present", className: "Credit Building Basics" },
-    "2024-01-13": { status: "late", className: "Investment Strategies" },
-    "2024-01-12": { status: "absent", className: "Financial Literacy 101" },
-    "2024-01-11": { status: "present", className: "Credit Building Basics" },
-    "2024-01-10": { status: "present", className: "Financial Literacy 101" },
-    "2024-01-09": { status: "present", className: "Investment Strategies" },
-    "2024-01-08": { status: "absent", className: "Credit Building Basics" },
-    "2024-01-05": { status: "present", className: "Financial Literacy 101" },
-    "2024-01-04": { status: "late", className: "Investment Strategies" }
-  }
+    '2024-01-15': { status: 'present', className: 'Financial Literacy 101' },
+    '2024-01-14': { status: 'present', className: 'Credit Building Basics' },
+    '2024-01-13': { status: 'late', className: 'Investment Strategies' },
+    '2024-01-12': { status: 'absent', className: 'Financial Literacy 101' },
+    '2024-01-11': { status: 'present', className: 'Credit Building Basics' },
+    '2024-01-10': { status: 'present', className: 'Financial Literacy 101' },
+    '2024-01-09': { status: 'present', className: 'Investment Strategies' },
+    '2024-01-08': { status: 'absent', className: 'Credit Building Basics' },
+    '2024-01-05': { status: 'present', className: 'Financial Literacy 101' },
+    '2024-01-04': { status: 'late', className: 'Investment Strategies' },
+  },
 };
 
-const AttendanceSection = ({ 
-  loading = false, 
+const AttendanceSection = ({
+  loading = false,
   attendanceData = MOCK_ATTENDANCE_DATA,
-  viewMode = "overview" // "overview" | "calendar" | "table" | "students"
+  viewMode = 'overview', // "overview" | "calendar" | "table" | "students"
 }) => {
   const [activeView, setActiveView] = useState(viewMode);
-  const [timeRange, setTimeRange] = useState("monthly"); // "daily" | "weekly" | "monthly"
+  const [timeRange, setTimeRange] = useState('monthly'); // "daily" | "weekly" | "monthly"
 
-  const { overview, recentRecords, studentBreakdown, calendarData } = attendanceData;
+  const { overview, recentRecords, studentBreakdown, calendarData } =
+    attendanceData;
 
   // Calculate badge status
-  const getAttendanceBadge = (percentage) => {
+  const getAttendanceBadge = percentage => {
     if (percentage >= 75) {
-      return <Badge className="bg-green-500 hover:bg-green-600">Excellent</Badge>;
+      return (
+        <Badge className="bg-green-500 hover:bg-green-600">Excellent</Badge>
+      );
     } else if (percentage >= 60) {
       return <Badge className="bg-yellow-500 hover:bg-yellow-600">Good</Badge>;
     } else {
@@ -194,19 +203,21 @@ const AttendanceSection = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{overview.totalClasses}</div>
-            <p className="text-xs text-muted-foreground">
-              This semester
-            </p>
+            <p className="text-xs text-muted-foreground">This semester</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Attendance Rate
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{overview.attendancePercentage.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">
+              {overview.attendancePercentage.toFixed(1)}%
+            </div>
             <p className="text-xs text-muted-foreground">
               {overview.attendedClasses} of {overview.totalClasses} classes
             </p>
@@ -219,7 +230,9 @@ const AttendanceSection = ({
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{overview.attendedClasses}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {overview.attendedClasses}
+            </div>
             <p className="text-xs text-muted-foreground">
               On-time: {overview.onTimePercentage.toFixed(1)}%
             </p>
@@ -232,7 +245,9 @@ const AttendanceSection = ({
             <XCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{overview.absentClasses}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {overview.absentClasses}
+            </div>
             <p className="text-xs text-muted-foreground">
               {overview.lateClasses} late arrivals
             </p>
@@ -272,38 +287,40 @@ const AttendanceSection = ({
               <CardContent>
                 <div className="space-y-4">
                   {recentRecords.length > 0 ? (
-                    recentRecords.map((record) => (
+                    recentRecords.map(record => (
                       <div
                         key={record.id}
                         className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          {record.status === "present" && (
+                          {record.status === 'present' && (
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
                           )}
-                          {record.status === "late" && (
+                          {record.status === 'late' && (
                             <AlertCircle className="h-5 w-5 text-yellow-600" />
                           )}
-                          {record.status === "absent" && (
+                          {record.status === 'absent' && (
                             <XCircle className="h-5 w-5 text-red-600" />
                           )}
                           <div>
                             <p className="font-medium">{record.className}</p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(record.date).toLocaleDateString()} • {record.time}
+                              {new Date(record.date).toLocaleDateString()} •{' '}
+                              {record.time}
                             </p>
                           </div>
                         </div>
                         <Badge
                           variant={
-                            record.status === "present"
-                              ? "default"
-                              : record.status === "late"
-                              ? "secondary"
-                              : "destructive"
+                            record.status === 'present'
+                              ? 'default'
+                              : record.status === 'late'
+                                ? 'secondary'
+                                : 'destructive'
                           }
                         >
-                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          {record.status.charAt(0).toUpperCase() +
+                            record.status.slice(1)}
                         </Badge>
                       </div>
                     ))
@@ -324,8 +341,12 @@ const AttendanceSection = ({
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Overall Attendance</span>
-                      <span className="text-sm font-bold">{overview.attendancePercentage.toFixed(1)}%</span>
+                      <span className="text-sm font-medium">
+                        Overall Attendance
+                      </span>
+                      <span className="text-sm font-bold">
+                        {overview.attendancePercentage.toFixed(1)}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div
@@ -338,7 +359,9 @@ const AttendanceSection = ({
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">On-Time Rate</span>
-                      <span className="text-sm font-bold">{overview.onTimePercentage.toFixed(1)}%</span>
+                      <span className="text-sm font-bold">
+                        {overview.onTimePercentage.toFixed(1)}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div
@@ -355,15 +378,21 @@ const AttendanceSection = ({
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <p className="text-2xl font-bold text-green-600">{overview.attendedClasses}</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {overview.attendedClasses}
+                        </p>
                         <p className="text-xs text-muted-foreground">Present</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-yellow-600">{overview.lateClasses}</p>
+                        <p className="text-2xl font-bold text-yellow-600">
+                          {overview.lateClasses}
+                        </p>
                         <p className="text-xs text-muted-foreground">Late</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-red-600">{overview.absentClasses}</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {overview.absentClasses}
+                        </p>
                         <p className="text-xs text-muted-foreground">Absent</p>
                       </div>
                     </div>
@@ -375,7 +404,7 @@ const AttendanceSection = ({
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-4">
-          <AttendanceCalendar 
+          <AttendanceCalendar
             calendarData={calendarData}
             timeRange={timeRange}
             onTimeRangeChange={setTimeRange}
@@ -383,7 +412,7 @@ const AttendanceSection = ({
         </TabsContent>
 
         <TabsContent value="table" className="mt-4">
-          <AttendanceTable 
+          <AttendanceTable
             records={recentRecords}
             timeRange={timeRange}
             onTimeRangeChange={setTimeRange}
@@ -391,9 +420,7 @@ const AttendanceSection = ({
         </TabsContent>
 
         <TabsContent value="students" className="mt-4">
-          <StudentAttendanceBreakdown 
-            students={studentBreakdown}
-          />
+          <StudentAttendanceBreakdown students={studentBreakdown} />
         </TabsContent>
       </Tabs>
     </div>
@@ -413,7 +440,7 @@ const AttendanceSectionSkeleton = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map(i => (
           <Card key={i}>
             <CardHeader className="space-y-0 pb-2">
               <Skeleton className="h-4 w-24 mb-2" />
@@ -431,7 +458,7 @@ const AttendanceSectionSkeleton = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
+            {[1, 2, 3, 4, 5].map(i => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}
           </div>
@@ -442,7 +469,7 @@ const AttendanceSectionSkeleton = () => {
 };
 
 // Empty State Component
-const EmptyState = ({ message = "No data available" }) => {
+const EmptyState = ({ message = 'No data available' }) => {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
@@ -452,4 +479,3 @@ const EmptyState = ({ message = "No data available" }) => {
 };
 
 export default AttendanceSection;
-

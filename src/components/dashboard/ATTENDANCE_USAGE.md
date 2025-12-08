@@ -1,6 +1,7 @@
 # Attendance Section - Usage Guide
 
 ## Overview
+
 The Attendance Section is a complete, production-ready UI component for tracking class attendance in your LMS Dashboard.
 
 ## Components Created
@@ -27,7 +28,7 @@ The Attendance Section is a complete, production-ready UI component for tracking
 ### Basic Usage
 
 ```jsx
-import AttendanceSection from "@/components/dashboard/AttendanceSection";
+import AttendanceSection from '@/components/dashboard/AttendanceSection';
 
 function MyDashboard() {
   return (
@@ -41,7 +42,7 @@ function MyDashboard() {
 ### With Custom Data
 
 ```jsx
-import AttendanceSection from "@/components/dashboard/AttendanceSection";
+import AttendanceSection from '@/components/dashboard/AttendanceSection';
 
 function MyDashboard() {
   const attendanceData = {
@@ -51,7 +52,7 @@ function MyDashboard() {
       absentClasses: 6,
       lateClasses: 2,
       attendancePercentage: 84.0,
-      onTimePercentage: 88.0
+      onTimePercentage: 88.0,
     },
     recentRecords: [
       // Your attendance records
@@ -60,14 +61,14 @@ function MyDashboard() {
       // Your student data
     ],
     calendarData: {
-      "2024-01-15": { status: "present", className: "Math 101" },
+      '2024-01-15': { status: 'present', className: 'Math 101' },
       // More dates...
-    }
+    },
   };
 
   return (
     <div className="container mx-auto p-6">
-      <AttendanceSection 
+      <AttendanceSection
         attendanceData={attendanceData}
         loading={false}
         viewMode="overview"
@@ -82,25 +83,25 @@ function MyDashboard() {
 Add this to your Dashboard component:
 
 ```jsx
-import AttendanceSection from "@/components/dashboard/AttendanceSection";
+import AttendanceSection from '@/components/dashboard/AttendanceSection';
 
 // Inside your Dashboard component's return:
 <div className="mb-8">
   <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
     <AttendanceSection />
   </div>
-</div>
+</div>;
 ```
 
 ## Props
 
 ### AttendanceSection
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `loading` | `boolean` | `false` | Shows loading skeleton |
-| `attendanceData` | `object` | `MOCK_ATTENDANCE_DATA` | Attendance data object |
-| `viewMode` | `string` | `"overview"` | Initial tab view |
+| Prop             | Type      | Default                | Description            |
+| ---------------- | --------- | ---------------------- | ---------------------- |
+| `loading`        | `boolean` | `false`                | Shows loading skeleton |
+| `attendanceData` | `object`  | `MOCK_ATTENDANCE_DATA` | Attendance data object |
+| `viewMode`       | `string`  | `"overview"`           | Initial tab view       |
 
 ### Data Structure
 
@@ -151,4 +152,3 @@ import AttendanceSection from "@/components/dashboard/AttendanceSection";
 - Fully responsive and accessible
 - Uses ShadCN/UI components for consistency
 - Ready for backend integration
-
