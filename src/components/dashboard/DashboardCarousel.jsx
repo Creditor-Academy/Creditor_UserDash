@@ -28,26 +28,26 @@ const carouselItems = [
     id: 2,
     type: 'image',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Rename+Chirstmas+Bonananza+Special.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Untitled+design+%284%29.png',
     title: 'Upcoming Event',
     course: 'Banner 2',
   },
-  // {
-  //   id: 3,
-  //   type: 'image',
-  //   image:
-  //     'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/unnamed+(8).webp',
-  //   title: 'Upcoming Event',
-  //   course: 'Banner 3',
-  // },
-  // {
-  //   id: 3,
-  //   type: 'image',
-  //   image:
-  //     'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/thanks+giving+(1).png',
-  //   title: 'Upcoming Event',
-  //   course: 'Banner 3',
-  // },
+  {
+    id: 3,
+    type: 'image',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Rename+Chirstmas+Bonananza+Special.png',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
+  },
+  {
+    id: 3,
+    type: 'image',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/www.creditoracademy.com+%281%29.png',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
+  },
 ];
 
 export function DashboardCarousel() {
