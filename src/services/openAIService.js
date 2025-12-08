@@ -2,6 +2,8 @@
 // Simplified AI service using only OpenAI for all AI operations
 // import OpenAI from 'openai';
 
+import secureAIService from './secureAIService.js';
+
 /**
  * OpenAI Service - Backend Proxy Wrapper
  * - All AI operations now go through backend API
