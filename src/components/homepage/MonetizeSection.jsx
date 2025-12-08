@@ -16,10 +16,39 @@ const MonetizeSection = () => {
     <section
       className="py-20 pt-32 md:pt-20 px-4 relative overflow-hidden"
       style={{
-        background:
+        /*background:
           'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
       }}
+    >*/
+        position: 'relative',
+        zIndex: 1,
+      }}
     >
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'url("/7155.jpg") center/cover no-repeat',
+          transform: 'scaleX(-1)',
+          zIndex: -1,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              'linear-gradient(135deg, rgba(3, 7, 18, 0.7) 0%, rgba(15, 23, 42, 0.75) 50%, rgba(30, 41, 59, 0.8) 100%)',
+            zIndex: 1,
+          }}
+        />
+      </div>
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Section - Content */}
