@@ -1159,8 +1159,8 @@
 
   .offer-popup-content {
     position: relative;
-    max-width: 90vw;
-    max-height: 90vh;
+    max-width: 95vw;
+    max-height: 95vh;
     background: white;
     border-radius: 1.5rem;
     overflow: hidden;
@@ -1183,7 +1183,7 @@
     display: block;
     width: 100%;
     height: auto;
-    max-width: 600px;
+    max-width: 900px;
     object-fit: contain;
   }
 

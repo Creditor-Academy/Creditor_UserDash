@@ -1196,7 +1196,7 @@ export function Dashboard() {
                           className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://scheduler.zoom.us/t/0i9brz0v/hello-i-am-an-event-card',
+                              'https://scheduler.zoom.us/daniyal-hashim/athena-lesson-editor-team',
                               '_blank',
                               'noopener,noreferrer'
                             )
