@@ -106,7 +106,9 @@ describe('ImageUploadService', () => {
       expect.stringContaining('/api/resource/upload-resource'),
       expect.any(FormData),
       expect.objectContaining({
-        timeout: 60000,
+        headers: expect.objectContaining({
+          'Content-Type': 'multipart/form-data',
+        }),
       })
     );
   });

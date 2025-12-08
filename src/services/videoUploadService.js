@@ -29,9 +29,9 @@ export async function uploadVideo(file, options = {}) {
         'Please upload a valid video (MP4, WEBM, OGG, MOV, MKV, AVI)'
       );
     }
-    // Video size limit (500MB)
-    if (file.size > 500 * 1024 * 1024) {
-      throw new Error('Video size should be less than 500MB');
+    // Video size limit (3GB)
+    if (file.size > 3 * 1024 * 1024 * 1024) {
+      throw new Error('Video size should be less than 3GB');
     }
 
     const fieldName = options.fieldName || 'resource';
@@ -47,6 +47,8 @@ export async function uploadVideo(file, options = {}) {
     const response = await api.post(RESOURCE_UPLOAD_API, formData, {
       timeout: 600000, // Allow large uploads
       withCredentials: true,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
 
     if (response?.data) {
