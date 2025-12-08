@@ -96,6 +96,177 @@ class StructuredLessonGenerator {
     return [...new Set(words)].slice(0, 5);
   }
 
+  safeParseJSON(text, fallback) {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.warn('JSON parse failed, using fallback bundle', e.message);
+      return fallback;
+    }
+  }
+
+  getDefaultBundle(context) {
+    return {
+      master_heading: `Mastering ${context.topic}`,
+      paragraph: `Explore the essentials of ${context.topic} with clear explanations tailored for ${context.targetAudience}.`,
+      elegant_quote: `${context.topic} empowers people to solve real problems.`,
+      carousel_quotes: [
+        {
+          quote: `${context.topic} is reshaping modern practice.`,
+          author: 'Expert Instructor',
+          title: 'Learning Strategist',
+        },
+        {
+          quote: `Understanding ${context.topic} unlocks new opportunities.`,
+          author: 'Industry Leader',
+          title: 'Practitioner',
+        },
+        {
+          quote: `Practical mastery of ${context.topic} is a career advantage.`,
+          author: 'Coach',
+          title: 'Mentor',
+        },
+      ],
+      numbered_list: [
+        `Key principle of ${context.topic}`,
+        `Practical application for ${context.subject}`,
+        `Common pitfall to avoid`,
+      ],
+      table: {
+        headers: ['Concept', 'Why it matters', 'Example'],
+        rows: [
+          [
+            `${context.topic} Basics`,
+            'Foundation for growth',
+            'Real-world scenario',
+          ],
+          ['Application', 'Turns theory into action', 'Project walkthrough'],
+          ['Next Steps', 'Plan continued learning', 'Practice checklist'],
+        ],
+      },
+    };
+  }
+
+  async generateTextBundle(context) {
+    const systemPrompt =
+      'You are a concise instructional writer. Return compact Premium-quality lesson blocks as JSON only.';
+    const userPrompt = `Produce JSON with keys:
+- master_heading: 5-10 word title
+- paragraph: 3-4 sentence intro
+- elegant_quote: 1-2 sentence motivating quote (no quotes around it)
+- carousel_quotes: array of 3 objects [{quote, author, title}]
+- numbered_list: array of 5 concise bullet strings
+- table: {headers: array of 3 short headers, rows: array of 3 rows, each row array of 3 concise cells}
+Topic: ${context.topic}
+Audience: ${context.targetAudience}
+Difficulty: ${context.difficulty}
+Keep outputs short and direct.`;
+
+    const fallback = this.getDefaultBundle(context);
+    try {
+      const raw = await optimizedOpenAIService.generateText(userPrompt, {
+        maxTokens: 240, // tighter budget for faster turnaround
+        temperature: 0.65,
+        systemPrompt,
+        timeout: 30000,
+      });
+      const parsed = this.safeParseJSON(raw, fallback);
+      return parsed || fallback;
+    } catch (error) {
+      console.warn(
+        'Text bundle generation failed, using defaults:',
+        error.message
+      );
+      return fallback;
+    }
+  }
+
+  buildBlocksFromBundle(bundle) {
+    const blocks = [];
+
+    blocks.push({
+      id: `master-heading-${Date.now()}`,
+      type: 'text',
+      textType: 'master_heading',
+      content: bundle.master_heading,
+      gradient: `gradient${Math.floor(Math.random() * 6) + 1}`,
+      order: 0,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'master_heading',
+        aiGenerated: true,
+        generatedAt: new Date().toISOString(),
+      },
+    });
+
+    blocks.push({
+      id: `paragraph-${Date.now()}`,
+      type: 'text',
+      textType: 'paragraph',
+      content: bundle.paragraph,
+      order: 1,
+      isAIGenerated: true,
+      metadata: { variant: 'paragraph', aiGenerated: true },
+    });
+
+    blocks.push({
+      id: `statement-${Date.now()}`,
+      type: 'statement',
+      variant: 'statement-b',
+      content: bundle.elegant_quote,
+      order: 2,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'statement-b',
+        style: 'elegant-quote',
+        aiGenerated: true,
+      },
+    });
+
+    blocks.push({
+      id: `quote-carousel-${Date.now()}`,
+      type: 'quote',
+      variant: 'quote_carousel',
+      quotes: bundle.carousel_quotes,
+      order: 3,
+      isAIGenerated: true,
+      metadata: { variant: 'quote_carousel', aiGenerated: true },
+    });
+
+    blocks.push({
+      id: `numbered-list-${Date.now()}`,
+      type: 'list',
+      listType: 'numbered',
+      numberingStyle: 'decimal',
+      items: bundle.numbered_list,
+      order: 6, // will be re-ordered when assembled
+      isAIGenerated: true,
+      metadata: {
+        variant: 'numbered',
+        aiGenerated: true,
+        itemCount: bundle.numbered_list?.length || 0,
+      },
+    });
+
+    const tableData = bundle.table || { headers: [], rows: [] };
+    blocks.push({
+      id: `table-${Date.now()}`,
+      type: 'table',
+      variant: 'styled',
+      headers: tableData.headers,
+      rows: tableData.rows,
+      order: 7, // will be re-ordered when assembled
+      isAIGenerated: true,
+      metadata: {
+        variant: 'styled-with-headers',
+        rowCount: tableData.rows?.length || 0,
+        aiGenerated: true,
+      },
+    });
+
+    return blocks;
+  }
+
   /**
    */
   async generateLesson(lessonId, courseData, onProgress = null, config = {}) {
@@ -108,90 +279,62 @@ class StructuredLessonGenerator {
     const context = this.extractContext(courseData);
     console.log('📋 Extracted context:', context);
 
-    // Check if images should be skipped (QUICK mode)
+    const maxImages = config.maxImages ?? 2;
     const skipImages =
-      config.skipImages || courseData.generationMode === 'QUICK';
+      config.skipImages ||
+      config.includeImages === false ||
+      courseData.generationMode === 'QUICK' ||
+      maxImages === 0;
     if (skipImages) {
-      console.log('⚡ QUICK MODE: Skipping image generation for speed');
+      console.log('⚡ Image generation skipped for speed');
     }
 
     const blocks = [];
-    const totalBlocks = skipImages ? 6 : 8; // 6 blocks without images, 8 with
+    const totalBlocks = skipImages ? 6 : 6 + Math.min(maxImages, 2); // text set + images + divider
 
     try {
-      // Generate ALL blocks in parallel (OPTIMIZED - Phase 6: Ultra Parallel)
       onProgress?.({
         current: 1,
         total: totalBlocks,
-        message: 'Generating all content blocks in parallel...',
+        message: 'Generating lesson content bundle...',
       });
 
-      // Generate blocks conditionally based on mode
-      const blockPromises = [
-        this.generateWithRetry(() => this.generateMasterHeading(context)),
-        this.generateWithRetry(() => this.generateParagraph(context)),
-        this.generateWithRetry(() => this.generateElegantQuote(context)),
-        this.generateWithRetry(() => this.generateCarouselQuotes(context)),
-        this.generateWithRetry(() => this.generateNumberedList(context)),
-        this.generateWithRetry(() => this.generateTable(context)),
-        Promise.resolve(this.generateDivider()), // Static, no async needed
-      ];
+      // Single-call text bundle to reduce round-trips
+      const textBundle = await this.generateTextBundle(context);
+      const textBlocks = this.buildBlocksFromBundle(textBundle);
 
-      // Only add image generation if not in QUICK mode
+      // Add text blocks first
+      blocks.push(...textBlocks);
+
+      // Generate images (optional) in parallel
       if (!skipImages) {
-        blockPromises.splice(
-          4,
-          0,
-          this.generateWithRetry(() => this.generateImageLeft(context)),
-          this.generateWithRetry(() => this.generateImageRight(context))
-        );
+        const imagePromises = [];
+        if (maxImages >= 1) {
+          imagePromises.push(
+            this.generateWithRetry(() => this.generateImageLeft(context))
+          );
+        }
+        if (maxImages >= 2) {
+          imagePromises.push(
+            this.generateWithRetry(() => this.generateImageRight(context))
+          );
+        }
+
+        onProgress?.({
+          current: blocks.length,
+          total: totalBlocks,
+          message: 'Generating lesson visuals...',
+        });
+
+        const generatedImages = await Promise.all(imagePromises);
+        blocks.splice(4, 0, ...generatedImages); // place images after carousel quotes
       }
 
-      const generatedBlocks = await Promise.all(blockPromises);
-
-      // Destructure based on mode
-      let masterHeading,
-        paragraph,
-        elegantQuote,
-        carouselQuotes,
-        imageLeft,
-        imageRight,
-        numberedList,
-        table,
-        divider;
-
-      if (skipImages) {
-        [
-          masterHeading,
-          paragraph,
-          elegantQuote,
-          carouselQuotes,
-          numberedList,
-          table,
-          divider,
-        ] = generatedBlocks;
-      } else {
-        [
-          masterHeading,
-          paragraph,
-          elegantQuote,
-          carouselQuotes,
-          imageLeft,
-          imageRight,
-          numberedList,
-          table,
-          divider,
-        ] = generatedBlocks;
-      }
-
-      // Add all blocks in order
-      blocks.push(masterHeading, paragraph, elegantQuote, carouselQuotes);
-
-      if (!skipImages) {
-        blocks.push(imageLeft, imageRight);
-      }
-
-      blocks.push(numberedList, table, divider);
+      // Re-order numbers to stay sequential
+      blocks.push(this.generateDivider());
+      blocks.forEach((block, index) => {
+        block.order = index;
+      });
 
       // Convert blocks to HTML
       const processedBlocks = blocks.map(block => ({

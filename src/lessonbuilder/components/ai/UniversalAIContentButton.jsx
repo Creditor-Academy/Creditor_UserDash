@@ -44,7 +44,8 @@ const UniversalAIContentButton = ({
     includeExamples: true,
     includeAssessments: true,
     includeSummary: true,
-    includeInteractive: false,
+    includeInteractive: true,
+    useContentLibrary: true,
   });
 
   const handleGenerateAIContent = () => {

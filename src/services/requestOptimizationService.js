@@ -11,6 +11,10 @@
  * - Performance metrics
  */
 
+// Allow tuning via env (Vite) so we can speed up AI-heavy flows like Premium
+const MAX_AI_CONCURRENCY =
+  Number(import.meta.env?.VITE_AI_MAX_CONCURRENCY) || 12; // was 5
+
 class RequestOptimizationService {
   constructor(options = {}) {
     // Configuration
@@ -349,7 +353,7 @@ class RequestOptimizationService {
 
 // Create singleton instance
 const requestOptimizationService = new RequestOptimizationService({
-  maxConcurrentCalls: 5, // Max 5 concurrent API calls
+  maxConcurrentCalls: MAX_AI_CONCURRENCY, // Raised for faster AI generation
   cacheExpiration: 5 * 60 * 1000, // 5 minute cache
   enableMetrics: true,
   enableDeduplication: true,

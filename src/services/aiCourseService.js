@@ -703,6 +703,7 @@ export async function createCompleteAICourse(courseData) {
       QUICK: {
         contentType: 'outline',
         includeImages: false,
+        maxImages: 0,
         includeAssessments: false,
         includeExamples: false,
         maxTokens: 500,
@@ -710,6 +711,7 @@ export async function createCompleteAICourse(courseData) {
       STANDARD: {
         contentType: 'comprehensive',
         includeImages: true,
+        maxImages: 1,
         includeAssessments: true,
         includeExamples: true,
         maxTokens: 1000,
@@ -717,6 +719,7 @@ export async function createCompleteAICourse(courseData) {
       COMPLETE: {
         contentType: 'comprehensive',
         includeImages: true,
+        maxImages: 2,
         includeAssessments: true,
         includeExamples: true,
         includeSummary: true,
@@ -725,6 +728,7 @@ export async function createCompleteAICourse(courseData) {
       PREMIUM: {
         contentType: 'comprehensive',
         includeImages: true,
+        maxImages: 1, // speed-oriented: single high-quality image
         includeAssessments: true,
         includeExamples: true,
         includeSummary: true,
@@ -736,6 +740,13 @@ export async function createCompleteAICourse(courseData) {
     const config =
       generationConfig[generationMode] || generationConfig.STANDARD;
     console.log(`🎯 Using ${generationMode} generation mode`);
+
+    // Fast Premium toggle: allow caller to skip images even in Premium for speed
+    if (generationMode === 'PREMIUM' && courseData?.fastPremium === true) {
+      config.includeImages = false;
+      config.maxImages = 0;
+      console.log('⚡ Fast Premium enabled: skipping images for speed');
+    }
 
     // Process lessons in batches for parallel execution (OPTIMIZED - Phase 3: Aggressive parallelization)
     // BATCH_SIZE increased to 20 for maximum parallelization (from 10)
@@ -806,7 +817,13 @@ export async function createCompleteAICourse(courseData) {
                     `  └─ ${progress.message} (${progress.current}/${progress.total})`
                   );
                 },
-                { skipImages: generationMode === 'QUICK' } // Pass config to skip images in QUICK mode
+                {
+                  skipImages:
+                    generationMode === 'QUICK' ||
+                    config.includeImages === false,
+                  includeImages: config.includeImages,
+                  maxImages: config.maxImages,
+                } // Pass config to control images per mode
               );
 
               if (result.success) {
@@ -914,13 +931,7 @@ export async function createCompleteAICourse(courseData) {
         }
       });
 
-      // Add minimal delay between batches to avoid rate limiting (OPTIMIZED: reduced from 500ms to 100ms)
-      if (i + BATCH_SIZE < createdLessons.length) {
-        console.log(
-          `⏳ Batch ${batchNumber} complete, waiting 100ms before next batch...`
-        );
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // No artificial delay between batches for Premium speed; rely on upstream rate limits
     }
 
     // Log content generation summary

@@ -49,7 +49,7 @@ const AIStreamingGeneration = ({ isOpen, onClose, onComplete, courseData }) => {
     ]);
   };
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = () => Promise.resolve(); // remove artificial waits for speed
 
   const startGeneration = async () => {
     setIsGenerating(true);

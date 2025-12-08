@@ -37,6 +37,19 @@ class UniversalAILessonService {
     options = {}
   ) {
     try {
+      // Default to content library + interactive enabled
+      const mergedOptions = {
+        includeInteractive:
+          options.includeInteractive === undefined
+            ? true
+            : options.includeInteractive,
+        useContentLibrary:
+          options.useContentLibrary === undefined
+            ? true
+            : options.useContentLibrary,
+        ...options,
+      };
+
       console.log('🎯 Universal AI Lesson Content Generation Started');
       console.log('📚 Lesson:', lessonData?.title || 'Unknown');
       console.log('📖 Module:', moduleData?.title || 'Unknown');
@@ -47,7 +60,10 @@ class UniversalAILessonService {
       const courseTitle = courseData?.title || 'Course';
 
       // Use blueprint-structured lesson (15 sections) if specified
-      if (options.useBlueprintStructure || options.blueprintStructure) {
+      if (
+        mergedOptions.useBlueprintStructure ||
+        mergedOptions.blueprintStructure
+      ) {
         console.log('📋 Generating blueprint-structured lesson (15 sections)');
         return await this.generateBlueprintStructuredLesson(
           lessonTitle,
@@ -58,7 +74,7 @@ class UniversalAILessonService {
       }
 
       // Use simple single lesson approach
-      if (options.simple || options.fallback) {
+      if (mergedOptions.simple || mergedOptions.fallback) {
         return this.generateSimpleLessonContent(
           lessonTitle,
           moduleTitle,
@@ -67,12 +83,12 @@ class UniversalAILessonService {
       }
 
       // Structured lesson plan path for premium mode
-      if (options.useStructuredLessonPlan) {
+      if (mergedOptions.useStructuredLessonPlan) {
         const structuredBlocks = await this.generateLessonFromStructuredPlan(
           lessonData,
           moduleData,
           courseData,
-          options
+          mergedOptions
         );
 
         if (structuredBlocks && structuredBlocks.length > 0) {
@@ -82,7 +98,7 @@ class UniversalAILessonService {
 
       // NEW: Use comprehensive content library generation (only if explicitly enabled)
       // Default to false - use blueprint structure instead (which is the main generation method)
-      if (options.useContentLibrary === true) {
+      if (mergedOptions.useContentLibrary === true) {
         console.log('🎯 Using comprehensive content library generation');
         const blocks =
           await contentLibraryAIService.generateComprehensiveLessonContent(
@@ -90,6 +106,14 @@ class UniversalAILessonService {
             moduleTitle,
             courseTitle
           );
+        // Add an interactive block for richer experience
+        if (mergedOptions.includeInteractive !== false) {
+          const interactiveBlock = await this.generateInteractiveBlock(
+            lessonTitle,
+            blocks.length
+          );
+          blocks.push(interactiveBlock);
+        }
         return blocks;
       }
 
@@ -98,7 +122,7 @@ class UniversalAILessonService {
         lessonTitle,
         moduleTitle,
         courseTitle,
-        options,
+        options: mergedOptions,
       });
 
       console.log(`✅ Generated ${blocks.length} content blocks`);
@@ -1169,15 +1193,85 @@ Answer: A`,
    * Generate interactive block
    */
   async generateInteractiveBlock(lessonTitle, order) {
+    const tabsData = [
+      {
+        title: 'Key Idea',
+        content: `Core concept for "${lessonTitle}" with a crisp definition and why it matters.`,
+      },
+      {
+        title: 'Example',
+        content: `A short scenario that applies "${lessonTitle}" in practice.`,
+      },
+      {
+        title: 'Try It',
+        content: `A quick prompt or action learners can perform to reinforce "${lessonTitle}".`,
+      },
+    ];
+
+    const html_css = `
+    <div class="interactive-tabs bg-white border border-slate-200 rounded-xl shadow-sm" data-template="tabs">
+      <div class="tab-header flex flex-wrap gap-2 p-3 border-b border-slate-200">
+        ${tabsData
+          .map(
+            (tab, idx) =>
+              `<button class="tab-button px-3 py-2 text-sm font-semibold rounded-lg ${
+                idx === 0
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }" data-tab="${idx}">${tab.title}</button>`
+          )
+          .join('')}
+      </div>
+      <div class="tab-panels p-4 space-y-3 text-sm text-slate-800 leading-relaxed">
+        ${tabsData
+          .map(
+            (tab, idx) =>
+              `<div class="tab-panel ${idx === 0 ? '' : 'hidden'}" data-tab-panel="${idx}">
+                <p>${tab.content}</p>
+              </div>`
+          )
+          .join('')}
+      </div>
+      <style>
+        .tab-button { transition: all 0.2s ease; }
+        .tab-button.active { background: #4f46e5; color: #fff; }
+        .tab-panel.hidden { display: none; }
+      </style>
+      <script>
+        (function(){
+          const container = document.currentScript?.parentElement || document.querySelector('.interactive-tabs');
+          if(!container) return;
+          const buttons = container.querySelectorAll('.tab-button');
+          const panels = container.querySelectorAll('.tab-panel');
+          buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+              const tab = btn.getAttribute('data-tab');
+              buttons.forEach(b => b.classList.remove('bg-indigo-600','text-white','shadow','active'));
+              panels.forEach(p => p.classList.add('hidden'));
+              btn.classList.add('bg-indigo-600','text-white','shadow','active');
+              const panel = container.querySelector(\`[data-tab-panel="\${tab}"]\`);
+              if(panel) panel.classList.remove('hidden');
+            });
+          });
+        })();
+      </script>
+    </div>
+    `;
+
     return {
-      id: `ai-quote-${Date.now()}`,
-      type: 'quote',
-      content: `"The best way to learn ${lessonTitle} is through consistent practice and real-world application."`,
-      author: 'Learning Insight',
+      id: `interactive-tabs-${Date.now()}`,
+      type: 'interactive',
+      content: JSON.stringify({
+        type: 'tabs',
+        templateId: 'tabs',
+        tabsData,
+      }),
+      html_css,
       order,
       isAIGenerated: true,
       metadata: {
         blockType: 'interactive',
+        variant: 'tabs',
         generatedAt: new Date().toISOString(),
       },
     };
