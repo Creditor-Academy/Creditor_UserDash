@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
-import { MoreVertical, Users, BookOpen, Edit, Trash2, Eye, EyeOff, Sparkles, Bot } from 'lucide-react';
+import {
+  MoreVertical,
+  Users,
+  BookOpen,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Bot,
+} from 'lucide-react';
 
-const CourseCard = ({ 
-  course, 
-  onViewModules, 
-  onViewUsers, 
-  onEdit, 
-  onDelete, 
+const CourseCard = ({
+  course,
+  onViewModules,
+  onViewUsers,
+  onEdit,
+  onDelete,
   isExpanded,
-  children 
+  children,
 }) => {
   const [showOptions, setShowOptions] = useState(false);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
       case 'PUBLISHED':
         return 'bg-green-100 text-green-800 border-green-200';
@@ -25,7 +35,7 @@ const CourseCard = ({
     }
   };
 
-  const formatDuration = (duration) => {
+  const formatDuration = duration => {
     if (!duration) return 'N/A';
     if (typeof duration === 'number') {
       return `${duration} min`;
@@ -38,23 +48,25 @@ const CourseCard = ({
       {/* Course Header */}
       <div className="relative">
         {/* Thumbnail */}
-        <div className={`h-48 relative overflow-hidden ${
-          course.isAIGenerated 
-            ? 'bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100' 
-            : 'bg-gradient-to-br from-blue-50 to-indigo-100'
-        }`}>
+        <div
+          className={`h-48 relative overflow-hidden ${
+            course.isAIGenerated
+              ? 'bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100'
+              : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+          }`}
+        >
           {course.thumbnail ? (
-            <img 
-              src={course.thumbnail} 
+            <img
+              src={course.thumbnail}
               alt={course.title}
               className="w-full h-full object-cover"
-              onError={(e) => {
+              onError={e => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'flex';
               }}
             />
           ) : null}
-          
+
           {/* AI Badge */}
           {course.isAIGenerated && (
             <div className="absolute top-3 left-3">
@@ -64,10 +76,12 @@ const CourseCard = ({
               </span>
             </div>
           )}
-          
+
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent flex items-end">
             <div className="p-4 w-full">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(course.course_status)}`}>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(course.course_status)}`}
+              >
                 {course.course_status}
               </span>
             </div>
@@ -187,13 +201,11 @@ const CourseCard = ({
 
         {/* Expanded Content */}
         {isExpanded && children && (
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            {children}
-          </div>
+          <div className="border-t border-gray-200 pt-4 mt-4">{children}</div>
         )}
       </div>
     </div>
   );
 };
 
-export default CourseCard; 
+export default CourseCard;

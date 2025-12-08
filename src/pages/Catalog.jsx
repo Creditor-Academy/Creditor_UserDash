@@ -638,7 +638,7 @@ export function CatalogPage() {
                         badgeText="Free"
                         gradientFrom="from-blue-50"
                         gradientTo="to-blue-100"
-                        buttonClass="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#d10000] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -667,7 +667,7 @@ export function CatalogPage() {
                         badgeText="Master Class"
                         gradientFrom="from-green-50"
                         gradientTo="to-green-100"
-                        buttonClass="w-full bg-green-700 hover:bg-green-800 text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#d10000] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -696,7 +696,7 @@ export function CatalogPage() {
                         badgeText="Premium"
                         gradientFrom="from-purple-50"
                         gradientTo="to-indigo-100"
-                        buttonClass="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#d10000] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -751,7 +751,7 @@ export function CatalogPage() {
                         badgeText="Catalog"
                         gradientFrom="from-gray-50"
                         gradientTo="to-gray-100"
-                        buttonClass="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#d10000] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>

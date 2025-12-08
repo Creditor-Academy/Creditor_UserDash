@@ -353,10 +353,11 @@ const CreditPurchaseModal = ({
                         window.location.href =
                           'https://quickclick.com/r/m7o5skh90z5o7s6x6bg9yeklf7ql3f';
                       }}
-                      className="px-5 py-2.5 rounded-md font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white"
+                      className="px-5 py-2.5 rounded-md font-medium transition-colors bg-[#d10000] hover:bg-[#b00000] text-white"
                     >
                       Buy membership ($69)
                     </button>
+
                     <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
                       <span className="px-2 py-1 rounded border">
                         Membership unlocks credits

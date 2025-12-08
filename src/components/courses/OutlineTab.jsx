@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { 
+import {
   Plus,
   Edit3,
   Save,
@@ -10,14 +10,14 @@ import {
   GripVertical,
   Sparkles,
   RefreshCw,
-  X
+  X,
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
 
-const OutlineTab = ({ 
-  courseData, 
-  setCourseData, 
-  isGenerating, 
+const OutlineTab = ({
+  courseData,
+  setCourseData,
+  isGenerating,
   onGenerate,
   expandedModules,
   onToggleModule,
@@ -27,7 +27,7 @@ const OutlineTab = ({
   onAddLesson,
   onDeleteModule,
   onDeleteLesson,
-  onDragEnd
+  onDragEnd,
 }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -39,12 +39,16 @@ const OutlineTab = ({
             type="text"
             placeholder="Course Title"
             value={courseData.title}
-            onChange={(e) => setCourseData(prev => ({ ...prev, title: e.target.value }))}
+            onChange={e =>
+              setCourseData(prev => ({ ...prev, title: e.target.value }))
+            }
             className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
           <select
             value={courseData.subject}
-            onChange={(e) => setCourseData(prev => ({ ...prev, subject: e.target.value }))}
+            onChange={e =>
+              setCourseData(prev => ({ ...prev, subject: e.target.value }))
+            }
             className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select Subject</option>
@@ -58,35 +62,41 @@ const OutlineTab = ({
             <option value="mobile">Mobile Development</option>
           </select>
         </div>
-        
+
         <textarea
           placeholder="Course Description"
           value={courseData.description}
-          onChange={(e) => setCourseData(prev => ({ ...prev, description: e.target.value }))}
+          onChange={e =>
+            setCourseData(prev => ({ ...prev, description: e.target.value }))
+          }
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 mb-4"
           rows="3"
         />
-        
+
         <div className="flex gap-4 mb-4">
           <select
             value={courseData.difficulty}
-            onChange={(e) => setCourseData(prev => ({ ...prev, difficulty: e.target.value }))}
+            onChange={e =>
+              setCourseData(prev => ({ ...prev, difficulty: e.target.value }))
+            }
             className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           >
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
           </select>
-          
+
           <input
             type="text"
             placeholder="Duration (e.g., 4 weeks)"
             value={courseData.duration}
-            onChange={(e) => setCourseData(prev => ({ ...prev, duration: e.target.value }))}
+            onChange={e =>
+              setCourseData(prev => ({ ...prev, duration: e.target.value }))
+            }
             className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        
+
         <button
           onClick={onGenerate}
           disabled={isGenerating || !courseData.title || !courseData.subject}
@@ -109,9 +119,9 @@ const OutlineTab = ({
       {/* Loading State */}
       {isGenerating && (
         <div className="bg-white rounded-lg border">
-          <LoadingBuffer 
-            type="generation" 
-            message="Creating your comprehensive course outline..." 
+          <LoadingBuffer
+            type="generation"
+            message="Creating your comprehensive course outline..."
             showSparkles={true}
           />
         </div>
@@ -130,11 +140,15 @@ const OutlineTab = ({
               Add Module
             </button>
           </div>
-          
+
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="modules" type="module">
-              {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+              {provided => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-4"
+                >
                   {courseData.modules.map((module, index) => (
                     <ModuleItem
                       key={module.id}
@@ -142,11 +156,15 @@ const OutlineTab = ({
                       index={index}
                       isExpanded={expandedModules.has(module.id)}
                       onToggle={() => onToggleModule(module.id)}
-                      onUpdate={(updates) => onUpdateModule(module.id, updates)}
-                      onUpdateLesson={(lessonId, updates) => onUpdateLesson(module.id, lessonId, updates)}
+                      onUpdate={updates => onUpdateModule(module.id, updates)}
+                      onUpdateLesson={(lessonId, updates) =>
+                        onUpdateLesson(module.id, lessonId, updates)
+                      }
                       onAddLesson={() => onAddLesson(module.id)}
                       onDelete={() => onDeleteModule(module.id)}
-                      onDeleteLesson={(lessonId) => onDeleteLesson(module.id, lessonId)}
+                      onDeleteLesson={lessonId =>
+                        onDeleteLesson(module.id, lessonId)
+                      }
                     />
                   ))}
                   {provided.placeholder}
@@ -161,16 +179,16 @@ const OutlineTab = ({
 };
 
 // Module Item Component
-const ModuleItem = ({ 
-  module, 
-  index, 
-  isExpanded, 
-  onToggle, 
-  onUpdate, 
+const ModuleItem = ({
+  module,
+  index,
+  isExpanded,
+  onToggle,
+  onUpdate,
   onUpdateLesson,
-  onAddLesson, 
+  onAddLesson,
   onDelete,
-  onDeleteLesson 
+  onDeleteLesson,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(module.title);
@@ -183,7 +201,7 @@ const ModuleItem = ({
 
   return (
     <Draggable draggableId={`module-${module.id}`} index={index}>
-      {(provided) => (
+      {provided => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
@@ -194,7 +212,7 @@ const ModuleItem = ({
               <div {...provided.dragHandleProps}>
                 <GripVertical className="w-4 h-4 text-gray-400" />
               </div>
-              
+
               <button
                 onClick={onToggle}
                 className="p-1 hover:bg-gray-200 rounded"
@@ -205,30 +223,32 @@ const ModuleItem = ({
                   <ChevronRight className="w-4 h-4" />
                 )}
               </button>
-              
+
               <div className="flex-1">
                 {isEditing ? (
                   <div className="space-y-2">
                     <input
                       value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
+                      onChange={e => setEditTitle(e.target.value)}
                       className="w-full px-2 py-1 border rounded text-sm font-medium"
                     />
                     <input
                       value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
+                      onChange={e => setEditDescription(e.target.value)}
                       className="w-full px-2 py-1 border rounded text-xs text-gray-600"
                     />
                   </div>
                 ) : (
                   <div>
                     <h4 className="font-medium">{module.title}</h4>
-                    <p className="text-sm text-gray-600">{module.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {module.description}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {isEditing ? (
                 <>
@@ -263,7 +283,7 @@ const ModuleItem = ({
               )}
             </div>
           </div>
-          
+
           {isExpanded && (
             <div className="p-4 border-t">
               <div className="flex items-center justify-between mb-3">
@@ -276,16 +296,20 @@ const ModuleItem = ({
                   Add Lesson
                 </button>
               </div>
-              
+
               <Droppable droppableId={`lessons-${module.id}`} type="lesson">
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                {provided => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-2"
+                  >
                     {(module.lessons || []).map((lesson, lessonIndex) => (
                       <LessonItem
                         key={lesson.id}
                         lesson={lesson}
                         index={lessonIndex}
-                        onUpdate={(updates) => onUpdateLesson(lesson.id, updates)}
+                        onUpdate={updates => onUpdateLesson(lesson.id, updates)}
                         onDelete={() => onDeleteLesson(lesson.id)}
                       />
                     ))}
@@ -309,17 +333,17 @@ const LessonItem = ({ lesson, index, onUpdate, onDelete }) => {
   const [editDuration, setEditDuration] = useState(lesson.duration);
 
   const handleSaveEdit = () => {
-    onUpdate({ 
-      title: editTitle, 
-      description: editDescription, 
-      duration: editDuration 
+    onUpdate({
+      title: editTitle,
+      description: editDescription,
+      duration: editDuration,
     });
     setIsEditing(false);
   };
 
   return (
     <Draggable draggableId={`lesson-${lesson.id}`} index={index}>
-      {(provided) => (
+      {provided => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
@@ -329,23 +353,23 @@ const LessonItem = ({ lesson, index, onUpdate, onDelete }) => {
             <div {...provided.dragHandleProps}>
               <GripVertical className="w-3 h-3 text-gray-400" />
             </div>
-            
+
             <div className="flex-1">
               {isEditing ? (
                 <div className="space-y-2">
                   <input
                     value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
+                    onChange={e => setEditTitle(e.target.value)}
                     className="w-full px-2 py-1 border rounded text-sm"
                   />
                   <input
                     value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
+                    onChange={e => setEditDescription(e.target.value)}
                     className="w-full px-2 py-1 border rounded text-xs text-gray-600"
                   />
                   <input
                     value={editDuration}
-                    onChange={(e) => setEditDuration(e.target.value)}
+                    onChange={e => setEditDuration(e.target.value)}
                     className="w-20 px-2 py-1 border rounded text-xs"
                     placeholder="15 min"
                   />
@@ -354,12 +378,14 @@ const LessonItem = ({ lesson, index, onUpdate, onDelete }) => {
                 <div>
                   <h6 className="text-sm font-medium">{lesson.title}</h6>
                   <p className="text-xs text-gray-600">{lesson.description}</p>
-                  <span className="text-xs text-blue-600">{lesson.duration}</span>
+                  <span className="text-xs text-blue-600">
+                    {lesson.duration}
+                  </span>
                 </div>
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-1">
             {isEditing ? (
               <>
