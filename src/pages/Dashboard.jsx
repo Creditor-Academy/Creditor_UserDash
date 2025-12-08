@@ -1173,7 +1173,7 @@ export function Dashboard() {
                           className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://us06web.zoom.us/j/88306593264?pwd=rnaRnrQSQZN8e2Q2iQ032KAKcZlGkx.1',
+                              'https://scheduler.zoom.us/t/0i9brz0v/hello-i-am-an-event-card',
                               '_blank',
                               'noopener,noreferrer'
                             )
@@ -1193,7 +1193,7 @@ export function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
                         <h4 className="text-sm sm:text-base font-semibold text-gray-900">
-                          Credits, and Debits Issues
+                          Credits and Debits Issues
                         </h4>
                         <p className="text-xs sm:text-sm text-gray-600">
                           For any queries or issues related to payments,
@@ -1204,7 +1204,7 @@ export function Dashboard() {
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://us06web.zoom.us/j/4365343341?pwd=MVI6yhd83hpFTSMqeya2rLQEcbNA4k.1',
+                              'https://scheduler.zoom.us/mausam-jha',
                               '_blank',
                               'noopener,noreferrer'
                             )
@@ -1343,7 +1343,13 @@ export function Dashboard() {
                           </p>
                           <Button
                             className="bg-blue-600 hover:bg-blue-700 text-white w-full"
-                            onClick={() => setShowConsultBooking(true)}
+                            onClick={() =>
+                              window.open(
+                                'https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
                           >
                             Schedule Now
                           </Button>
@@ -1376,10 +1382,10 @@ export function Dashboard() {
                             and convert your audience effectively.
                           </p>
                           <Button
-                            className="bg-purple-600 hover:bg-purple-700 text-white w-full"
-                            onClick={() => setShowConsultBooking(true)}
+                            className="bg-gray-300 text-gray-500 w-full cursor-not-allowed opacity-60"
+                            disabled
                           >
-                            Schedule Now
+                            Coming Soon...
                           </Button>
                         </div>
                       </div>
@@ -1412,10 +1418,10 @@ export function Dashboard() {
                             operations.
                           </p>
                           <Button
-                            className="bg-orange-600 hover:bg-orange-700 text-white w-full"
-                            onClick={() => setShowConsultBooking(true)}
+                            className="bg-gray-300 text-gray-500 w-full cursor-not-allowed opacity-60"
+                            disabled
                           >
-                            Schedule Now
+                            Coming Soon...
                           </Button>
                         </div>
                       </div>
