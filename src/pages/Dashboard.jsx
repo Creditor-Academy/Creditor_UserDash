@@ -54,6 +54,8 @@ import {
   fetchUserWebsiteServices,
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import CLogo from '@/assets/C-logo.png';
+import OfferPopup from '@/components/offer/OfferPopup';
 
 export function Dashboard() {
   const importantUpdateStyles = `
@@ -842,12 +844,12 @@ export function Dashboard() {
       )}
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          {isChristmasMode && (
+          {isChristmasMode ? (
             <section className="christmas-hero-banner mb-8">
               <div className="christmas-hero-content">
                 <p className="christmas-hero-kicker">Exclusive Holiday Mode</p>
                 <h1>
-                  Season’s Greetings, {userName || 'Scholar'}! Keep learning
+                  Season's Greetings, {userName || 'Scholar'}! Keep learning
                   this Christmas 🎄
                 </h1>
                 <p>
@@ -866,6 +868,27 @@ export function Dashboard() {
                   loading="lazy"
                 />
                 <div className="floating-snow" aria-hidden="true" />
+              </div>
+            </section>
+          ) : (
+            <section className="athena-hero-banner mb-8">
+              <div className="athena-hero-content">
+                <p className="athena-hero-kicker">Welcome Back</p>
+                <h1>Welcome to Athena LMS, {userName || 'Scholar'}!</h1>
+                <p>
+                  Your journey to knowledge excellence continues. Track your
+                  progress, unlock achievements, and reach your learning goals.
+                </p>
+                <div className="athena-hero-cta">
+                  <span className="progress-pill">📊 Track Progress</span>
+                  <span className="achievement-pill">
+                    🎯 Unlock Achievements
+                  </span>
+                </div>
+              </div>
+              <div className="athena-hero-visual">
+                <img src={CLogo} alt="Creditor Academy Logo" loading="lazy" />
+                <div className="floating-glow" aria-hidden="true" />
               </div>
             </section>
           )}
@@ -2413,6 +2436,9 @@ export function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Offer Popup */}
+      <OfferPopup />
     </div>
   );
 }

@@ -538,6 +538,140 @@
     }
   }
 
+  /* Athena Hero Banner - Regular Theme */
+  .athena-hero-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: linear-gradient(
+      135deg,
+      #e0f2fe 0%,
+      #bae6fd 25%,
+      #7dd3fc 50%,
+      #bae6fd 75%,
+      #e0f2fe 100%
+    );
+    color: #0c4a6e;
+    box-shadow: 0 25px 45px rgba(14, 165, 233, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .athena-hero-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.4),
+      transparent 45%
+    );
+    pointer-events: none;
+  }
+
+  .athena-hero-content {
+    flex: 1 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .athena-hero-content h1 {
+    font-size: clamp(1.5rem, 3vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    color: #0c4a6e;
+  }
+
+  .athena-hero-content p {
+    color: rgba(12, 74, 110, 0.85);
+    max-width: 36rem;
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  }
+
+  .athena-hero-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: rgba(14, 165, 233, 0.9);
+    font-weight: 600;
+  }
+
+  .athena-hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .progress-pill,
+  .achievement-pill {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+    color: #0c4a6e;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .progress-pill:hover,
+  .achievement-pill:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(14, 165, 233, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  }
+
+  .athena-hero-visual {
+    flex: 0 1 260px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .athena-hero-visual img {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 30px rgba(14, 165, 233, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.6);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    padding: 1.5rem;
+    object-fit: contain;
+  }
+
+  .floating-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at center,
+      rgba(14, 165, 233, 0.2),
+      transparent 70%
+    );
+    animation: gentleGlow 4s ease-in-out infinite;
+  }
+
+  @keyframes gentleGlow {
+    0%,
+    100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
   .christmas-challenge-card {
     display: flex;
     flex-wrap: wrap;
@@ -824,13 +958,62 @@
   }
 
   @media (max-width: 640px) {
-    .christmas-hero-banner {
+    .christmas-hero-banner,
+    .athena-hero-banner {
       padding: 1.5rem;
+    }
+
+    .athena-hero-visual img,
+    .christmas-hero-visual img {
+      max-width: 200px;
+    }
+
+    .athena-hero-content h1,
+    .christmas-hero-content h1 {
+      font-size: clamp(1.25rem, 5vw, 1.75rem);
+    }
+
+    .athena-hero-cta,
+    .christmas-hero-cta {
+      gap: 0.5rem;
+    }
+
+    .progress-pill,
+    .achievement-pill,
+    .gift-pill,
+    .snow-pill {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
     }
 
     .challenge-badges {
       flex-direction: column;
       align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .athena-hero-banner,
+    .christmas-hero-banner {
+      padding: 1rem;
+      gap: 1.5rem;
+    }
+
+    .athena-hero-visual,
+    .christmas-hero-visual {
+      flex: 1 1 100%;
+      text-align: center;
+    }
+
+    .athena-hero-visual img,
+    .christmas-hero-visual img {
+      max-width: 180px;
+      margin: 0 auto;
+    }
+
+    .athena-hero-content p,
+    .christmas-hero-content p {
+      font-size: 0.9rem;
     }
   }
 
@@ -949,5 +1132,219 @@
 
   .login-christmas-theme .text-blue-600:hover {
     color: #fff !important;
+  }
+
+  /* Offer Popup Styles */
+  .offer-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: offerFadeIn 0.4s ease-out;
+    padding: 1rem;
+  }
+
+  @keyframes offerFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .offer-popup-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    animation: offerSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes offerSlideIn {
+    from {
+      transform: scale(0.8) translateY(-50px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .offer-popup-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 600px;
+    object-fit: contain;
+  }
+
+  .offer-popup-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .offer-popup-close:hover {
+    background: #ef4444;
+    color: white;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+  }
+
+  /* Offer Snowflakes Animation */
+  .offer-snowflakes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .offer-snowflake {
+    position: absolute;
+    top: -10px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: offerSnowfall linear infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  }
+
+  @keyframes offerSnowfall {
+    0% {
+      transform: translateY(-10px) translateX(0);
+    }
+    100% {
+      transform: translateY(100vh) translateX(var(--snowflake-drift));
+    }
+  }
+
+  /* Offer Widget (Bottom-right chatbot style) */
+  .offer-widget {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    transition: all 0.3s ease;
+    animation: offerWidgetPulse 2s ease-in-out infinite;
+  }
+
+  .offer-widget:hover {
+    transform: scale(1.1) translateY(-4px);
+    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.5);
+  }
+
+  @keyframes offerWidgetPulse {
+    0%,
+    100% {
+      box-shadow:
+        0 8px 24px rgba(220, 38, 38, 0.4),
+        0 0 0 0 rgba(220, 38, 38, 0.7);
+    }
+    50% {
+      box-shadow:
+        0 8px 24px rgba(220, 38, 38, 0.4),
+        0 0 0 10px rgba(220, 38, 38, 0);
+    }
+  }
+
+  .offer-widget-icon {
+    color: white;
+    animation: offerWiggle 1s ease-in-out infinite;
+  }
+
+  @keyframes offerWiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-15deg);
+    }
+    75% {
+      transform: rotate(15deg);
+    }
+  }
+
+  .offer-widget-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #fbbf24;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    animation: offerBadgeBounce 1.5s ease-in-out infinite;
+  }
+
+  @keyframes offerBadgeBounce {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .offer-popup-content {
+      max-width: 95vw;
+    }
+
+    .offer-popup-image {
+      max-width: 100%;
+    }
+
+    .offer-widget {
+      width: 3.5rem;
+      height: 3.5rem;
+      bottom: 1.5rem;
+      right: 1.5rem;
+    }
+
+    .offer-popup-close {
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 2rem;
+      height: 2rem;
+    }
   }
 }

@@ -16,19 +16,19 @@ const carouselItems = [
   //   course: "Upcoming Event",
   //   order: 1
   // },
-  {
-    id: 1,
-    type: 'image',
-    image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/saturday+event.png',
-    title: 'This Saturday',
-    course: '8th Nov',
-  },
+  // {
+  //   id: 1,
+  //   type: 'image',
+  //   image:
+  //     'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/saturday+event.png',
+  //   title: 'This Saturday',
+  //   course: '8th Nov',
+  // },
   {
     id: 2,
     type: 'image',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/%2469Month!+(19).png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Rename+Chirstmas+Bonananza+Special.png',
     title: 'Upcoming Event',
     course: 'Banner 2',
   },
