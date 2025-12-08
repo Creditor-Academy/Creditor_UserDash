@@ -310,7 +310,15 @@ export function LiveClasses() {
   };
 
   const handleJoinClass = useCallback(async event => {
-    const eventId = event.id;
+    // For recurring events, use originalEventId instead of the synthetic id
+    // The synthetic id format is like "123_occurrence_0" which the backend doesn't recognize
+    const eventId =
+      event.isRecurring && event.originalEventId
+        ? event.originalEventId
+        : event.id;
+
+    // Use the display id (synthetic id for recurring events) for UI state tracking
+    const displayEventId = event.id;
 
     // If this event has already been marked, immediately show modal without calling API
     if (alreadyMarkedEventsRef.current.has(eventId)) {
@@ -336,16 +344,21 @@ export function LiveClasses() {
 
     const joinLink = event.description || event.zoomLink || '';
 
-    // Store the join link for this event
+    // Store the join link for this event (use eventId for consistency)
     eventJoinLinksRef.current.set(eventId, joinLink);
 
     try {
       // Mark as processing in both state and ref
-      setJoiningEventId(eventId);
-      processingEventsRef.current.add(eventId);
+      setJoiningEventId(displayEventId); // Use displayEventId for UI state
+      processingEventsRef.current.add(eventId); // Use eventId for API tracking
 
       // Mark attendance first
-      await markEventAttendance(eventId);
+      // For recurring events, pass the occurrence startTime so backend knows which occurrence
+      if (event.isRecurring && event.startTime) {
+        await markEventAttendance(eventId, event.startTime);
+      } else {
+        await markEventAttendance(eventId);
+      }
 
       // Attendance marked successfully
       toast.success('Attendance marked successfully!');
@@ -381,6 +394,7 @@ export function LiveClasses() {
 
       if (isAlreadyMarked) {
         // Store the exact backend error message for future reference
+        // Use eventId (originalEventId for recurring events) for tracking
         const message =
           errorMessage || 'Attendance for this event Already marked';
         alreadyMarkedEventsRef.current.set(eventId, message);
@@ -405,7 +419,7 @@ export function LiveClasses() {
     } finally {
       // Clear joining state and remove from processing set
       setJoiningEventId(null);
-      processingEventsRef.current.delete(eventId);
+      processingEventsRef.current.delete(eventId); // Use eventId (originalEventId for recurring events)
     }
   }, []); // Empty dependency array since we use ref for tracking
 

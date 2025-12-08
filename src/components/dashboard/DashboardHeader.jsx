@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -34,8 +34,11 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchNotifications } from '@/services/notificationService';
 import { useCredits } from '@/contexts/CreditsContext';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
+  const { isChristmasMode, toggleChristmasMode } =
+    useContext(SeasonalThemeContext);
   const { isInstructorOrAdmin, hasRole } = useAuth();
   const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -576,7 +579,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95">
+      <header
+        className={`app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95 ${
+          isChristmasMode ? 'christmas-app-header' : ''
+        }`}
+      >
         <div className="h-16 flex items-center justify-between px-4 sm:px-6">
           {/* Left: Mobile menu + Logo */}
           <div className="flex items-center gap-3">
@@ -597,7 +604,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1
+                className={`text-base sm:text-lg font-bold ${
+                  isChristmasMode
+                    ? 'text-white drop-shadow-sm'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
+                }`}
+              >
                 LMS Athena
               </h1>
             </button>
@@ -814,6 +827,20 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
+            <button
+              type="button"
+              onClick={toggleChristmasMode}
+              aria-pressed={isChristmasMode}
+              className={`hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors christmas-toggle-btn ${
+                isChristmasMode
+                  ? 'text-white border-white/60 bg-white/20 hover:bg-white/30'
+                  : 'text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {isChristmasMode
+                ? 'Disable Christmas Mode'
+                : '🎄 Enable Christmas Mode'}
+            </button>
             {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
@@ -836,7 +863,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              aria-label="Notifications"
+              aria-label={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
+              title={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
             >
               <BellDot className="h-5 w-5" />
               {unreadNotifications > 0 && (
