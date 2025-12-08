@@ -63,14 +63,18 @@ const hydrateAd = ad => ({
   ...ad,
 });
 
-const normalizeBackendAd = ad =>
-  hydrateAd({
+const normalizeBackendAd = ad => {
+  // Determine media URL and type - prioritize video over image if both exist
+  const mediaUrl = ad.video_url || ad.image_url || ad.mediaUrl || '';
+  const mediaType = ad.video_url ? 'video' : 'image';
+
+  return hydrateAd({
     id: ad.id,
     sponsorName: ad.sponsor_name || ad.sponsorName,
     title: ad.title,
     description: ad.description,
-    mediaUrl: ad.image_url || ad.mediaUrl,
-    mediaType: 'image',
+    mediaUrl: mediaUrl,
+    mediaType: mediaType,
     placement:
       POSITION_TO_PLACEMENT[ad.position] || ad.placement || 'dashboard_banner',
     ctaUrl: ad.link_url,
@@ -83,6 +87,7 @@ const normalizeBackendAd = ad =>
     clicks: ad.click_count ?? ad.clicks ?? 0,
     organizationId: ad.organization_id ?? ad.organizationId ?? null,
   });
+};
 
 const loadInitialAds = () => {
   if (typeof window === 'undefined') {

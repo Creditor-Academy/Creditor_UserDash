@@ -18,14 +18,24 @@ export const SponsorAdPopup = ({ ad, open, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-blue-100">
-        {ad.mediaUrl && (
-          <img
-            src={ad.mediaUrl}
-            alt={ad.title}
-            className="w-full h-40 object-cover"
-            loading="lazy"
-          />
-        )}
+        {ad.mediaUrl &&
+          (ad.mediaType === 'video' ? (
+            <video
+              src={ad.mediaUrl}
+              className="w-full h-40 object-cover"
+              controls
+              muted
+              autoPlay
+              loop
+            />
+          ) : (
+            <img
+              src={ad.mediaUrl}
+              alt={ad.title}
+              className="w-full h-40 object-cover"
+              loading="lazy"
+            />
+          ))}
         <div className="p-6 space-y-3">
           <div className="flex items-center justify-between">
             <Badge className="bg-blue-50 text-blue-700 border-blue-100">

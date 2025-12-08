@@ -16,6 +16,7 @@ export const SponsorSidebarAd = ({ ad, className }) => {
     ctaUrl,
     logo,
     mediaUrl,
+    mediaType,
     tier,
   } = ad;
 
@@ -26,14 +27,23 @@ export const SponsorSidebarAd = ({ ad, className }) => {
         className
       )}
     >
-      {mediaUrl && (
-        <img
-          src={mediaUrl}
-          alt={title}
-          loading="lazy"
-          className="w-full h-32 object-cover"
-        />
-      )}
+      {mediaUrl &&
+        (mediaType === 'video' ? (
+          <video
+            src={mediaUrl}
+            className="w-full h-32 object-cover"
+            controls
+            muted
+            loop
+          />
+        ) : (
+          <img
+            src={mediaUrl}
+            alt={title}
+            loading="lazy"
+            className="w-full h-32 object-cover"
+          />
+        ))}
       <CardContent className="p-5 space-y-3">
         <div className="flex items-center gap-3">
           {logo && (

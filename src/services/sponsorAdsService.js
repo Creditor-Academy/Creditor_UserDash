@@ -1,12 +1,13 @@
 import api from './apiClient';
 import { uploadImage } from './imageUploadService';
+import { uploadVideo } from './videoUploadService';
 
 /**
  * Create a sponsor ad via backend API
  * @param {Object} adData - Sponsor ad data
  * @param {string} adData.title - Ad title
  * @param {string} adData.description - Ad description
- * @param {File|string} adData.mediaFile - Image file to upload (or existing URL)
+ * @param {File|string} adData.mediaFile - Image or video file to upload (or existing URL)
  * @param {string} adData.linkUrl - CTA link URL
  * @param {string} adData.sponsorName - Sponsor name
  * @param {string} adData.startDate - Start date (ISO string or date string)
@@ -19,18 +20,43 @@ export async function createSponsorAd(adData) {
   try {
     console.log('🚀 Creating sponsor ad:', adData);
 
-    let imageUrl = adData.mediaFile;
+    let imageUrl = null;
+    let videoUrl = null;
+    let mediaUrl = adData.mediaFile;
 
     // If mediaFile is a File object, upload it first
     if (adData.mediaFile instanceof File) {
-      console.log('📤 Uploading image file...');
-      const uploadResult = await uploadImage(adData.mediaFile, {
-        folder: 'sponsor-ads',
-        public: true,
-        type: 'image',
-      });
-      imageUrl = uploadResult.imageUrl;
-      console.log('✅ Image uploaded:', imageUrl);
+      const isVideo = adData.mediaFile.type.startsWith('video/');
+
+      if (isVideo) {
+        console.log('📤 Uploading video file...');
+        const uploadResult = await uploadVideo(adData.mediaFile, {
+          folder: 'sponsor-ads',
+          public: true,
+          type: 'video',
+        });
+        videoUrl = uploadResult.videoUrl;
+        mediaUrl = videoUrl;
+        console.log('✅ Video uploaded:', videoUrl);
+      } else {
+        console.log('📤 Uploading image file...');
+        const uploadResult = await uploadImage(adData.mediaFile, {
+          folder: 'sponsor-ads',
+          public: true,
+          type: 'image',
+        });
+        imageUrl = uploadResult.imageUrl;
+        mediaUrl = imageUrl;
+        console.log('✅ Image uploaded:', imageUrl);
+      }
+    } else if (typeof mediaUrl === 'string') {
+      // If it's a string URL, determine if it's a video or image
+      const isVideoUrl = /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(mediaUrl);
+      if (isVideoUrl) {
+        videoUrl = mediaUrl;
+      } else {
+        imageUrl = mediaUrl;
+      }
     }
 
     // Convert dates to ISO format if needed
@@ -58,6 +84,7 @@ export async function createSponsorAd(adData) {
       title: adData.title?.trim() || '',
       description: adData.description?.trim() || '',
       image_url: imageUrl || '',
+      video_url: videoUrl || '',
       link_url: adData.linkUrl?.trim() || '',
       sponsor_name: adData.sponsorName?.trim() || '',
       start_date: formatDate(adData.startDate),
@@ -173,16 +200,40 @@ export async function trackSponsorAdClick(adId) {
  */
 export async function updateSponsorAd(adId, adData) {
   try {
-    let imageUrl = adData.mediaFile;
+    let imageUrl = adData.image_url || null;
+    let videoUrl = adData.video_url || null;
 
     // If mediaFile is a File object, upload it first
     if (adData.mediaFile instanceof File) {
-      const uploadResult = await uploadImage(adData.mediaFile, {
-        folder: 'sponsor-ads',
-        public: true,
-        type: 'image',
-      });
-      imageUrl = uploadResult.imageUrl;
+      const isVideo = adData.mediaFile.type.startsWith('video/');
+
+      if (isVideo) {
+        const uploadResult = await uploadVideo(adData.mediaFile, {
+          folder: 'sponsor-ads',
+          public: true,
+          type: 'video',
+        });
+        videoUrl = uploadResult.videoUrl;
+        imageUrl = null; // Clear image URL if uploading video
+      } else {
+        const uploadResult = await uploadImage(adData.mediaFile, {
+          folder: 'sponsor-ads',
+          public: true,
+          type: 'image',
+        });
+        imageUrl = uploadResult.imageUrl;
+        videoUrl = null; // Clear video URL if uploading image
+      }
+    } else if (adData.mediaUrl && typeof adData.mediaUrl === 'string') {
+      // Determine if existing URL is video or image
+      const isVideoUrl = /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(adData.mediaUrl);
+      if (isVideoUrl) {
+        videoUrl = adData.mediaUrl;
+        imageUrl = null;
+      } else {
+        imageUrl = adData.mediaUrl;
+        videoUrl = null;
+      }
     }
 
     const formatDate = date => {
@@ -199,7 +250,8 @@ export async function updateSponsorAd(adId, adData) {
     const payload = {
       title: adData.title?.trim() || '',
       description: adData.description?.trim() || '',
-      image_url: imageUrl || adData.image_url || '',
+      image_url: imageUrl || '',
+      video_url: videoUrl || '',
       link_url: adData.linkUrl?.trim() || '',
       sponsor_name: adData.sponsorName?.trim() || '',
       start_date: formatDate(adData.startDate),

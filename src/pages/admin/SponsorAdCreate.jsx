@@ -180,11 +180,11 @@ export const SponsorAdCreate = () => {
       nextErrors.dateRange = 'Start date must be before end date';
     }
 
-    // Validate image is provided
+    // Validate media (image or video) is provided
     if (!mediaFile && !formState.mediaUrl) {
-      nextErrors.mediaUrl = 'Please upload an image';
+      nextErrors.mediaUrl = 'Please upload an image or video';
     } else if (formState.mediaUrl && !isValidUrl(formState.mediaUrl)) {
-      nextErrors.mediaUrl = 'Please provide a valid image URL';
+      nextErrors.mediaUrl = 'Please provide a valid media URL';
     }
 
     setErrors(nextErrors);
@@ -213,7 +213,11 @@ export const SponsorAdCreate = () => {
       if (result.data) {
         addAd({
           ...formState,
-          mediaUrl: result.data.image_url || mediaPreview || formState.mediaUrl,
+          mediaUrl:
+            result.data.video_url ||
+            result.data.image_url ||
+            mediaPreview ||
+            formState.mediaUrl,
           mediaType: adTypeToMediaType[formState.adType] || 'image',
         });
       }

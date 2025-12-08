@@ -343,6 +343,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="/instructor/sponsor-ads/requests"
+                    element={
+                      <ProtectedRoute>
+                        <Instructorpage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/instructor/sponsor-ads/analytics"
                     element={
                       <ProtectedRoute>
