@@ -40,6 +40,7 @@ import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import AthenaAISection from '@/components/dashboard/AthenaAISection';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -1096,6 +1097,9 @@ export function Dashboard() {
             <div className="text-center mb-6"></div>
             <DashboardCarousel />
           </div>
+
+          {/* Athena AI Section */}
+          <AthenaAISection />
 
           <div className="mb-8">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">

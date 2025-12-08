@@ -22,6 +22,7 @@ import InboxModal from './InboxModal';
 import CalendarModal from './CalendarModal';
 import UserDetailsModal from '@/components/UserDetailsModal';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import AthenaAIButton from './AthenaAIButton';
 import { search } from '@/services/searchService';
 import { fetchUserCourses } from '@/services/courseService';
 import {
@@ -827,6 +828,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
+
+            {/* Athena AI Button - Desktop */}
+            <AthenaAIButton className="hidden lg:flex" />
+
+            {/* Athena AI Button - Mobile/Tablet (icon only) */}
+            <div className="lg:hidden">
+              <AthenaAIButton className="flex" />
+            </div>
+
             <button
               type="button"
               onClick={toggleChristmasMode}
