@@ -47,7 +47,7 @@ import { SignUp } from '@/pages/Auth/SignUp';
 import { storeAccessToken } from '@/services/tokenService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import christmasImage from '@/assets/Chri.png';
-import christmasMusic from '@/assets/christmas-music.mp3';
+import christmasMusic from '@/assets/christmas-musicR.mp3';
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -207,11 +207,32 @@ export function Login() {
       }
     };
     checkChristmasMode();
-    // Listen for changes
+    // Listen for changes (storage event works for cross-tab, custom event for same-tab)
     const handleStorageChange = () => checkChristmasMode();
+    const handleCustomStorageChange = () => checkChristmasMode();
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    // Listen for custom event fired when localStorage changes in same window
+    window.addEventListener('localStorageChange', handleCustomStorageChange);
+
+    // Also poll localStorage periodically to catch changes (fallback)
+    const pollInterval = setInterval(() => {
+      const current = localStorage.getItem('dashboardChristmasMode');
+      const currentMode = current === null ? true : current === 'true';
+      if (currentMode !== isChristmasMode) {
+        checkChristmasMode();
+      }
+    }, 500); // Check every 500ms
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(
+        'localStorageChange',
+        handleCustomStorageChange
+      );
+      clearInterval(pollInterval);
+    };
+  }, [isChristmasMode]);
 
   useEffect(() => {
     // Trigger card animation on mount
@@ -223,26 +244,49 @@ export function Login() {
 
   // Christmas music effect - plays only on login page
   useEffect(() => {
+    // If Christmas mode is disabled, ensure no music plays
     if (!isChristmasMode) {
       // Stop music if Christmas mode is disabled
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+        audioRef.current = null;
       }
       return;
     }
 
     // Create and configure audio element
     const audio = new Audio(christmasMusic);
-    audio.loop = true; // Loop the music
+    audio.loop = false; // Play only once, no loop
     audio.volume = 0.3; // Set volume to 30% (adjust as needed)
 
     // Handle first user interaction for autoplay-restricted browsers
+    // IMPORTANT: Check Christmas mode before playing
     const handleFirstInteraction = () => {
-      if (audio && audio.paused) {
+      // Double-check Christmas mode is still enabled before playing
+      const currentMode = localStorage.getItem('dashboardChristmasMode');
+      const isModeEnabled =
+        currentMode === null ? true : currentMode === 'true';
+
+      if (!isModeEnabled) {
+        // Christmas mode was disabled, don't play and clean up
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current = null;
+        }
+        // Remove listeners
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('keydown', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+        return;
+      }
+
+      // Only play if Christmas mode is still enabled
+      if (audio && audio.paused && isModeEnabled) {
         audio.play().catch(err => console.log('Could not play music:', err));
       }
-      // Remove listeners after first play
+      // Remove listeners after first play attempt
       document.removeEventListener('click', handleFirstInteraction);
       document.removeEventListener('keydown', handleFirstInteraction);
       document.removeEventListener('touchstart', handleFirstInteraction);
@@ -254,7 +298,17 @@ export function Login() {
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
-          console.log('🎵 Christmas music started playing');
+          // Verify Christmas mode is still enabled before logging success
+          const currentMode = localStorage.getItem('dashboardChristmasMode');
+          const isModeEnabled =
+            currentMode === null ? true : currentMode === 'true';
+          if (isModeEnabled && isChristmasMode) {
+            console.log('🎵 Christmas music started playing');
+          } else {
+            // Mode was disabled, stop immediately
+            audio.pause();
+            audio.currentTime = 0;
+          }
         })
         .catch(error => {
           // Auto-play was prevented - browser requires user interaction
@@ -263,10 +317,12 @@ export function Login() {
             error
           );
 
-          // Add listeners for first user interaction
-          document.addEventListener('click', handleFirstInteraction);
-          document.addEventListener('keydown', handleFirstInteraction);
-          document.addEventListener('touchstart', handleFirstInteraction);
+          // Only add listeners if Christmas mode is still enabled
+          if (isChristmasMode) {
+            document.addEventListener('click', handleFirstInteraction);
+            document.addEventListener('keydown', handleFirstInteraction);
+            document.addEventListener('touchstart', handleFirstInteraction);
+          }
         });
     }
 

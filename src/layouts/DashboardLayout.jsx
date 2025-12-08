@@ -72,6 +72,12 @@ export function DashboardLayout() {
       const next = !prev;
       try {
         localStorage.setItem('dashboardChristmasMode', String(next));
+        // Dispatch custom event so other components (like Login) can detect the change
+        window.dispatchEvent(
+          new CustomEvent('localStorageChange', {
+            detail: { key: 'dashboardChristmasMode', value: String(next) },
+          })
+        );
       } catch {
         /* storage unavailable */
       }
