@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 import { Video, Upload, Link2, X, Play, Pause, Loader2 } from 'lucide-react';
 
 const VideoComponent = ({
@@ -90,9 +91,9 @@ const VideoComponent = ({
         return;
       }
 
-      // Check file size (3GB limit)
-      if (file.size > 3 * 1024 * 1024 * 1024) {
-        toast.error('Video file size should be less than 3GB');
+      // Check file size (500MB limit)
+      if (file.size > 500 * 1024 * 1024) {
+        toast.error('Video file size should be less than 500MB');
         return;
       }
 
@@ -252,7 +253,7 @@ const VideoComponent = ({
         if (isYouTubeUrl(videoUrl.trim())) {
           // For YouTube URLs, store both the original URL and embed URL
           finalVideoUrl = getYouTubeEmbedUrl(videoUrl.trim());
-          console.log(
+          devLogger.debug(
             'YouTube URL method - original:',
             videoUrl.trim(),
             'embed:',
@@ -260,7 +261,7 @@ const VideoComponent = ({
           );
         } else {
           finalVideoUrl = videoUrl.trim();
-          console.log(
+          devLogger.debug(
             'Direct video URL method - finalVideoUrl:',
             finalVideoUrl
           );
@@ -268,7 +269,7 @@ const VideoComponent = ({
       } else {
         // Upload file if method is file and we have a new file
         finalVideoUrl = videoPreview;
-        console.log('Video file method - finalVideoUrl:', finalVideoUrl);
+        devLogger.debug('Video file method - finalVideoUrl:', finalVideoUrl);
       }
 
       // Upload file if method is file and we have a new file
@@ -292,7 +293,7 @@ const VideoComponent = ({
             throw new Error('Upload failed');
           }
         } catch (uploadError) {
-          console.warn(
+          devLogger.warn(
             'Cloud upload failed, using local preview:',
             uploadError
           );
@@ -336,7 +337,7 @@ const VideoComponent = ({
         order: editingVideoBlock?.order || Date.now(),
       };
 
-      console.log('Created video block:', videoBlock);
+      devLogger.debug('Created video block:', videoBlock);
 
       // Call the callback to update the lesson
       onVideoUpdate(videoBlock);
@@ -349,7 +350,7 @@ const VideoComponent = ({
           : 'Video added successfully!'
       );
     } catch (error) {
-      console.error('Error saving video:', error);
+      devLogger.error('Error saving video:', error);
       toast.error('Failed to save video. Please try again.');
     } finally {
       setIsUploading(false);
@@ -497,7 +498,7 @@ const VideoComponent = ({
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    MP4, WebM, OGG, AVI, MOV up to 3 GB
+                    MP4, WebM, OGG, AVI, MOV up to 500MB
                   </p>
                 </div>
               </div>
@@ -578,7 +579,7 @@ const VideoComponent = ({
                       className="w-full rounded-lg border border-gray-200"
                       style={{ maxHeight: '300px' }}
                       onError={() =>
-                        console.log(
+                        devLogger.debug(
                           'Video URL may be invalid or not accessible'
                         )
                       }
