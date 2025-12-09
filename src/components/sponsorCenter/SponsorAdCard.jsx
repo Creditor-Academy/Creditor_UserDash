@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -11,6 +11,17 @@ import SponsorStatusBadge from './SponsorStatusBadge';
 import { CalendarDays, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Helper function to check if URL is a placeholder/invalid
+const isPlaceholderUrl = url => {
+  if (!url || url === '') return true;
+  return (
+    url.includes('example.com') ||
+    url.includes('placeholder') ||
+    url === null ||
+    url === undefined
+  );
+};
+
 const SponsorAdCard = ({
   ad,
   onView,
@@ -21,7 +32,14 @@ const SponsorAdCard = ({
   hideActions,
   isPreview,
 }) => {
+  const [imageError, setImageError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
   if (!ad) return null;
+
+  const hasValidMedia =
+    ad.mediaUrl && !isPlaceholderUrl(ad.mediaUrl) && !imageError && !videoError;
+  const showFallback = !hasValidMedia;
 
   const actionButtons = (
     <div className="flex flex-wrap gap-2">
@@ -98,15 +116,25 @@ const SponsorAdCard = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="w-full h-44 rounded-2xl bg-gray-100 overflow-hidden">
-          {ad.mediaUrl ? (
+        <div className="w-full h-44 rounded-2xl bg-gray-100 overflow-hidden relative">
+          {hasValidMedia && ad.mediaType === 'video' ? (
+            <video
+              src={ad.mediaUrl}
+              className="h-full w-full object-cover"
+              controls
+              muted
+              onError={() => setVideoError(true)}
+            />
+          ) : hasValidMedia && ad.mediaType === 'image' ? (
             <img
               src={ad.mediaUrl}
-              alt={ad.adTitle}
+              alt={ad.adTitle || 'Sponsor ad'}
               className="h-full w-full object-cover"
+              onError={() => setImageError(true)}
             />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+          ) : null}
+          {showFallback && (
+            <div className="absolute inset-0 h-full flex items-center justify-center text-gray-400 text-sm bg-gray-50">
               {isPreview ? 'Preview updates as you type' : 'No media uploaded'}
             </div>
           )}

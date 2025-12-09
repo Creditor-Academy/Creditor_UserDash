@@ -486,3 +486,129 @@ export async function getUserAdApplications() {
     );
   }
 }
+
+/**
+ * Get a specific ad application by ID
+ * @param {string} applicationId - Application ID
+ * @returns {Promise<Object>} Application data
+ */
+export async function getUserAdApplicationById(applicationId) {
+  try {
+    if (!applicationId) {
+      throw new Error('Application ID is required');
+    }
+
+    const response = await api.get(
+      `/api/user/ads/applications/${applicationId}`
+    );
+
+    // Handle the response structure: { code: 200, data: { ... }, success: true, message: "..." }
+    const application =
+      response.data?.data || response.data?.application || response.data;
+
+    console.log('✅ User ad application fetched:', application);
+    return application;
+  } catch (error) {
+    console.error('❌ Failed to fetch ad application:', error);
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.userMessage ||
+      error.message;
+    throw new Error(
+      backendMessage ||
+        `Failed to fetch ad application (${error.response?.status || 'Unknown'})`
+    );
+  }
+}
+
+/**
+ * Get all ad applications from admin side
+ * @returns {Promise<Array>} Array of all ad applications
+ */
+export async function getAllAdApplications() {
+  try {
+    const response = await api.get('/api/admin/ads/applications');
+
+    // Handle the response structure: { code: 200, data: { applications: [...] }, success: true, message: "..." }
+    const applications =
+      response.data?.data?.applications ||
+      response.data?.applications ||
+      response.data ||
+      [];
+
+    console.log('✅ All ad applications fetched:', applications);
+    return applications;
+  } catch (error) {
+    console.error('❌ Failed to fetch ad applications:', error);
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.userMessage ||
+      error.message;
+    throw new Error(
+      backendMessage ||
+        `Failed to fetch ad applications (${error.response?.status || 'Unknown'})`
+    );
+  }
+}
+
+/**
+ * Update application status from admin side
+ * @param {string} applicationId - Application ID
+ * @param {string} status - Status to set (APPROVED, REJECTED, PENDING)
+ * @param {string} adminNotes - Optional admin notes
+ * @returns {Promise<Object>} Updated application data
+ */
+export async function updateApplicationStatus(
+  applicationId,
+  status,
+  adminNotes = ''
+) {
+  try {
+    if (!applicationId) {
+      throw new Error('Application ID is required');
+    }
+    if (!status) {
+      throw new Error('Status is required');
+    }
+
+    // Validate status value
+    const validStatuses = ['APPROVED', 'REJECTED', 'PENDING'];
+    if (!validStatuses.includes(status.toUpperCase())) {
+      throw new Error(
+        `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      );
+    }
+
+    const payload = {
+      status: status.toUpperCase(),
+      admin_notes: adminNotes?.trim() || '',
+    };
+
+    console.log('📤 Updating application status:', { applicationId, payload });
+
+    const response = await api.put(
+      `/api/admin/ads/applications/${applicationId}/status`,
+      payload
+    );
+
+    // Handle the response structure: { code: 200, data: { ... }, success: true, message: "..." }
+    const updatedApplication =
+      response.data?.data || response.data?.application || response.data;
+
+    console.log('✅ Application status updated:', updatedApplication);
+    return updatedApplication;
+  } catch (error) {
+    console.error('❌ Failed to update application status:', error);
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.userMessage ||
+      error.message;
+    throw new Error(
+      backendMessage ||
+        `Failed to update application status (${error.response?.status || 'Unknown'})`
+    );
+  }
+}

@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { getUserAdApplicationById } from '@/services/sponsorAdsService';
 
 const placements = [
   { value: 'all', label: 'All placements' },
@@ -60,7 +61,98 @@ const MySponsorAdsPage = () => {
     website: '',
   });
   const [viewingAd, setViewingAd] = useState(null);
+  const [viewingAdLoading, setViewingAdLoading] = useState(false);
+  const [viewingAdError, setViewingAdError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [viewImageError, setViewImageError] = useState(false);
+  const [viewVideoError, setViewVideoError] = useState(false);
+
+  // Map backend position to frontend placement
+  const POSITION_TO_PLACEMENT = {
+    DASHBOARD: 'dashboard_banner',
+    SIDEBAR: 'dashboard_sidebar',
+    COURSE_PLAYER: 'course_player_sidebar',
+    COURSE_LISTING: 'course_listing_tile',
+    POPUP: 'popup',
+  };
+
+  // Map backend status to frontend status
+  const normalizeStatus = status => {
+    const statusMap = {
+      PENDING: 'Pending',
+      APPROVED: 'Approved',
+      REJECTED: 'Rejected',
+    };
+    return statusMap[status] || status || 'Pending';
+  };
+
+  // Normalize backend application to frontend ad format
+  const normalizeApplication = app => {
+    const mediaUrl = app.video_url || app.image_url || '';
+    const mediaType = app.video_url ? 'video' : 'image';
+
+    return {
+      id: app.id,
+      sponsorName: app.sponsor_name || app.sponsorName,
+      adTitle: app.title || app.adTitle,
+      description: app.description || '',
+      mediaUrl: mediaUrl,
+      mediaType: mediaType,
+      placement:
+        POSITION_TO_PLACEMENT[app.preferred_position] ||
+        app.placement ||
+        'dashboard_banner',
+      budget: app.budget || '',
+      startDate: app.preferred_start_date || app.startDate || '',
+      endDate: app.preferred_end_date || app.endDate || '',
+      status: normalizeStatus(app.status),
+      website: app.link_url || app.website || '',
+      type: mediaType === 'video' ? 'Video' : 'Image',
+      companyName: app.company_name,
+      contactEmail: app.contact_email,
+      contactPhone: app.contact_phone,
+      additionalNotes: app.additional_notes,
+      adminNotes: app.admin_notes,
+      reviewedBy: app.reviewed_by,
+      reviewedAt: app.reviewed_at,
+      createdAt: app.created_at,
+      updatedAt: app.updated_at,
+      sponsorAdId: app.sponsor_ad_id,
+    };
+  };
+
+  // Fetch application details when opening view dialog
+  const handleViewAd = async ad => {
+    setViewingAd(ad); // Show basic info immediately
+    setViewingAdLoading(true);
+    setViewingAdError(null);
+    setViewImageError(false);
+    setViewVideoError(false);
+
+    try {
+      const application = await getUserAdApplicationById(ad.id);
+      const normalizedAd = normalizeApplication(application);
+      setViewingAd(normalizedAd);
+    } catch (error) {
+      console.error('Failed to fetch application details:', error);
+      setViewingAdError(error.message);
+      toast.error('Failed to load application details');
+      // Keep the basic ad info from the list
+    } finally {
+      setViewingAdLoading(false);
+    }
+  };
+
+  // Helper function to check if URL is a placeholder/invalid
+  const isPlaceholderUrl = url => {
+    if (!url || url === '') return true;
+    return (
+      url.includes('example.com') ||
+      url.includes('placeholder') ||
+      url === null ||
+      url === undefined
+    );
+  };
 
   const filteredAds = useMemo(() => {
     const query = search.toLowerCase();
@@ -182,7 +274,7 @@ const MySponsorAdsPage = () => {
           <SponsorAdCard
             key={ad.id}
             ad={ad}
-            onView={setViewingAd}
+            onView={handleViewAd}
             onEdit={openEditDialog}
             onToggleStatus={handleToggle}
             onDelete={handleDelete}
@@ -256,10 +348,154 @@ const MySponsorAdsPage = () => {
 
       <Dialog
         open={Boolean(viewingAd)}
-        onOpenChange={open => !open && setViewingAd(null)}
+        onOpenChange={open => {
+          if (!open) {
+            setViewingAd(null);
+            setViewingAdError(null);
+            setViewImageError(false);
+            setViewVideoError(false);
+          }
+        }}
       >
         <DialogContent className="rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto">
-          {viewingAd && (
+          {viewingAdLoading ? (
+            <div className="space-y-4">
+              <DialogHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-32 mt-2" />
+              </DialogHeader>
+              <Skeleton className="w-full h-64 rounded-2xl" />
+              <Skeleton className="w-full h-20" />
+              <Skeleton className="w-full h-16" />
+            </div>
+          ) : viewingAdError ? (
+            <div className="space-y-4">
+              <DialogHeader>
+                <DialogTitle>
+                  {viewingAd.adTitle || 'Application Details'}
+                </DialogTitle>
+                <div className="text-sm text-gray-500">
+                  {viewingAd.sponsorName}
+                </div>
+              </DialogHeader>
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-700">
+                  Failed to load full details: {viewingAdError}
+                </p>
+                <p className="text-xs text-red-600 mt-2">
+                  Showing basic information from list view.
+                </p>
+              </div>
+              {viewingAd && (
+                <div className="space-y-4">
+                  {viewingAd.mediaUrl &&
+                  !isPlaceholderUrl(viewingAd.mediaUrl) &&
+                  !viewImageError &&
+                  !viewVideoError ? (
+                    viewingAd.mediaType === 'video' ? (
+                      <video
+                        src={viewingAd.mediaUrl}
+                        className="w-full h-64 rounded-2xl object-cover"
+                        controls
+                        muted
+                        onError={() => setViewVideoError(true)}
+                      />
+                    ) : (
+                      <img
+                        src={viewingAd.mediaUrl}
+                        alt={viewingAd.adTitle}
+                        className="w-full h-64 rounded-2xl object-cover"
+                        onError={() => setViewImageError(true)}
+                      />
+                    )
+                  ) : (
+                    <div className="w-full h-64 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                      No media available
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-600">
+                    {viewingAd.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-sm text-gray-500">
+                    <SponsorStatusBadge status={viewingAd.status} />
+                    <span className="rounded-full bg-gray-100 px-3 py-1 capitalize">
+                      {viewingAd.placement?.replace(/_/g, ' ') || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-500">Budget</p>
+                      <p className="font-semibold">${viewingAd.budget}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Campaign Period</p>
+                      <p className="font-semibold">
+                        {viewingAd.startDate &&
+                          new Date(
+                            viewingAd.startDate
+                          ).toLocaleDateString()}{' '}
+                        -{' '}
+                        {viewingAd.endDate &&
+                          new Date(viewingAd.endDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {viewingAd.contactEmail && (
+                      <div>
+                        <p className="text-xs text-gray-500">Contact Email</p>
+                        <p className="font-semibold">
+                          {viewingAd.contactEmail}
+                        </p>
+                      </div>
+                    )}
+                    {viewingAd.contactPhone && (
+                      <div>
+                        <p className="text-xs text-gray-500">Contact Phone</p>
+                        <p className="font-semibold">
+                          {viewingAd.contactPhone}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {viewingAd.additionalNotes && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">
+                        Additional Notes
+                      </p>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                        {viewingAd.additionalNotes}
+                      </p>
+                    </div>
+                  )}
+                  {viewingAd.adminNotes && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Admin Notes</p>
+                      <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">
+                        {viewingAd.adminNotes}
+                      </p>
+                    </div>
+                  )}
+                  {viewingAd.reviewedBy && (
+                    <div className="text-xs text-gray-500">
+                      Reviewed by {viewingAd.reviewedBy} on{' '}
+                      {viewingAd.reviewedAt &&
+                        new Date(viewingAd.reviewedAt).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setViewingAd(null);
+                    setViewingAdError(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : viewingAd ? (
             <>
               <DialogHeader>
                 <DialogTitle>{viewingAd.adTitle}</DialogTitle>
@@ -270,25 +506,35 @@ const MySponsorAdsPage = () => {
               </DialogHeader>
               <div className="space-y-4">
                 {viewingAd.mediaUrl &&
-                  (viewingAd.mediaType === 'video' ? (
+                !isPlaceholderUrl(viewingAd.mediaUrl) &&
+                !viewImageError &&
+                !viewVideoError ? (
+                  viewingAd.mediaType === 'video' ? (
                     <video
                       src={viewingAd.mediaUrl}
                       className="w-full h-64 rounded-2xl object-cover"
                       controls
                       muted
+                      onError={() => setViewVideoError(true)}
                     />
                   ) : (
                     <img
                       src={viewingAd.mediaUrl}
                       alt={viewingAd.adTitle}
                       className="w-full h-64 rounded-2xl object-cover"
+                      onError={() => setViewImageError(true)}
                     />
-                  ))}
+                  )
+                ) : (
+                  <div className="w-full h-64 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                    No media available
+                  </div>
+                )}
                 <p className="text-sm text-gray-600">{viewingAd.description}</p>
                 <div className="flex flex-wrap gap-2 text-sm text-gray-500">
                   <SponsorStatusBadge status={viewingAd.status} />
                   <span className="rounded-full bg-gray-100 px-3 py-1 capitalize">
-                    {viewingAd.placement.replace(/_/g, ' ')}
+                    {viewingAd.placement?.replace(/_/g, ' ') || 'N/A'}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -346,12 +592,18 @@ const MySponsorAdsPage = () => {
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setViewingAd(null)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setViewingAd(null);
+                    setViewingAdError(null);
+                  }}
+                >
                   Close
                 </Button>
               </DialogFooter>
             </>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

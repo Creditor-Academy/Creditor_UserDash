@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -44,125 +44,72 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  getAllAdApplications,
+  updateApplicationStatus,
+} from '@/services/sponsorAdsService';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Dummy data for ad requests
-const DUMMY_REQUESTS = [
-  {
-    id: 'req_1',
-    requesterName: 'Sarah Johnson',
-    requesterEmail: 'sarah.j@techcorp.com',
-    organizationName: 'TechCorp Solutions',
-    sponsorName: 'TechCorp',
-    adTitle: 'Cloud Computing Masterclass',
-    description:
-      'Join our comprehensive cloud computing course. Learn AWS, Azure, and Google Cloud from industry experts.',
-    placement: 'dashboard_banner',
-    tier: 'Gold',
-    budget: '$5,000/month',
-    startDate: '2025-01-15',
-    endDate: '2025-03-15',
-    mediaUrl:
-      'https://via.placeholder.com/600x300/3b82f6/ffffff?text=Cloud+Course',
-    ctaUrl: 'https://techcorp.com/cloud-course',
-    ctaText: 'Enroll Now',
-    status: 'pending',
-    submittedAt: '2025-01-05T10:30:00Z',
-    notes: 'Looking to target computer science students specifically.',
-  },
-  {
-    id: 'req_2',
-    requesterName: 'Michael Chen',
-    requesterEmail: 'mchen@financeplus.com',
-    organizationName: 'FinancePlus Academy',
-    sponsorName: 'FinancePlus',
-    adTitle: 'Financial Literacy Bootcamp',
-    description:
-      'Master personal finance, investing, and wealth management in 8 weeks.',
-    placement: 'dashboard_sidebar',
-    tier: 'Silver',
-    budget: '$3,000/month',
-    startDate: '2025-01-20',
-    endDate: '2025-04-20',
-    mediaUrl:
-      'https://via.placeholder.com/600x300/10b981/ffffff?text=Finance+Bootcamp',
-    ctaUrl: 'https://financeplus.com/bootcamp',
-    ctaText: 'Learn More',
-    status: 'pending',
-    submittedAt: '2025-01-06T14:15:00Z',
-    notes: '',
-  },
-  {
-    id: 'req_3',
-    requesterName: 'Emma Rodriguez',
-    requesterEmail: 'emma@designhub.io',
-    organizationName: 'DesignHub Studio',
-    sponsorName: 'DesignHub',
-    adTitle: 'UX/UI Design Intensive',
-    description:
-      'Transform your design skills with our intensive UX/UI program.',
-    placement: 'course_player_sidebar',
-    tier: 'Gold',
-    budget: '$4,500/month',
-    startDate: '2025-02-01',
-    endDate: '2025-04-30',
-    mediaUrl:
-      'https://via.placeholder.com/600x300/8b5cf6/ffffff?text=UX+Design',
-    ctaUrl: 'https://designhub.io/ux-intensive',
-    ctaText: 'Apply Now',
-    status: 'approved',
-    submittedAt: '2025-01-02T09:00:00Z',
-    reviewedAt: '2025-01-03T11:30:00Z',
-    reviewedBy: 'Admin User',
-    notes: 'Approved for design and tech categories.',
-  },
-  {
-    id: 'req_4',
-    requesterName: 'David Park',
-    requesterEmail: 'david@codecamp.dev',
-    organizationName: 'CodeCamp Pro',
-    sponsorName: 'CodeCamp',
-    adTitle: 'Full Stack Developer Program',
-    description:
-      'Become a full stack developer in 12 weeks. MERN stack specialization.',
-    placement: 'course_listing_tile',
-    tier: 'Bronze',
-    budget: '$2,000/month',
-    startDate: '2025-01-25',
-    endDate: '2025-04-25',
-    mediaUrl:
-      'https://via.placeholder.com/600x300/f59e0b/ffffff?text=Full+Stack',
-    ctaUrl: 'https://codecamp.dev/fullstack',
-    ctaText: 'Join Program',
-    status: 'rejected',
-    submittedAt: '2024-12-28T16:45:00Z',
-    reviewedAt: '2025-01-04T10:00:00Z',
-    reviewedBy: 'Admin User',
-    rejectionReason: 'Budget allocation full for this quarter.',
-    notes: '',
-  },
-  {
-    id: 'req_5',
-    requesterName: 'Lisa Wang',
-    requesterEmail: 'lwang@aiinstitute.org',
-    organizationName: 'AI Research Institute',
-    sponsorName: 'AI Institute',
-    adTitle: 'Machine Learning Specialization',
-    description:
-      'Deep dive into ML algorithms, neural networks, and AI applications.',
-    placement: 'popup',
-    tier: 'Gold',
-    budget: '$6,000/month',
-    startDate: '2025-02-10',
-    endDate: '2025-05-10',
-    mediaUrl:
-      'https://via.placeholder.com/600x300/ec4899/ffffff?text=ML+Course',
-    ctaUrl: 'https://aiinstitute.org/ml-spec',
-    ctaText: 'Start Learning',
-    status: 'pending',
-    submittedAt: '2025-01-07T08:20:00Z',
-    notes: 'Interested in targeting advanced students only.',
-  },
-];
+// Map backend position to frontend placement
+const POSITION_TO_PLACEMENT = {
+  DASHBOARD: 'dashboard_banner',
+  SIDEBAR: 'dashboard_sidebar',
+  COURSE_PLAYER: 'course_player_sidebar',
+  COURSE_LISTING: 'course_listing_tile',
+  POPUP: 'popup',
+};
+
+// Normalize backend application to frontend format
+const normalizeApplication = app => {
+  const mediaUrl = app.video_url || app.image_url || '';
+  const mediaType = app.video_url ? 'video' : 'image';
+
+  // Extract requester name from email or use company name
+  const getRequesterName = () => {
+    if (app.contact_email) {
+      const emailName = app.contact_email.split('@')[0];
+      // Capitalize first letter and replace dots/underscores with spaces
+      return emailName
+        .replace(/[._]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    if (app.company_name) {
+      return app.company_name;
+    }
+    return 'Unknown User';
+  };
+
+  return {
+    id: app.id,
+    requesterName: getRequesterName(),
+    requesterEmail: app.contact_email || '',
+    organizationName: app.company_name || '',
+    sponsorName: app.sponsor_name || '',
+    adTitle: app.title || '',
+    description: app.description || '',
+    placement:
+      POSITION_TO_PLACEMENT[app.preferred_position] || 'dashboard_banner',
+    tier: 'Gold', // Not in backend response, defaulting
+    budget: app.budget ? `$${Number(app.budget).toLocaleString()}` : '$0',
+    startDate: app.preferred_start_date || app.start_date || '',
+    endDate: app.preferred_end_date || app.end_date || '',
+    mediaUrl: mediaUrl,
+    mediaType: mediaType,
+    ctaUrl: app.link_url || '',
+    ctaText: app.link_url ? 'Learn more' : '',
+    status: app.status?.toLowerCase() || 'pending',
+    submittedAt: app.created_at || '',
+    reviewedAt: app.reviewed_at || null,
+    reviewedBy: app.reviewed_by || null,
+    notes: app.additional_notes || '',
+    rejectionReason: app.admin_notes || null,
+    contactEmail: app.contact_email || '',
+    contactPhone: app.contact_phone || '',
+    companyName: app.company_name || '',
+  };
+};
 
 const statusConfig = {
   pending: {
@@ -191,12 +138,58 @@ const placementLabels = {
 };
 
 export const SponsorAdRequests = () => {
-  const [requests, setRequests] = useState(DUMMY_REQUESTS);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewingRequest, setViewingRequest] = useState(null);
   const [reviewAction, setReviewAction] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
+  const [viewImageError, setViewImageError] = useState(false);
+  const [viewVideoError, setViewVideoError] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Helper function to check if URL is a placeholder/invalid
+  const isPlaceholderUrl = url => {
+    if (!url || url === '') return true;
+    return (
+      url.includes('example.com') ||
+      url.includes('placeholder') ||
+      url === null ||
+      url === undefined
+    );
+  };
+
+  // Reset errors when viewing a different request
+  useEffect(() => {
+    if (viewingRequest) {
+      setViewImageError(false);
+      setViewVideoError(false);
+    }
+  }, [viewingRequest]);
+
+  // Fetch all ad applications from backend
+  const fetchApplications = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const applications = await getAllAdApplications();
+      const normalizedRequests = applications.map(normalizeApplication);
+      setRequests(normalizedRequests);
+    } catch (err) {
+      console.error('[SponsorAdRequests] Failed to fetch applications:', err);
+      setError(err.message);
+      setRequests([]);
+      toast.error('Failed to load ad applications');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
   const filteredRequests = useMemo(() => {
     return requests.filter(req => {
@@ -225,45 +218,97 @@ export const SponsorAdRequests = () => {
     setReviewNotes('');
   };
 
-  const submitReview = () => {
-    if (reviewAction === 'approve') {
-      setRequests(prev =>
-        prev.map(req =>
-          req.id === viewingRequest.id
-            ? {
-                ...req,
-                status: 'approved',
-                reviewedAt: new Date().toISOString(),
-                reviewedBy: 'Admin User',
-              }
-            : req
-        )
-      );
-      toast.success('Ad request approved successfully!');
-    } else if (reviewAction === 'reject') {
-      if (!reviewNotes.trim()) {
-        toast.error('Please provide a rejection reason');
-        return;
-      }
-      setRequests(prev =>
-        prev.map(req =>
-          req.id === viewingRequest.id
-            ? {
-                ...req,
-                status: 'rejected',
-                reviewedAt: new Date().toISOString(),
-                reviewedBy: 'Admin User',
-                rejectionReason: reviewNotes,
-              }
-            : req
-        )
-      );
-      toast.success('Ad request rejected');
+  const submitReview = async () => {
+    if (!viewingRequest) return;
+
+    // For rejection, require admin notes
+    if (reviewAction === 'reject' && !reviewNotes.trim()) {
+      toast.error('Please provide a rejection reason');
+      return;
     }
-    setViewingRequest(null);
-    setReviewAction(null);
-    setReviewNotes('');
+
+    setIsSubmittingReview(true);
+
+    try {
+      // Map frontend action to backend status
+      const status = reviewAction === 'approve' ? 'APPROVED' : 'REJECTED';
+      const adminNotes =
+        reviewAction === 'reject'
+          ? reviewNotes.trim()
+          : reviewAction === 'approve'
+            ? reviewNotes.trim() ||
+              'Application approved. Ad will be live soon.'
+            : '';
+
+      // Call API to update status
+      await updateApplicationStatus(viewingRequest.id, status, adminNotes);
+
+      // Show success message
+      if (reviewAction === 'approve') {
+        toast.success('Ad request approved successfully!');
+      } else {
+        toast.success('Ad request rejected');
+      }
+
+      // Close dialog and reset state
+      setViewingRequest(null);
+      setReviewAction(null);
+      setReviewNotes('');
+
+      // Refresh applications to get updated data
+      await fetchApplications();
+    } catch (error) {
+      console.error(
+        '[SponsorAdRequests] Failed to update application status:',
+        error
+      );
+      toast.error(
+        error.message ||
+          'Failed to update application status. Please try again.'
+      );
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, idx) => (
+            <Skeleton key={idx} className="h-20 rounded-xl" />
+          ))}
+        </div>
+        <Card className="rounded-2xl border-gray-200 shadow-sm">
+          <CardContent className="p-6">
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="rounded-2xl border-red-200 bg-red-50">
+        <CardContent className="p-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <AlertCircle className="w-12 h-12 text-red-600" />
+            <p className="text-lg font-semibold text-red-900">
+              Failed to load ad applications
+            </p>
+            <p className="text-sm text-red-700">{error}</p>
+            <Button
+              onClick={fetchApplications}
+              className="mt-4 bg-red-600 hover:bg-red-700"
+            >
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -516,7 +561,15 @@ export const SponsorAdRequests = () => {
       {/* View/Review Dialog */}
       <Dialog
         open={Boolean(viewingRequest)}
-        onOpenChange={open => !open && setViewingRequest(null)}
+        onOpenChange={open => {
+          if (!open) {
+            setViewingRequest(null);
+            setReviewAction(null);
+            setReviewNotes('');
+            setViewImageError(false);
+            setViewVideoError(false);
+          }
+        }}
       >
         <DialogContent className="max-w-3xl rounded-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -532,12 +585,30 @@ export const SponsorAdRequests = () => {
             <div className="space-y-6">
               {/* Preview */}
               <div className="rounded-2xl border border-gray-200 overflow-hidden">
-                {viewingRequest.mediaUrl && (
-                  <img
-                    src={viewingRequest.mediaUrl}
-                    alt={viewingRequest.adTitle}
-                    className="w-full h-64 object-cover"
-                  />
+                {viewingRequest.mediaUrl &&
+                !isPlaceholderUrl(viewingRequest.mediaUrl) &&
+                !viewImageError &&
+                !viewVideoError ? (
+                  viewingRequest.mediaType === 'video' ? (
+                    <video
+                      src={viewingRequest.mediaUrl}
+                      className="w-full h-64 object-cover"
+                      controls
+                      muted
+                      onError={() => setViewVideoError(true)}
+                    />
+                  ) : (
+                    <img
+                      src={viewingRequest.mediaUrl}
+                      alt={viewingRequest.adTitle}
+                      className="w-full h-64 object-cover"
+                      onError={() => setViewImageError(true)}
+                    />
+                  )
+                ) : (
+                  <div className="w-full h-64 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                    No media available
+                  </div>
                 )}
                 <div className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
@@ -652,20 +723,35 @@ export const SponsorAdRequests = () => {
               )}
 
               {reviewAction === 'approve' && (
-                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-emerald-900">
-                        Approve this request?
-                      </p>
-                      <p className="text-sm text-emerald-700 mt-1">
-                        This will create a new sponsor ad and notify the
-                        requester.
-                      </p>
+                <>
+                  <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-emerald-900">
+                          Approve this request?
+                        </p>
+                        <p className="text-sm text-emerald-700 mt-1">
+                          This will create a new sponsor ad and notify the
+                          requester.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="approval-notes">
+                      Approval Notes (Optional)
+                    </Label>
+                    <Textarea
+                      id="approval-notes"
+                      placeholder="Add any notes about this approval..."
+                      value={reviewNotes}
+                      onChange={e => setReviewNotes(e.target.value)}
+                      rows={3}
+                      className="rounded-xl"
+                    />
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -677,23 +763,34 @@ export const SponsorAdRequests = () => {
                 setViewingRequest(null);
                 setReviewAction(null);
                 setReviewNotes('');
+                setViewImageError(false);
+                setViewVideoError(false);
               }}
               className="rounded-xl"
+              disabled={isSubmittingReview}
             >
               {reviewAction ? 'Cancel' : 'Close'}
             </Button>
             {reviewAction && (
               <Button
                 onClick={submitReview}
+                disabled={isSubmittingReview}
                 className={
                   reviewAction === 'approve'
                     ? 'rounded-xl bg-emerald-600 hover:bg-emerald-700'
                     : 'rounded-xl bg-rose-600 hover:bg-rose-700'
                 }
               >
-                {reviewAction === 'approve'
-                  ? 'Confirm Approval'
-                  : 'Confirm Rejection'}
+                {isSubmittingReview ? (
+                  <>
+                    <span className="mr-2">Processing...</span>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </>
+                ) : reviewAction === 'approve' ? (
+                  'Confirm Approval'
+                ) : (
+                  'Confirm Rejection'
+                )}
               </Button>
             )}
           </DialogFooter>
