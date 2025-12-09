@@ -744,9 +744,7 @@ const AdminPayments = () => {
             <h2 className="text-2xl font-semibold text-gray-800">
               Payments & Subscriptions
             </h2>
-            <p className="text-gray-600">
-              Dummy data preview for admin payments dashboard.
-            </p>
+            <p className="text-gray-600">Admin payments dashboard.</p>
           </div>
           <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner">
             <button
