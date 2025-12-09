@@ -545,6 +545,8 @@ const Users = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [userPendingDelete, setUserPendingDelete] = useState(null);
 
   // Fetch users from API
   useEffect(() => {
@@ -670,6 +672,45 @@ const Users = () => {
     }
   };
 
+  const handleRequestDelete = user => setUserPendingDelete(user);
+  const handleCancelDelete = () => setUserPendingDelete(null);
+
+  // Delete user
+  const handleDeleteUser = async userId => {
+    try {
+      setDeletingUserId(userId);
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+      const url = `${apiBaseUrl}/api/org/orgdelete/${userId}`;
+      const accessToken = localStorage.getItem('authToken');
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
+      setUserPendingDelete(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user. Please try again.');
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (userPendingDelete) {
+      handleDeleteUser(userPendingDelete.id);
+    }
+  };
+
   // Get unique organizations for filter dropdown
   const uniqueOrganizations = [
     ...new Set(users.map(user => user.organization)),
@@ -740,6 +781,76 @@ const Users = () => {
         colors={colors}
         isLoading={userDetailsLoading}
       />
+
+      {/* Delete Confirmation Modal */}
+      {userPendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4"
+            style={{
+              backgroundColor: colors.bg.secondary,
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <div className="flex items-start space-x-3">
+              <div
+                className="h-10 w-10 rounded-full flex items-center justify-center"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.25))',
+                }}
+              >
+                <Trash2 className="h-5 w-5" style={{ color: '#EF4444' }} />
+              </div>
+              <div className="flex-1">
+                <h3
+                  className="text-xl font-semibold mb-1"
+                  style={{ color: colors.text.primary }}
+                >
+                  Delete user?
+                </h3>
+                <p className="text-sm" style={{ color: colors.text.secondary }}>
+                  {`You're about to delete ${
+                    userPendingDelete.name || 'this user'
+                  }. This action cannot be undone.`}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="flex items-center justify-end gap-3 pt-2"
+              style={{ borderColor: colors.border }}
+            >
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 rounded-lg font-medium transition-colors"
+                style={{
+                  backgroundColor: colors.bg.hover,
+                  color: colors.text.primary,
+                  border: `1px solid ${colors.border}`,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deletingUserId === userPendingDelete.id}
+                className="px-4 py-2 rounded-lg font-semibold transition-colors text-white disabled:opacity-70"
+                style={{
+                  background:
+                    'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',
+                  boxShadow: '0 10px 30px rgba(239,68,68,0.35)',
+                }}
+              >
+                {deletingUserId === userPendingDelete.id
+                  ? 'Deleting...'
+                  : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="mb-8 mt-4">
@@ -1212,7 +1323,9 @@ const Users = () => {
                             />
                           </button>
                           <button
-                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition-colors duration-150"
+                            onClick={() => handleRequestDelete(user)}
+                            disabled={deletingUserId === user.id}
+                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition-colors duration-150 disabled:opacity-50"
                             title="Delete"
                           >
                             <Trash2

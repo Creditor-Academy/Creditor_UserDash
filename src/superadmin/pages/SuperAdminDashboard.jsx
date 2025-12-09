@@ -46,6 +46,8 @@ function SuperAdminDashboardContent() {
   const [userLoading, setUserLoading] = useState(true);
   const [activeUsersData, setActiveUsersData] = useState(null);
   const [activeUsersLoading, setActiveUsersLoading] = useState(true);
+  const [storageData, setStorageData] = useState(null);
+  const [storageLoading, setStorageLoading] = useState(true);
 
   useEffect(() => {
     const handleNavigation = event => {
@@ -164,6 +166,47 @@ function SuperAdminDashboardContent() {
     fetchActiveUsersData();
   }, []);
 
+  useEffect(() => {
+    const fetchStorageData = async () => {
+      try {
+        setStorageLoading(true);
+        const apiBaseUrl =
+          import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        const url = `${apiBaseUrl}/api/org/countAllStorage`;
+        const accessToken = localStorage.getItem('authToken');
+
+        console.log('Fetching storage data from:', url);
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const result = await response.json();
+        console.log('Storage data response:', result);
+
+        if (result.success && result.data) {
+          setStorageData({
+            totalStorageUsed: result.data.totalStorageUsed,
+            growthRate: result.data.growthRate,
+          });
+        } else {
+          console.warn('Unexpected storage response format:', result);
+        }
+      } catch (error) {
+        console.error('Error fetching storage data:', error);
+      } finally {
+        setStorageLoading(false);
+      }
+    };
+
+    fetchStorageData();
+  }, []);
+
+  const formatBytesToMB = bytes => {
+    if (!bytes || Number.isNaN(Number(bytes))) return '0.00';
+    return (Number(bytes) / (1024 * 1024)).toFixed(2);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'organizations':
@@ -222,8 +265,13 @@ function SuperAdminDashboardContent() {
                 <MetricCard
                   icon={Package}
                   label="Total Storage used"
-                  value="1,845"
+                  value={
+                    storageLoading
+                      ? 'Loading...'
+                      : `${formatBytesToMB(storageData?.totalStorageUsed)} MB`
+                  }
                   color={colors.accent.red}
+                  subtitle={storageData?.growthRate}
                 />
               </div>
 
