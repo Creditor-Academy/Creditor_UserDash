@@ -307,3 +307,182 @@ export async function deleteSponsorAd(adId) {
     );
   }
 }
+
+/**
+ * Submit a sponsor ad request from user side
+ * @param {Object} requestData - Ad request data
+ * @param {string} requestData.title - Ad title
+ * @param {string} requestData.description - Ad description
+ * @param {string} requestData.sponsor_name - Sponsor name
+ * @param {string} requestData.company_name - Company name
+ * @param {string} requestData.contact_email - Contact email
+ * @param {string} requestData.contact_phone - Contact phone
+ * @param {File|string} requestData.mediaFile - Image or video file (or existing URL)
+ * @param {string} requestData.link_url - CTA link URL
+ * @param {string} requestData.placement - Preferred placement (dashboard_banner, etc.)
+ * @param {string} requestData.preferred_start_date - Start date (ISO string or date string)
+ * @param {string} requestData.preferred_end_date - End date (ISO string or date string)
+ * @param {number} requestData.budget - Budget amount
+ * @param {string} requestData.additional_notes - Additional notes
+ * @returns {Promise<Object>} Submitted request data
+ */
+export async function submitSponsorAdRequest(requestData) {
+  try {
+    console.log('🚀 Submitting sponsor ad request:', requestData);
+
+    let imageUrl = null;
+    let videoUrl = null;
+
+    // If mediaFile is a File object, upload it first
+    if (requestData.mediaFile instanceof File) {
+      const isVideo = requestData.mediaFile.type.startsWith('video/');
+
+      if (isVideo) {
+        console.log('📤 Uploading video file...');
+        const uploadResult = await uploadVideo(requestData.mediaFile, {
+          folder: 'sponsor-ads',
+          public: true,
+          type: 'video',
+        });
+        videoUrl = uploadResult.videoUrl;
+        console.log('✅ Video uploaded:', videoUrl);
+      } else {
+        console.log('📤 Uploading image file...');
+        const uploadResult = await uploadImage(requestData.mediaFile, {
+          folder: 'sponsor-ads',
+          public: true,
+          type: 'image',
+        });
+        imageUrl = uploadResult.imageUrl;
+        console.log('✅ Image uploaded:', imageUrl);
+      }
+    } else if (
+      requestData.mediaFile &&
+      typeof requestData.mediaFile === 'string'
+    ) {
+      // If it's a string URL, determine if it's a video or image
+      const isVideoUrl = /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(
+        requestData.mediaFile
+      );
+      if (isVideoUrl) {
+        videoUrl = requestData.mediaFile;
+      } else {
+        imageUrl = requestData.mediaFile;
+      }
+    }
+
+    // Convert dates to ISO format if needed
+    const formatDate = date => {
+      if (!date) return null;
+      if (date instanceof Date) {
+        return date.toISOString();
+      }
+      if (typeof date === 'string') {
+        // If it's already ISO format, return as is
+        if (date.includes('T')) {
+          return date;
+        }
+        // If it's a date string like "2025-01-01", convert to ISO
+        const d = new Date(date);
+        if (!isNaN(d.getTime())) {
+          return d.toISOString();
+        }
+      }
+      return date;
+    };
+
+    // Map frontend placement to backend position
+    const PLACEMENT_TO_POSITION = {
+      dashboard_banner: 'DASHBOARD',
+      dashboard_sidebar: 'SIDEBAR',
+      sidebar_ad: 'SIDEBAR',
+      course_player: 'COURSE_PLAYER',
+      course_player_sidebar: 'COURSE_PLAYER',
+      course_listing_page: 'COURSE_LISTING',
+      course_listing_tile: 'COURSE_LISTING',
+      popup: 'POPUP',
+    };
+
+    const preferredPosition =
+      PLACEMENT_TO_POSITION[requestData.placement] || 'DASHBOARD';
+
+    // Prepare payload
+    const payload = {
+      title: requestData.title?.trim() || '',
+      description: requestData.description?.trim() || '',
+      sponsor_name: requestData.sponsor_name?.trim() || '',
+      company_name: requestData.company_name?.trim() || '',
+      contact_email: requestData.contact_email?.trim() || '',
+      contact_phone: requestData.contact_phone?.trim() || '',
+      image_url: imageUrl || '',
+      video_url: videoUrl || null,
+      link_url: requestData.link_url?.trim() || '',
+      preferred_position: preferredPosition,
+      preferred_start_date: formatDate(requestData.preferred_start_date),
+      preferred_end_date: formatDate(requestData.preferred_end_date),
+      budget: parseFloat(requestData.budget) || 0,
+      additional_notes: requestData.additional_notes?.trim() || '',
+    };
+
+    console.log('📤 Sending request to backend:', payload);
+
+    // Make API call
+    const response = await api.post('/api/user/ads/apply', payload);
+
+    console.log('✅ Sponsor ad request submitted successfully:', response.data);
+
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+      message:
+        response.data?.message ||
+        'Ad application submitted successfully. Admin will review your request.',
+    };
+  } catch (error) {
+    console.error('❌ Failed to submit sponsor ad request:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.userMessage ||
+      error.message;
+
+    throw new Error(
+      backendMessage ||
+        `Failed to submit ad request (${error.response?.status || 'Unknown'})`
+    );
+  }
+}
+
+/**
+ * Get user's sponsor ad applications
+ * @returns {Promise<Array>} Array of user's ad applications
+ */
+export async function getUserAdApplications() {
+  try {
+    const response = await api.get('/api/user/ads/applications');
+
+    // Handle the response structure: { code: 200, data: { applications: [...] }, success: true, message: "..." }
+    const applications =
+      response.data?.data?.applications || response.data?.applications || [];
+
+    console.log('✅ User ad applications fetched:', applications);
+    return applications;
+  } catch (error) {
+    console.error('❌ Failed to fetch user ad applications:', error);
+    const backendMessage =
+      error.response?.data?.errorMessage ||
+      error.response?.data?.message ||
+      error.userMessage ||
+      error.message;
+    throw new Error(
+      backendMessage ||
+        `Failed to fetch ad applications (${error.response?.status || 'Unknown'})`
+    );
+  }
+}

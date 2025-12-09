@@ -4,13 +4,19 @@ import SponsorRequestForm from '@/components/sponsorCenter/SponsorRequestForm';
 import SponsorAdCard from '@/components/sponsorCenter/SponsorAdCard';
 import SponsorRequestSuccessBanner from '@/components/sponsorCenter/SponsorRequestSuccessBanner';
 import { useUserSponsor } from '@/contexts/UserSponsorContext';
+import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { submitSponsorAdRequest } from '@/services/sponsorAdsService';
 
 const initialForm = {
   sponsorName: '',
+  companyName: '',
+  contactEmail: '',
+  contactPhone: '',
   adTitle: '',
   description: '',
   mediaUrl: '',
+  mediaFile: null,
   placement: 'dashboard_banner',
   budget: '',
   startDate: '',
@@ -21,7 +27,8 @@ const initialForm = {
 };
 
 const SponsorRequestPage = () => {
-  const { addRequest } = useUserSponsor();
+  const { addRequest, refreshApplications } = useUserSponsor();
+  const { userProfile } = useUser();
   const [formState, setFormState] = useState(initialForm);
   const [mediaPreview, setMediaPreview] = useState('');
   const [errors, setErrors] = useState({});
@@ -33,6 +40,13 @@ const SponsorRequestPage = () => {
     const timer = setTimeout(() => setLoading(false), 600);
     return () => clearTimeout(timer);
   }, []);
+
+  // Pre-fill user email if available
+  useEffect(() => {
+    if (userProfile?.email && !formState.contactEmail) {
+      setFormState(prev => ({ ...prev, contactEmail: userProfile.email }));
+    }
+  }, [userProfile]);
 
   const handleInputChange = e => {
     const { name, value } = e.target;
@@ -48,14 +62,37 @@ const SponsorRequestPage = () => {
     if (!file) return;
     const preview = URL.createObjectURL(file);
     setMediaPreview(preview);
-    setFormState(prev => ({ ...prev, mediaUrl: preview }));
+    setFormState(prev => ({ ...prev, mediaFile: file, mediaUrl: preview }));
   };
 
   const validate = () => {
     const nextErrors = {};
     if (!formState.sponsorName.trim())
       nextErrors.sponsorName = 'Sponsor name is required';
+    if (!formState.companyName.trim())
+      nextErrors.companyName = 'Company name is required';
+    if (!formState.contactEmail.trim())
+      nextErrors.contactEmail = 'Contact email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.contactEmail))
+      nextErrors.contactEmail = 'Please enter a valid email address';
+    if (!formState.contactPhone.trim())
+      nextErrors.contactPhone = 'Contact phone is required';
     if (!formState.adTitle.trim()) nextErrors.adTitle = 'Ad title is required';
+    if (!formState.description.trim())
+      nextErrors.description = 'Description is required';
+    if (!formState.website.trim())
+      nextErrors.website = 'Website URL is required';
+    else {
+      try {
+        new URL(formState.website);
+      } catch {
+        nextErrors.website = 'Please enter a valid URL';
+      }
+    }
+    if (!formState.budget || parseFloat(formState.budget) <= 0)
+      nextErrors.budget = 'Budget must be greater than 0';
+    if (!formState.startDate) nextErrors.startDate = 'Start date is required';
+    if (!formState.endDate) nextErrors.endDate = 'End date is required';
     if (
       formState.startDate &&
       formState.endDate &&
@@ -67,18 +104,56 @@ const SponsorRequestPage = () => {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      addRequest(formState);
+
+    try {
+      // Prepare request data
+      const requestData = {
+        title: formState.adTitle,
+        description: formState.description,
+        sponsor_name: formState.sponsorName,
+        company_name: formState.companyName,
+        contact_email: formState.contactEmail,
+        contact_phone: formState.contactPhone,
+        mediaFile: formState.mediaFile || formState.mediaUrl,
+        link_url: formState.website,
+        placement: formState.placement,
+        preferred_start_date: formState.startDate,
+        preferred_end_date: formState.endDate,
+        budget: formState.budget,
+        additional_notes: formState.notes,
+      };
+
+      // Submit to backend
+      const result = await submitSponsorAdRequest(requestData);
+
+      // Refresh applications list
+      if (refreshApplications) {
+        await refreshApplications();
+      }
+
       setIsSubmitting(false);
       setShowSuccess(true);
-      toast.success('Sponsorship request submitted');
+      toast.success(
+        result.message ||
+          'Ad application submitted successfully. Admin will review your request.'
+      );
       setFormState(initialForm);
       setMediaPreview('');
-    }, 600);
+      setFormState(prev => ({
+        ...prev,
+        contactEmail: userProfile?.email || '',
+      }));
+    } catch (error) {
+      console.error('Failed to submit sponsor ad request:', error);
+      setIsSubmitting(false);
+      toast.error(
+        error.message || 'Failed to submit ad request. Please try again.'
+      );
+    }
   };
 
   const previewData = useMemo(
