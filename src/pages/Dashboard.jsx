@@ -54,7 +54,7 @@ import {
   fetchUserWebsiteServices,
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
-import CLogo from '@/assets/C-logo.png';
+import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
 
 export function Dashboard() {
@@ -103,9 +103,12 @@ export function Dashboard() {
       }
     }
     .important-updates-scroll {
-      scrollbar-width: thin;
-      scrollbar-color: #cbd5e1 transparent;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
       scroll-behavior: smooth;
+    }
+    .important-updates-scroll::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
     }
     .important-updates-scroll::-webkit-scrollbar {
       height: 6px;
@@ -127,6 +130,7 @@ export function Dashboard() {
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
+  const importantUpdatesScrollRef = useRef(null);
   const debouncedRefreshBalance = useCallback(() => {
     if (refreshBalanceRef.current) {
       clearTimeout(refreshBalanceRef.current);
@@ -466,6 +470,68 @@ export function Dashboard() {
       fetchUserHistory();
     }
   }, [memoizedUserProfile]);
+
+  // Auto-scroll for Important Updates section
+  useEffect(() => {
+    const scrollContainer = importantUpdatesScrollRef.current;
+    if (!scrollContainer) return;
+
+    let scrollTimeout;
+    let currentIndex = 0;
+
+    const scrollToNext = () => {
+      const cards = scrollContainer.querySelectorAll('.important-update-card');
+      if (cards.length === 0) return;
+
+      // Move to next card
+      currentIndex++;
+
+      // If we've reached the last card, reset to first
+      if (currentIndex >= cards.length) {
+        currentIndex = 0;
+        // Smoothly scroll back to beginning
+        scrollContainer.scrollTo({
+          left: 0,
+          behavior: 'smooth',
+        });
+      } else {
+        // Get the next card element
+        const nextCard = cards[currentIndex];
+        if (nextCard) {
+          // Calculate scroll position: card's left position relative to container
+          const cardLeft = nextCard.offsetLeft;
+          const containerPadding = 16; // p-4 = 16px
+
+          // Smoothly scroll to the card's position
+          scrollContainer.scrollTo({
+            left: cardLeft - containerPadding,
+            behavior: 'smooth',
+          });
+        }
+      }
+
+      // Schedule next scroll after 4 seconds
+      scrollTimeout = setTimeout(scrollToNext, 4000);
+    };
+
+    // Initialize scroll position
+    scrollContainer.scrollLeft = 0;
+
+    // Start auto-scrolling after a short delay to ensure container is rendered
+    const startDelay = setTimeout(() => {
+      scrollToNext();
+    }, 4000); // Wait 4 seconds before first scroll
+
+    // Cleanup on unmount
+    return () => {
+      if (startDelay) {
+        clearTimeout(startDelay);
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, []);
 
   // Add retry functionality
   const handleRetry = () => {
@@ -1176,7 +1242,10 @@ export function Dashboard() {
                     dedicated leads below.
                   </p>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory important-updates-scroll">
+                <div
+                  ref={importantUpdatesScrollRef}
+                  className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory important-updates-scroll"
+                >
                   {/* Athena LMS and Login Issues */}
                   <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white transition-all duration-300 hover:shadow-md hover:border-indigo-200 flex-shrink-0 snap-center important-update-card h-full">
                     <div className="flex items-start gap-3 h-full">
