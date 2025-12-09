@@ -33,6 +33,8 @@ import {
 import * as XLSX from 'xlsx';
 import { fetchAllUsersAdmin } from '@/services/userService';
 import { api } from '@/services/apiClient';
+
+const ORGANIZATION_ID = 'be68e945-b827-4905-8b44-62126364d1b7';
 function formatDate(value) {
   try {
     if (!value) return '—';
@@ -510,7 +512,11 @@ const PaymentDashboard = () => {
             }
 
             const usageType =
-              record.usage_type || record.usageType || record.type || 'Usage';
+              record.unlock_type ||
+              record.usage_type ||
+              record.usageType ||
+              record.type ||
+              'Usage';
 
             const entry = {
               userId,
@@ -527,6 +533,7 @@ const PaymentDashboard = () => {
                 record.timestamp ||
                 new Date().toISOString(),
               credits:
+                Number(record.credits_spent) ||
                 Number(record.credits) ||
                 Number(record.amount) ||
                 Number(record.value) ||
@@ -693,6 +700,8 @@ const PaymentDashboard = () => {
   const [userUsageModal, setUserUsageModal] = useState({
     open: false,
     user: null,
+    analytics: null,
+    loadingAnalytics: false,
   });
   const [exportConfirmModal, setExportConfirmModal] = useState({
     open: false,
@@ -702,6 +711,97 @@ const PaymentDashboard = () => {
     dateTo: null,
   });
   const [changingMembership, setChangingMembership] = useState(null);
+
+  const buildUsersWithMembership = useCallback(
+    async (fetchedUsers, creditsRes) => {
+      const creditsArray = Array.isArray(creditsRes?.data?.data)
+        ? creditsRes.data.data
+        : Array.isArray(creditsRes?.data)
+          ? creditsRes.data
+          : [];
+      const idToCredits = new Map(
+        (creditsArray || []).map(c => [
+          String(c.id),
+          Number(c.total_credits) || 0,
+        ])
+      );
+
+      // Bulk fetch membership status for org
+      let membershipMap = new Map();
+      try {
+        const membershipRes = await api.get(
+          `/payment-order/membership/status/all/${ORGANIZATION_ID}`,
+          { withCredentials: true }
+        );
+        const membershipArray = Array.isArray(membershipRes?.data?.data)
+          ? membershipRes.data.data
+          : Array.isArray(membershipRes?.data)
+            ? membershipRes.data
+            : [];
+        membershipMap = new Map(
+          membershipArray.map(m => [
+            String(m.user_id),
+            {
+              status: (m.subscription_status || 'CANCELLED')
+                .toString()
+                .toUpperCase(),
+              totalCredits: Number(m.total_credits) || 0,
+              name: m.name,
+              email: m.email,
+            },
+          ])
+        );
+      } catch (err) {
+        console.warn('Failed to fetch bulk membership status:', err);
+      }
+
+      const usersWithMembership = fetchedUsers.map(u => {
+        const userId = u.id || u.user_id || u._id;
+        const membershipEntry = membershipMap.get(String(userId));
+        const membershipData = membershipEntry
+          ? { status: membershipEntry.status, expiresAt: null }
+          : { status: 'CANCELLED', expiresAt: null };
+
+        const credits = (() => {
+          const idStr = String(userId || '');
+          const fromBulk =
+            membershipEntry && Number.isFinite(membershipEntry.totalCredits)
+              ? membershipEntry.totalCredits
+              : undefined;
+          const fromAdmin = idToCredits.has(idStr)
+            ? idToCredits.get(idStr)
+            : undefined;
+          const val =
+            fromBulk != null
+              ? fromBulk
+              : fromAdmin != null
+                ? fromAdmin
+                : u.total_credits != null
+                  ? u.total_credits
+                  : u.credits;
+          const num = Number(val);
+          return Number.isFinite(num) ? num : 0;
+        })();
+
+        return {
+          id: userId,
+          name:
+            membershipEntry?.name ||
+            `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
+            u.name ||
+            u.username ||
+            u.email ||
+            'Unknown',
+          email: membershipEntry?.email || u.email || u.user_email || '',
+          membership: membershipData,
+          credits,
+        };
+      });
+
+      return usersWithMembership;
+    },
+    []
+  );
 
   // Load real data
   useEffect(() => {
@@ -718,70 +818,9 @@ const PaymentDashboard = () => {
             .catch(() => ({ data: { data: [] } })),
         ]);
 
-        const creditsArray = Array.isArray(creditsRes?.data?.data)
-          ? creditsRes.data.data
-          : Array.isArray(creditsRes?.data)
-            ? creditsRes.data
-            : [];
-        const idToCredits = new Map(
-          (creditsArray || []).map(c => [
-            String(c.id),
-            Number(c.total_credits) || 0,
-          ])
-        );
-
-        // Fetch membership status for each user from backend
-        const usersWithMembership = await Promise.all(
-          fetched.map(async u => {
-            const userId = u.id || u.user_id || u._id;
-            let membershipData = { status: 'CANCELLED', expiresAt: null };
-
-            try {
-              const membershipRes = await api.get(
-                `/payment-order/membership/status/${userId}`,
-                { withCredentials: true }
-              );
-              const membershipStatus = membershipRes?.data?.data;
-              if (membershipStatus && membershipStatus !== null) {
-                membershipData = {
-                  status:
-                    membershipStatus?.status?.toUpperCase() || 'CANCELLED',
-                  expiresAt: membershipStatus?.expiresAt || null,
-                };
-              }
-            } catch (err) {
-              console.warn(
-                `Failed to fetch membership for user ${userId}:`,
-                err
-              );
-            }
-
-            return {
-              id: userId,
-              name:
-                `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
-                u.name ||
-                u.username ||
-                u.email ||
-                'Unknown',
-              email: u.email || u.user_email || '',
-              membership: membershipData,
-              credits: (() => {
-                const idStr = String(userId || '');
-                const fromAdmin = idToCredits.has(idStr)
-                  ? idToCredits.get(idStr)
-                  : undefined;
-                const val =
-                  fromAdmin != null
-                    ? fromAdmin
-                    : u.total_credits != null
-                      ? u.total_credits
-                      : u.credits;
-                const num = Number(val);
-                return Number.isFinite(num) ? num : 0;
-              })(),
-            };
-          })
+        const usersWithMembership = await buildUsersWithMembership(
+          fetched,
+          creditsRes
         );
 
         setUsers(usersWithMembership);
@@ -814,7 +853,7 @@ const PaymentDashboard = () => {
     };
 
     loadUsers();
-  }, []);
+  }, [buildUsersWithMembership]);
 
   useEffect(() => {
     if (!users || users.length === 0) return;
@@ -886,11 +925,24 @@ const PaymentDashboard = () => {
           {},
           { withCredentials: true }
         );
-      } else {
-        // Subscribe to membership
+      } else if (value === 'active') {
+        // Activate/Subscribe to membership - use same payload as AdminPayments.jsx
         const subscriptionData = {
-          plan: value === 'monthly' ? 'monthly' : 'annual',
-          paymentMethod: 'credits',
+          plan_type: 'MONTHLY',
+          total_amount: 69,
+          type: 'MEMBERSHIP',
+        };
+        await api.post(
+          `/payment-order/membership/subscribe/${user.id}`,
+          subscriptionData,
+          { withCredentials: true }
+        );
+      } else {
+        // Subscribe to membership with specific plan
+        const subscriptionData = {
+          plan_type: value === 'monthly' ? 'MONTHLY' : 'ANNUAL',
+          total_amount: value === 'monthly' ? 69 : 699,
+          type: 'MEMBERSHIP',
         };
         await api.post(
           `/payment-order/membership/subscribe/${user.id}`,
@@ -899,7 +951,7 @@ const PaymentDashboard = () => {
         );
       }
 
-      // Refresh user data after change
+      // Refresh user data after change using bulk membership fetch
       const [fetched, creditsRes] = await Promise.all([
         fetchAllUsersAdmin(),
         api
@@ -907,66 +959,9 @@ const PaymentDashboard = () => {
           .catch(() => ({ data: { data: [] } })),
       ]);
 
-      const creditsArray = Array.isArray(creditsRes?.data?.data)
-        ? creditsRes.data.data
-        : Array.isArray(creditsRes?.data)
-          ? creditsRes.data
-          : [];
-      const idToCredits = new Map(
-        (creditsArray || []).map(c => [
-          String(c.id),
-          Number(c.total_credits) || 0,
-        ])
-      );
-
-      // Update users with fresh membership data
-      const usersWithMembership = await Promise.all(
-        fetched.map(async u => {
-          const userId = u.id || u.user_id || u._id;
-          let membershipData = { status: 'CANCELLED', expiresAt: null };
-
-          try {
-            const membershipRes = await api.get(
-              `/payment-order/membership/status/${userId}`,
-              { withCredentials: true }
-            );
-            const membershipStatus = membershipRes?.data?.data;
-            if (membershipStatus && membershipStatus !== null) {
-              membershipData = {
-                status: membershipStatus?.status?.toUpperCase() || 'CANCELLED',
-                expiresAt: membershipStatus?.expiresAt || null,
-              };
-            }
-          } catch (err) {
-            console.warn(`Failed to fetch membership for user ${userId}:`, err);
-          }
-
-          return {
-            id: userId,
-            name:
-              `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
-              u.name ||
-              u.username ||
-              u.email ||
-              'Unknown',
-            email: u.email || u.user_email || '',
-            membership: membershipData,
-            credits: (() => {
-              const idStr = String(userId || '');
-              const fromAdmin = idToCredits.has(idStr)
-                ? idToCredits.get(idStr)
-                : undefined;
-              const val =
-                fromAdmin != null
-                  ? fromAdmin
-                  : u.total_credits != null
-                    ? u.total_credits
-                    : u.credits;
-              const num = Number(val);
-              return Number.isFinite(num) ? num : 0;
-            })(),
-          };
-        })
+      const usersWithMembership = await buildUsersWithMembership(
+        fetched,
+        creditsRes
       );
 
       setUsers(usersWithMembership);
@@ -1069,7 +1064,9 @@ const PaymentDashboard = () => {
   }, [creditHistory, users]);
 
   const filteredHistory = useMemo(() => {
-    let list = allHistory;
+    // Exclude usage transactions - they belong in the Usage tab
+    let list = allHistory.filter(h => h.type !== 'usage');
+
     if (filterDate) {
       const targetDate = new Date(filterDate);
       list = list.filter(h => {
@@ -1840,7 +1837,9 @@ const PaymentDashboard = () => {
     if (!user) return;
     try {
       const hist = creditHistory[user.id] || [];
-      const historyList = Array.isArray(hist) ? hist : [];
+      const historyList = Array.isArray(hist)
+        ? hist.filter(h => h.type === 'grant' || h.type === 'deduct')
+        : [];
       const rows = historyList.map(h => ({
         Date: formatDate(h.date),
         Type: h.type,
@@ -2051,6 +2050,35 @@ const PaymentDashboard = () => {
     } catch (e) {
       console.error('Export error:', e);
       alert('Unable to export usage data.');
+    }
+  };
+
+  const fetchUserAnalytics = async userId => {
+    if (!userId) return null;
+
+    setUserUsageModal(prev => ({ ...prev, loadingAnalytics: true }));
+
+    try {
+      const response = await api.get(`/credits/user-details/${userId}`, {
+        withCredentials: true,
+      });
+
+      const analyticsData = response?.data?.data || response?.data || null;
+
+      setUserUsageModal(prev => ({
+        ...prev,
+        analytics: analyticsData,
+        loadingAnalytics: false,
+      }));
+
+      return analyticsData;
+    } catch (error) {
+      console.error(
+        'Failed to fetch user analytics:',
+        error?.response?.data || error?.message
+      );
+      setUserUsageModal(prev => ({ ...prev, loadingAnalytics: false }));
+      return null;
     }
   };
 
@@ -2535,9 +2563,15 @@ const PaymentDashboard = () => {
                               );
                             })()}
                             <button
-                              onClick={() =>
-                                setUserUsageModal({ open: true, user: u })
-                              }
+                              onClick={() => {
+                                setUserUsageModal({
+                                  open: true,
+                                  user: u,
+                                  analytics: null,
+                                  loadingAnalytics: false,
+                                });
+                                fetchUserAnalytics(u.id);
+                              }}
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border border-blue-100 text-blue-600 hover:bg-blue-50 transition-colors"
                               title="View Usage Details"
                             >
@@ -2836,7 +2870,7 @@ const PaymentDashboard = () => {
                   onChange={e => setUsageCourseFilter(e.target.value)}
                   className="text-sm rounded-md border px-3 py-2 bg-white"
                 >
-                  <option value="all">All Courses/Items</option>
+                  <option value="all">All Types</option>
                   {uniqueCourses.map(course => (
                     <option key={course} value={course}>
                       {course}
@@ -2860,7 +2894,7 @@ const PaymentDashboard = () => {
                       <div className="border-t my-1"></div>
                       <div className="p-2 space-y-2">
                         <div className="text-xs font-semibold text-gray-700">
-                          Export by Course:
+                          Export by Type:
                         </div>
                         <div className="relative group">
                           <button
@@ -2869,20 +2903,20 @@ const PaymentDashboard = () => {
                             }}
                             className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm"
                           >
-                            All Courses (Summary + Details)
+                            All Types (Summary + Details)
                           </button>
                         </div>
                         <div className="relative group">
                           <details className="group">
                             <summary className="list-none cursor-pointer w-full text-left px-3 py-2 rounded-md hover:bg-gray-50 text-sm flex items-center justify-between">
-                              <span>Select Specific Course</span>
+                              <span>Select Specific Type</span>
                               <span className="text-gray-400">▶</span>
                             </summary>
                             <div className="absolute left-0 mt-1 w-72 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto z-20">
                               <div className="sticky top-0 bg-white border-b p-2">
                                 <input
                                   type="text"
-                                  placeholder="Search courses..."
+                                  placeholder="Search types..."
                                   className="w-full text-xs rounded-md border border-gray-300 px-2 py-1"
                                   onKeyUp={e => {
                                     const searchTerm =
@@ -2919,7 +2953,7 @@ const PaymentDashboard = () => {
                               ))}
                               {uniqueCourses.length === 0 && (
                                 <div className="p-3 text-xs text-gray-500 text-center">
-                                  No courses found
+                                  No types found
                                 </div>
                               )}
                             </div>
@@ -2970,7 +3004,7 @@ const PaymentDashboard = () => {
                           }}
                           className="w-full px-3 py-1.5 rounded-md bg-green-600 text-white text-xs hover:bg-green-700"
                         >
-                          Export Courses by Date
+                          Export Types by Date
                         </button>
                       </div>
                     </div>
@@ -3684,12 +3718,16 @@ const PaymentDashboard = () => {
               </div>
               <div>
                 <h5 className="font-semibold text-gray-900 mb-3">
-                  Credit History (Grants, Deducts & Usage)
+                  Credit History (Grants & Deducts)
                 </h5>
                 <div className="space-y-2">
                   {(() => {
                     const hist = creditHistory[userDetailModal.user.id] || [];
-                    const historyList = Array.isArray(hist) ? hist : [];
+                    const historyList = Array.isArray(hist)
+                      ? hist.filter(
+                          h => h.type === 'grant' || h.type === 'deduct'
+                        )
+                      : [];
                     if (historyList.length === 0) {
                       return (
                         <div className="text-center text-gray-600 py-4">
@@ -3752,7 +3790,14 @@ const PaymentDashboard = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/30"
-            onClick={() => setUserUsageModal({ open: false, user: null })}
+            onClick={() =>
+              setUserUsageModal({
+                open: false,
+                user: null,
+                analytics: null,
+                loadingAnalytics: false,
+              })
+            }
           />
           <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-2xl max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b flex items-start justify-between">
@@ -3792,7 +3837,14 @@ const PaymentDashboard = () => {
                 </details>
                 <button
                   type="button"
-                  onClick={() => setUserUsageModal({ open: false, user: null })}
+                  onClick={() =>
+                    setUserUsageModal({
+                      open: false,
+                      user: null,
+                      analytics: null,
+                      loadingAnalytics: false,
+                    })
+                  }
                   className="text-gray-400 hover:text-gray-600 text-xl leading-none"
                 >
                   ×
@@ -3800,153 +3852,192 @@ const PaymentDashboard = () => {
               </div>
             </div>
             <div className="p-6 overflow-y-auto max-h-[60vh] space-y-5">
-              {(() => {
-                const hist = creditHistory[userUsageModal.user.id] || [];
-                const usageList = Array.isArray(hist)
-                  ? hist.filter(h => h.type === 'usage')
-                  : [];
-                if (usageList.length === 0) {
+              {userUsageModal.loadingAnalytics && (
+                <div className="text-center text-gray-600 py-8">
+                  <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+                  <p className="text-sm">Loading analytics...</p>
+                </div>
+              )}
+              {!userUsageModal.loadingAnalytics &&
+                (() => {
+                  const hist = creditHistory[userUsageModal.user.id] || [];
+                  const usageList = Array.isArray(hist)
+                    ? hist.filter(h => h.type === 'usage')
+                    : [];
+
+                  const analytics = userUsageModal.analytics;
+                  const now = new Date();
+
+                  // Use API data if available, otherwise calculate from local data
+                  const totalUsageCredits =
+                    analytics?.total_credits_used ||
+                    usageList.reduce(
+                      (sum, item) => sum + Math.abs(item.credits || 0),
+                      0
+                    );
+
+                  const usageThisMonth =
+                    analytics?.credits_used_this_month ||
+                    usageList.reduce((sum, item) => {
+                      const d = new Date(item.date);
+                      return d.getMonth() === now.getMonth() &&
+                        d.getFullYear() === now.getFullYear()
+                        ? sum + Math.abs(item.credits || 0)
+                        : sum;
+                    }, 0);
+
+                  // Use API breakdown if available
+                  let categoryEntries = [];
+                  if (
+                    analytics?.usage_breakdown &&
+                    analytics.usage_breakdown.length > 0
+                  ) {
+                    categoryEntries = analytics.usage_breakdown
+                      .map(item => [item.category, item.total_credits])
+                      .sort((a, b) => b[1] - a[1]);
+                  } else {
+                    const usageByCategory = usageList.reduce((acc, item) => {
+                      const key = item.usageType || 'Other';
+                      acc[key] = (acc[key] || 0) + Math.abs(item.credits || 0);
+                      return acc;
+                    }, {});
+                    categoryEntries = Object.entries(usageByCategory).sort(
+                      (a, b) => b[1] - a[1]
+                    );
+                  }
+
+                  const topCategory =
+                    analytics?.top_usage_category ||
+                    (categoryEntries[0]
+                      ? {
+                          category: categoryEntries[0][0],
+                          credits: categoryEntries[0][1],
+                        }
+                      : null);
+
+                  if (usageList.length === 0 && !analytics) {
+                    return (
+                      <div className="text-center text-gray-600 py-8 border rounded-lg">
+                        No usage records found for this user.
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div className="text-center text-gray-600 py-8 border rounded-lg">
-                      No usage records found for this user.
-                    </div>
-                  );
-                }
-                const now = new Date();
-                const totalUsageCredits = usageList.reduce(
-                  (sum, item) => sum + Math.abs(item.credits || 0),
-                  0
-                );
-                const usageThisMonth = usageList.reduce((sum, item) => {
-                  const d = new Date(item.date);
-                  return d.getMonth() === now.getMonth() &&
-                    d.getFullYear() === now.getFullYear()
-                    ? sum + Math.abs(item.credits || 0)
-                    : sum;
-                }, 0);
-                const usageByCategory = usageList.reduce((acc, item) => {
-                  const key = item.usageType || 'Other';
-                  acc[key] = (acc[key] || 0) + Math.abs(item.credits || 0);
-                  return acc;
-                }, {});
-                const categoryEntries = Object.entries(usageByCategory).sort(
-                  (a, b) => b[1] - a[1]
-                );
-                return (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
-                        <div className="text-xs uppercase text-blue-700 font-semibold">
-                          Total Credits Used
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                          <div className="text-xs uppercase text-blue-700 font-semibold">
+                            Total Credits Used
+                          </div>
+                          <div className="text-2xl font-bold text-blue-900">
+                            {totalUsageCredits.toLocaleString()}
+                          </div>
+                          <p className="text-xs text-blue-700 mt-1">
+                            Lifetime usage recorded for this user
+                          </p>
                         </div>
-                        <div className="text-2xl font-bold text-blue-900">
-                          {totalUsageCredits.toLocaleString()}
+                        <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
+                          <div className="text-xs uppercase text-amber-700 font-semibold">
+                            Credits used this month
+                          </div>
+                          <div className="text-2xl font-bold text-amber-900">
+                            {usageThisMonth.toLocaleString()}
+                          </div>
+                          <p className="text-xs text-amber-700 mt-1">
+                            {now.toLocaleString('en-US', {
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
                         </div>
-                        <p className="text-xs text-blue-700 mt-1">
-                          Lifetime usage recorded for this user
-                        </p>
+                        <div className="border rounded-lg p-4 bg-emerald-50 border-emerald-200">
+                          <div className="text-xs uppercase text-emerald-700 font-semibold">
+                            Top usage category
+                          </div>
+                          <div className="text-lg font-bold text-emerald-900">
+                            {topCategory?.category || '—'}
+                          </div>
+                          <p className="text-xs text-emerald-700 mt-1">
+                            {topCategory
+                              ? `${topCategory.credits.toLocaleString()} credits`
+                              : 'No usage yet'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
-                        <div className="text-xs uppercase text-amber-700 font-semibold">
-                          Credits used this month
+                      <div className="border rounded-lg">
+                        <div className="border-b px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600">
+                          Usage breakdown by category
                         </div>
-                        <div className="text-2xl font-bold text-amber-900">
-                          {usageThisMonth.toLocaleString()}
-                        </div>
-                        <p className="text-xs text-amber-700 mt-1">
-                          {now.toLocaleString('en-US', {
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </p>
+                        <ul className="divide-y">
+                          {categoryEntries.map(([label, total]) => (
+                            <li
+                              key={label}
+                              className="flex items-center justify-between px-4 py-2 text-sm"
+                            >
+                              <span className="font-medium text-gray-900">
+                                {label}
+                              </span>
+                              <span className="text-gray-600">
+                                {total.toLocaleString()} credits
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <div className="border rounded-lg p-4 bg-emerald-50 border-emerald-200">
-                        <div className="text-xs uppercase text-emerald-700 font-semibold">
-                          Top usage category
-                        </div>
-                        <div className="text-lg font-bold text-emerald-900">
-                          {categoryEntries[0]?.[0] || '—'}
-                        </div>
-                        <p className="text-xs text-emerald-700 mt-1">
-                          {categoryEntries[0]
-                            ? `${categoryEntries[0][1].toLocaleString()} credits`
-                            : 'No usage yet'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="border rounded-lg">
-                      <div className="border-b px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600">
-                        Usage breakdown by category
-                      </div>
-                      <ul className="divide-y">
-                        {categoryEntries.map(([label, total]) => (
-                          <li
-                            key={label}
-                            className="flex items-center justify-between px-4 py-2 text-sm"
-                          >
-                            <span className="font-medium text-gray-900">
-                              {label}
-                            </span>
-                            <span className="text-gray-600">
-                              {total.toLocaleString()} credits
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="border rounded-lg overflow-hidden">
-                      <table className="min-w-full text-left text-sm">
-                        <thead className="bg-gray-50 text-xs uppercase text-gray-600">
-                          <tr>
-                            <th className="px-4 py-2">Activity</th>
-                            <th className="px-4 py-2">Type</th>
-                            <th className="px-4 py-2">Credits</th>
-                            <th className="px-4 py-2">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {usageList.map((usage, index) => {
-                            const detailLine =
-                              usage.catalogItem ||
-                              usage.lessonName ||
-                              usage.serviceType ||
-                              usage.consultant ||
-                              '';
-                            return (
-                              <tr
-                                key={`${usage.date}-${index}`}
-                                className="bg-white"
-                              >
-                                <td className="px-4 py-3">
-                                  <div className="font-semibold text-gray-900">
-                                    {usage.description || 'Usage'}
-                                  </div>
-                                  {detailLine && (
-                                    <div className="text-xs text-gray-500">
-                                      {detailLine}
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="min-w-full text-left text-sm">
+                          <thead className="bg-gray-50 text-xs uppercase text-gray-600">
+                            <tr>
+                              <th className="px-4 py-2">Activity</th>
+                              <th className="px-4 py-2">Type</th>
+                              <th className="px-4 py-2">Credits</th>
+                              <th className="px-4 py-2">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {usageList.map((usage, index) => {
+                              const detailLine =
+                                usage.catalogItem ||
+                                usage.lessonName ||
+                                usage.serviceType ||
+                                usage.consultant ||
+                                '';
+                              return (
+                                <tr
+                                  key={`${usage.date}-${index}`}
+                                  className="bg-white"
+                                >
+                                  <td className="px-4 py-3">
+                                    <div className="font-semibold text-gray-900">
+                                      {usage.description || 'Usage'}
                                     </div>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
-                                    {usage.usageType || 'Usage'}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 font-semibold text-red-600">
-                                  -{Math.abs(usage.credits || 0)}
-                                </td>
-                                <td className="px-4 py-3 text-xs text-gray-600">
-                                  {formatDate(usage.date)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                );
-              })()}
+                                    {detailLine && (
+                                      <div className="text-xs text-gray-500">
+                                        {detailLine}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                                      {usage.usageType || 'Usage'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 font-semibold text-red-600">
+                                    -{Math.abs(usage.credits || 0)}
+                                  </td>
+                                  <td className="px-4 py-3 text-xs text-gray-600">
+                                    {formatDate(usage.date)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  );
+                })()}
             </div>
           </div>
         </div>
