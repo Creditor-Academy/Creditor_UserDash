@@ -1003,90 +1003,67 @@ export function Dashboard() {
                     </div>
                   )}
 
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4 px-1">
+                  {/* LMS info placeholders to keep layout length consistent */}
+                  <div className="mt-4 px-1">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      <span>What we offer</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-blue-600 font-semibold">
-                          Completed
+                        <CheckCircle className="text-blue-600 w-6 h-6" />
+                        <span className="text-blue-800 font-semibold">
+                          Reliable
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.completedCourses || 0
-                        )}
+                      <p className="text-sm text-blue-700 mt-2">
+                        24/7 uptime with active monitoring.
                       </p>
-                      <p className="text-blue-600 text-sm">Courses finished</p>
                     </div>
                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-emerald-600 font-semibold">
-                          Modules
+                        <BookOpen className="text-emerald-600 w-6 h-6" />
+                        <span className="text-emerald-800 font-semibold">
+                          Guided
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-emerald-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.modulesCompleted || 0
-                        )}
-                      </p>
-                      <p className="text-emerald-600 text-sm">
-                        Modules Completed
+                      <p className="text-sm text-emerald-700 mt-2">
+                        Clear paths from basics to mastery.
                       </p>
                     </div>
                     <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
                       <div className="flex items-center gap-2">
-                        <Award className="text-orange-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-orange-600 font-semibold">
-                          Quizzes
+                        <Award className="text-orange-600 w-6 h-6" />
+                        <span className="text-orange-800 font-semibold">
+                          Certified
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-orange-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.assessmentsCompleted || 0
-                        )}
+                      <p className="text-sm text-orange-700 mt-2">
+                        Earn credentials you can share.
                       </p>
-                      <p className="text-orange-600 text-sm">Quiz Completed</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-purple-600 font-semibold">
-                          Enrolled
+                        <MonitorPlay className="text-purple-600 w-6 h-6" />
+                        <span className="text-purple-800 font-semibold">
+                          Flexible
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.allEnrolledCoursesCount || 0
-                        )}
+                      <p className="text-sm text-purple-700 mt-2">
+                        Live sessions plus on‑demand replays.
                       </p>
-                      <p className="text-purple-600 text-sm">Total Courses</p>
                     </div>
                     <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
                       <div className="flex items-center gap-2">
-                        <Clock className="text-yellow-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-yellow-600 font-semibold">
-                          Pending
+                        <Clock className="text-yellow-600 w-6 h-6" />
+                        <span className="text-yellow-800 font-semibold">
+                          Evolving
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-yellow-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.pendingCoursesCount || 0
-                        )}
-                      </p>
-                      <p className="text-yellow-600 text-sm">
-                        Courses Remaining
+                      <p className="text-sm text-yellow-700 mt-2">
+                        Continuous releases driven by feedback.
                       </p>
                     </div>
                   </div>
