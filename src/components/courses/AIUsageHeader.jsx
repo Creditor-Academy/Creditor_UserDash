@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Zap, TrendingUp, AlertCircle, BarChart3, Clock } from 'lucide-react';
 import './AIUsageHeader.css';
+import { subscribeActiveOrgUsageRefresh } from '../../utils/activeOrgUsageEvents';
 
 /**
  * AIUsageHeader Component
@@ -9,34 +10,47 @@ import './AIUsageHeader.css';
  * Shows organization token usage with detailed breakdown
  */
 export const AIUsageHeader = () => {
-  const [stats, setStats] = useState(null);
+  const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [noOrg, setNoOrg] = useState(false);
+
+  const fetchTokenStats = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/my-active-organization');
+      if (response.data?.data) {
+        setOrg(response.data.data);
+        setError(null);
+        setNoOrg(false);
+      } else {
+        setOrg(null);
+        setNoOrg(true);
+      }
+    } catch (err) {
+      console.error('Failed to fetch active org usage:', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setNoOrg(true);
+        setError('No active organization. Please login again.');
+      } else {
+        setError('Failed to load AI usage');
+      }
+      setOrg(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchTokenStats();
     // Refresh every 60 seconds
     const interval = setInterval(fetchTokenStats, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchTokenStats = async () => {
-    try {
-      const response = await axios.get(
-        '/api/admin/ai/my-organization/ai-usage'
-      );
-      if (response.data?.data) {
-        setStats(response.data.data);
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Failed to fetch token stats:', err);
-      setError('Failed to load AI usage');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const unsubscribe = subscribeActiveOrgUsageRefresh(fetchTokenStats);
+    return () => {
+      clearInterval(interval);
+      unsubscribe?.();
+    };
+  }, [fetchTokenStats]);
 
   if (loading) {
     return (
@@ -48,11 +62,25 @@ export const AIUsageHeader = () => {
     );
   }
 
-  if (error || !stats?.organization) {
-    return null;
+  if (error && (noOrg || !org)) {
+    return (
+      <div className="ai-usage-header error">
+        <AlertCircle size={16} />
+        <span>{error}</span>
+      </div>
+    );
   }
 
-  const { organization, monthlySummary } = stats;
+  if (noOrg || !org) {
+    return (
+      <div className="ai-usage-header error">
+        <AlertCircle size={16} />
+        <span>No active organization. Please login again.</span>
+      </div>
+    );
+  }
+
+  const organization = org;
   const percentage = Math.round(
     (organization.ai_tokens_used / organization.ai_token_limit) * 100
   );
@@ -84,7 +112,9 @@ export const AIUsageHeader = () => {
           </div>
           <div className="header-content">
             <h3 className="header-title">AI Token Usage</h3>
-            <p className="header-subtitle">Organization monthly allocation</p>
+            <p className="header-subtitle">
+              Organization monthly allocation (Active org: {organization.id})
+            </p>
           </div>
         </div>
 
@@ -113,11 +143,8 @@ export const AIUsageHeader = () => {
         </div>
 
         <div className="header-right">
-          <span
-            className={`billing-badge ${organization.ai_billing_mode.toLowerCase()}`}
-          >
-            {organization.ai_billing_mode}
-          </span>
+          <span className="billing-badge neutral">Active Org</span>
+          <span className="org-id-text">{organization.id}</span>
           <button
             className="expand-btn"
             onClick={() => setExpanded(!expanded)}
@@ -176,60 +203,6 @@ export const AIUsageHeader = () => {
       {/* Expanded Details */}
       {expanded && (
         <div className="expanded-details">
-          {/* Monthly Summary */}
-          {monthlySummary && (
-            <div className="details-section">
-              <div className="section-header">
-                <TrendingUp size={16} />
-                <h4>This Month's Activity</h4>
-              </div>
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Total Operations</span>
-                  <span className="detail-value">
-                    {monthlySummary.total_operations}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Blueprints Generated</span>
-                  <span className="detail-value">
-                    {monthlySummary.blueprint_count}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Images Generated</span>
-                  <span className="detail-value">
-                    {monthlySummary.image_count}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Text Operations</span>
-                  <span className="detail-value">
-                    {monthlySummary.text_count}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Total Cost</span>
-                  <span className="detail-value">
-                    ${(monthlySummary.total_cost_usd || 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Avg Cost/Operation</span>
-                  <span className="detail-value">
-                    $
-                    {monthlySummary.total_operations > 0
-                      ? (
-                          (monthlySummary.total_cost_usd || 0) /
-                          monthlySummary.total_operations
-                        ).toFixed(3)
-                      : '0.00'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Projection Section */}
           <div className="details-section">
             <div className="section-header">
@@ -275,56 +248,17 @@ export const AIUsageHeader = () => {
             </div>
           </div>
 
-          {/* Cost Breakdown */}
-          {monthlySummary && (
-            <div className="details-section">
-              <div className="section-header">
-                <BarChart3 size={16} />
-                <h4>Cost Breakdown</h4>
-              </div>
-              <div className="cost-breakdown">
-                {monthlySummary.blueprint_count > 0 && (
-                  <div className="cost-item">
-                    <div className="cost-label">
-                      <span className="cost-type">📋 Blueprints</span>
-                      <span className="cost-count">
-                        {monthlySummary.blueprint_count} ops
-                      </span>
-                    </div>
-                    <span className="cost-amount">
-                      ${(monthlySummary.blueprint_cost || 0).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {monthlySummary.image_count > 0 && (
-                  <div className="cost-item">
-                    <div className="cost-label">
-                      <span className="cost-type">🖼️ Images</span>
-                      <span className="cost-count">
-                        {monthlySummary.image_count} ops
-                      </span>
-                    </div>
-                    <span className="cost-amount">
-                      ${(monthlySummary.image_cost || 0).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {monthlySummary.text_count > 0 && (
-                  <div className="cost-item">
-                    <div className="cost-label">
-                      <span className="cost-type">📝 Text</span>
-                      <span className="cost-count">
-                        {monthlySummary.text_count} ops
-                      </span>
-                    </div>
-                    <span className="cost-amount">
-                      ${(monthlySummary.text_cost || 0).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
+          <div className="details-section">
+            <div className="section-header">
+              <TrendingUp size={16} />
+              <h4>Live Usage Source</h4>
             </div>
-          )}
+            <p className="detail-note">
+              Data reflects the active organization attached by the AI quota
+              middleware, independent of the admin JWT organization. Refreshes
+              after each AI operation.
+            </p>
+          </div>
         </div>
       )}
     </div>

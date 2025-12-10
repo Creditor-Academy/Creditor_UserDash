@@ -82,11 +82,14 @@ const AIContentGeneratorDialog = ({
       const API_BASE =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/ai-proxy/generate-text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: 'include', // allow cookie-based auth too
         body: JSON.stringify({
           prompt: userPrompt,
           enhancePrompt: true,
