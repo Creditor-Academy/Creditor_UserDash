@@ -16,13 +16,14 @@ const InstructionalDesign = () => {
     <div>
       <Navbar />
       <HeroSection />
-      <QuickValue />
-      <OurClients />
+      <Approach />
+      {/* <OurClients /> */}
       <ServicesOverview />
       <WhyChooseAthena />
       <FounderQuote />
-      <Approach />
       <Technology />
+      <QuickValue />
+      <OurClients />
       <CTA />
       <Footer />
     </div>
