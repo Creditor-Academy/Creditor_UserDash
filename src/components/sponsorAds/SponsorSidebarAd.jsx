@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { trackSponsorAdClick } from '@/services/sponsorAdsService';
 
 export const SponsorSidebarAd = ({ ad, className }) => {
   if (!ad) return null;
@@ -18,7 +19,18 @@ export const SponsorSidebarAd = ({ ad, className }) => {
     mediaUrl,
     mediaType,
     tier,
+    id,
   } = ad;
+
+  const handleClick = async e => {
+    if (id && ctaUrl) {
+      try {
+        await trackSponsorAdClick(id);
+      } catch (error) {
+        console.warn('Failed to track sponsor ad click:', error);
+      }
+    }
+  };
 
   return (
     <Card
@@ -74,9 +86,10 @@ export const SponsorSidebarAd = ({ ad, className }) => {
 
         {ctaText && ctaUrl && (
           <Button
-            asChild
             variant="secondary"
             className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow"
+            onClick={handleClick}
+            asChild
           >
             <a
               href={ctaUrl}

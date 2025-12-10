@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -35,7 +35,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { TrendingUp, PauseCircle, Shield } from 'lucide-react';
+import { TrendingUp, PauseCircle, Shield, RefreshCw } from 'lucide-react';
 
 const placementFilterOptions = [
   { value: 'all', label: 'All placements' },
@@ -68,6 +68,8 @@ export const SponsorAdManage = () => {
     updateAd,
     getRuntimeStatus,
     analytics,
+    refreshAds,
+    isSyncing,
   } = useSponsorAds();
   const [search, setSearch] = useState('');
   const [placement, setPlacement] = useState('all');
@@ -178,6 +180,17 @@ export const SponsorAdManage = () => {
 
   const emptyState = filteredAds.length === 0;
 
+  // Auto-refresh every 30 seconds to update click counts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshAds().catch(() => {
+        // Silently fail, already logged in refreshAds
+      });
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [refreshAds]);
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -202,7 +215,21 @@ export const SponsorAdManage = () => {
 
       <Card className="rounded-xl border-gray-100 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Filters</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Filters</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refreshAds()}
+              disabled={isSyncing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+              />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Input
@@ -268,6 +295,8 @@ export const SponsorAdManage = () => {
                   <TableHead className="text-xs">Placement</TableHead>
                   <TableHead className="text-xs">Start Date</TableHead>
                   <TableHead className="text-xs">End Date</TableHead>
+                  <TableHead className="text-xs">Impressions</TableHead>
+                  <TableHead className="text-xs">Clicks</TableHead>
                   <TableHead className="text-xs">Status</TableHead>
                   <TableHead className="text-right text-xs">Actions</TableHead>
                 </TableRow>
@@ -299,6 +328,12 @@ export const SponsorAdManage = () => {
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">
                       {new Date(ad.endDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {ad.impressions?.toLocaleString() || 0}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {ad.clicks?.toLocaleString() || 0}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

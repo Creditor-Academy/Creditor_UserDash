@@ -2,12 +2,31 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { trackSponsorAdClick } from '@/services/sponsorAdsService';
 
 export const SponsorBanner = ({ ad, className }) => {
   if (!ad) return null;
 
-  const { title, description, ctaText, ctaUrl, mediaUrl, sponsorName, tier } =
-    ad;
+  const {
+    title,
+    description,
+    ctaText,
+    ctaUrl,
+    mediaUrl,
+    sponsorName,
+    tier,
+    id,
+  } = ad;
+
+  const handleClick = async e => {
+    if (id && ctaUrl) {
+      try {
+        await trackSponsorAdClick(id);
+      } catch (error) {
+        console.warn('Failed to track sponsor ad click:', error);
+      }
+    }
+  };
 
   return (
     <div
@@ -47,9 +66,10 @@ export const SponsorBanner = ({ ad, className }) => {
 
         {ctaText && ctaUrl && (
           <Button
-            asChild
             size="lg"
             className="bg-white text-blue-700 hover:bg-blue-50 shadow-xl animate-pulse"
+            onClick={handleClick}
+            asChild
           >
             <a href={ctaUrl} target="_blank" rel="noreferrer">
               {ctaText}
