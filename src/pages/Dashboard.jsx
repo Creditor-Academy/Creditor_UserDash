@@ -40,11 +40,9 @@ import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import ThanksgivingPromo from '@/components/dashboard/ThanksgivingPromo';
 import SponsorBanner from '@/components/sponsorAds/SponsorBanner';
 import SponsorSidebarAd from '@/components/sponsorAds/SponsorSidebarAd';
 import SponsorAdPopup from '@/components/sponsorAds/SponsorAdPopup';
-import SponsorDashboardAds from '@/components/sponsorAds/SponsorDashboardAds';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -135,12 +133,31 @@ export function Dashboard() {
   const { balance, membership, refreshBalance } = useCredits();
   const { isChristmasMode } = useContext(SeasonalThemeContext);
   const { userRole } = useAuth();
-  const { getPrimaryAdForPlacement } = useSponsorAds();
+  const { getPrimaryAdForPlacement, getActiveAdsByPlacement } = useSponsorAds();
   const [isSponsorPopupOpen, setIsSponsorPopupOpen] = useState(false);
+  const [bannerCarouselIndex, setBannerCarouselIndex] = useState(0);
+
+  const dashboardBannerAds = useMemo(() => {
+    const activeAds = getActiveAdsByPlacement('dashboard_banner', {
+      role: userRole,
+    });
+    // Sort by LIFO (Last In First Out) - newest ads first
+    // Sort by startDate descending (newest first), then by ID descending as fallback
+    const sortedAds = [...activeAds].sort((a, b) => {
+      const dateA = new Date(a.startDate || 0).getTime();
+      const dateB = new Date(b.startDate || 0).getTime();
+      if (dateB !== dateA) {
+        return dateB - dateA; // Newer date first
+      }
+      // If dates are equal, sort by ID descending (assuming higher ID = newer)
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    return sortedAds.slice(0, 3); // Only show first 3 ads (newest 3)
+  }, [getActiveAdsByPlacement, userRole]);
 
   const dashboardBannerAd = useMemo(
-    () => getPrimaryAdForPlacement('dashboard_banner', { role: userRole }),
-    [getPrimaryAdForPlacement, userRole]
+    () => (dashboardBannerAds.length > 0 ? dashboardBannerAds[0] : null),
+    [dashboardBannerAds]
   );
 
   const dashboardSidebarAd = useMemo(
@@ -179,6 +196,19 @@ export function Dashboard() {
     }, 1200);
     return () => clearTimeout(timer);
   }, [popupAd]);
+
+  // Auto-rotate banner carousel
+  useEffect(() => {
+    if (dashboardBannerAds.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setBannerCarouselIndex(prev =>
+        prev === dashboardBannerAds.length - 1 ? 0 : prev + 1
+      );
+    }, 5000); // Rotate every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [dashboardBannerAds.length]);
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
@@ -1010,14 +1040,68 @@ export function Dashboard() {
               </div>
             </section>
           )}
-          {dashboardBannerAd && (
-            <div className="mb-6">
-              <SponsorBanner ad={dashboardBannerAd} />
+          {dashboardBannerAds.length > 0 && (
+            <div className="mb-6 relative">
+              <div className="relative overflow-hidden rounded-3xl">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{
+                    transform: `translateX(-${bannerCarouselIndex * 100}%)`,
+                  }}
+                >
+                  {dashboardBannerAds.map((ad, index) => (
+                    <div key={ad.id} className="w-full flex-shrink-0">
+                      <SponsorBanner ad={ad} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation Arrows */}
+              {dashboardBannerAds.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setBannerCarouselIndex(prev =>
+                        prev === 0 ? dashboardBannerAds.length - 1 : prev - 1
+                      )
+                    }
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+                    aria-label="Previous ad"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setBannerCarouselIndex(prev =>
+                        prev === dashboardBannerAds.length - 1 ? 0 : prev + 1
+                      )
+                    }
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+                    aria-label="Next ad"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-700" />
+                  </button>
+
+                  {/* Dots Indicator */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                    {dashboardBannerAds.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setBannerCarouselIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === bannerCarouselIndex
+                            ? 'bg-white w-6'
+                            : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                        aria-label={`Go to ad ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
-          <div className="mb-8">
-            <SponsorDashboardAds />
-          </div>
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}

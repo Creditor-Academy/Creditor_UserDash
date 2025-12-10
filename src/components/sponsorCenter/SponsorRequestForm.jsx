@@ -19,11 +19,19 @@ import {
 import { Button } from '@/components/ui/button';
 
 const placements = [
-  { value: 'dashboard_banner', label: 'Dashboard Banner' },
-  { value: 'dashboard_sidebar', label: 'Dashboard Sidebar' },
-  { value: 'course_player_sidebar', label: 'Course Player Sidebar' },
-  { value: 'course_listing_tile', label: 'Course Listing Tile' },
-  { value: 'popup', label: 'Popup Ad' },
+  { value: 'dashboard_banner', label: 'Dashboard Banner', disabled: false },
+  { value: 'dashboard_sidebar', label: 'Dashboard Sidebar', disabled: false },
+  {
+    value: 'course_player_sidebar',
+    label: 'Course Player Sidebar',
+    disabled: true,
+  },
+  {
+    value: 'course_listing_tile',
+    label: 'Course Listing Tile',
+    disabled: true,
+  },
+  { value: 'popup', label: 'Popup Ad', disabled: true },
 ];
 
 const SponsorRequestForm = ({
@@ -227,8 +235,20 @@ const SponsorRequestForm = ({
                 </SelectTrigger>
                 <SelectContent>
                   {placements.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      disabled={option.disabled}
+                      className={
+                        option.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                      }
+                    >
                       {option.label}
+                      {option.disabled && (
+                        <span className="ml-2 text-xs text-gray-500">
+                          (Coming soon)
+                        </span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -32,23 +32,32 @@ const placementOptions = [
     value: 'dashboard_banner',
     label: 'Dashboard Banner',
     backendValue: 'DASHBOARD',
+    disabled: false,
   },
   {
     value: 'dashboard_sidebar',
     label: 'Dashboard Sidebar',
     backendValue: 'SIDEBAR',
+    disabled: false,
   },
   {
     value: 'course_player_sidebar',
     label: 'Course Player Right Sidebar',
     backendValue: 'COURSE_PLAYER',
+    disabled: true,
   },
   {
     value: 'course_listing_tile',
     label: 'Course Listing Page Ad Tile',
     backendValue: 'COURSE_LISTING',
+    disabled: true,
   },
-  { value: 'popup', label: 'Popup Ad (optional)', backendValue: 'POPUP' },
+  {
+    value: 'popup',
+    label: 'Popup Ad (optional)',
+    backendValue: 'POPUP',
+    disabled: true,
+  },
 ];
 
 // Map frontend placement value to backend position
@@ -329,8 +338,20 @@ export const SponsorAdCreate = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {placementOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        disabled={option.disabled}
+                        className={
+                          option.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                        }
+                      >
                         {option.label}
+                        {option.disabled && (
+                          <span className="ml-2 text-xs text-gray-500">
+                            (Coming soon)
+                          </span>
+                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>
