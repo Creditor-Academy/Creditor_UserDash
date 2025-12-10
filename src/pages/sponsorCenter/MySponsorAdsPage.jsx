@@ -219,7 +219,7 @@ const MySponsorAdsPage = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {[...Array(3)].map((_, idx) => (
-          <Skeleton key={idx} className="h-72 rounded-3xl" />
+          <Skeleton key={idx} className="h-72 rounded-xl" />
         ))}
       </div>
     );
@@ -227,25 +227,27 @@ const MySponsorAdsPage = () => {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center space-y-2">
-        <p className="text-lg font-semibold text-red-900">Error loading ads</p>
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center space-y-2">
+        <p className="text-base font-semibold text-red-900">
+          Error loading ads
+        </p>
         <p className="text-sm text-red-700">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Input
-          placeholder="Search sponsor or title"
+          placeholder="Search ads..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="rounded-2xl"
+          className="rounded-lg"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="rounded-2xl">
-            <SelectValue placeholder="Filter by status" />
+          <SelectTrigger className="rounded-lg">
+            <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
             {statusFilters.map(option => (
@@ -256,8 +258,8 @@ const MySponsorAdsPage = () => {
           </SelectContent>
         </Select>
         <Select value={placementFilter} onValueChange={setPlacementFilter}>
-          <SelectTrigger className="rounded-2xl">
-            <SelectValue placeholder="Filter by placement" />
+          <SelectTrigger className="rounded-lg">
+            <SelectValue placeholder="All placements" />
           </SelectTrigger>
           <SelectContent>
             {placements.map(option => (
@@ -284,17 +286,13 @@ const MySponsorAdsPage = () => {
       </div>
 
       {!filteredAds.length && (
-        <div className="rounded-3xl border border-dashed border-gray-200 p-8 text-center space-y-2">
-          <p className="text-lg font-semibold text-gray-900">
-            No sponsor ads yet
-          </p>
+        <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center space-y-3">
+          <p className="text-base font-semibold text-gray-900">No ads found</p>
           <p className="text-sm text-gray-500">
-            Submit a request to see it listed here.
+            Submit a request to see it listed here
           </p>
-          <Button className="rounded-full bg-blue-600 text-white px-6" asChild>
-            <Link to="/dashboard/sponsor-center/submit">
-              Submit sponsorship request
-            </Link>
+          <Button className="bg-blue-600 text-white px-6 rounded-xl" asChild>
+            <Link to="/dashboard/sponsor-center/submit">Submit Request</Link>
           </Button>
         </div>
       )}
@@ -303,9 +301,9 @@ const MySponsorAdsPage = () => {
         open={Boolean(editingAd)}
         onOpenChange={open => !open && setEditingAd(null)}
       >
-        <DialogContent className="rounded-3xl">
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Edit sponsor ad</DialogTitle>
+            <DialogTitle>Edit Ad</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -357,7 +355,7 @@ const MySponsorAdsPage = () => {
           }
         }}
       >
-        <DialogContent className="rounded-3xl max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="rounded-2xl max-w-2xl max-h-[90vh] overflow-y-auto">
           {viewingAdLoading ? (
             <div className="space-y-4">
               <DialogHeader>

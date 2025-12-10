@@ -24,9 +24,9 @@ const SponsorAnalyticsPage = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, idx) => (
-          <Skeleton key={idx} className="h-32 rounded-3xl" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, idx) => (
+          <Skeleton key={idx} className="h-24 rounded-xl" />
         ))}
       </div>
     );
@@ -71,31 +71,30 @@ const SponsorAnalyticsPage = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         {kpis.map(card => (
           <SponsorAnalyticsCard key={card.label} {...card} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SponsorLineChart data={analytics.timelineSeries} />
         <SponsorBarChart data={analytics.clicksPerAd} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SponsorPieChart data={analytics.typeDistributionSeries} />
-        <div className="rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
-          <p className="text-lg font-semibold text-gray-900">Quick insights</p>
-          <ul className="space-y-3 text-sm text-gray-600">
-            <li>• {analytics.activeAdsCount} ads are currently live.</li>
-            <li>
-              • CTR is holding steady at {analytics.ctr.toFixed(2)}% week over
-              week.
-            </li>
+        <div className="rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
+          <p className="text-base font-semibold text-gray-900">
+            Quick Insights
+          </p>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li>• {analytics.activeAdsCount} ads are currently live</li>
+            <li>• CTR is {analytics.ctr.toFixed(2)}% week over week</li>
             <li>
               • {analytics.typeDistributionSeries?.[0]?.name || 'Image'} formats
-              drive the majority of impressions.
+              drive most impressions
             </li>
           </ul>
         </div>

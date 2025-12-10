@@ -311,98 +311,90 @@ export const SponsorAdRequests = () => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Card className="rounded-xl border-gray-200">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="rounded-lg border-gray-200">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">Total Requests</p>
-                <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-xs text-gray-500">Total</p>
+                <p className="text-lg font-bold text-gray-900">{stats.total}</p>
               </div>
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Users className="w-4 h-4 text-blue-600" />
-              </div>
+              <Users className="w-4 h-4 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-amber-200 bg-amber-50/30">
+        <Card className="rounded-lg border-amber-200 bg-amber-50/50">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-amber-700">Pending</p>
-                <p className="text-xl font-bold text-amber-900">
+                <p className="text-lg font-bold text-amber-900">
                   {stats.pending}
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-600" />
-              </div>
+              <Clock className="w-4 h-4 text-amber-600" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50/30">
+        <Card className="rounded-lg border-emerald-200 bg-emerald-50/50">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-emerald-700">Approved</p>
-                <p className="text-xl font-bold text-emerald-900">
+                <p className="text-lg font-bold text-emerald-900">
                   {stats.approved}
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-emerald-600" />
-              </div>
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-rose-200 bg-rose-50/30">
+        <Card className="rounded-lg border-rose-200 bg-rose-50/50">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-rose-700">Rejected</p>
-                <p className="text-xl font-bold text-rose-900">
+                <p className="text-lg font-bold text-rose-900">
                   {stats.rejected}
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center">
-                <XCircle className="w-4 h-4 text-rose-600" />
-              </div>
+              <XCircle className="w-4 h-4 text-rose-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="rounded-2xl border-gray-200 shadow-sm">
+      <Card className="rounded-lg border-gray-200 shadow-sm">
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Sponsor Ad Requests</CardTitle>
+              <CardTitle className="text-base">Ad Requests</CardTitle>
               <CardDescription className="text-xs">
-                Review and manage user-submitted sponsorship requests
+                Review and manage user submissions
               </CardDescription>
             </div>
-            <Badge className="w-fit bg-blue-50 text-blue-700 border-blue-200 text-xs">
-              {filteredRequests.length} Requests
+            <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+              {filteredRequests.length}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Input
-              placeholder="Search by sponsor, title, or requester..."
+              placeholder="Search requests..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="rounded-xl h-9 text-sm"
+              className="rounded-lg h-9 text-sm"
             />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="rounded-xl h-9 text-sm">
-                <SelectValue placeholder="Filter by status" />
+              <SelectTrigger className="rounded-lg h-9 text-sm">
+                <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
@@ -412,150 +404,125 @@ export const SponsorAdRequests = () => {
               </SelectContent>
             </Select>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Requests Table */}
-          <div className="rounded-xl border border-gray-200 overflow-hidden">
-            <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="py-2 text-xs">Requester</TableHead>
-                    <TableHead className="py-2 text-xs">Ad Details</TableHead>
-                    <TableHead className="py-2 text-xs">Placement</TableHead>
-                    <TableHead className="py-2 text-xs">Tier</TableHead>
-                    <TableHead className="py-2 text-xs">Budget</TableHead>
-                    <TableHead className="py-2 text-xs">Status</TableHead>
-                    <TableHead className="py-2 text-xs text-right">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRequests.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <div className="flex flex-col items-center gap-2 text-gray-500">
-                          <AlertCircle className="w-8 h-8" />
-                          <p className="text-sm font-semibold">
-                            No requests found
+      {/* Requests Table */}
+      <Card className="rounded-lg border-gray-200 shadow-sm overflow-hidden">
+        <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="py-2 text-xs">Requester</TableHead>
+                <TableHead className="py-2 text-xs">Ad Details</TableHead>
+                <TableHead className="py-2 text-xs">Placement</TableHead>
+                <TableHead className="py-2 text-xs">Budget</TableHead>
+                <TableHead className="py-2 text-xs">Status</TableHead>
+                <TableHead className="py-2 text-xs text-right">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <div className="flex flex-col items-center gap-2 text-gray-500">
+                      <AlertCircle className="w-8 h-8" />
+                      <p className="text-sm font-semibold">No requests found</p>
+                      <p className="text-xs">
+                        Try adjusting your search or filters
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredRequests.map(request => {
+                  const StatusIcon = statusConfig[request.status].icon;
+                  return (
+                    <TableRow key={request.id} className="hover:bg-gray-50">
+                      <TableCell className="py-2">
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-semibold text-gray-900">
+                            {request.requesterName}
                           </p>
-                          <p className="text-xs">
-                            Try adjusting your search or filters
+                          <p className="text-[10px] text-gray-500">
+                            {request.organizationName}
                           </p>
                         </div>
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredRequests.map(request => {
-                      const StatusIcon = statusConfig[request.status].icon;
-                      return (
-                        <TableRow key={request.id} className="hover:bg-gray-50">
-                          <TableCell className="py-2">
-                            <div className="space-y-0.5">
-                              <p className="text-xs font-semibold text-gray-900">
-                                {request.requesterName}
-                              </p>
-                              <p className="text-[10px] text-gray-500">
-                                {request.organizationName}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <div className="space-y-0.5">
-                              <p className="text-xs font-semibold text-gray-900">
-                                {request.sponsorName}
-                              </p>
-                              <p className="text-[11px] text-gray-600">
-                                {request.adTitle}
-                              </p>
-                              <p className="text-[10px] text-gray-400">
-                                {new Date(
-                                  request.submittedAt
-                                ).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0"
-                            >
-                              {placementLabels[request.placement]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Badge
-                              className={`text-[10px] px-1.5 py-0 ${
-                                request.tier === 'Gold'
-                                  ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                  : request.tier === 'Silver'
-                                    ? 'bg-slate-50 text-slate-700 border-slate-200'
-                                    : 'bg-amber-50 text-amber-700 border-amber-200'
-                              }`}
-                            >
-                              {request.tier}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <p className="text-xs font-semibold text-gray-900">
-                              {request.budget}
-                            </p>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Badge
-                              className={`flex items-center gap-1 w-fit text-[10px] px-1.5 py-0 ${statusConfig[request.status].color}`}
-                            >
-                              <StatusIcon className="w-2.5 h-2.5" />
-                              {statusConfig[request.status].label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-2 text-right">
-                            <div className="flex items-center justify-end gap-1">
+                      <TableCell className="py-2">
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-semibold text-gray-900">
+                            {request.sponsorName}
+                          </p>
+                          <p className="text-[11px] text-gray-600">
+                            {request.adTitle}
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            {new Date(request.submittedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <span className="text-xs text-gray-600">
+                          {placementLabels[request.placement]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <p className="text-xs font-semibold text-gray-900">
+                          {request.budget}
+                        </p>
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <Badge
+                          className={`flex items-center gap-1 w-fit text-[10px] px-1.5 py-0 ${statusConfig[request.status].color}`}
+                        >
+                          <StatusIcon className="w-2.5 h-2.5" />
+                          {statusConfig[request.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-2 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewingRequest(request)}
+                            className="rounded-lg h-7 px-2 text-xs"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                          {request.status === 'pending' && (
+                            <>
                               <Button
-                                variant="outline"
                                 size="sm"
-                                onClick={() => setViewingRequest(request)}
-                                className="rounded-lg h-7 px-2 text-xs"
+                                onClick={() => handleReview(request, 'approve')}
+                                className="rounded-lg h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700"
                               >
-                                <Eye className="w-3 h-3 mr-1" />
-                                View
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Approve
                               </Button>
-                              {request.status === 'pending' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      handleReview(request, 'approve')
-                                    }
-                                    className="rounded-lg h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700"
-                                  >
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleReview(request, 'reject')
-                                    }
-                                    className="rounded-lg h-7 px-2 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
-                                  >
-                                    <XCircle className="w-3 h-3 mr-1" />
-                                    Reject
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleReview(request, 'reject')}
+                                className="rounded-lg h-7 px-2 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
+                              >
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {/* View/Review Dialog */}
@@ -571,7 +538,7 @@ export const SponsorAdRequests = () => {
           }
         }}
       >
-        <DialogContent className="max-w-3xl rounded-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">
               {reviewAction ? 'Review Request' : 'Request Details'}

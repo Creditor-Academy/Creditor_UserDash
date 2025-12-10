@@ -174,17 +174,17 @@ const SponsorRequestPage = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {[...Array(2)].map((_, idx) => (
-          <Skeleton key={idx} className="w-full h-96 rounded-3xl" />
+          <Skeleton key={idx} className="w-full h-96 rounded-xl" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-8">
-      <div className="space-y-6">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] gap-6">
+      <div className="space-y-5">
         {showSuccess && <SponsorRequestSuccessBanner />}
         <SponsorRequestForm
           formState={formState}
@@ -196,9 +196,9 @@ const SponsorRequestPage = () => {
           isSubmitting={isSubmitting}
         />
       </div>
-      <div className="space-y-4">
-        <p className="text-sm uppercase tracking-wide text-gray-500">
-          Live preview
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+          Live Preview
         </p>
         <SponsorAdCard ad={previewData} isPreview hideActions />
       </div>

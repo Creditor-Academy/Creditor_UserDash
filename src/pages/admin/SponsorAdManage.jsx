@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useSponsorAds } from '@/contexts/SponsorAdsContext';
-import SponsorAdCard from '@/components/sponsorAds/SponsorAdCard';
 import {
   Card,
   CardContent,
@@ -36,7 +35,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { TrendingUp, PauseCircle, Shield, Filter } from 'lucide-react';
+import { TrendingUp, PauseCircle, Shield } from 'lucide-react';
 
 const placementFilterOptions = [
   { value: 'all', label: 'All placements' },
@@ -180,57 +179,41 @@ export const SponsorAdManage = () => {
   const emptyState = filteredAds.length === 0;
 
   return (
-    <div className="space-y-8">
-      <Card className="rounded-3xl shadow-sm border-gray-200">
-        <CardHeader className="space-y-1">
-          <CardTitle>Campaign health</CardTitle>
-          <CardDescription>
-            Monitor what is live, paused, or ready for a refresh.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {statusBreakdown.map(stat => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-gray-100 p-4 bg-gray-50/60"
-            >
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {statusBreakdown.map(stat => (
+          <Card
+            key={stat.label}
+            className="rounded-xl border-gray-100 shadow-sm"
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
                 <stat.icon className={`w-4 h-4 ${stat.color}`} />
                 {stat.label}
               </div>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">
+              <p className="text-2xl font-semibold text-gray-900">
                 {stat.value}
               </p>
-              <p className="text-sm text-gray-500">{stat.helper}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+              <p className="text-xs text-gray-500 mt-1">{stat.helper}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      <Card className="rounded-3xl shadow-sm border-gray-100">
-        <CardHeader>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <div>
-              <CardTitle>Filters & sorting</CardTitle>
-              <CardDescription>
-                Slice by placement, tier or start dates effortlessly.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 lg:ml-auto">
-              <Filter className="w-4 h-4" /> Quick refine
-            </div>
-          </div>
+      <Card className="rounded-xl border-gray-100 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Filters</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Input
             placeholder="Search by sponsor name"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="rounded-2xl"
+            className="rounded-lg"
           />
           <Select value={placement} onValueChange={setPlacement}>
-            <SelectTrigger className="rounded-2xl">
-              <SelectValue placeholder="Filter by placement" />
+            <SelectTrigger className="rounded-lg">
+              <SelectValue placeholder="All placements" />
             </SelectTrigger>
             <SelectContent>
               {placementFilterOptions.map(option => (
@@ -241,7 +224,7 @@ export const SponsorAdManage = () => {
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="rounded-2xl">
+            <SelectTrigger className="rounded-lg">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -255,18 +238,18 @@ export const SponsorAdManage = () => {
         </CardContent>
       </Card>
 
-      <div className="overflow-x-auto rounded-3xl border border-gray-100 shadow-sm bg-white">
+      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
         {emptyState ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-            <p className="text-lg font-semibold text-gray-900">
-              No campaigns match the filters
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-base font-semibold text-gray-900 mb-2">
+              No ads found
             </p>
-            <p className="text-sm text-gray-500 max-w-md">
-              Try resetting your filters or create a new sponsor placement to
-              fill the table.
+            <p className="text-sm text-gray-500 mb-4">
+              Try adjusting your filters or create a new ad
             </p>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setSearch('');
                 setPlacement('all');
@@ -275,130 +258,107 @@ export const SponsorAdManage = () => {
             >
               Reset filters
             </Button>
-          </div>
+          </CardContent>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50/60">
-                <TableHead>Sponsor</TableHead>
-                <TableHead>Placement</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAds.map(ad => (
-                <TableRow key={ad.id} className="align-top">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {ad.logo && (
-                        <img
-                          src={ad.logo}
-                          alt={ad.sponsorName}
-                          className="w-12 h-12 rounded-2xl object-cover"
-                          loading="lazy"
-                        />
-                      )}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="text-xs">Sponsor</TableHead>
+                  <TableHead className="text-xs">Placement</TableHead>
+                  <TableHead className="text-xs">Start Date</TableHead>
+                  <TableHead className="text-xs">End Date</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-right text-xs">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAds.map(ad => (
+                  <TableRow key={ad.id} className="hover:bg-gray-50/50">
+                    <TableCell>
                       <div>
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-medium text-sm text-gray-900">
                           {ad.sponsorName}
                         </p>
-                        <p className="text-sm text-gray-500 line-clamp-2">
+                        <p className="text-xs text-gray-500 line-clamp-1">
                           {ad.title}
                         </p>
                         <Badge
                           variant="outline"
-                          className="text-[11px] mt-2 border-blue-100 bg-blue-50 text-blue-700"
+                          className="text-[10px] mt-1 border-blue-100 bg-blue-50 text-blue-700"
                         >
-                          {ad.tier} Tier
+                          {ad.tier}
                         </Badge>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{placementLabels[ad.placement]}</TableCell>
-                  <TableCell className="capitalize">{ad.adType}</TableCell>
-                  <TableCell>{ad.startDate}</TableCell>
-                  <TableCell className="text-gray-500">{ad.endDate}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        className={
-                          getRuntimeStatus(ad) === 'Active'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                            : getRuntimeStatus(ad) === 'Paused'
-                              ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : 'bg-gray-100 text-gray-600 border-gray-200'
-                        }
-                      >
-                        {getRuntimeStatus(ad)}
-                      </Badge>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {placementLabels[ad.placement]}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {new Date(ad.startDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {new Date(ad.endDate).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          className={
+                            getRuntimeStatus(ad) === 'Active'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100 text-xs'
+                              : getRuntimeStatus(ad) === 'Paused'
+                                ? 'bg-amber-50 text-amber-700 border-amber-100 text-xs'
+                                : 'bg-gray-100 text-gray-600 border-gray-200 text-xs'
+                          }
+                        >
+                          {getRuntimeStatus(ad)}
+                        </Badge>
                         <Switch
                           checked={ad.status !== 'Paused'}
                           onCheckedChange={() => toggleAdStatus(ad.id)}
                           disabled={getRuntimeStatus(ad) === 'Expired'}
+                          className="scale-75"
                         />
-                        <span>
-                          {ad.status === 'Paused' ? 'Paused' : 'Running'}
-                        </span>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex flex-col gap-2 items-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(ad)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => handleDelete(ad.id)}
-                        disabled={deletingId === ad.id}
-                      >
-                        {deletingId === ad.id ? 'Deleting...' : 'Delete'}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-
-      <Card className="rounded-3xl shadow-sm border-gray-100">
-        <CardHeader className="flex flex-col gap-2">
-          <CardTitle>Grid preview</CardTitle>
-          <CardDescription>
-            How the top placements look across the LMS surfaces.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredAds.slice(0, 3).map(ad => (
-              <SponsorAdCard key={`card-${ad.id}`} ad={ad} hideActions />
-            ))}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => openEditDialog(ad)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => handleDelete(ad.id)}
+                          disabled={deletingId === ad.id}
+                        >
+                          {deletingId === ad.id ? '...' : 'Delete'}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        </CardContent>
+        )}
       </Card>
 
       <Dialog
         open={Boolean(editingAd)}
         onOpenChange={open => !open && setEditingAd(null)}
       >
-        <DialogContent className="max-w-lg rounded-3xl">
+        <DialogContent className="max-w-lg rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Edit sponsor ad</DialogTitle>
-            <CardDescription>
-              Make lightweight tweaks without recreating the campaign.
+            <DialogTitle>Edit Ad</DialogTitle>
+            <CardDescription className="text-sm">
+              Update ad details
             </CardDescription>
           </DialogHeader>
           <div className="space-y-4">
