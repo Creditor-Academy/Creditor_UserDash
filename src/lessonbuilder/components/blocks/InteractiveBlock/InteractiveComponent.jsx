@@ -1406,6 +1406,19 @@ const InteractiveComponent = forwardRef(
             throw new Error('Audio upload failed');
           }
         } catch (error) {
+          const isStorageLimitExceeded =
+            error?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+            (error?.message &&
+              (error.message.toLowerCase().includes('limit exceeded') ||
+                error.message.toLowerCase().includes('storage limit')));
+
+          if (isStorageLimitExceeded) {
+            toast.error(
+              'Storage limit exceeded. Please free up space or upgrade before uploading new audio.'
+            );
+            return;
+          }
+
           devLogger.error('Error uploading audio:', error);
           toast.error(
             error.message || 'Failed to upload audio. Please try again.'
@@ -1949,6 +1962,19 @@ const InteractiveComponent = forwardRef(
           throw new Error('Upload failed - no image URL returned');
         }
       } catch (error) {
+        const isStorageLimitExceeded =
+          error?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+          (error?.message &&
+            (error.message.toLowerCase().includes('limit exceeded') ||
+              error.message.toLowerCase().includes('storage limit')));
+
+        if (isStorageLimitExceeded) {
+          toast.error(
+            'Storage limit exceeded. Please free up space or upgrade before uploading new images.'
+          );
+          return;
+        }
+
         devLogger.error('Error uploading edited image:', error);
         toast.error(
           error.message || 'Failed to upload image. Please try again.'

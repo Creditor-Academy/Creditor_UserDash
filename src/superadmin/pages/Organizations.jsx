@@ -258,6 +258,23 @@ export default function Organizations() {
     );
   };
 
+  // Convert byte values to a readable SI unit (bytes → KB/MB/GB using 1000s)
+  const formatBytes = value => {
+    if (value === null || value === undefined) return 'N/A';
+    const bytes = Number(value);
+    if (Number.isNaN(bytes) || bytes < 0) return 'N/A';
+    if (bytes < 1000) return `${bytes} B`;
+
+    const kb = bytes / 1000;
+    if (kb < 1000) return `${kb.toFixed(2)} KB`;
+
+    const mb = kb / 1000;
+    if (mb < 1000) return `${mb.toFixed(2)} MB`;
+
+    const gb = mb / 1000;
+    return `${gb.toFixed(2)} GB`;
+  };
+
   return (
     <main
       className="ml-20 pt-24 p-6 flex-1 overflow-y-auto"
@@ -897,21 +914,20 @@ export default function Organizations() {
                         className="text-xs font-semibold uppercase"
                         style={{ color: colors.text.secondary }}
                       >
-                        Storage Limit
+                        Storage Used / Limit
                       </p>
                       <p
                         className="text-2xl font-bold mt-2"
                         style={{ color: '#10B981' }}
                       >
-                        {selectedOrg.storage_limit
-                          ? `${(selectedOrg.storage_limit / 1000000000).toFixed(2)}`
-                          : 'N/A'}
+                        {formatBytes(selectedOrg.storage)} /{' '}
+                        {formatBytes(selectedOrg.storage_limit)}
                       </p>
                       <p
                         className="text-xs mt-1"
                         style={{ color: colors.text.secondary }}
                       >
-                        GB
+                        used / limit
                       </p>
                     </div>
 

@@ -75,6 +75,19 @@ export async function uploadImage(file, options = {}) {
       maxContentLength: Infinity,
     });
 
+    const responseMessage =
+      response.data?.message || response.data?.errorMessage || '';
+    const normalizedResponseMessage = responseMessage.toLowerCase();
+    if (
+      normalizedResponseMessage.includes('limit exceeded') ||
+      normalizedResponseMessage.includes('storage limit')
+    ) {
+      const limitError = new Error(responseMessage || 'Storage limit exceeded');
+      limitError.code = 'STORAGE_LIMIT_EXCEEDED';
+      limitError.isStorageLimitExceeded = true;
+      throw limitError;
+    }
+
     console.log('✅ S3 upload successful:', response.data);
 
     // Extract S3 URL from response
@@ -109,6 +122,17 @@ export async function uploadImage(file, options = {}) {
         error.response.data?.message ||
         error.response.data?.errorMessage ||
         error.message;
+
+      const normalizedMessage = (message || '').toLowerCase();
+      if (
+        normalizedMessage.includes('limit exceeded') ||
+        normalizedMessage.includes('storage limit')
+      ) {
+        const limitError = new Error(message || 'Storage limit exceeded');
+        limitError.code = 'STORAGE_LIMIT_EXCEEDED';
+        limitError.isStorageLimitExceeded = true;
+        throw limitError;
+      }
 
       if (status === 413) {
         throw new Error('File too large for upload');

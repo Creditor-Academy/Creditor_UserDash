@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   X,
   DollarSign,
+  Bell,
+  Send,
   CreditCard,
   TrendingUp,
   AlertCircle,
@@ -213,6 +215,20 @@ const BillDetailModal = ({ bill, isOpen, onClose, onMarkAsPaid }) => {
                 {bill.invoiceNumber}
               </p>
             </div>
+            <div>
+              <p
+                className="text-xs font-medium mb-1"
+                style={{ color: colors.text.secondary }}
+              >
+                Space Used
+              </p>
+              <p
+                style={{ color: colors.text.primary }}
+                className="text-sm font-medium"
+              >
+                {bill.spaceUsed} GB
+              </p>
+            </div>
           </div>
 
           {/* Payment Section */}
@@ -312,6 +328,7 @@ export default function Billing() {
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [billingPeriod, setBillingPeriod] = useState('current');
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -321,81 +338,168 @@ export default function Billing() {
 
   // Mock data
   useEffect(() => {
-    const mockBills = [
+    const today = new Date();
+    const formatDate = date => date.toISOString().split('T')[0];
+    const buildPeriod = offset => {
+      const anchor = new Date(
+        today.getFullYear(),
+        today.getMonth() + offset,
+        1
+      );
+      const dueDate = new Date(anchor.getFullYear(), anchor.getMonth(), 20);
+      const issuedDate = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+      return {
+        slug: offset === 0 ? 'current' : 'previous',
+        label: anchor.toLocaleDateString('default', {
+          month: 'long',
+          year: 'numeric',
+        }),
+        dueDate: formatDate(dueDate),
+        issuedDate: formatDate(issuedDate),
+      };
+    };
+
+    const currentPeriod = buildPeriod(0);
+    const previousPeriod = buildPeriod(-1);
+
+    const organizations = [
       {
-        id: 'BL-001',
-        invoiceNumber: 'INV-2023-001',
+        id: 'org-1',
         organization: 'Acme Corp',
-        amount: 5000,
-        status: 'paid',
-        dueDate: '2023-06-30',
-        issuedDate: '2023-06-01',
-        description: 'Monthly subscription for premium plan',
-        paymentMethod: 'credit-card',
-        paidDate: '2023-06-15',
+        planName: 'Starter',
+        planPrice: 99,
+        billingCycle: 'Monthly',
+        current: {
+          status: 'paid',
+          paymentMethod: 'credit-card',
+          spaceUsed: 120,
+        },
+        previous: {
+          status: 'paid',
+          paymentMethod: 'credit-card',
+          spaceUsed: 110,
+        },
       },
       {
-        id: 'BL-002',
-        invoiceNumber: 'INV-2023-002',
+        id: 'org-2',
         organization: 'Globex',
-        amount: 3500,
-        status: 'pending',
-        dueDate: '2023-07-15',
-        issuedDate: '2023-07-01',
-        description: 'Monthly subscription for standard plan',
+        planName: 'Growth',
+        planPrice: 499,
+        billingCycle: 'Monthly',
+        current: { status: 'pending', spaceUsed: 260 },
+        previous: {
+          status: 'paid',
+          paymentMethod: 'bank-transfer',
+          spaceUsed: 240,
+        },
       },
       {
-        id: 'BL-003',
-        invoiceNumber: 'INV-2023-003',
+        id: 'org-3',
         organization: 'Soylent Corp',
-        amount: 7200,
-        status: 'overdue',
-        dueDate: '2023-06-15',
-        issuedDate: '2023-05-15',
-        description: 'Enterprise plan with additional features',
+        planName: 'Enterprise',
+        planPrice: 999,
+        billingCycle: 'Monthly',
+        current: { status: 'overdue', spaceUsed: 540 },
+        previous: { status: 'pending', spaceUsed: 500 },
       },
       {
-        id: 'BL-004',
-        invoiceNumber: 'INV-2023-004',
+        id: 'org-4',
         organization: 'Initech',
-        amount: 2500,
-        status: 'paid',
-        dueDate: '2023-06-20',
-        issuedDate: '2023-05-20',
-        description: 'Monthly subscription for basic plan',
-        paymentMethod: 'bank-transfer',
-        paidDate: '2023-06-18',
+        planName: 'Starter',
+        planPrice: 99,
+        billingCycle: 'Monthly',
+        current: {
+          status: 'paid',
+          paymentMethod: 'bank-transfer',
+          spaceUsed: 140,
+        },
+        previous: {
+          status: 'paid',
+          paymentMethod: 'credit-card',
+          spaceUsed: 135,
+        },
       },
       {
-        id: 'BL-005',
-        invoiceNumber: 'INV-2023-005',
+        id: 'org-5',
         organization: 'Umbrella Corp',
-        amount: 4800,
-        status: 'pending',
-        dueDate: '2023-07-10',
-        issuedDate: '2023-06-10',
-        description: 'Monthly subscription for premium plan with support',
+        planName: 'Growth',
+        planPrice: 499,
+        billingCycle: 'Monthly',
+        current: { status: 'pending', spaceUsed: 300 },
+        previous: { status: 'overdue', spaceUsed: 280 },
       },
       {
-        id: 'BL-006',
-        invoiceNumber: 'INV-2023-006',
+        id: 'org-6',
         organization: 'TechStart Inc',
-        amount: 1500,
-        status: 'cancelled',
-        dueDate: '2023-06-25',
-        issuedDate: '2023-05-25',
-        description: 'One-time setup fee (cancelled)',
+        planName: 'Enterprise',
+        planPrice: 999,
+        billingCycle: 'Annual',
+        current: {
+          status: 'paid',
+          paymentMethod: 'credit-card',
+          spaceUsed: 800,
+        },
+        previous: {
+          status: 'paid',
+          paymentMethod: 'credit-card',
+          spaceUsed: 760,
+        },
       },
     ];
 
-    setTimeout(() => {
-      setBills(mockBills);
-      setIsLoading(false);
-    }, 500);
+    let invoiceCounter = 1;
+    const buildBill = (org, period, details) => {
+      const isPaid = details.status === 'paid';
+      const paidDate = isPaid
+        ? formatDate(
+            new Date(
+              new Date(period.dueDate).getFullYear(),
+              new Date(period.dueDate).getMonth(),
+              10
+            )
+          )
+        : null;
+
+      return {
+        id: `${org.id}-${period.slug}`,
+        invoiceNumber: `INV-${new Date(period.issuedDate).getFullYear()}-${String(
+          invoiceCounter++
+        ).padStart(3, '0')}`,
+        organization: org.organization,
+        amount: org.planPrice,
+        status: details.status,
+        dueDate: period.dueDate,
+        issuedDate: period.issuedDate,
+        description: `${org.planName} plan subscription for ${period.label}`,
+        paymentMethod: details.paymentMethod || null,
+        paidDate,
+        planName: org.planName,
+        planPrice: org.planPrice,
+        billingCycle: org.billingCycle,
+        period: period.slug,
+        periodLabel: period.label,
+        reminderSent: false,
+        invoiceSent: false,
+        spaceUsed: details.spaceUsed || 0,
+      };
+    };
+
+    const mockBills = organizations.flatMap(org => [
+      buildBill(org, currentPeriod, org.current),
+      buildBill(org, previousPeriod, org.previous),
+    ]);
+
+    setBills(mockBills);
+    setIsLoading(false);
   }, []);
 
   // Filter bills
-  const filteredBills = bills.filter(bill => {
+  const periodBills =
+    billingPeriod === 'all'
+      ? bills
+      : bills.filter(bill => bill.period === billingPeriod);
+
+  const filteredBills = periodBills.filter(bill => {
     const matchesSearch =
       bill.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -432,38 +536,139 @@ export default function Billing() {
     setSelectedBill(null);
   };
 
+  const handleSendReminder = billId => {
+    setBills(prev =>
+      prev.map(b =>
+        b.id === billId
+          ? {
+              ...b,
+              reminderSent: true,
+            }
+          : b
+      )
+    );
+  };
+
+  const handleSendInvoice = billId => {
+    setBills(prev =>
+      prev.map(b =>
+        b.id === billId
+          ? {
+              ...b,
+              invoiceSent: true,
+            }
+          : b
+      )
+    );
+  };
+
   // Billing statistics
   const stats = {
-    totalRevenue: bills.reduce(
+    totalRevenue: periodBills.reduce(
       (sum, b) => sum + (b.status === 'paid' ? b.amount : 0),
       0
     ),
-    pendingAmount: bills.reduce(
+    pendingAmount: periodBills.reduce(
       (sum, b) => sum + (b.status === 'pending' ? b.amount : 0),
       0
     ),
-    overdueAmount: bills.reduce(
+    overdueAmount: periodBills.reduce(
       (sum, b) => sum + (b.status === 'overdue' ? b.amount : 0),
       0
     ),
-    totalBills: bills.length,
-    paidBills: bills.filter(b => b.status === 'paid').length,
-    pendingBills: bills.filter(b => b.status === 'pending').length,
-    overdueBills: bills.filter(b => b.status === 'overdue').length,
+    totalBills: periodBills.length,
+    paidBills: periodBills.filter(b => b.status === 'paid').length,
+    pendingBills: periodBills.filter(b => b.status === 'pending').length,
+    overdueBills: periodBills.filter(b => b.status === 'overdue').length,
+    organizations: new Set(periodBills.map(b => b.organization)).size,
   };
+
+  const periodLabel =
+    billingPeriod === 'current'
+      ? 'Current month'
+      : billingPeriod === 'previous'
+        ? 'Previous month'
+        : 'All periods';
 
   return (
     <main
       className="ml-20 pt-24 p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto"
       style={{ backgroundColor: colors.bg.primary }}
     >
-      <div className="max-w-[1600px] mx-auto space-y-6 md:space-y-8 pb-8">
+      <div className="w-full max-w-none mx-auto space-y-6 md:space-y-8 pb-8">
         {/* Header */}
         <div style={{ color: colors.text.primary }} className="mt-6">
           <h1 className="text-4xl font-bold mb-2">Billing & Payments</h1>
           <p className="text-lg" style={{ color: colors.text.secondary }}>
             Manage invoices and track payments from all organizations
           </p>
+        </div>
+
+        {/* Period filter & meta */}
+        <div
+          className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl"
+          style={{
+            backgroundColor: colors.bg.secondary,
+            border: `1px solid ${colors.border}`,
+          }}
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter size={16} style={{ color: colors.text.secondary }} />
+            <span
+              className="text-sm font-medium"
+              style={{ color: colors.text.primary }}
+            >
+              Billing period
+            </span>
+            {['current', 'previous', 'all'].map(period => (
+              <button
+                key={period}
+                onClick={() => {
+                  setBillingPeriod(period);
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  billingPeriod === period
+                    ? 'shadow-md'
+                    : 'hover:shadow-sm hover:-translate-y-0.5'
+                }`}
+                style={{
+                  backgroundColor:
+                    billingPeriod === period
+                      ? colors.accent || '#3B82F6'
+                      : colors.bg.primary,
+                  color:
+                    billingPeriod === period ? '#fff' : colors.text.primary,
+                  border: `1px solid ${
+                    billingPeriod === period
+                      ? colors.accent || '#3B82F6'
+                      : colors.border
+                  }`,
+                }}
+              >
+                {period === 'current'
+                  ? 'Current month'
+                  : period === 'previous'
+                    ? 'Previous month'
+                    : 'All periods'}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4 flex-wrap text-sm">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={16} style={{ color: colors.text.secondary }} />
+              <span style={{ color: colors.text.secondary }}>
+                {stats.organizations} organizations in this view
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CreditCard size={16} style={{ color: colors.text.secondary }} />
+              <span style={{ color: colors.text.secondary }}>
+                Plans: Starter, Growth, Enterprise
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -595,7 +800,7 @@ export default function Billing() {
           </div>
         </div>
 
-        {/* Bills Table */}
+        {/* Detailed Bills Table */}
         <div
           className="rounded-2xl shadow-sm overflow-hidden"
           style={{
@@ -609,7 +814,18 @@ export default function Billing() {
             className="p-4 border-b flex items-center justify-between flex-wrap gap-4"
             style={{ borderColor: colors.border }}
           >
-            <h3 className="text-lg font-semibold">All Invoices</h3>
+            <div>
+              <h3
+                className="text-lg font-semibold"
+                style={{ color: colors.text.primary }}
+              >
+                Billing details — {periodLabel}
+              </h3>
+              <p className="text-sm" style={{ color: colors.text.secondary }}>
+                All organizations, plans, invoices, dates, status, and actions
+                in one table.
+              </p>
+            </div>
             <div className="flex items-center space-x-2 flex-wrap">
               {/* Search */}
               <div className="relative">
@@ -663,25 +879,19 @@ export default function Billing() {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
-                    Invoice #
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                  >
                     Organization
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
-                    Amount
+                    Plan
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
-                    Status
+                    Space Used
                   </th>
                   <th
                     scope="col"
@@ -693,7 +903,13 @@ export default function Billing() {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
-                    Issued Date
+                    Status
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    Amount
                   </th>
                   <th scope="col" className="relative px-6 py-3">
                     <span className="sr-only">Actions</span>
@@ -718,21 +934,36 @@ export default function Billing() {
                           colors.bg.secondary)
                       }
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div
-                          className="text-sm font-medium"
-                          style={{ color: colors.text.primary }}
-                        >
-                          {bill.invoiceNumber}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-normal">
                         <div
                           className="text-sm"
                           style={{ color: colors.text.primary }}
                         >
                           {bill.organization}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-normal">
+                        <div
+                          className="text-sm"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          {bill.planName}
+                        </div>
+                      </td>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {bill.spaceUsed} GB
+                      </td>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {new Date(bill.dueDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={bill.status} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div
@@ -742,35 +973,73 @@ export default function Billing() {
                           ${bill.amount.toFixed(2)}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={bill.status} />
-                      </td>
-                      <td
-                        className="px-6 py-4 whitespace-nowrap text-sm"
-                        style={{ color: colors.text.secondary }}
-                      >
-                        {new Date(bill.dueDate).toLocaleDateString()}
-                      </td>
-                      <td
-                        className="px-6 py-4 whitespace-nowrap text-sm"
-                        style={{ color: colors.text.secondary }}
-                      >
-                        {new Date(bill.issuedDate).toLocaleDateString()}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setSelectedBill(bill);
-                            setIsDetailModalOpen(true);
-                          }}
-                          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                          title="View Details"
-                        >
-                          <Eye
-                            className="h-4 w-4"
-                            style={{ color: colors.text.secondary }}
-                          />
-                        </button>
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            onClick={() => {
+                              setSelectedBill(bill);
+                              setIsDetailModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            title="View details"
+                          >
+                            <Eye
+                              className="h-4 w-4"
+                              style={{ color: colors.text.secondary }}
+                            />
+                          </button>
+                          <button
+                            onClick={() => handleSendReminder(bill.id)}
+                            className="p-1.5 rounded-md hover:bg-yellow-50 dark:hover:bg-yellow-900/40 transition-colors"
+                            title={
+                              bill.reminderSent
+                                ? 'Reminder sent'
+                                : 'Send reminder'
+                            }
+                          >
+                            <Bell
+                              className="h-4 w-4"
+                              style={{
+                                color: bill.reminderSent
+                                  ? '#F59E0B'
+                                  : colors.text.secondary,
+                              }}
+                            />
+                          </button>
+                          <button
+                            onClick={() => handleSendInvoice(bill.id)}
+                            className="p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-colors"
+                            title={
+                              bill.invoiceSent ? 'Invoice sent' : 'Send invoice'
+                            }
+                          >
+                            <Send
+                              className="h-4 w-4"
+                              style={{
+                                color: bill.invoiceSent
+                                  ? '#3B82F6'
+                                  : colors.text.secondary,
+                              }}
+                            />
+                          </button>
+                          {bill.status !== 'paid' && (
+                            <button
+                              onClick={() =>
+                                handleMarkAsPaid(
+                                  bill.id,
+                                  bill.paymentMethod || 'manual-update'
+                                )
+                              }
+                              className="p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/40 transition-colors"
+                              title="Mark as paid"
+                            >
+                              <CheckCircle
+                                className="h-4 w-4"
+                                style={{ color: '#10B981' }}
+                              />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

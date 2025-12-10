@@ -55,7 +55,7 @@ export default function AddOrganizationModal({
           : '',
         user_limit: editingOrg.user_limit ? String(editingOrg.user_limit) : '',
         storage_limit: editingOrg.storage_limit
-          ? String(editingOrg.storage_limit)
+          ? bytesToGbString(editingOrg.storage_limit)
           : '',
         credit: editingOrg.credit ? String(editingOrg.credit) : '',
         status: editingOrg.status || 'ACTIVE',
@@ -106,6 +106,20 @@ export default function AddOrganizationModal({
     setError(null);
   };
 
+  // Helpers for storage limit (UI in GB, backend expects bytes)
+  const gbToBytes = value => {
+    const gb = parseFloat(value);
+    if (Number.isNaN(gb)) return undefined;
+    return Math.round(gb * 1024 * 1024 * 1024);
+  };
+
+  const bytesToGbString = value => {
+    const bytes = Number(value);
+    if (Number.isNaN(bytes)) return '';
+    const gb = bytes / (1024 * 1024 * 1024);
+    return Number.isInteger(gb) ? String(gb) : gb.toFixed(2);
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
@@ -151,9 +165,10 @@ export default function AddOrganizationModal({
         user_limit: formData.user_limit
           ? parseInt(formData.user_limit, 10)
           : undefined,
-        storage_limit: formData.storage_limit
-          ? parseInt(formData.storage_limit, 10)
-          : undefined,
+        storage_limit:
+          formData.storage_limit !== ''
+            ? gbToBytes(formData.storage_limit)
+            : undefined,
         credit: formData.credit ? parseInt(formData.credit, 10) : undefined,
         status: formData.status,
       };
@@ -409,7 +424,7 @@ export default function AddOrganizationModal({
               className="block text-sm font-semibold mb-2 uppercase tracking-wider"
               style={{ color: colors.text.secondary }}
             >
-              Storage Limit in Bytes (optional)
+              Storage Limit (GB, optional)
             </label>
             <input
               type="number"
@@ -417,6 +432,7 @@ export default function AddOrganizationModal({
               value={formData.storage_limit}
               onChange={handleInputChange}
               min="0"
+              step="0.01"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
               style={{
                 backgroundColor: colors.bg.primary,
@@ -426,6 +442,12 @@ export default function AddOrganizationModal({
               onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
               onBlur={e => (e.currentTarget.style.borderColor = colors.border)}
             />
+            <p
+              className="text-xs mt-1"
+              style={{ color: colors.text.secondary }}
+            >
+              Enter GB value; it will be sent to the backend in bytes.
+            </p>
           </div>
 
           {/* Credits */}

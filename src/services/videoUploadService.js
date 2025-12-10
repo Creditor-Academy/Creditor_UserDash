@@ -51,6 +51,21 @@ export async function uploadVideo(file, options = {}) {
       maxContentLength: Infinity,
     });
 
+    const responseMessage =
+      response.data?.message || response.data?.error || '';
+    const normalizedResponseMessage = responseMessage.toLowerCase();
+    if (
+      normalizedResponseMessage.includes('limit exceeded') ||
+      normalizedResponseMessage.includes('storage limit')
+    ) {
+      const limitError = new Error(
+        responseMessage || 'Storage limit exceeded while uploading video'
+      );
+      limitError.code = 'STORAGE_LIMIT_EXCEEDED';
+      limitError.isStorageLimitExceeded = true;
+      throw limitError;
+    }
+
     if (response?.data) {
       const { data, url, success, message } = response.data;
       const finalUrl = data?.url || url;
@@ -74,6 +89,20 @@ export async function uploadVideo(file, options = {}) {
         error.response.data?.message ||
         error.response.data?.error ||
         `Upload failed with status ${error.response.status}`;
+
+      const normalizedMessage = (errorMessage || '').toLowerCase();
+      if (
+        normalizedMessage.includes('limit exceeded') ||
+        normalizedMessage.includes('storage limit')
+      ) {
+        const limitError = new Error(
+          errorMessage || 'Storage limit exceeded while uploading video'
+        );
+        limitError.code = 'STORAGE_LIMIT_EXCEEDED';
+        limitError.isStorageLimitExceeded = true;
+        throw limitError;
+      }
+
       throw new Error(errorMessage);
     } else if (error.request) {
       throw new Error(
