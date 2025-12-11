@@ -78,7 +78,6 @@ export const SponsorAdManage = () => {
   const [editState, setEditState] = useState({
     title: '',
     description: '',
-    ctaText: '',
     ctaUrl: '',
   });
   const [deletingId, setDeletingId] = useState(null);
@@ -121,7 +120,6 @@ export const SponsorAdManage = () => {
     setEditState({
       title: ad.title || '',
       description: ad.description || '',
-      ctaText: ad.ctaText || '',
       ctaUrl: ad.ctaUrl || '',
     });
   };
@@ -416,25 +414,14 @@ export const SponsorAdManage = () => {
                 onChange={handleEditChange}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-ctaText">CTA Text</Label>
-                <Input
-                  id="edit-ctaText"
-                  name="ctaText"
-                  value={editState.ctaText}
-                  onChange={handleEditChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-ctaUrl">CTA URL</Label>
-                <Input
-                  id="edit-ctaUrl"
-                  name="ctaUrl"
-                  value={editState.ctaUrl}
-                  onChange={handleEditChange}
-                />
-              </div>
+            <div>
+              <Label htmlFor="edit-ctaUrl">CTA URL</Label>
+              <Input
+                id="edit-ctaUrl"
+                name="ctaUrl"
+                value={editState.ctaUrl}
+                onChange={handleEditChange}
+              />
             </div>
           </div>
           <DialogFooter>

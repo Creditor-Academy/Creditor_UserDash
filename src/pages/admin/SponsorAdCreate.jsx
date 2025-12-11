@@ -75,7 +75,6 @@ const initialForm = {
   mediaUrl: '',
   adType: 'Image',
   placement: 'dashboard_banner',
-  ctaText: '',
   ctaUrl: '',
   startDate: new Date().toISOString().split('T')[0],
   endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -153,8 +152,6 @@ export const SponsorAdCreate = () => {
     if (!formState.sponsorName.trim())
       nextErrors.sponsorName = 'Sponsor name is required';
     if (!formState.title.trim()) nextErrors.title = 'Title is required';
-    if (!formState.ctaText.trim())
-      nextErrors.ctaText = 'CTA button text is required';
     if (!isValidUrl(formState.ctaUrl))
       nextErrors.ctaUrl = 'Enter a valid HTTPS URL';
 
@@ -181,7 +178,6 @@ export const SponsorAdCreate = () => {
         description: formState.description,
         mediaFile: mediaFile || formState.mediaUrl, // File object or URL string
         linkUrl: formState.ctaUrl,
-        ctaText: formState.ctaText,
         sponsorName: formState.sponsorName,
         startDate: formState.startDate,
         endDate: formState.endDate,
@@ -433,28 +429,8 @@ export const SponsorAdCreate = () => {
               </div>
 
               <div>
-                <Label htmlFor="ctaText" className="text-sm font-medium">
-                  CTA Button Text <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="ctaText"
-                  name="ctaText"
-                  placeholder="e.g. Learn More, Watch Now, Get Started"
-                  value={formState.ctaText}
-                  onChange={handleInputChange}
-                  className="mt-1.5"
-                  required
-                />
-                {errors.ctaText && (
-                  <p className="text-xs text-red-500 mt-1">{errors.ctaText}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Text that will appear on your call-to-action button
-                </p>
-              </div>
-              <div>
                 <Label htmlFor="ctaUrl" className="text-sm font-medium">
-                  CTA URL <span className="text-red-500">*</span>
+                  CTA URL
                 </Label>
                 <Input
                   id="ctaUrl"

@@ -9,7 +9,6 @@ import { uploadVideo } from './videoUploadService';
  * @param {string} adData.description - Ad description
  * @param {File|string} adData.mediaFile - Image or video file to upload (or existing URL)
  * @param {string} adData.linkUrl - CTA link URL
- * @param {string} adData.ctaText - CTA button text (e.g. "Learn More", "Watch Now")
  * @param {string} adData.sponsorName - Sponsor name
  * @param {string} adData.startDate - Start date (ISO string or date string)
  * @param {string} adData.endDate - End date (ISO string or date string)
@@ -87,7 +86,6 @@ export async function createSponsorAd(adData) {
       image_url: imageUrl || '',
       video_url: videoUrl || '',
       link_url: adData.linkUrl?.trim() || '',
-      cta_text: adData.ctaText?.trim() || '',
       sponsor_name: adData.sponsorName?.trim() || '',
       start_date: formatDate(adData.startDate),
       end_date: formatDate(adData.endDate),
@@ -321,7 +319,6 @@ export async function deleteSponsorAd(adId) {
  * @param {string} requestData.contact_phone - Contact phone
  * @param {File|string} requestData.mediaFile - Image or video file (or existing URL)
  * @param {string} requestData.link_url - CTA link URL
- * @param {string} requestData.cta_text - CTA button text (e.g. "Learn More", "Watch Now")
  * @param {string} requestData.placement - Preferred placement (dashboard_banner, etc.)
  * @param {string} requestData.preferred_start_date - Start date (ISO string or date string)
  * @param {string} requestData.preferred_end_date - End date (ISO string or date string)
@@ -420,7 +417,6 @@ export async function submitSponsorAdRequest(requestData) {
       image_url: imageUrl || '',
       video_url: videoUrl || null,
       link_url: requestData.link_url?.trim() || '',
-      cta_text: requestData.cta_text?.trim() || '',
       preferred_position: preferredPosition,
       preferred_start_date: formatDate(requestData.preferred_start_date),
       preferred_end_date: formatDate(requestData.preferred_end_date),

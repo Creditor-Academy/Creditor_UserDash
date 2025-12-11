@@ -22,7 +22,6 @@ const initialForm = {
   startDate: '',
   endDate: '',
   website: '',
-  ctaText: '',
   notes: '',
   adType: 'Image',
 };
@@ -90,8 +89,6 @@ const SponsorRequestPage = () => {
         nextErrors.website = 'Please enter a valid URL';
       }
     }
-    if (!formState.ctaText.trim())
-      nextErrors.ctaText = 'CTA button text is required';
     if (!formState.startDate) nextErrors.startDate = 'Start date is required';
     if (!formState.endDate) nextErrors.endDate = 'End date is required';
     if (
@@ -121,7 +118,6 @@ const SponsorRequestPage = () => {
         contact_phone: formState.contactPhone,
         mediaFile: formState.mediaFile || formState.mediaUrl,
         link_url: formState.website,
-        cta_text: formState.ctaText,
         placement: formState.placement,
         preferred_start_date: formState.startDate,
         preferred_end_date: formState.endDate,

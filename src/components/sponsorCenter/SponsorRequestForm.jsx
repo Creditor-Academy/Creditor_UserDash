@@ -193,26 +193,6 @@ const SponsorRequestForm = ({
               <p className="text-xs text-red-500 mt-1">{errors.website}</p>
             )}
           </div>
-          <div>
-            <Label htmlFor="ctaText" className="text-sm font-medium">
-              CTA Button Text <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="ctaText"
-              name="ctaText"
-              placeholder="e.g. Learn More, Watch Now, Get Started"
-              value={formState.ctaText}
-              onChange={onInputChange}
-              className="mt-1.5"
-              required
-            />
-            {errors.ctaText && (
-              <p className="text-xs text-red-500 mt-1">{errors.ctaText}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Text that will appear on your call-to-action button
-            </p>
-          </div>
         </CardContent>
       </Card>
 
