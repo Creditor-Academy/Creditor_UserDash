@@ -54,14 +54,83 @@ import {
   fetchUserWebsiteServices,
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import CLogo from '@/assets/C-logo2.png';
+import OfferPopup from '@/components/offer/OfferPopup';
 
 export function Dashboard() {
+  const importantUpdateStyles = `
+    .important-updates-wrapper {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .important-update-card {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      min-height: fit-content;
+      box-sizing: border-box;
+      padding: clamp(10px, 1.6vw, 18px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      overflow-x: visible;
+    }
+    .important-update-card h4 {
+      font-size: clamp(14px, 1.3vw, 18px);
+      line-height: 1.2;
+    }
+    .important-update-card p {
+      font-size: clamp(12px, 1.05vw, 15px);
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    .important-update-card button {
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+    @media (max-width: 768px) {
+      .important-update-card {
+        padding: clamp(10px, 4vw, 18px);
+      }
+    }
+    @media (min-width: 1440px) {
+      .important-updates-wrapper {
+        max-width: 720px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+    .important-updates-scroll {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+      scroll-behavior: smooth;
+    }
+    .important-updates-scroll::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+    .important-updates-scroll::-webkit-scrollbar {
+      height: 6px;
+      background: transparent;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .important-updates-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .important-updates-scroll:hover::-webkit-scrollbar {
+      opacity: 1;
+    }
+  `;
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
   const { isChristmasMode } = useContext(SeasonalThemeContext);
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
+  const importantUpdatesScrollRef = useRef(null);
   const debouncedRefreshBalance = useCallback(() => {
     if (refreshBalanceRef.current) {
       clearTimeout(refreshBalanceRef.current);
@@ -401,6 +470,75 @@ export function Dashboard() {
       fetchUserHistory();
     }
   }, [memoizedUserProfile]);
+
+  // Auto-scroll for Important Updates section
+  useEffect(() => {
+    const scrollContainer = importantUpdatesScrollRef.current;
+    if (!scrollContainer) return;
+
+    let scrollTimeout = null;
+    let currentIndex = 0;
+
+    const stopScroll = () => {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = null;
+      }
+    };
+
+    const startScroll = () => {
+      if (scrollTimeout) return;
+
+      const cards = scrollContainer.querySelectorAll('.important-update-card');
+      if (cards.length <= 1) {
+        // No need to scroll if only one card
+        return;
+      }
+
+      scrollTimeout = setTimeout(() => {
+        // Use modulo to loop back to the start
+        currentIndex = (currentIndex + 1) % cards.length;
+        const nextCard = cards[currentIndex];
+
+        if (nextCard) {
+          let scrollLeft;
+          // When looping to the first card, scroll to the absolute beginning.
+          if (currentIndex === 0) {
+            scrollLeft = 0;
+          } else {
+            // Otherwise, calculate the position of the next card.
+            const parentRect = scrollContainer.getBoundingClientRect();
+            const childRect = nextCard.getBoundingClientRect();
+            scrollLeft =
+              childRect.left - parentRect.left + scrollContainer.scrollLeft;
+          }
+
+          scrollContainer.scrollTo({
+            left: scrollLeft,
+            behavior: 'smooth',
+          });
+        }
+
+        // Reset and schedule the next scroll
+        scrollTimeout = null;
+        startScroll();
+      }, 6000);
+    };
+
+    scrollContainer.addEventListener('mouseenter', stopScroll);
+    scrollContainer.addEventListener('mouseleave', startScroll);
+
+    // Start the initial scroll
+    startScroll();
+
+    return () => {
+      stopScroll();
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('mouseenter', stopScroll);
+        scrollContainer.removeEventListener('mouseleave', startScroll);
+      }
+    };
+  }, []);
 
   // Add retry functionality
   const handleRetry = () => {
@@ -753,7 +891,7 @@ export function Dashboard() {
     setScrollIndex(newIndex);
     if (courseScrollRef.current) {
       const cardWidth = courseScrollRef.current.firstChild?.offsetWidth || 320;
-      const scrollAmount = newIndex * (cardWidth + 24); // 24px gap
+      const scrollAmount = newIndex * (cardWidth + 16); // 16px gap (gap-4)
       courseScrollRef.current.scrollTo({
         left: scrollAmount,
         behavior: 'smooth',
@@ -779,12 +917,12 @@ export function Dashboard() {
       )}
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          {isChristmasMode && (
+          {isChristmasMode ? (
             <section className="christmas-hero-banner mb-8">
               <div className="christmas-hero-content">
                 <p className="christmas-hero-kicker">Exclusive Holiday Mode</p>
                 <h1>
-                  Season’s Greetings, {userName || 'Scholar'}! Keep learning
+                  Season's Greetings, {userName || 'Scholar'}! Keep learning
                   this Christmas 🎄
                 </h1>
                 <p>
@@ -805,16 +943,37 @@ export function Dashboard() {
                 <div className="floating-snow" aria-hidden="true" />
               </div>
             </section>
+          ) : (
+            <section className="athena-hero-banner mb-8">
+              <div className="athena-hero-content">
+                <p className="athena-hero-kicker">Welcome Back</p>
+                <h1>Welcome to Athena LMS, {userName || 'Scholar'}!</h1>
+                <p>
+                  Your journey to knowledge excellence continues. Track your
+                  progress, unlock achievements, and reach your learning goals.
+                </p>
+                <div className="athena-hero-cta">
+                  <span className="progress-pill">📊 Track Progress</span>
+                  <span className="achievement-pill">
+                    🎯 Unlock Achievements
+                  </span>
+                </div>
+              </div>
+              <div className="athena-hero-visual">
+                <img src={CLogo} alt="Creditor Academy Logo" loading="lazy" />
+                <div className="floating-glow" aria-hidden="true" />
+              </div>
+            </section>
           )}
           {/* Top grid section - align greeting with latest updates */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}
-            <div className="xl:col-span-8 space-y-8">
+            <div className="xl:col-span-8 space-y-4">
               {/* Enhanced Greeting Section */}
               <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200">
                 <div className="animate-gradient-shift absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10"></div>
                 <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
-                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-3">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
                       <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
@@ -851,90 +1010,67 @@ export function Dashboard() {
                     </div>
                   )}
 
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
+                  {/* LMS info placeholders to keep layout length consistent */}
+                  <div className="mt-4 px-1">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      <span>What we offer</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-blue-600 font-semibold">
-                          Completed
+                        <CheckCircle className="text-blue-600 w-6 h-6" />
+                        <span className="text-blue-800 font-semibold">
+                          Reliable
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.completedCourses || 0
-                        )}
+                      <p className="text-sm text-blue-700 mt-2">
+                        24/7 uptime with active monitoring.
                       </p>
-                      <p className="text-blue-600 text-sm">Courses finished</p>
                     </div>
                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-emerald-600 font-semibold">
-                          Modules
+                        <BookOpen className="text-emerald-600 w-6 h-6" />
+                        <span className="text-emerald-800 font-semibold">
+                          Guided
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-emerald-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.modulesCompleted || 0
-                        )}
-                      </p>
-                      <p className="text-emerald-600 text-sm">
-                        Modules Completed
+                      <p className="text-sm text-emerald-700 mt-2">
+                        Clear paths from basics to mastery.
                       </p>
                     </div>
                     <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
                       <div className="flex items-center gap-2">
-                        <Award className="text-orange-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-orange-600 font-semibold">
-                          Quizzes
+                        <Award className="text-orange-600 w-6 h-6" />
+                        <span className="text-orange-800 font-semibold">
+                          Certified
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-orange-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.assessmentsCompleted || 0
-                        )}
+                      <p className="text-sm text-orange-700 mt-2">
+                        Earn credentials you can share.
                       </p>
-                      <p className="text-orange-600 text-sm">Quiz Completed</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-purple-600 font-semibold">
-                          Enrolled
+                        <MonitorPlay className="text-purple-600 w-6 h-6" />
+                        <span className="text-purple-800 font-semibold">
+                          Flexible
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.allEnrolledCoursesCount || 0
-                        )}
+                      <p className="text-sm text-purple-700 mt-2">
+                        Live sessions plus on‑demand replays.
                       </p>
-                      <p className="text-purple-600 text-sm">Total Courses</p>
                     </div>
                     <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
                       <div className="flex items-center gap-2">
-                        <Clock className="text-yellow-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                        <span className="text-yellow-600 font-semibold">
-                          Pending
+                        <Clock className="text-yellow-600 w-6 h-6" />
+                        <span className="text-yellow-800 font-semibold">
+                          Evolving
                         </span>
                       </div>
-                      <p className="text-2xl font-bold text-yellow-700 mt-1">
-                        {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
-                        ) : (
-                          dashboardData.summary?.pendingCoursesCount || 0
-                        )}
-                      </p>
-                      <p className="text-yellow-600 text-sm">
-                        Courses Remaining
+                      <p className="text-sm text-yellow-700 mt-2">
+                        Continuous releases driven by feedback.
                       </p>
                     </div>
                   </div>
@@ -942,8 +1078,8 @@ export function Dashboard() {
               </div>
 
               {/* My Courses Section (carousel with arrows) */}
-              <div className="mb-8 relative">
-                <div className="flex items-center justify-between mb-6">
+              <div className="mb-6 relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
                   <h2 className="text-2xl font-bold text-gray-800">
                     {courseSectionTitle}
                   </h2>
@@ -965,14 +1101,14 @@ export function Dashboard() {
                 {coursesLoading ? (
                   <div className="relative">
                     <div
-                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden px-1 custom-horizontal-scroll w-full"
+                      className="flex gap-4 overflow-x-auto sm:overflow-x-hidden px-1 pb-1 custom-horizontal-scroll w-full"
                       aria-label="Loading your courses"
                     >
                       {Array.from({ length: shimmerCardCount }).map(
                         (_, idx) => (
                           <div
                             key={`course-shimmer-${idx}`}
-                            className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
+                            className="w-full min-w-0 sm:min-w-[296px] sm:max-w-[296px] flex-shrink-0"
                           >
                             <CourseShimmerCard />
                           </div>
@@ -996,13 +1132,13 @@ export function Dashboard() {
                     {/* Cards Row */}
                     <div
                       ref={courseScrollRef}
-                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 custom-horizontal-scroll w-full"
+                      className="flex gap-4 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 pb-1 custom-horizontal-scroll w-full"
                       style={{ scrollBehavior: 'smooth' }}
                     >
                       {userCourses.map(course => (
                         <div
                           key={course.id}
-                          className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
+                          className="w-full min-w-0 sm:min-w-[296px] sm:max-w-[296px] flex-shrink-0"
                         >
                           <CourseCard {...course} course={course} />
                         </div>
@@ -1064,7 +1200,7 @@ export function Dashboard() {
             </div>
 
             {/* Right section - enhanced sidebar widgets */}
-            <div className="xl:col-span-4 space-y-6">
+            <div className="xl:col-span-4 space-y-4">
               {/* Announcements*/}
               {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1074,14 +1210,112 @@ export function Dashboard() {
                 <DashboardAnnouncements />
               </div> */}
 
-              {/* Calendar */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  Your Calendar
-                </h3>
-                <div className="flex justify-center">
-                  <DashboardCalendar />
+              {/* Important Updates Section */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper">
+                <style>{importantUpdateStyles}</style>
+                <div className="mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-5 w-5 text-emerald-600" />
+                    <h3 className="text-lg font-bold text-gray-800">
+                      Important Updates
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Stay informed with the latest from Creditor Academy. For
+                    prompt resolution of any concerns, connect with our
+                    dedicated leads below.
+                  </p>
                 </div>
+                <div
+                  ref={importantUpdatesScrollRef}
+                  className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory important-updates-scroll"
+                >
+                  {/* Athena LMS and Login Issues */}
+                  <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white transition-all duration-300 hover:shadow-md hover:border-indigo-200 flex-shrink-0 snap-center important-update-card h-full">
+                    <div className="flex items-start gap-3 h-full">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <MonitorPlay className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
+                          Athena LMS and Login Issues
+                        </h4>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          If you're experiencing challenges with Athena LMS
+                          access or login, reach out to our Platform Lead for
+                          expert assistance.
+                        </p>
+                        <Button
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto mt-auto"
+                          onClick={() =>
+                            window.open(
+                              'https://scheduler.zoom.us/daniyal-hashim/athena-lesson-editor-team',
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }
+                        >
+                          Schedule Now
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payments, Credits, and Debits Issues */}
+                  <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white transition-all duration-300 hover:shadow-md hover:border-emerald-200 flex-shrink-0 snap-center important-update-card h-full">
+                    <div className="flex items-start gap-3 h-full">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
+                          Credits and Debits Issues
+                        </h4>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          For any queries or issues related to payments,
+                          credits, or debits, consult our Payment Lead to ensure
+                          smooth and accurate handling.
+                        </p>
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto mt-auto"
+                          onClick={() =>
+                            window.open(
+                              'https://scheduler.zoom.us/mausam-jha',
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }
+                        >
+                          Schedule Now
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress tracker maintenance */}
+                  <div className="rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white transition-all duration-300 hover:shadow-md hover:border-amber-200 flex-shrink-0 snap-center important-update-card h-full">
+                    <div className="flex items-start gap-3 h-full">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
+                          Progress Tracker Under maintenance
+                        </h4>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          Progress tracker is under maintenance. You can track
+                          Book Smart; Street Smart tracking is temporarily
+                          unavailable.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calendar */}
+              <div className="w-full">
+                <DashboardCalendar />
               </div>
 
               {/* Todo */}
@@ -1092,14 +1326,14 @@ export function Dashboard() {
             </div>
           </div>
           {/* Catalog Banner Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-            <div className="text-center mb-6"></div>
+          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+            <div className="text-center mb-4"></div>
             <DashboardCarousel />
           </div>
 
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 <MonitorPlay className="h-6 w-6 text-purple-500" />
                 <h2 className="text-2xl font-bold text-gray-800">
                   Learning Sessions
@@ -1110,11 +1344,11 @@ export function Dashboard() {
           </div>
           <UpcomingCourses />
           {/* Groups Preview Section */}
-          <div className="mb-8">
+          <div className="mb-6">
             <DashboardGroup />
           </div>
           {/* Services using credits */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="rounded-2xl shadow-lg border border-gray-200 bg-white p-6 md:p-8">
               {/* Simple, compact header */}
               <div className="flex items-start justify-between mb-4">
@@ -1124,10 +1358,14 @@ export function Dashboard() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">
-                      Services
+                      Creditor Academy Services
                     </h2>
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      Use credits to book consultations and website packs
+                    <p className="text-sm text-gray-600 mt-1 max-w-2xl">
+                      At Creditor Academy, we offer a comprehensive suite of
+                      professional services designed to empower businesses and
+                      individuals with tailored solutions. Explore our key
+                      offerings below and schedule a consultation to get
+                      started.
                     </p>
                   </div>
                 </div>
@@ -1171,55 +1409,7 @@ export function Dashboard() {
                 >
                   {/* Panel: Services */}
                   <div className="w-1/2 pr-0 md:pr-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Consultation */}
-                      <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-emerald-200">
-                        {/* decorative glows */}
-                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-emerald-300/30 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-emerald-200/30 blur-3xl" />
-                        {/* illustration */}
-                        <img
-                          src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/consult.png"
-                          alt="consultation"
-                          loading="lazy"
-                          className="pointer-events-none absolute -right-3 bottom-0 w-44 opacity-35 mix-blend-multiply transition-opacity duration-300 group-hover:opacity-50"
-                        />
-                        <div className="relative z-10 flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shadow text-white ring-4 ring-white/60">
-                            <Video size={20} />
-                          </div>
-                          <div className="flex-1 min-w-0 pr-24 sm:pr-28 md:pr-40">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                                Live guidance
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mt-2">
-                              Consultation
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Book a live session using your credits and get
-                              expert guidance.
-                            </p>
-                            <div className="mt-4 flex items-center gap-2">
-                              <Button
-                                className="bg-[#d10000] hover:bg-[#b00000] text-white"
-                                onClick={() => setShowConsultBooking(true)}
-                              >
-                                Book session
-                              </Button>
-
-                              <Button
-                                variant="outline"
-                                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => setShowConsultInfo(true)}
-                              >
-                                Learn more
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {/* Website Services */}
                       <div className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-blue-200">
                         {/* decorative glows */}
@@ -1232,41 +1422,102 @@ export function Dashboard() {
                           loading="lazy"
                           className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
                         />
-                        <div className="relative z-10 flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow text-white ring-4 ring-white/60">
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
                             <MonitorPlay size={20} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-200">
-                                Digital packs
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mt-2">
-                              Website Services
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Launch or upgrade your site.
-                              <br className="hidden sm:inline" /> Pay with
-                              credits for eligible packs.
-                            </p>
-                            <div className="mt-4 flex items-center gap-2">
-                              <Button
-                                className="bg-[#d10000] hover:bg-[#b00000] text-white"
-                                onClick={() => setShowWebsiteModal(true)}
-                              >
-                                Get started
-                              </Button>
-
-                              <Button
-                                variant="outline"
-                                className="bg-white text-black border-gray-300 hover:bg-gray-50 hover:text-black"
-                                onClick={() => setShowWebsiteDetails(true)}
-                              >
-                                Learn more
-                              </Button>
-                            </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Website Services
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                            Elevate your online presence with our expert website
+                            design, development, and maintenance solutions.
+                            Whether you're launching a new site or optimizing an
+                            existing one, we deliver user-friendly, responsive,
+                            and high-performing websites that drive results.
+                          </p>
+                          <Button
+                            className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                            onClick={() =>
+                              window.open(
+                                'https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting',
+                                '_blank',
+                                'noopener,noreferrer'
+                              )
+                            }
+                          >
+                            Schedule Now
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Digital Marketing and SEO Services */}
+                      <div className="group relative overflow-hidden rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-purple-200">
+                        {/* decorative glows */}
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-purple-300/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-purple-200/30 blur-3xl" />
+                        {/* illustration */}
+                        <img
+                          src="/Creditor_academy.png"
+                          alt="digital marketing services"
+                          loading="lazy"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                        />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
+                            <Target size={20} />
                           </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Digital Marketing and SEO Services
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                            Boost your visibility and growth with our strategic
+                            digital marketing and SEO expertise. From targeted
+                            campaigns and content creation to advanced search
+                            engine optimization, we help you attract, engage,
+                            and convert your audience effectively.
+                          </p>
+                          <Button
+                            className="bg-gray-300 text-gray-500 w-full cursor-not-allowed opacity-60"
+                            disabled
+                          >
+                            Coming Soon...
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Recruitment and Staffing Services */}
+                      <div className="group relative overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-orange-200">
+                        {/* decorative glows */}
+                        <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-orange-300/30 blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-orange-200/30 blur-3xl" />
+                        {/* illustration */}
+                        <img
+                          src="/Creditor_academy.png"
+                          alt="recruitment services"
+                          loading="lazy"
+                          className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                        />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="w-12 h-12 rounded-xl bg-orange-600 flex items-center justify-center shadow text-white ring-4 ring-white/60 mb-4">
+                            <GraduationCap size={20} />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            Recruitment and Staffing Services (Including
+                            Payroll)
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-4 flex-grow">
+                            Streamline your talent acquisition with our
+                            end-to-end recruitment, staffing, and payroll
+                            management services. We connect you with top-tier
+                            professionals while handling compliance, onboarding,
+                            and seamless payroll processing for hassle-free
+                            operations.
+                          </p>
+                          <Button
+                            className="bg-gray-300 text-gray-500 w-full cursor-not-allowed opacity-60"
+                            disabled
+                          >
+                            Coming Soon...
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -2263,6 +2514,9 @@ export function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Offer Popup */}
+      <OfferPopup />
     </div>
   );
 }
