@@ -55,6 +55,7 @@ import {
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import CLogo from '@/assets/C-logo2.png';
+import VCMVideo from '@/assets/VCM.mp4';
 import OfferPopup from '@/components/offer/OfferPopup';
 
 export function Dashboard() {
@@ -935,10 +936,14 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="christmas-hero-visual">
-                <img
-                  src="https://cdn.pixabay.com/animation/2024/10/16/09/27/09-27-15-148_512.gif"
-                  alt="Festive tree with gifts"
-                  loading="lazy"
+                <video
+                  src={VCMVideo}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover rounded-2xl"
+                  aria-label="Festive tree with gifts"
                 />
                 <div className="floating-snow" aria-hidden="true" />
               </div>
