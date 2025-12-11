@@ -13,6 +13,7 @@ import Resources from '@/components/Resources';
 import AdminPayments from '@/components/credits/AdminPayments';
 import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
+import StorageTokens from './StorageTokens';
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,6 @@ import {
   FaUsers,
   FaBookOpen,
   FaEdit,
-  FaFolder,
   FaCalendarAlt,
   FaTicketAlt,
   FaExclamationTriangle,
@@ -30,10 +30,11 @@ import {
   FaImages,
   FaCreditCard,
   FaChartLine,
+  FaCloud,
 } from 'react-icons/fa';
 
 const InstructorPage = () => {
-  const { isInstructorOrAdmin } = useAuth();
+  const { isInstructorOrAdmin, hasRole } = useAuth();
   const isAllowed = isInstructorOrAdmin();
   const [collapsed, setCollapsed] = useState(true); // Start with sidebar collapsed
   const [userManagementView, setUserManagementView] = useState(() => {
@@ -57,6 +58,7 @@ const InstructorPage = () => {
     if (path.includes('/support-tickets')) return 'tickets';
     if (path.includes('/assets')) return 'resources';
     if (path.includes('/payments')) return 'payments';
+    if (path.includes('/storage-tokens') && hasRole('admin')) return 'storage';
     return 'course'; // default
   };
 
@@ -70,6 +72,13 @@ const InstructorPage = () => {
   useEffect(() => {
     setActiveTab(getActiveTabFromPath());
   }, [location.pathname]);
+
+  useEffect(() => {
+    const isStorageRoute = location.pathname.includes('/storage-tokens');
+    if (isStorageRoute && !hasRole('admin')) {
+      navigate('/instructor/payments', { replace: true });
+    }
+  }, [location.pathname, hasRole, navigate]);
 
   // Redirect to default section if on base instructor path
   useEffect(() => {
@@ -253,6 +262,20 @@ const InstructorPage = () => {
           >
             <FaCreditCard /> Payments
           </button>
+          {hasRole('admin') && (
+            <button
+              onClick={() =>
+                handleNavigation('storage', '/instructor/storage-tokens')
+              }
+              className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'storage'
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'hover:bg-gray-100 text-gray-700'
+              }`}
+            >
+              <FaCloud /> Storage & Tokens
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('analytics')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -413,6 +436,11 @@ const InstructorPage = () => {
             {activeTab === 'payments' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AdminPayments />
+              </section>
+            )}
+            {hasRole('admin') && activeTab === 'storage' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <StorageTokens />
               </section>
             )}
             {activeTab === 'analytics' && (

@@ -308,6 +308,14 @@ function App() {
                 }
               />
               <Route
+                path="/instructor/storage-tokens"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/instructor/courses/:courseId/modules"
                 element={
                   <ProtectedRoute>
