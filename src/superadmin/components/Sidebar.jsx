@@ -4,6 +4,7 @@ import {
   Building2,
   Headset,
   CreditCard,
+  Database,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
@@ -32,6 +33,11 @@ export default function Sidebar() {
       path: 'supportticket',
     },
     { icon: <CreditCard size={22} />, label: 'Billing', path: 'billing' },
+    {
+      icon: <Database size={22} />,
+      label: 'Tokens & Space',
+      path: 'tokens-space',
+    },
   ];
 
   const handleNavClick = path => {

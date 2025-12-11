@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
 import {
   Search,
-  Filter,
   Eye,
   Download,
   MoreVertical,
@@ -14,8 +13,6 @@ import {
   DollarSign,
   Bell,
   Send,
-  CreditCard,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -178,6 +175,20 @@ const BillDetailModal = ({ bill, isOpen, onClose, onMarkAsPaid }) => {
                 className="text-xs font-medium mb-1"
                 style={{ color: colors.text.secondary }}
               >
+                Paid For
+              </p>
+              <p
+                style={{ color: colors.text.primary }}
+                className="text-sm font-medium"
+              >
+                {bill.paidFor}
+              </p>
+            </div>
+            <div>
+              <p
+                className="text-xs font-medium mb-1"
+                style={{ color: colors.text.secondary }}
+              >
                 Issued Date
               </p>
               <p
@@ -227,6 +238,20 @@ const BillDetailModal = ({ bill, isOpen, onClose, onMarkAsPaid }) => {
                 className="text-sm font-medium"
               >
                 {bill.spaceUsed} GB
+              </p>
+            </div>
+            <div>
+              <p
+                className="text-xs font-medium mb-1"
+                style={{ color: colors.text.secondary }}
+              >
+                Tokens
+              </p>
+              <p
+                style={{ color: colors.text.primary }}
+                className="text-sm font-medium"
+              >
+                {bill.tokenCount?.toLocaleString() ?? '—'} M
               </p>
             </div>
           </div>
@@ -335,6 +360,7 @@ export default function Billing() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedBill, setSelectedBill] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [revenueView, setRevenueView] = useState('month');
 
   // Mock data
   useEffect(() => {
@@ -373,11 +399,15 @@ export default function Billing() {
           status: 'paid',
           paymentMethod: 'credit-card',
           spaceUsed: 120,
+          tokenCount: 32,
+          paidFor: 'Monthly subscription',
         },
         previous: {
           status: 'paid',
           paymentMethod: 'credit-card',
           spaceUsed: 110,
+          tokenCount: 30,
+          paidFor: 'Monthly subscription',
         },
       },
       {
@@ -386,11 +416,18 @@ export default function Billing() {
         planName: 'Growth',
         planPrice: 499,
         billingCycle: 'Monthly',
-        current: { status: 'pending', spaceUsed: 260 },
+        current: {
+          status: 'pending',
+          spaceUsed: 260,
+          tokenCount: 88,
+          paidFor: 'Tokens addon',
+        },
         previous: {
           status: 'paid',
           paymentMethod: 'bank-transfer',
           spaceUsed: 240,
+          tokenCount: 82,
+          paidFor: 'Monthly subscription',
         },
       },
       {
@@ -399,8 +436,18 @@ export default function Billing() {
         planName: 'Enterprise',
         planPrice: 999,
         billingCycle: 'Monthly',
-        current: { status: 'overdue', spaceUsed: 540 },
-        previous: { status: 'pending', spaceUsed: 500 },
+        current: {
+          status: 'overdue',
+          spaceUsed: 540,
+          tokenCount: 210,
+          paidFor: 'Storage addon',
+        },
+        previous: {
+          status: 'pending',
+          spaceUsed: 500,
+          tokenCount: 198,
+          paidFor: 'Monthly subscription',
+        },
       },
       {
         id: 'org-4',
@@ -412,11 +459,15 @@ export default function Billing() {
           status: 'paid',
           paymentMethod: 'bank-transfer',
           spaceUsed: 140,
+          tokenCount: 50,
+          paidFor: 'Annual subscription',
         },
         previous: {
           status: 'paid',
           paymentMethod: 'credit-card',
           spaceUsed: 135,
+          tokenCount: 48,
+          paidFor: 'Annual subscription',
         },
       },
       {
@@ -425,8 +476,18 @@ export default function Billing() {
         planName: 'Growth',
         planPrice: 499,
         billingCycle: 'Monthly',
-        current: { status: 'pending', spaceUsed: 300 },
-        previous: { status: 'overdue', spaceUsed: 280 },
+        current: {
+          status: 'pending',
+          spaceUsed: 300,
+          tokenCount: 120,
+          paidFor: 'Tokens addon',
+        },
+        previous: {
+          status: 'overdue',
+          spaceUsed: 280,
+          tokenCount: 115,
+          paidFor: 'Storage addon',
+        },
       },
       {
         id: 'org-6',
@@ -438,11 +499,15 @@ export default function Billing() {
           status: 'paid',
           paymentMethod: 'credit-card',
           spaceUsed: 800,
+          tokenCount: 260,
+          paidFor: 'Annual subscription',
         },
         previous: {
           status: 'paid',
           paymentMethod: 'credit-card',
           spaceUsed: 760,
+          tokenCount: 250,
+          paidFor: 'Annual subscription',
         },
       },
     ];
@@ -481,6 +546,8 @@ export default function Billing() {
         reminderSent: false,
         invoiceSent: false,
         spaceUsed: details.spaceUsed || 0,
+        tokenCount: details.tokenCount ?? 0,
+        paidFor: details.paidFor || 'Subscription',
       };
     };
 
@@ -572,16 +639,62 @@ export default function Billing() {
       (sum, b) => sum + (b.status === 'pending' ? b.amount : 0),
       0
     ),
-    overdueAmount: periodBills.reduce(
-      (sum, b) => sum + (b.status === 'overdue' ? b.amount : 0),
+    cancelledAmount: periodBills.reduce(
+      (sum, b) => sum + (b.status === 'cancelled' ? b.amount : 0),
       0
     ),
     totalBills: periodBills.length,
     paidBills: periodBills.filter(b => b.status === 'paid').length,
     pendingBills: periodBills.filter(b => b.status === 'pending').length,
-    overdueBills: periodBills.filter(b => b.status === 'overdue').length,
+    cancelledBills: periodBills.filter(b => b.status === 'cancelled').length,
     organizations: new Set(periodBills.map(b => b.organization)).size,
   };
+
+  const revenueWindow = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - 6
+    );
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const sums = { day: 0, week: 0, month: 0, year: 0 };
+
+    periodBills.forEach(bill => {
+      if (bill.status !== 'paid' || !bill.paidDate) return;
+      const paidDate = new Date(bill.paidDate);
+
+      if (paidDate.toDateString() === now.toDateString()) {
+        sums.day += bill.amount;
+      }
+
+      if (paidDate >= startOfWeek && paidDate <= now) {
+        sums.week += bill.amount;
+      }
+
+      if (
+        paidDate.getMonth() === currentMonth &&
+        paidDate.getFullYear() === currentYear
+      ) {
+        sums.month += bill.amount;
+      }
+
+      if (paidDate.getFullYear() === currentYear) {
+        sums.year += bill.amount;
+      }
+    });
+
+    return sums;
+  }, [periodBills]);
+
+  const revenueLabel = {
+    day: 'Today',
+    week: 'Last 7 days',
+    month: 'This month',
+    year: 'This year',
+  }[revenueView];
 
   const periodLabel =
     billingPeriod === 'current'
@@ -604,76 +717,39 @@ export default function Billing() {
           </p>
         </div>
 
-        {/* Period filter & meta */}
-        <div
-          className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl"
-          style={{
-            backgroundColor: colors.bg.secondary,
-            border: `1px solid ${colors.border}`,
-          }}
-        >
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter size={16} style={{ color: colors.text.secondary }} />
-            <span
-              className="text-sm font-medium"
-              style={{ color: colors.text.primary }}
-            >
-              Billing period
+        {/* Revenue window control */}
+        <div className="flex justify-end">
+          <div
+            className="flex items-center gap-3 px-3 py-2 rounded-full border shadow-sm"
+            style={{
+              backgroundColor: colors.bg.secondary,
+              borderColor: colors.border,
+            }}
+          >
+            <span className="text-sm" style={{ color: colors.text.secondary }}>
+              Revenue window
             </span>
-            {['current', 'previous', 'all'].map(period => (
-              <button
-                key={period}
-                onClick={() => {
-                  setBillingPeriod(period);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  billingPeriod === period
-                    ? 'shadow-md'
-                    : 'hover:shadow-sm hover:-translate-y-0.5'
-                }`}
-                style={{
-                  backgroundColor:
-                    billingPeriod === period
-                      ? colors.accent || '#3B82F6'
-                      : colors.bg.primary,
-                  color:
-                    billingPeriod === period ? '#fff' : colors.text.primary,
-                  border: `1px solid ${
-                    billingPeriod === period
-                      ? colors.accent || '#3B82F6'
-                      : colors.border
-                  }`,
-                }}
-              >
-                {period === 'current'
-                  ? 'Current month'
-                  : period === 'previous'
-                    ? 'Previous month'
-                    : 'All periods'}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-4 flex-wrap text-sm">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={16} style={{ color: colors.text.secondary }} />
-              <span style={{ color: colors.text.secondary }}>
-                {stats.organizations} organizations in this view
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CreditCard size={16} style={{ color: colors.text.secondary }} />
-              <span style={{ color: colors.text.secondary }}>
-                Plans: Starter, Growth, Enterprise
-              </span>
-            </div>
+            <select
+              value={revenueView}
+              onChange={e => setRevenueView(e.target.value)}
+              className="text-xs px-3 py-1.5 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              style={{
+                backgroundColor: colors.bg.primary,
+                borderColor: colors.border,
+                color: colors.text.primary,
+              }}
+            >
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Total Revenue */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Total Revenue (with window selector) */}
           <div
             className="p-5 rounded-2xl"
             style={{
@@ -681,18 +757,18 @@ export default function Billing() {
               border: `1px solid ${colors.border}`,
             }}
           >
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="space-y-1">
                 <p
                   className="text-sm font-medium"
                   style={{ color: colors.text.secondary }}
                 >
-                  Total Revenue
+                  Revenue — {revenueLabel}
                 </p>
-                <h3 className="text-2xl font-bold mt-1">
-                  ${stats.totalRevenue.toFixed(2)}
+                <h3 className="text-2xl font-bold">
+                  ${revenueWindow[revenueView].toFixed(2)}
                 </h3>
-                <p className="text-xs mt-2" style={{ color: '#10B981' }}>
+                <p className="text-xs" style={{ color: '#10B981' }}>
                   {stats.paidBills} paid invoices
                 </p>
               </div>
@@ -733,38 +809,6 @@ export default function Billing() {
                 style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}
               >
                 <Clock className="h-6 w-6" style={{ color: '#F59E0B' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Overdue Amount */}
-          <div
-            className="p-5 rounded-2xl"
-            style={{
-              backgroundColor: colors.bg.secondary,
-              border: `1px solid ${colors.border}`,
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: colors.text.secondary }}
-                >
-                  Overdue Amount
-                </p>
-                <h3 className="text-2xl font-bold mt-1">
-                  ${stats.overdueAmount.toFixed(2)}
-                </h3>
-                <p className="text-xs mt-2" style={{ color: '#EF4444' }}>
-                  {stats.overdueBills} overdue invoices
-                </p>
-              </div>
-              <div
-                className="p-3 rounded-full"
-                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
-              >
-                <AlertCircle className="h-6 w-6" style={{ color: '#EF4444' }} />
               </div>
             </div>
           </div>
@@ -891,7 +935,19 @@ export default function Billing() {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
+                    Paid For
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     Space Used
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    Tokens (M)
                   </th>
                   <th
                     scope="col"
@@ -951,10 +1007,22 @@ export default function Billing() {
                         </div>
                       </td>
                       <td
+                        className="px-6 py-4 whitespace-normal"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {bill.paidFor}
+                      </td>
+                      <td
                         className="px-6 py-4 whitespace-nowrap text-sm"
                         style={{ color: colors.text.secondary }}
                       >
                         {bill.spaceUsed} GB
+                      </td>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-sm"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {bill.tokenCount?.toLocaleString() ?? '—'} M
                       </td>
                       <td
                         className="px-6 py-4 whitespace-nowrap text-sm"
@@ -989,24 +1057,6 @@ export default function Billing() {
                             />
                           </button>
                           <button
-                            onClick={() => handleSendReminder(bill.id)}
-                            className="p-1.5 rounded-md hover:bg-yellow-50 dark:hover:bg-yellow-900/40 transition-colors"
-                            title={
-                              bill.reminderSent
-                                ? 'Reminder sent'
-                                : 'Send reminder'
-                            }
-                          >
-                            <Bell
-                              className="h-4 w-4"
-                              style={{
-                                color: bill.reminderSent
-                                  ? '#F59E0B'
-                                  : colors.text.secondary,
-                              }}
-                            />
-                          </button>
-                          <button
                             onClick={() => handleSendInvoice(bill.id)}
                             className="p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-colors"
                             title={
@@ -1022,30 +1072,13 @@ export default function Billing() {
                               }}
                             />
                           </button>
-                          {bill.status !== 'paid' && (
-                            <button
-                              onClick={() =>
-                                handleMarkAsPaid(
-                                  bill.id,
-                                  bill.paymentMethod || 'manual-update'
-                                )
-                              }
-                              className="p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/40 transition-colors"
-                              title="Mark as paid"
-                            >
-                              <CheckCircle
-                                className="h-4 w-4"
-                                style={{ color: '#10B981' }}
-                              />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
+                    <td colSpan={9} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <Search
                           className="h-12 w-12 mb-4 opacity-30"
