@@ -42,56 +42,15 @@ const SponsorAdCard = ({
   const showFallback = !hasValidMedia;
 
   const actionButtons = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex justify-center">
       {onView && (
         <Button
           variant="outline"
           size="sm"
           onClick={() => onView(ad)}
-          className="rounded-full"
+          className="rounded-full w-full"
         >
           View
-        </Button>
-      )}
-      {onEdit && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onEdit(ad)}
-          className="rounded-full"
-        >
-          Edit
-        </Button>
-      )}
-      {onToggleStatus &&
-        ad.status !== 'Pending' &&
-        ad.status !== 'Rejected' && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onToggleStatus(ad)}
-            className="rounded-full"
-          >
-            {ad.status === 'Approved' ? 'Pause' : 'Resume'}
-          </Button>
-        )}
-      {onResubmit && ad.status === 'Rejected' && (
-        <Button
-          size="sm"
-          className="rounded-full bg-blue-600 text-white"
-          onClick={() => onResubmit(ad)}
-        >
-          Resubmit
-        </Button>
-      )}
-      {onDelete && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full text-red-600 border-red-200 hover:bg-red-50"
-          onClick={() => onDelete(ad)}
-        >
-          Delete
         </Button>
       )}
     </div>
@@ -104,7 +63,7 @@ const SponsorAdCard = ({
         isPreview && 'border-dashed border-blue-200'
       )}
     >
-      <CardHeader className="space-y-2">
+      <CardHeader className="space-y-2 pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
             {ad.adTitle || 'Untitled Placement'}
@@ -115,7 +74,7 @@ const SponsorAdCard = ({
           {ad.sponsorName || 'Sponsor TBD'}
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pb-4">
         <div className="w-full h-44 rounded-2xl bg-gray-100 overflow-hidden relative">
           {hasValidMedia && ad.mediaType === 'video' ? (
             <video
@@ -139,8 +98,12 @@ const SponsorAdCard = ({
             </div>
           )}
         </div>
-        <p className="text-sm text-gray-600 line-clamp-2">{ad.description}</p>
-        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+        {ad.description && (
+          <p className="text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">
+            {ad.description}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-3 text-xs text-gray-500 min-h-[1.75rem]">
           {ad.placement && (
             <span className="rounded-full bg-gray-100 px-3 py-1 capitalize">
               {ad.placement.replace(/_/g, ' ')}
@@ -159,10 +122,22 @@ const SponsorAdCard = ({
           )}
         </div>
         {!isPreview && (
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+          <div className="flex items-center gap-3 text-xs text-gray-500 min-h-[1.25rem]">
             <span className="inline-flex items-center gap-1">
               <CalendarDays className="w-3 h-3" />
-              {ad.startDate} - {ad.endDate}
+              {ad.startDate &&
+                new Date(ad.startDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}{' '}
+              -{' '}
+              {ad.endDate &&
+                new Date(ad.endDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
             </span>
             {typeof ad.budget !== 'undefined' && (
               <span>Budget: ${Number(ad.budget).toLocaleString()}</span>
@@ -171,9 +146,7 @@ const SponsorAdCard = ({
         )}
       </CardContent>
       {!hideActions && !isPreview && (
-        <CardFooter className="flex flex-wrap gap-2">
-          {actionButtons}
-        </CardFooter>
+        <CardFooter className="pt-4 pb-4 px-6">{actionButtons}</CardFooter>
       )}
     </Card>
   );

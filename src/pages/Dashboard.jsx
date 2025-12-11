@@ -136,6 +136,7 @@ export function Dashboard() {
   const { getPrimaryAdForPlacement, getActiveAdsByPlacement } = useSponsorAds();
   const [isSponsorPopupOpen, setIsSponsorPopupOpen] = useState(false);
   const [bannerCarouselIndex, setBannerCarouselIndex] = useState(0);
+  const [sidebarCarouselIndex, setSidebarCarouselIndex] = useState(0);
 
   const dashboardBannerAds = useMemo(() => {
     const activeAds = getActiveAdsByPlacement('dashboard_banner', {
@@ -160,9 +161,27 @@ export function Dashboard() {
     [dashboardBannerAds]
   );
 
+  const dashboardSidebarAds = useMemo(() => {
+    const activeAds = getActiveAdsByPlacement('dashboard_sidebar', {
+      role: userRole,
+    });
+    // Sort by LIFO (Last In First Out) - newest ads first
+    // Sort by startDate descending (newest first), then by ID descending as fallback
+    const sortedAds = [...activeAds].sort((a, b) => {
+      const dateA = new Date(a.startDate || 0).getTime();
+      const dateB = new Date(b.startDate || 0).getTime();
+      if (dateB !== dateA) {
+        return dateB - dateA; // Newer date first
+      }
+      // If dates are equal, sort by ID descending (assuming higher ID = newer)
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    return sortedAds.slice(0, 3); // Only show first 3 ads (newest 3)
+  }, [getActiveAdsByPlacement, userRole]);
+
   const dashboardSidebarAd = useMemo(
-    () => getPrimaryAdForPlacement('dashboard_sidebar', { role: userRole }),
-    [getPrimaryAdForPlacement, userRole]
+    () => (dashboardSidebarAds.length > 0 ? dashboardSidebarAds[0] : null),
+    [dashboardSidebarAds]
   );
 
   const popupAd = useMemo(
@@ -197,7 +216,7 @@ export function Dashboard() {
     return () => clearTimeout(timer);
   }, [popupAd]);
 
-  // Auto-rotate banner carousel
+  // Auto-rotate banner carousel every 10 seconds
   useEffect(() => {
     if (dashboardBannerAds.length <= 1) return;
 
@@ -205,10 +224,43 @@ export function Dashboard() {
       setBannerCarouselIndex(prev =>
         prev === dashboardBannerAds.length - 1 ? 0 : prev + 1
       );
-    }, 5000); // Rotate every 5 seconds
+    }, 10000); // Rotate every 10 seconds
 
     return () => clearInterval(interval);
   }, [dashboardBannerAds.length]);
+
+  // Reset carousel index when ads change
+  useEffect(() => {
+    setBannerCarouselIndex(0);
+  }, [dashboardBannerAds.length]);
+
+  // Auto-rotate sidebar carousel every 5-6 seconds (randomized between 5-6)
+  useEffect(() => {
+    if (dashboardSidebarAds.length <= 1) return;
+
+    const getRandomInterval = () => Math.random() * 1000 + 5000; // 5000-6000ms
+
+    let timeoutId;
+    const scheduleNext = () => {
+      timeoutId = setTimeout(() => {
+        setSidebarCarouselIndex(prev =>
+          prev === dashboardSidebarAds.length - 1 ? 0 : prev + 1
+        );
+        scheduleNext();
+      }, getRandomInterval());
+    };
+
+    scheduleNext();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [dashboardSidebarAds.length]);
+
+  // Reset sidebar carousel index when ads change
+  useEffect(() => {
+    setSidebarCarouselIndex(0);
+  }, [dashboardSidebarAds.length]);
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
@@ -1040,68 +1092,6 @@ export function Dashboard() {
               </div>
             </section>
           )}
-          {dashboardBannerAds.length > 0 && (
-            <div className="mb-6 relative">
-              <div className="relative overflow-hidden rounded-3xl">
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{
-                    transform: `translateX(-${bannerCarouselIndex * 100}%)`,
-                  }}
-                >
-                  {dashboardBannerAds.map((ad, index) => (
-                    <div key={ad.id} className="w-full flex-shrink-0">
-                      <SponsorBanner ad={ad} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Navigation Arrows */}
-              {dashboardBannerAds.length > 1 && (
-                <>
-                  <button
-                    onClick={() =>
-                      setBannerCarouselIndex(prev =>
-                        prev === 0 ? dashboardBannerAds.length - 1 : prev - 1
-                      )
-                    }
-                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all"
-                    aria-label="Previous ad"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setBannerCarouselIndex(prev =>
-                        prev === dashboardBannerAds.length - 1 ? 0 : prev + 1
-                      )
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all"
-                    aria-label="Next ad"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-700" />
-                  </button>
-
-                  {/* Dots Indicator */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                    {dashboardBannerAds.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setBannerCarouselIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          index === bannerCarouselIndex
-                            ? 'bg-white w-6'
-                            : 'bg-white/50 hover:bg-white/75'
-                        }`}
-                        aria-label={`Go to ad ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}
@@ -1314,6 +1304,46 @@ export function Dashboard() {
                   </div>
                 )}
               </div>
+              {/* Dashboard Banner Ads - Between Courses and Calendar */}
+              {dashboardBannerAds.length > 0 && (
+                <div className="mb-6 relative">
+                  <div className="relative overflow-hidden rounded-2xl">
+                    <div
+                      className="flex transition-transform duration-500 ease-in-out"
+                      style={{
+                        transform: `translateX(-${bannerCarouselIndex * 100}%)`,
+                      }}
+                    >
+                      {dashboardBannerAds.map((ad, index) => (
+                        <div key={ad.id} className="w-full flex-shrink-0">
+                          <SponsorBanner
+                            ad={ad}
+                            isActive={index === bannerCarouselIndex}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dots Indicator */}
+                  {dashboardBannerAds.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                      {dashboardBannerAds.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setBannerCarouselIndex(index)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            index === bannerCarouselIndex
+                              ? 'bg-white w-6'
+                              : 'bg-white/50 hover:bg-white/75'
+                          }`}
+                          aria-label={`Go to ad ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Latest Updates Section */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -1338,8 +1368,45 @@ export function Dashboard() {
 
             {/* Right section - enhanced sidebar widgets */}
             <div className="xl:col-span-4 space-y-6">
-              {dashboardSidebarAd && (
-                <SponsorSidebarAd ad={dashboardSidebarAd} />
+              {dashboardSidebarAds.length > 0 && (
+                <div className="relative overflow-hidden rounded-xl h-[200px]">
+                  <div
+                    className="flex flex-col transition-transform duration-500 ease-in-out h-full"
+                    style={{
+                      transform: `translateY(-${sidebarCarouselIndex * 100}%)`,
+                    }}
+                  >
+                    {dashboardSidebarAds.map((ad, index) => (
+                      <div
+                        key={ad.id}
+                        className="w-full flex-shrink-0 h-[200px]"
+                      >
+                        <SponsorSidebarAd
+                          ad={ad}
+                          isActive={index === sidebarCarouselIndex}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dots Indicator for sidebar ads */}
+                  {dashboardSidebarAds.length > 1 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                      {dashboardSidebarAds.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSidebarCarouselIndex(index)}
+                          className={`h-1.5 rounded-full transition-all ${
+                            index === sidebarCarouselIndex
+                              ? 'bg-white w-4'
+                              : 'bg-white/50 hover:bg-white/75 w-1.5'
+                          }`}
+                          aria-label={`Go to ad ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
               {/* Announcements*/}
               {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -1463,6 +1530,7 @@ export function Dashboard() {
               <LiveClasses />
             </div>
           </div>
+
           <UpcomingCourses />
           {/* Groups Preview Section */}
           <div className="mb-6">

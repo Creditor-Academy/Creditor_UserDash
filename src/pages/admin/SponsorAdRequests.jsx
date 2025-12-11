@@ -98,7 +98,7 @@ const normalizeApplication = app => {
     mediaUrl: mediaUrl,
     mediaType: mediaType,
     ctaUrl: app.link_url || '',
-    ctaText: app.link_url ? 'Learn more' : '',
+    ctaText: app.cta_text || app.ctaText || (app.link_url ? 'Learn More' : ''),
     status: app.status?.toLowerCase() || 'pending',
     submittedAt: app.created_at || '',
     reviewedAt: app.reviewed_at || null,
@@ -632,6 +632,12 @@ export const SponsorAdRequests = () => {
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-500">Budget</Label>
                   <p className="font-semibold">{viewingRequest.budget}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">CTA Text</Label>
+                  <p className="font-semibold">
+                    {viewingRequest.ctaText || 'Not specified'}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-500">

@@ -18,10 +18,11 @@ const initialForm = {
   mediaUrl: '',
   mediaFile: null,
   placement: 'dashboard_banner',
-  budget: '',
+  budget: '0',
   startDate: '',
   endDate: '',
   website: '',
+  ctaText: '',
   notes: '',
   adType: 'Image',
 };
@@ -89,8 +90,8 @@ const SponsorRequestPage = () => {
         nextErrors.website = 'Please enter a valid URL';
       }
     }
-    if (!formState.budget || parseFloat(formState.budget) <= 0)
-      nextErrors.budget = 'Budget must be greater than 0';
+    if (!formState.ctaText.trim())
+      nextErrors.ctaText = 'CTA button text is required';
     if (!formState.startDate) nextErrors.startDate = 'Start date is required';
     if (!formState.endDate) nextErrors.endDate = 'End date is required';
     if (
@@ -120,10 +121,11 @@ const SponsorRequestPage = () => {
         contact_phone: formState.contactPhone,
         mediaFile: formState.mediaFile || formState.mediaUrl,
         link_url: formState.website,
+        cta_text: formState.ctaText,
         placement: formState.placement,
         preferred_start_date: formState.startDate,
         preferred_end_date: formState.endDate,
-        budget: formState.budget,
+        budget: formState.budget || '0',
         additional_notes: formState.notes,
       };
 

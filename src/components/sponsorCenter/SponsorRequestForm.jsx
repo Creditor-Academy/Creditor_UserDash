@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const placements = [
   { value: 'dashboard_banner', label: 'Dashboard Banner', disabled: false },
@@ -186,6 +193,26 @@ const SponsorRequestForm = ({
               <p className="text-xs text-red-500 mt-1">{errors.website}</p>
             )}
           </div>
+          <div>
+            <Label htmlFor="ctaText" className="text-sm font-medium">
+              CTA Button Text <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="ctaText"
+              name="ctaText"
+              placeholder="e.g. Learn More, Watch Now, Get Started"
+              value={formState.ctaText}
+              onChange={onInputChange}
+              className="mt-1.5"
+              required
+            />
+            {errors.ctaText && (
+              <p className="text-xs text-red-500 mt-1">{errors.ctaText}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Text that will appear on your call-to-action button
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -255,20 +282,37 @@ const SponsorRequestForm = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="budget" className="text-sm font-medium">
-                Budget Estimate <span className="text-red-500">*</span>
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="budget" className="text-sm font-medium">
+                  Budget Estimate <span className="text-red-500">*</span>
+                </Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-full w-5 h-5 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        aria-label="Budget information"
+                      >
+                        <Info className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-sm">
+                        Sponsor Ads Are free for one month
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="budget"
                 name="budget"
                 type="number"
-                min="0"
-                step="0.01"
-                placeholder="e.g. 5000"
-                value={formState.budget}
-                onChange={onInputChange}
-                className="mt-1.5"
-                required
+                value={formState.budget || '0'}
+                disabled
+                readOnly
+                className="mt-1.5 bg-gray-50 cursor-not-allowed"
               />
               {errors.budget && (
                 <p className="text-xs text-red-500 mt-1">{errors.budget}</p>

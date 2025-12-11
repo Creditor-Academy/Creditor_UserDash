@@ -273,15 +273,7 @@ const MySponsorAdsPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredAds.map(ad => (
-          <SponsorAdCard
-            key={ad.id}
-            ad={ad}
-            onView={handleViewAd}
-            onEdit={openEditDialog}
-            onToggleStatus={handleToggle}
-            onDelete={handleDelete}
-            onResubmit={handleResubmit}
-          />
+          <SponsorAdCard key={ad.id} ad={ad} onView={handleViewAd} />
         ))}
       </div>
 
