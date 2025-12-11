@@ -26,7 +26,10 @@ export default function Ready() {
       <style>{`
         .ready-hero {
           min-height: 60vh;
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+          /*background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);*/
+          background: 
+            linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.85) 50%, rgba(51, 65, 85, 0.85) 100%),
+            url('/re.jpg') center/cover no-repeat;
           display: flex;
           flex-direction: column;
           align-items: center;

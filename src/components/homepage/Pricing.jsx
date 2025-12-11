@@ -1,6 +1,6 @@
 // import React, { useState, useRef } from 'react';
 // import { motion } from 'framer-motion';
-// import { Check, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+// import { Info, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // const Pricing = () => {
 //   const [isAnnual, setIsAnnual] = useState(true);
@@ -552,9 +552,31 @@ const Pricing = () => {
       featured: 'Most Popular!',
       buttonStyle: 'blue',
     },
-
-    // Growth (hidden)
-
+    // {
+    //   name: "Growth",
+    //   target:
+    //     "Best for: Growing teams and established educators. Scale your impact with more resources.",
+    //   price: "$199",
+    //   originalPrice: "$299",
+    //   savings: "Save $100",
+    //   period: "per user/month",
+    //   billingNote: "billed monthly",
+    //   features: [
+    //     { text: "50GB of storage", info: false },
+    //     { text: "500 AI credits per month", info: false },
+    //     { text: "Everything in Starter, plus:", info: false },
+    //     { text: "Advanced analytics & reporting", info: false },
+    //     { text: "Priority email support", info: false },
+    //     { text: "Custom branding options", info: false },
+    //     { text: "Team collaboration features", info: false },
+    //     { text: "API access", info: false },
+    //   ],
+    //   sectionHeader: "Growth Includes:",
+    //   cta: "Choose Growth",
+    //   link: "#contact",
+    //   popular: false,
+    //   buttonStyle: "blue",
+    // },
     {
       name: 'ATHENA',
       nameHighlight: 'Enterprise',
@@ -724,7 +746,7 @@ const Pricing = () => {
           </p>
         </motion.div>
 
-        {/* ✅ Mobile Slider (one card per slide) */}
+        {/* Mobile Slider (one card per slide) */}
         <div className="md:hidden relative mb-10">
           <div className="overflow-hidden" ref={sliderRef}>
             <div
@@ -774,8 +796,8 @@ const Pricing = () => {
           </div>
         </div>
 
-        {/* 💻 Desktop Centered Cards */}
-        <div className="hidden md:flex justify-center gap-10 mb-8">
+        {/* Desktop Centered Cards */}
+        <div className="hidden md:flex flex-wrap justify-center gap-6 lg:gap-8 mb-8 px-4">
           {plans.map((plan, index) => (
             <motion.div
               key={index}
@@ -787,7 +809,7 @@ const Pricing = () => {
                 y: -8,
                 transition: { duration: 0.3, ease: 'easeOut' },
               }}
-              className="relative group w-full max-w-sm"
+              className="relative group w-full max-w-sm flex-shrink-0"
             >
               <PlanCard plan={plan} />
             </motion.div>

@@ -128,17 +128,6 @@ export function NotificationModal({
     return () => window.removeEventListener('userLoggedIn', handleUserLoggedIn);
   }, []);
 
-  // Refresh invitations when window gains focus (user returns to tab)
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('Window focused - refreshing invitations');
-      loadPendingInvitations();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
-
   // Listen for invitation refresh requests
   useEffect(() => {
     const handleRefresh = () => {
