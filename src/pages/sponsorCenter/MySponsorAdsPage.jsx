@@ -237,16 +237,16 @@ const MySponsorAdsPage = () => {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <Input
           placeholder="Search ads..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="rounded-lg"
+          className="rounded-lg text-sm sm:text-base"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="rounded-lg">
+          <SelectTrigger className="rounded-lg text-sm sm:text-base">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -258,7 +258,7 @@ const MySponsorAdsPage = () => {
           </SelectContent>
         </Select>
         <Select value={placementFilter} onValueChange={setPlacementFilter}>
-          <SelectTrigger className="rounded-lg">
+          <SelectTrigger className="rounded-lg text-sm sm:text-base">
             <SelectValue placeholder="All placements" />
           </SelectTrigger>
           <SelectContent>
@@ -271,19 +271,24 @@ const MySponsorAdsPage = () => {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filteredAds.map(ad => (
           <SponsorAdCard key={ad.id} ad={ad} onView={handleViewAd} />
         ))}
       </div>
 
       {!filteredAds.length && (
-        <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center space-y-3">
-          <p className="text-base font-semibold text-gray-900">No ads found</p>
-          <p className="text-sm text-gray-500">
+        <div className="rounded-xl border border-dashed border-gray-200 p-6 sm:p-8 text-center space-y-3">
+          <p className="text-sm sm:text-base font-semibold text-gray-900">
+            No ads found
+          </p>
+          <p className="text-xs sm:text-sm text-gray-500">
             Submit a request to see it listed here
           </p>
-          <Button className="bg-blue-600 text-white px-6 rounded-xl" asChild>
+          <Button
+            className="bg-blue-600 text-white px-4 sm:px-6 rounded-xl text-sm sm:text-base"
+            asChild
+          >
             <Link to="/dashboard/sponsor-center/submit">Submit Request</Link>
           </Button>
         </div>
@@ -293,7 +298,7 @@ const MySponsorAdsPage = () => {
         open={Boolean(editingAd)}
         onOpenChange={open => !open && setEditingAd(null)}
       >
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg rounded-xl sm:rounded-2xl mx-2 sm:mx-4">
           <DialogHeader>
             <DialogTitle>Edit Ad</DialogTitle>
           </DialogHeader>
@@ -347,7 +352,7 @@ const MySponsorAdsPage = () => {
           }
         }}
       >
-        <DialogContent className="rounded-2xl max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-xl sm:rounded-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
           {viewingAdLoading ? (
             <div className="space-y-4">
               <DialogHeader>
@@ -502,7 +507,7 @@ const MySponsorAdsPage = () => {
                   viewingAd.mediaType === 'video' ? (
                     <video
                       src={viewingAd.mediaUrl}
-                      className="w-full h-64 rounded-2xl object-cover"
+                      className="w-full h-48 sm:h-64 rounded-xl sm:rounded-2xl object-cover"
                       controls
                       muted
                       onError={() => setViewVideoError(true)}
@@ -511,30 +516,34 @@ const MySponsorAdsPage = () => {
                     <img
                       src={viewingAd.mediaUrl}
                       alt={viewingAd.adTitle}
-                      className="w-full h-64 rounded-2xl object-cover"
+                      className="w-full h-48 sm:h-64 rounded-xl sm:rounded-2xl object-cover"
                       onError={() => setViewImageError(true)}
                     />
                   )
                 ) : (
-                  <div className="w-full h-64 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                  <div className="w-full h-48 sm:h-64 rounded-xl sm:rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs sm:text-sm">
                     No media available
                   </div>
                 )}
-                <p className="text-sm text-gray-600">{viewingAd.description}</p>
-                <div className="flex flex-wrap gap-2 text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-600 break-words">
+                  {viewingAd.description}
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-500">
                   <SponsorStatusBadge status={viewingAd.status} />
                   <span className="rounded-full bg-gray-100 px-3 py-1 capitalize">
                     {viewingAd.placement?.replace(/_/g, ' ') || 'N/A'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div>
                     <p className="text-xs text-gray-500">Budget</p>
-                    <p className="font-semibold">${viewingAd.budget}</p>
+                    <p className="font-semibold break-words">
+                      ${viewingAd.budget}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Campaign Period</p>
-                    <p className="font-semibold">
+                    <p className="font-semibold break-words">
                       {viewingAd.startDate &&
                         new Date(viewingAd.startDate).toLocaleDateString()}{' '}
                       -{' '}
@@ -545,13 +554,17 @@ const MySponsorAdsPage = () => {
                   {viewingAd.contactEmail && (
                     <div>
                       <p className="text-xs text-gray-500">Contact Email</p>
-                      <p className="font-semibold">{viewingAd.contactEmail}</p>
+                      <p className="font-semibold break-all">
+                        {viewingAd.contactEmail}
+                      </p>
                     </div>
                   )}
                   {viewingAd.contactPhone && (
                     <div>
                       <p className="text-xs text-gray-500">Contact Phone</p>
-                      <p className="font-semibold">{viewingAd.contactPhone}</p>
+                      <p className="font-semibold break-words">
+                        {viewingAd.contactPhone}
+                      </p>
                     </div>
                   )}
                 </div>

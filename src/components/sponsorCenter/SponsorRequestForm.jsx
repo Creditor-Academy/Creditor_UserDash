@@ -51,16 +51,18 @@ const SponsorRequestForm = ({
   isSubmitting,
 }) => {
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
       <Card className="rounded-xl shadow-sm border-gray-100">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Sponsor Details</CardTitle>
-          <CardDescription className="text-sm">
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg">
+            Sponsor Details
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Tell us about your company and ad campaign
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <Label htmlFor="sponsorName" className="text-sm font-medium">
                 Sponsor Name <span className="text-red-500">*</span>
@@ -197,13 +199,13 @@ const SponsorRequestForm = ({
       </Card>
 
       <Card className="rounded-xl shadow-sm border-gray-100">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Media Upload</CardTitle>
-          <CardDescription className="text-sm">
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg">Media Upload</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Upload an image or video (max 10MB)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="space-y-2">
             <Label htmlFor="media" className="text-sm font-medium">
               Upload Media <span className="text-red-500">*</span>
@@ -223,14 +225,16 @@ const SponsorRequestForm = ({
       </Card>
 
       <Card className="rounded-xl shadow-sm border-gray-100">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Campaign Details</CardTitle>
-          <CardDescription className="text-sm">
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg">
+            Campaign Details
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Select placement and schedule
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <Label className="text-sm font-medium">Preferred Placement</Label>
               <Select
@@ -353,10 +357,10 @@ const SponsorRequestForm = ({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end pt-2 sm:pt-4">
         <Button
           type="submit"
-          className="bg-blue-600 px-6 text-white hover:bg-blue-700 rounded-xl"
+          className="bg-blue-600 px-6 sm:px-8 text-white hover:bg-blue-700 rounded-xl text-sm sm:text-base w-full sm:w-auto"
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Submitting...' : 'Submit Request'}

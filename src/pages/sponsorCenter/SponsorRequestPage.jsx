@@ -212,8 +212,8 @@ const SponsorRequestPage = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] gap-6">
-      <div className="space-y-5">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] gap-4 sm:gap-6">
+      <div className="space-y-4 sm:space-y-5">
         {showSuccess && <SponsorRequestSuccessBanner />}
         <SponsorRequestForm
           formState={formState}
@@ -225,7 +225,7 @@ const SponsorRequestPage = () => {
           isSubmitting={isSubmitting}
         />
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3 order-first xl:order-last">
         <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
           Live Preview
         </p>

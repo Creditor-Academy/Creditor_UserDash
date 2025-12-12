@@ -83,11 +83,12 @@ api.interceptors.request.use(
         throw new Error('Request URL is required');
       }
 
-      // Add request ID for tracking
+      // Add request ID for tracking (merge with existing metadata if present)
       config.metadata = {
-        requestId: generateRequestId(),
-        startTime: Date.now(),
-        retryCount: config.retryCount || 0,
+        ...config.metadata,
+        requestId: config.metadata?.requestId || generateRequestId(),
+        startTime: config.metadata?.startTime || Date.now(),
+        retryCount: config.metadata?.retryCount || config.retryCount || 0,
       };
 
       // Enhanced headers
@@ -252,6 +253,13 @@ api.interceptors.response.use(
     // Ensure metadata exists and get retry count
     originalRequest.metadata = originalRequest.metadata || {};
     const retryCount = originalRequest.metadata.retryCount || 0;
+
+    // Skip retries if explicitly disabled
+    if (originalRequest.metadata?.disableRetry) {
+      console.log(`[API] Retries disabled for request:`, url);
+      error.userMessage = getErrorMessage(error);
+      return Promise.reject(error);
+    }
 
     // Prevent infinite retries by adding a safety check
     if (retryCount >= 5) {

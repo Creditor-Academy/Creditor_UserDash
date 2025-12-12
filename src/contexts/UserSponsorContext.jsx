@@ -78,10 +78,19 @@ export const UserSponsorProvider = ({ children }) => {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   // Fetch user ad applications from backend
   const fetchApplications = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isFetching) {
+      console.log('[UserSponsor] Already fetching, skipping duplicate call');
+      return;
+    }
+
     try {
+      setIsFetching(true);
       setLoading(true);
       setError(null);
       const applications = await getUserAdApplications();
@@ -93,12 +102,18 @@ export const UserSponsorProvider = ({ children }) => {
       setAds([]);
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
-  }, []);
+  }, [isFetching]);
 
+  // Only call once on mount
   useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+    if (!hasInitialLoad) {
+      setHasInitialLoad(true);
+      fetchApplications();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   const addRequest = useCallback(() => {
     // Refresh applications after new request is submitted

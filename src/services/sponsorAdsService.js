@@ -132,7 +132,14 @@ export async function createSponsorAd(adData) {
  */
 export async function getAllSponsorAds() {
   try {
-    const response = await api.get('/api/admin/ads');
+    // Disable retries for this endpoint - call once only
+    const config = {
+      metadata: {
+        disableRetry: true,
+        requestId: `sponsor-ads-${Date.now()}`,
+      },
+    };
+    const response = await api.get('/api/admin/ads', config);
     console.log('✅ Fetched sponsor ads:', response.data);
     return response.data.data || response.data || [];
   } catch (error) {
@@ -465,7 +472,14 @@ export async function submitSponsorAdRequest(requestData) {
  */
 export async function getUserAdApplications() {
   try {
-    const response = await api.get('/api/user/ads/applications');
+    // Disable retries for this endpoint - call once only
+    const config = {
+      metadata: {
+        disableRetry: true,
+        requestId: `user-applications-${Date.now()}`,
+      },
+    };
+    const response = await api.get('/api/user/ads/applications', config);
 
     // Handle the response structure: { code: 200, data: { applications: [...] }, success: true, message: "..." }
     const applications =

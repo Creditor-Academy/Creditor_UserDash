@@ -41,40 +41,52 @@ const SponsorCenterLayout = () => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5">
       <Card className="border border-gray-100 shadow-sm rounded-xl">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Megaphone className="w-5 h-5" />
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+                <Megaphone className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-lg sm:text-xl">
+                  Sponsor Center
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-0.5">
+                  Submit placements, manage campaigns, and track performance
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-xl">Sponsor Center</CardTitle>
-              <CardDescription className="text-sm">
-                Submit placements, manage campaigns, and track performance
-              </CardDescription>
-            </div>
-            <Badge className="ml-auto bg-blue-50 text-blue-700 border-blue-100 rounded-full text-xs">
+            <Badge className="self-start sm:self-auto sm:ml-auto bg-blue-50 text-blue-700 border-blue-100 rounded-full text-xs px-2.5 py-1">
               Learner View
             </Badge>
           </div>
-          <Tabs value={currentTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-gray-50 rounded-xl p-1">
-              {tabs.map(tab => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600"
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="w-full">
+            <Tabs
+              value={currentTab}
+              onValueChange={handleTabChange}
+              className="w-full"
+            >
+              <TabsList className="inline-flex h-auto items-stretch justify-start rounded-lg bg-gray-50 p-1 text-gray-500 gap-1.5 w-full sm:w-auto">
+                {tabs.map(tab => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="inline-flex items-center justify-center rounded-md px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm hover:bg-white/50 hover:text-gray-900 flex-1 sm:flex-initial min-w-0 leading-tight text-center"
+                  >
+                    <span className="break-words line-clamp-2 hyphens-auto">
+                      {tab.label}
+                    </span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
       </Card>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4 md:p-6">
         <Outlet />
       </div>
     </div>

@@ -144,13 +144,22 @@ export const SponsorAdsProvider = ({ children }) => {
   const [ads, setAds] = useState(loadInitialAds);
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasLoadedFromBackend, setHasLoadedFromBackend] = useState(false);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     persistAds(ads);
   }, [ads]);
 
   const refreshAds = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoading) {
+      console.log('[SponsorAds] Already loading, skipping duplicate call');
+      return;
+    }
+
     try {
+      setIsLoading(true);
       setIsSyncing(true);
       const response = await getAllSponsorAds();
       const backendAds = Array.isArray(response?.data)
@@ -177,14 +186,20 @@ export const SponsorAdsProvider = ({ children }) => {
       throw error;
     } finally {
       setIsSyncing(false);
+      setIsLoading(false);
     }
-  }, [hasLoadedFromBackend]);
+  }, [hasLoadedFromBackend, isLoading]);
 
+  // Only call once on mount
   useEffect(() => {
-    refreshAds().catch(() => {
-      // already logged; fallback handled by refreshAds
-    });
-  }, [refreshAds]);
+    if (!hasInitialLoad) {
+      setHasInitialLoad(true);
+      refreshAds().catch(() => {
+        // already logged; fallback handled by refreshAds
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   const addAd = useCallback(adPayload => {
     setAds(prev => [hydrateAd(adPayload), ...prev]);

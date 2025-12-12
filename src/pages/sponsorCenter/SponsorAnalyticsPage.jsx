@@ -102,31 +102,31 @@ const SponsorAnalyticsPage = () => {
   const approvedAds = ads.filter(ad => ad.status === 'Approved');
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {kpis.map(card => (
           <SponsorAnalyticsCard key={card.label} {...card} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         <SponsorLineChart data={analytics.timelineSeries || []} />
         <SponsorBarChart data={analytics.clicksPerAd || []} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         <SponsorPieChart data={analytics.typeDistributionSeries || []} />
         <Card className="rounded-xl border border-gray-100 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Your Ads</CardTitle>
-            <CardDescription className="text-sm">
+          <CardHeader className="pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
+            <CardTitle className="text-sm sm:text-base">Your Ads</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Click to view detailed analytics
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
             <div className="space-y-2">
               {approvedAds.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-xs sm:text-sm text-gray-500 text-center py-4">
                   No approved ads yet
                 </p>
               ) : (
@@ -141,18 +141,18 @@ const SponsorAnalyticsPage = () => {
                     <div
                       key={ad.id}
                       onClick={() => handleAdClick(ad)}
-                      className="flex items-center justify-between rounded-lg border border-gray-100 p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between rounded-lg border border-gray-100 p-2.5 sm:p-3 cursor-pointer hover:bg-gray-50 transition-colors"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-gray-900 truncate">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <p className="font-medium text-xs sm:text-sm text-gray-900 truncate">
                           {ad.adTitle || ad.title || 'Untitled'}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 truncate">
                           {ad.sponsorName}
                         </p>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="text-sm font-semibold text-gray-900">
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900">
                           {impressions.toLocaleString()}
                         </p>
                         <p className="text-xs text-gray-500">views</p>
@@ -171,27 +171,27 @@ const SponsorAnalyticsPage = () => {
         open={Boolean(selectedAd)}
         onOpenChange={open => !open && setSelectedAd(null)}
       >
-        <DialogContent className="max-w-4xl rounded-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl rounded-xl sm:rounded-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
+          <DialogHeader className="px-1 sm:px-0">
+            <DialogTitle className="text-lg sm:text-xl">
               {selectedAd?.adTitle || selectedAd?.title || 'Ad Analytics'}
             </DialogTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs sm:text-sm">
               {selectedAd?.sponsorName} • Performance metrics
             </CardDescription>
           </DialogHeader>
 
           {selectedAd && (
-            <div className="space-y-5 mt-4">
+            <div className="space-y-4 sm:space-y-5 mt-3 sm:mt-4">
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <Card className="rounded-xl border-gray-100">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                      <Eye className="w-4 h-4" />
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-2">
+                      <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Total Views
                     </div>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-xl sm:text-2xl font-semibold text-gray-900">
                       {(
                         Number(selectedAd.impressions) ||
                         Number(selectedAd.view_count) ||
@@ -201,12 +201,12 @@ const SponsorAnalyticsPage = () => {
                   </CardContent>
                 </Card>
                 <Card className="rounded-xl border-gray-100">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                      <MousePointerClick className="w-4 h-4" />
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-2">
+                      <MousePointerClick className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Total Clicks
                     </div>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-xl sm:text-2xl font-semibold text-gray-900">
                       {(
                         Number(selectedAd.clicks) ||
                         Number(selectedAd.click_count) ||
@@ -216,12 +216,12 @@ const SponsorAnalyticsPage = () => {
                   </CardContent>
                 </Card>
                 <Card className="rounded-xl border-gray-100">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                      <BarChart3 className="w-4 h-4" />
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-2">
+                      <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       CTR
                     </div>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-xl sm:text-2xl font-semibold text-gray-900">
                       {(() => {
                         const views =
                           Number(selectedAd.impressions) ||
@@ -243,13 +243,17 @@ const SponsorAnalyticsPage = () => {
 
               {/* Performance Chart */}
               <Card className="rounded-xl border-gray-100">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">
+                <CardHeader className="pb-3 px-4 sm:px-6 pt-4 sm:pt-6">
+                  <CardTitle className="text-sm sm:text-base">
                     Performance Overview
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+                  <ResponsiveContainer
+                    width="100%"
+                    height={250}
+                    className="sm:h-[300px]"
+                  >
                     <BarChart
                       data={[
                         {
@@ -283,7 +287,7 @@ const SponsorAnalyticsPage = () => {
               </Card>
 
               {/* Ad Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div>
                   <p className="text-gray-500 mb-1">Status</p>
                   <p className="font-medium text-gray-900">
