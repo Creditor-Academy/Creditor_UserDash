@@ -2,7 +2,7 @@ name: Frontend CI/CD Pipeline
 
 on:
   push:
-    branches: ["develop", "main"]
+    branches: ["develop", "main", "**"]
   pull_request:
     branches: ["develop", "main"]
 
@@ -33,7 +33,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: frontend-build
-        path: ./build
+        path: ./dist
 
   deploy-staging:
     runs-on: ubuntu-latest
@@ -44,11 +44,11 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: frontend-build
-        path: ./build
+        path: ./dist
     - name: Deploy to Netlify (Staging)
       uses: nwtgck/actions-netlify@v2.0
       with:
-        publish-dir: './build'
+        publish-dir: './dist'
         github-token: ${{ secrets.GITHUB_TOKEN }}
         deploy-message: "Deploy to Staging"
       env:
@@ -64,11 +64,11 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: frontend-build
-        path: ./build
+        path: ./dist
     - name: Deploy to Netlify (Production)
       uses: nwtgck/actions-netlify@v2.0
       with:
-        publish-dir: './build'
+        publish-dir: './dist'
         production-deploy: true
         deploy-message: "Deploy to Production"
       env:
