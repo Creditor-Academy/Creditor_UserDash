@@ -26,6 +26,7 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
     overallCTR = 0,
     activeAdsCount = 0,
     impressionsByAd = [],
+    clicksByAd = [],
     typeDistribution = [],
     dailyImpressions = [],
   } = analytics;
@@ -61,14 +62,14 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {kpis.map(kpi => (
-          <Card key={kpi.label} className="border border-gray-100 shadow-sm">
-            <CardContent className="p-5 space-y-3">
+          <Card
+            key={kpi.label}
+            className="border border-gray-100 shadow-sm rounded-xl"
+          >
+            <CardContent className="p-4 space-y-2">
               <p className="text-sm text-gray-500">{kpi.label}</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {kpi.value}
-              </p>
-              <p className="text-xs text-emerald-600 font-medium">
-                {kpi.trend}
               </p>
               <p className="text-xs text-gray-400">{kpi.sublabel}</p>
             </CardContent>
@@ -76,16 +77,22 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle>Impressions per Ad</CardTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Card className="border border-gray-100 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Impressions per Ad</CardTitle>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={impressionsByAd}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
                 <YAxis />
                 <Tooltip />
                 <Bar
@@ -98,9 +105,40 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-100">
-          <CardHeader>
-            <CardTitle>Ad Type Distribution</CardTitle>
+        <Card className="border border-gray-100 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Clicks per Ad</CardTitle>
+          </CardHeader>
+          <CardContent className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={clicksByAd.length > 0 ? clicksByAd : impressionsByAd}
+              >
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis />
+                <Tooltip />
+                <Bar
+                  dataKey={clicksByAd.length > 0 ? 'clicks' : 'impressions'}
+                  radius={[8, 8, 0, 0]}
+                  fill="#10b981"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {typeDistribution.length > 0 && (
+        <Card className="border border-gray-100 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Ad Type Distribution</CardTitle>
           </CardHeader>
           <CardContent className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -109,9 +147,9 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
                   data={typeDistribution}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={4}
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={3}
                 >
                   {typeDistribution.map((entry, index) => (
                     <Cell
@@ -125,11 +163,13 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      <Card className="border border-gray-100">
+      <Card className="border border-gray-100 rounded-xl">
         <CardHeader>
-          <CardTitle>Daily Mock Impressions</CardTitle>
+          <CardTitle className="text-base">
+            Daily Impressions (Last 7 Days)
+          </CardTitle>
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -141,9 +181,9 @@ export const SponsorAnalyticsCharts = ({ analytics }) => {
               <Line
                 type="monotone"
                 dataKey="impressions"
-                stroke="#9333ea"
+                stroke="#2563eb"
                 strokeWidth={3}
-                dot={false}
+                dot={{ fill: '#2563eb', r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>

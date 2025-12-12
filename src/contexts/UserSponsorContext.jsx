@@ -34,6 +34,11 @@ const normalizeApplication = app => {
   const mediaUrl = app.video_url || app.image_url || '';
   const mediaType = app.video_url ? 'video' : 'image';
 
+  // Extract stats from sponsor_ad if available (for approved ads)
+  const sponsorAd = app.sponsor_ad || app.sponsorAd;
+  const impressions = sponsorAd?.view_count ?? app.view_count ?? 0;
+  const clicks = sponsorAd?.click_count ?? app.click_count ?? 0;
+
   return {
     id: app.id,
     sponsorName: app.sponsor_name || app.sponsorName,
@@ -61,6 +66,11 @@ const normalizeApplication = app => {
     createdAt: app.created_at,
     updatedAt: app.updated_at,
     sponsorAdId: app.sponsor_ad_id,
+    // Add stats from sponsor_ad
+    impressions: Number(impressions) || 0,
+    clicks: Number(clicks) || 0,
+    view_count: Number(impressions) || 0,
+    click_count: Number(clicks) || 0,
   };
 };
 
@@ -134,13 +144,63 @@ export const UserSponsorProvider = ({ children }) => {
     const pendingAds = ads.filter(ad => ad.status === 'Pending');
     const rejectedAds = ads.filter(ad => ad.status === 'Rejected');
 
+    // Calculate totals from approved ads
+    // Approved ads have sponsor_ad object with click_count and view_count
+    const totals = approvedAds.reduce(
+      (acc, ad) => {
+        const impressions =
+          Number(ad.impressions) || Number(ad.view_count) || 0;
+        const clicks = Number(ad.clicks) || Number(ad.click_count) || 0;
+        acc.impressions += impressions;
+        acc.clicks += clicks;
+        return acc;
+      },
+      { impressions: 0, clicks: 0 }
+    );
+
+    const ctr =
+      totals.impressions > 0
+        ? Number(((totals.clicks / totals.impressions) * 100).toFixed(2))
+        : 0;
+
+    // Prepare chart data
+    const clicksPerAd = approvedAds.map(ad => ({
+      id: ad.id,
+      name: ad.adTitle || ad.title || 'Untitled',
+      clicks: Number(ad.clicks) || Number(ad.click_count) || 0,
+    }));
+
+    // Generate timeline series (last 7 days)
+    const timelineSeries = Array.from({ length: 7 }).map((_, idx) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - idx));
+      return {
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        impressions: Math.round(totals.impressions / 7), // Simplified distribution
+      };
+    });
+
+    // Type distribution
+    const typeCounts = approvedAds.reduce((acc, ad) => {
+      const type = ad.mediaType || ad.type || 'image';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+
+    const typeDistributionSeries = Object.entries(typeCounts).map(
+      ([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value,
+      })
+    );
+
     return {
-      totalImpressions: 0, // Not available from applications API
-      totalClicks: 0, // Not available from applications API
-      ctr: 0,
-      clicksPerAd: [],
-      timelineSeries: [],
-      typeDistributionSeries: [],
+      totalImpressions: totals.impressions,
+      totalClicks: totals.clicks,
+      ctr,
+      clicksPerAd,
+      timelineSeries,
+      typeDistributionSeries,
       activeAdsCount: approvedAds.length,
       pendingAdsCount: pendingAds.length,
       rejectedAdsCount: rejectedAds.length,

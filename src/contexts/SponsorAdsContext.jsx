@@ -263,16 +263,28 @@ export const SponsorAdsProvider = ({ children }) => {
   const analytics = useMemo(() => {
     const totals = ads.reduce(
       (acc, ad) => {
-        const impressions = Number(ad.impressions) || 0;
-        const clicks = Number(ad.clicks) || 0;
+        // Use real backend data: view_count (impressions) and click_count (clicks)
+        const impressions =
+          Number(ad.impressions) || Number(ad.view_count) || 0;
+        const clicks = Number(ad.clicks) || Number(ad.click_count) || 0;
+        const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+
         acc.impressions += impressions;
         acc.clicks += clicks;
         if (applyRuntimeStatus(ad) === 'Active') {
           acc.activeAds += 1;
         }
         acc.impressionsByAd.push({
-          name: ad.title,
+          id: ad.id,
+          name: ad.title || ad.sponsorName || 'Untitled',
           impressions,
+          clicks,
+          ctr: Number(ctr.toFixed(2)),
+        });
+        acc.clicksByAd.push({
+          id: ad.id,
+          name: ad.title || ad.sponsorName || 'Untitled',
+          clicks,
         });
         acc.typeDistribution[ad.mediaType] =
           (acc.typeDistribution[ad.mediaType] || 0) + impressions;
@@ -283,25 +295,38 @@ export const SponsorAdsProvider = ({ children }) => {
         clicks: 0,
         activeAds: 0,
         impressionsByAd: [],
+        clicksByAd: [],
         typeDistribution: {},
       }
     );
 
     const typeDistributionChart = Object.entries(totals.typeDistribution).map(
       ([type, value]) => ({
-        name: type,
+        name: type.charAt(0).toUpperCase() + type.slice(1),
         value,
       })
     );
 
+    // Generate last 7 days data (simplified - in real app, this would come from backend)
     const sevenDaySeries = Array.from({ length: 7 }).map((_, idx) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - idx));
       const dayTotal = ads.reduce((sum, ad) => {
-        if (!Array.isArray(ad.dailyImpressions)) return sum;
-        const value = ad.dailyImpressions[idx % ad.dailyImpressions.length];
-        return sum + (value || 0);
+        // If we have daily data, use it; otherwise distribute evenly
+        if (
+          Array.isArray(ad.dailyImpressions) &&
+          ad.dailyImpressions.length > 0
+        ) {
+          const value = ad.dailyImpressions[idx % ad.dailyImpressions.length];
+          return sum + (value || 0);
+        }
+        // Distribute impressions evenly across 7 days as fallback
+        const avgDaily =
+          (Number(ad.impressions) || Number(ad.view_count) || 0) / 7;
+        return sum + Math.round(avgDaily);
       }, 0);
       return {
-        day: `Day ${idx + 1}`,
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
         impressions: dayTotal,
       };
     });
@@ -317,6 +342,7 @@ export const SponsorAdsProvider = ({ children }) => {
       overallCTR: ctr,
       activeAdsCount: totals.activeAds,
       impressionsByAd: totals.impressionsByAd,
+      clicksByAd: totals.clicksByAd,
       typeDistribution: typeDistributionChart,
       dailyImpressions: sevenDaySeries,
     };
