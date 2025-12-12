@@ -1,19 +1,99 @@
-import React from 'react';
-import { Sparkles, ArrowRight, Brain, Zap, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  FaBolt,
+  FaLock,
+  FaCheckCircle,
+  FaExternalLinkAlt,
+  FaPlayCircle,
+} from 'react-icons/fa';
+import { useCredits } from '@/contexts/CreditsContext';
+import athenaVideo from '@/assets/Athenaai.mp4';
+
+const ATHENA_AI_UNLOCKED_KEY = 'athena_ai_unlocked';
 
 /**
  * AthenaAISection Component
  *
- * A prominent dashboard section that promotes and provides access to Athena AI.
- * Displays features and a call-to-action button to open Athena AI.
+ * Simple section about Athena AI with single unlock button.
+ * Once unlocked, redirects to Athena AI.
  */
 export function AthenaAISection() {
-  const handleOpenAthenaAI = () => {
+  const { balance } = useCredits();
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // Load unlock status from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(ATHENA_AI_UNLOCKED_KEY);
+      if (stored === 'true') {
+        setIsUnlocked(true);
+      }
+    } catch (error) {
+      console.error('Failed to load unlock status:', error);
+    }
+  }, []);
+
+  // Save unlock status to localStorage
+  const saveUnlockStatus = unlocked => {
+    try {
+      localStorage.setItem(ATHENA_AI_UNLOCKED_KEY, String(unlocked));
+      setIsUnlocked(unlocked);
+    } catch (error) {
+      console.error('Failed to save unlock status:', error);
+    }
+  };
+
+  const features = [
+    'Generate brand logos and visual identities',
+    'Create product and marketing imagery',
+    'Build a cohesive brand kit in minutes',
+    'Draft landing pages, ads, and emails',
+  ];
+
+  const UNLOCK_COST = 100; // Total cost to unlock Athena AI
+
+  const handleUnlock = async () => {
+    // Check if already unlocked
+    if (isUnlocked) {
+      redirectToAthenaAI();
+      return;
+    }
+
+    // Check if user has enough credits
+    if (balance < UNLOCK_COST) {
+      alert(
+        `You need ${UNLOCK_COST} credits to unlock Athena AI. You have ${balance} credits.`
+      );
+      return;
+    }
+
+    setIsUnlocking(true);
+
+    try {
+      // TODO: Add API call here later
+      // await unlockContent('athena_ai', 'athena_ai', UNLOCK_COST);
+
+      // For now, just mark as unlocked locally
+      saveUnlockStatus(true);
+
+      // Redirect to Athena AI after successful unlock
+      setTimeout(() => {
+        redirectToAthenaAI();
+      }, 500);
+    } catch (error) {
+      console.error('Failed to unlock Athena AI:', error);
+      alert('Failed to unlock Athena AI. Please try again.');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
+  const redirectToAthenaAI = () => {
     // Get the JWT token from localStorage
     const token = localStorage.getItem('authToken');
 
     if (!token) {
-      // Show alert if no token is found
       console.warn(
         'Athena AI redirect failed: No authToken found in localStorage'
       );
@@ -47,128 +127,128 @@ export function AthenaAISection() {
 
   return (
     <div className="mb-8">
-      <div className="rounded-2xl shadow-lg border border-purple-200 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="relative">
-          <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-purple-300/30 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-blue-300/30 blur-3xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/60 via-white to-blue-50/50" />
 
-          <div className="relative z-10 p-6 md:p-8">
-            {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
-                  <Sparkles className="h-6 w-6 text-white" />
+        <div className="relative p-6 md:p-8 lg:p-10">
+          <div className="grid gap-8 lg:gap-10 lg:grid-cols-[1.05fr_1fr] items-start">
+            {/* Video Preview */}
+            <div className="relative w-full h-full min-h-[340px] overflow-hidden rounded-xl border border-gray-200 shadow-lg bg-gray-900">
+              <video
+                src={athenaVideo}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="h-full w-full object-cover aspect-video"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+              <div className="absolute left-4 bottom-4 flex flex-wrap items-center gap-3 text-white">
+                <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
+                  <FaPlayCircle className="h-4 w-4" />
+                  <span>Preview (muted)</span>
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Athena AI Assistant
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-0.5">
-                    Your intelligent learning companion
-                  </p>
+                <div className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
+                  Athena AI experience
                 </div>
               </div>
             </div>
 
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Left: Description and Features */}
-              <div className="space-y-4">
-                <p className="text-gray-700 leading-relaxed">
-                  Get instant help with your coursework, ask questions, and
-                  receive personalized learning assistance powered by AI.
-                </p>
-
-                {/* Features List */}
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                      <Brain className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 text-sm">
-                        Smart Learning
-                      </h4>
-                      <p className="text-xs text-gray-600">
-                        AI-powered explanations tailored to your level
-                      </p>
-                    </div>
+            {/* Details */}
+            <div className="flex-1 h-full flex flex-col gap-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 ring-1 ring-purple-100">
+                    Premium Access
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <MessageSquare className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 text-sm">
-                        24/7 Assistance
-                      </h4>
-                      <p className="text-xs text-gray-600">
-                        Get help anytime, anywhere with your studies
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+                      Athena AI
+                    </h2>
+                    {isUnlocked && (
+                      <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                        <FaCheckCircle className="h-4 w-4" />
+                        <span>Unlocked</span>
+                      </div>
+                    )}
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                      <Zap className="h-4 w-4 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 text-sm">
-                        Instant Answers
-                      </h4>
-                      <p className="text-xs text-gray-600">
-                        Quick responses to your course questions
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-600 max-w-xl">
+                    Unlock the full Athena AI studio to create logos, imagery,
+                    and content with a single, secure token sign-on.
+                  </p>
                 </div>
               </div>
 
-              {/* Right: CTA and Visual */}
-              <div className="flex flex-col items-center justify-center text-center space-y-4 bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-purple-100">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center shadow-lg animate-pulse">
-                  <Sparkles className="h-10 w-10 text-white" />
-                </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {features.map((feature, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white/90 px-4 py-4 shadow-sm hover:shadow-md transition-transform duration-150 hover:-translate-y-0.5"
+                  >
+                    <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                      <FaCheckCircle className="h-4 w-4" />
+                    </span>
+                    <p className="text-sm text-gray-800 leading-relaxed">
+                      {feature}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
+              <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-t border-gray-200 pt-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">
-                    Ready to Learn Smarter?
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {isUnlocked ? 'Athena AI is ready' : 'Unlock Athena AI'}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Launch Athena AI and start getting answers
+                    {isUnlocked
+                      ? 'Open Athena AI in a new tab and start creating instantly.'
+                      : `One-time unlock for ${UNLOCK_COST} credits.`}
                   </p>
                 </div>
 
-                <button
-                  onClick={handleOpenAthenaAI}
-                  className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                >
-                  <Sparkles className="h-5 w-5 group-hover:animate-spin" />
-                  <span>Open Athena AI</span>
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-
-                <p className="text-xs text-gray-500">
-                  Opens in a new tab • Your session is preserved
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom Stats/Info Bar */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-purple-200/50">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">24/7</p>
-                <p className="text-xs text-gray-600">Availability</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">AI</p>
-                <p className="text-xs text-gray-600">Powered</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-indigo-600">∞</p>
-                <p className="text-xs text-gray-600">Questions</p>
+                <div className="flex items-center gap-3">
+                  {!isUnlocked && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700">
+                      {UNLOCK_COST} credits
+                    </div>
+                  )}
+                  <button
+                    onClick={handleUnlock}
+                    disabled={
+                      isUnlocking || (!isUnlocked && balance < UNLOCK_COST)
+                    }
+                    className={`px-5 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-200 min-w-[180px] justify-center ${
+                      isUnlocking
+                        ? 'bg-blue-500 text-white opacity-90 cursor-wait shadow-md'
+                        : isUnlocked || balance >= UNLOCK_COST
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                          : 'bg-blue-100 text-blue-300 cursor-not-allowed'
+                    }`}
+                  >
+                    {isUnlocking ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Unlocking...</span>
+                      </>
+                    ) : isUnlocked ? (
+                      <>
+                        <span>Open Athena AI</span>
+                        <FaExternalLinkAlt className="h-4 w-4" />
+                      </>
+                    ) : balance >= UNLOCK_COST ? (
+                      <>
+                        <FaLock className="h-5 w-5" />
+                        <span>Unlock Athena AI</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaLock className="h-5 w-5" />
+                        <span>Need {UNLOCK_COST} credits</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

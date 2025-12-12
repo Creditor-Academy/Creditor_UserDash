@@ -1,27 +1,45 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
-import NotificationPreferences from "@/components/profile/NotificationPreferences";
-import ProfileSecurity from "@/components/profile/ProfileSecurity";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Bell, Shield, Camera } from "lucide-react";
-import { getUserAvatarUrl, getUserAvatarUrlSync, refreshAvatarFromBackend } from "@/lib/avatar-utils";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { fetchUserProfile, updateUserProfile } from "@/services/userService";
-import { useUser } from "@/contexts/UserContext";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from 'sonner';
+import NotificationPreferences from '@/components/profile/NotificationPreferences';
+import ProfileSecurity from '@/components/profile/ProfileSecurity';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { User, Bell, Shield, Camera } from 'lucide-react';
+import AIContentLibrarySection from '@/components/dashboard/AIContentLibrarySection';
+import {
+  getUserAvatarUrl,
+  getUserAvatarUrlSync,
+  refreshAvatarFromBackend,
+} from '@/lib/avatar-utils';
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select';
+import { fetchUserProfile, updateUserProfile } from '@/services/userService';
+import { useUser } from '@/contexts/UserContext';
 
 function Profile() {
   const navigate = useNavigate();
   const { userProfile, updateUserProfile: updateGlobalProfile } = useUser();
-  const [userRole, setUserRole] = useState("");
+  const [userRole, setUserRole] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentAvatar, setCurrentAvatar] = useState(getUserAvatarUrlSync());
@@ -29,52 +47,61 @@ function Profile() {
 
   const form = useForm({
     defaultValues: {
-      fullName: "",
-      email: "",
-      bio: "",
-      title: "",
-      phone: "",
-      location: "San Francisco, CA",
-      timezone: "America/New_York", // Default to EST
-      gender: "",
-      linkedin: "",
-      facebook: ""
-    }
+      fullName: '',
+      email: '',
+      bio: '',
+      title: '',
+      phone: '',
+      location: 'San Francisco, CA',
+      timezone: 'America/New_York', // Default to EST
+      gender: '',
+      linkedin: '',
+      facebook: '',
+    },
   });
 
   // Use global user profile data and update form when it changes
   useEffect(() => {
     if (userProfile) {
       setIsLoading(false);
-      
+
       // Set single role (highest priority: admin > instructor > user)
-      if (Array.isArray(userProfile.user_roles) && userProfile.user_roles.length > 0) {
+      if (
+        Array.isArray(userProfile.user_roles) &&
+        userProfile.user_roles.length > 0
+      ) {
         const roles = userProfile.user_roles.map(roleObj => roleObj.role);
         const priorityRoles = ['admin', 'instructor', 'user'];
-        const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
+        const highestRole =
+          priorityRoles.find(role => roles.includes(role)) || 'user';
         setUserRole(highestRole);
       } else {
         setUserRole('User');
       }
-      
+
       // Store single role in localStorage (enforce single-role system)
-      if (Array.isArray(userProfile.user_roles) && userProfile.user_roles.length > 0) {
+      if (
+        Array.isArray(userProfile.user_roles) &&
+        userProfile.user_roles.length > 0
+      ) {
         const roles = userProfile.user_roles.map(roleObj => roleObj.role);
         const priorityRoles = ['admin', 'instructor', 'user'];
-        const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
+        const highestRole =
+          priorityRoles.find(role => roles.includes(role)) || 'user';
         localStorage.setItem('userRoles', JSON.stringify([highestRole]));
         localStorage.setItem('userRole', highestRole);
       } else {
         localStorage.setItem('userRoles', JSON.stringify(['user']));
         localStorage.setItem('userRole', 'user');
       }
-      
+
       // Store timezone in localStorage for use in other components
       const userTimezone = userProfile.timezone || 'America/New_York';
       localStorage.setItem('userTimezone', userTimezone);
-      
+
       const formData = {
-        fullName: `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim(),
+        fullName:
+          `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim(),
         email: userProfile.email || 'Loading...',
         bio: userProfile.bio || '',
         title: userProfile.title || '',
@@ -83,11 +110,10 @@ function Profile() {
         timezone: userTimezone,
         gender: userProfile.gender || '',
         linkedin: userProfile.social_handles?.linkedin || '',
-        facebook: userProfile.social_handles?.facebook || ''
+        facebook: userProfile.social_handles?.facebook || '',
       };
-      
+
       form.reset(formData);
-      
     }
   }, [userProfile, form]);
 
@@ -111,24 +137,24 @@ function Profile() {
     const updateAvatar = () => {
       setCurrentAvatar(getUserAvatarUrlSync());
     };
-    
-    window.addEventListener("storage", updateAvatar);
-    window.addEventListener("user-avatar-updated", updateAvatar);
-    
+
+    window.addEventListener('storage', updateAvatar);
+    window.addEventListener('user-avatar-updated', updateAvatar);
+
     return () => {
-      window.removeEventListener("storage", updateAvatar);
-      window.removeEventListener("user-avatar-updated", updateAvatar);
+      window.removeEventListener('storage', updateAvatar);
+      window.removeEventListener('user-avatar-updated', updateAvatar);
     };
   }, []);
 
   // Update user profile on submit
-  const onSubmit = async (values) => {
+  const onSubmit = async values => {
     setIsUpdating(true);
     try {
       // Split fullName into first and last name
-      const [first_name, ...rest] = values.fullName.split(" ");
-      const last_name = rest.join(" ");
-      
+      const [first_name, ...rest] = values.fullName.split(' ');
+      const last_name = rest.join(' ');
+
       const updateData = {
         first_name,
         last_name,
@@ -139,14 +165,14 @@ function Profile() {
         timezone: values.timezone,
         gender: values.gender,
         facebook: values.facebook || '',
-        linkedin: values.linkedin || ''
+        linkedin: values.linkedin || '',
       };
-      
+
       const response = await updateUserProfile(updateData);
-      
+
       // Update timezone in localStorage after successful profile update
       localStorage.setItem('userTimezone', values.timezone);
-      
+
       // Update the global user profile context with the updated data
       const updatedProfile = {
         ...userProfile,
@@ -161,25 +187,24 @@ function Profile() {
         social_handles: {
           ...(userProfile?.social_handles || {}),
           linkedin: values.linkedin || '',
-          facebook: values.facebook || ''
-        }
+          facebook: values.facebook || '',
+        },
       };
-      
+
       // Update the global user profile context
       updateGlobalProfile(updatedProfile);
-      
+
       // Update localStorage with the confirmed timezone
       localStorage.setItem('userTimezone', values.timezone);
-      
-      toast.success("Profile updated successfully");
-      
+
+      toast.success('Profile updated successfully');
     } catch (err) {
-      console.error("❌ Failed to update profile:", err);
-      console.error("❌ Error details:", {
+      console.error('❌ Failed to update profile:', err);
+      console.error('❌ Error details:', {
         message: err.message,
-        stack: err.stack
+        stack: err.stack,
       });
-      toast.error("Failed to update profile");
+      toast.error('Failed to update profile');
     } finally {
       setIsUpdating(false);
     }
@@ -195,21 +220,30 @@ function Profile() {
       <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
         <div className="flex items-center gap-6">
           <div className="relative group">
-            <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
+            <Avatar
+              onClick={() => setIsAvatarPreviewOpen(true)}
+              className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in"
+            >
               <AvatarImage src={currentAvatar} alt="Profile avatar" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
-                {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
+                {userProfile
+                  ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase()
+                  : 'U'}
               </AvatarFallback>
             </Avatar>
           </div>
           <div className="flex flex-col gap-1 sm:gap-2">
             <div className="flex flex-row items-center gap-2 sm:gap-4">
-              <h1 className="text-2xl font-semibold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Profile Settings</h1>
+              <h1 className="text-2xl font-semibold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                Profile Settings
+              </h1>
               <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
                 Loading...
               </span>
             </div>
-            <p className="text-muted-foreground mt-2">Loading your profile...</p>
+            <p className="text-muted-foreground mt-2">
+              Loading your profile...
+            </p>
           </div>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -223,16 +257,21 @@ function Profile() {
     <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
       <div className="flex items-center gap-6">
         <div className="relative group">
-          <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
+          <Avatar
+            onClick={() => setIsAvatarPreviewOpen(true)}
+            className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in"
+          >
             <AvatarImage src={currentAvatar} alt="Profile avatar" />
             <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
-              {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
+              {userProfile
+                ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase()
+                : 'U'}
             </AvatarFallback>
           </Avatar>
-          
-          <Button 
+
+          <Button
             size="icon"
-            variant="secondary" 
+            variant="secondary"
             className="absolute bottom-0 right-0 rounded-full w-8 h-8 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-50 border-2 border-primary/30"
             onClick={handleAvatarClick}
           >
@@ -243,14 +282,18 @@ function Profile() {
 
         <div className="flex flex-col gap-1 sm:gap-2">
           <div className="flex flex-row items-center gap-2 sm:gap-4">
-          <h1 className="text-2xl font-semibold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Profile Settings</h1>
+            <h1 className="text-2xl font-semibold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+              Profile Settings
+            </h1>
             {userRole && (
               <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20 capitalize">
                 {userRole}
               </span>
             )}
           </div>
-          <p className="text-muted-foreground mt-2">Manage your account settings and preferences</p>
+          <p className="text-muted-foreground mt-2">
+            Manage your account settings and preferences
+          </p>
         </div>
       </div>
 
@@ -270,75 +313,109 @@ function Profile() {
           </TabsTrigger>
         </TabsList> */}
 
-        <div className="space-y-6">
-          <Card className="w-full transition-all duration-300 hover:shadow-lg border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/30">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <div className="w-2 h-2 bg-gradient-to-r from-primary to-purple-400 rounded-full"></div>
-                Personal Information
-              </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">Update your account details and preferences</p>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Full Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} readOnly disabled className="bg-gray-50/50 border-gray-200 cursor-not-allowed h-11 rounded-lg" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Email</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" readOnly disabled className="bg-gray-50/50 border-gray-200 cursor-not-allowed h-11 rounded-lg" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+      <div className="space-y-6">
+        <Card className="w-full transition-all duration-300 hover:shadow-lg border-0 shadow-sm bg-gradient-to-br from-white to-gray-50/30">
+          <CardHeader className="pb-6">
+            <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-2 h-2 bg-gradient-to-r from-primary to-purple-400 rounded-full"></div>
+              Personal Information
+            </CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              Update your account details and preferences
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4 w-full"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                          Full Name
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            readOnly
+                            disabled
+                            className="bg-gray-50/50 border-gray-200 cursor-not-allowed h-11 rounded-lg"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                          Email
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            readOnly
+                            disabled
+                            className="bg-gray-50/50 border-gray-200 cursor-not-allowed h-11 rounded-lg"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="linkedin"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">LinkedIn Profile URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="url" placeholder="https://www.linkedin.com/in/username" className="h-11 rounded-lg" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={form.control}
+                    name="linkedin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                          LinkedIn Profile URL
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="url"
+                            placeholder="https://www.linkedin.com/in/username"
+                            className="h-11 rounded-lg"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="facebook"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Facebook Profile URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="url" placeholder="https://www.facebook.com/username" className="h-11 rounded-lg" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={form.control}
+                    name="facebook"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                          Facebook Profile URL
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="url"
+                            placeholder="https://www.facebook.com/username"
+                            className="h-11 rounded-lg"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    {/* <FormField
+                  {/* <FormField
                       control={form.control}
                       name="title"
                       render={({ field }) => (
@@ -352,7 +429,7 @@ function Profile() {
                       )}
                     /> */}
 
-                    {/* <FormField
+                  {/* <FormField
                       control={form.control}
                       name="phone"
                       render={({ field }) => (
@@ -365,48 +442,60 @@ function Profile() {
                         </FormItem>
                       )}
                     /> */}
-                  </div>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Phone</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="tel" placeholder="Enter phone number" className="h-11 rounded-lg" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                          Phone
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="tel"
+                            placeholder="Enter phone number"
+                            className="h-11 rounded-lg"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="gender"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Gender</FormLabel>
-                          <FormControl>
-                            <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
-                              <SelectTrigger className="h-11 rounded-lg border-gray-200">
-                                <SelectValue placeholder="Select gender" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="male">Male</SelectItem>
-                                <SelectItem value="female">Female</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                          Gender
+                        </FormLabel>
+                        <FormControl>
+                          <Select
+                            value={field.value}
+                            onValueChange={value => field.onChange(value)}
+                          >
+                            <SelectTrigger className="h-11 rounded-lg border-gray-200">
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                  {/* <FormField
+                {/* <FormField
                     control={form.control}
                     name="location"
                     render={({ field }) => (
@@ -420,70 +509,97 @@ function Profile() {
                     )}
                   /> */}
 
-                  <FormField
-                    control={form.control}
-                    name="bio"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">About Me</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={4} placeholder="Tell us about yourself..." className="rounded-lg" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                        About Me
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          rows={4}
+                          placeholder="Tell us about yourself..."
+                          className="rounded-lg"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Timezone selection */}
-                  <FormField
-                    control={form.control}
-                    name="timezone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">Timezone</FormLabel>
-                        <FormControl>
-                          <Select value={field.value} onValueChange={(value) => {
+                {/* Timezone selection */}
+                <FormField
+                  control={form.control}
+                  name="timezone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700 mb-2">
+                        Timezone
+                      </FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={value => {
                             field.onChange(value);
-                          }}>
-                            <SelectTrigger className="h-11 rounded-lg border-gray-200">
-                              <SelectValue placeholder="Select timezone" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="America/Los_Angeles">PST/PDT (Pacific Time US & Canada)</SelectItem>
-                              <SelectItem value="America/Denver">MST (Mountain Time US & Canada)</SelectItem>
-                              <SelectItem value="America/New_York">EST (Eastern Time US & Canada)</SelectItem>
-                              <SelectItem value="Europe/London">GMT/BST (Greenwich Mean Time)</SelectItem>
-                              <SelectItem value="America/Chicago">CT (Central Time)</SelectItem>
-                              <SelectItem value="Asia/Kolkata">IST (Indian Standard Time)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                        {/* Debug info */}
-                        <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                          Current value: {field.value || 'Not set'}
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                          }}
+                        >
+                          <SelectTrigger className="h-11 rounded-lg border-gray-200">
+                            <SelectValue placeholder="Select timezone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="America/Los_Angeles">
+                              PST/PDT (Pacific Time US & Canada)
+                            </SelectItem>
+                            <SelectItem value="America/Denver">
+                              MST (Mountain Time US & Canada)
+                            </SelectItem>
+                            <SelectItem value="America/New_York">
+                              EST (Eastern Time US & Canada)
+                            </SelectItem>
+                            <SelectItem value="Europe/London">
+                              GMT/BST (Greenwich Mean Time)
+                            </SelectItem>
+                            <SelectItem value="America/Chicago">
+                              CT (Central Time)
+                            </SelectItem>
+                            <SelectItem value="Asia/Kolkata">
+                              IST (Indian Standard Time)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                      {/* Debug info */}
+                      <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                        Current value: {field.value || 'Not set'}
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
-                  <div className="pt-4 border-t border-gray-100">
-                    <Button 
-                      type="submit" 
-                      className="bg-gradient-to-r from-primary to-purple-400 transition-all duration-300 hover:opacity-90 h-11 px-8 rounded-lg font-medium"
-                      disabled={isUpdating}
-                    >
-                      {isUpdating ? "Updating..." : "Save Changes"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
+                <div className="pt-4 border-t border-gray-100">
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-primary to-purple-400 transition-all duration-300 hover:opacity-90 h-11 px-8 rounded-lg font-medium"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? 'Updating...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* <TabsContent value="notifications" className="space-y-4">
+      {/* AI Content Library Section */}
+      <AIContentLibrarySection />
+
+      {/* <TabsContent value="notifications" className="space-y-4">
           <NotificationPreferences />
         </TabsContent>
 

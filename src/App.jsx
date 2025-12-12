@@ -110,6 +110,7 @@ import AICourseCreator from '@/pages/AICourseCreator';
 import CreateScenario from '@/pages/CreateScenario';
 import PreviewScenario from '@/pages/PreviewScenario';
 import ScenarioTakePage from '@/pages/ScenarioTakePage';
+import AIgenerated from '@/pages/AIgenerated';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
@@ -527,6 +528,7 @@ function App() {
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="attendance" element={<Attendance />} />
                 <Route path="todo" element={<TodoPage />} />
+                <Route path="ai-generated" element={<AIgenerated />} />
                 <Route path="chatbot" element={<Chatbot />} />
                 <Route path="faqs" element={<FAQs />} />
                 <Route path="privacy" element={<Privacy />} />

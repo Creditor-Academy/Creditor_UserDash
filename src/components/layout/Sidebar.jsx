@@ -23,6 +23,7 @@ import {
   Bot,
   CreditCard,
   CalendarDays,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { currentUserId } from '@/data/currentUser';
 import { getUserRole } from '@/services/userService';
@@ -498,6 +499,14 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               className="mt-1"
             >
               <div className="space-y-2">
+                <SidebarItem
+                  icon={ImageIcon}
+                  label="AI Creations"
+                  href="/dashboard/ai-generated"
+                  active={isActive('/dashboard/ai-generated')}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
                 <SidebarItem
                   icon={Bot}
                   label="Credit chatbot"
