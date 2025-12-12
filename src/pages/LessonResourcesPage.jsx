@@ -15,54 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// Dummy data for resources
-const DUMMY_RESOURCES = [
-  {
-    id: '1',
-    title: 'Introduction to Business Credit PDF',
-    description:
-      'A comprehensive guide covering the basics of business credit and why it matters.',
-    fileName: 'business-credit-intro.pdf',
-    fileType: 'application/pdf',
-    fileSize: 2048576, // 2MB
-    url: 'https://example.com/resources/business-credit-intro.pdf',
-    uploadDate: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Credit Bureau Overview Video',
-    description:
-      'Video tutorial explaining the major business credit bureaus and how they work.',
-    fileName: 'credit-bureaus-overview.mp4',
-    fileType: 'video/mp4',
-    fileSize: 15728640, // 15MB
-    url: 'https://example.com/resources/credit-bureaus-overview.mp4',
-    uploadDate: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Credit Score Calculation Guide',
-    description:
-      'Detailed infographic showing how business credit scores are calculated.',
-    fileName: 'credit-score-guide.png',
-    fileType: 'image/png',
-    fileSize: 1048576, // 1MB
-    url: 'https://example.com/resources/credit-score-guide.png',
-    uploadDate: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: '4',
-    title: 'Sample Credit Report',
-    description:
-      'Example business credit report with annotations explaining each section.',
-    fileName: 'sample-credit-report.pdf',
-    fileType: 'application/pdf',
-    fileSize: 3145728, // 3MB
-    url: 'https://example.com/resources/sample-credit-report.pdf',
-    uploadDate: new Date(Date.now() - 259200000).toISOString(),
-  },
-];
+import { getLessonResources } from '@/services/lessonResourcesService';
 
 const LessonResourcesPage = () => {
   const { courseId, moduleId, lessonId } = useParams();
@@ -75,13 +28,32 @@ const LessonResourcesPage = () => {
   const [lessonTitle, setLessonTitle] = useState('');
 
   useEffect(() => {
-    if (courseId && moduleId && lessonId) {
-      // Simulate loading delay
-      setTimeout(() => {
-        setResources(DUMMY_RESOURCES);
-        setLessonTitle('Introduction: Why Business Credit Matters');
+    const fetchResources = async () => {
+      if (!lessonId) {
+        console.error('Missing lessonId parameter.');
+        setError(
+          'Invalid route parameters. Please navigate from a lesson page.'
+        );
         setLoading(false);
-      }, 500);
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      try {
+        const fetchedResources = await getLessonResources(lessonId);
+        setResources(fetchedResources);
+        // Assuming lessonTitle would come from a separate lesson details API, or from resources if available
+        setLessonTitle(`Lesson ${lessonId} Resources`); // Placeholder
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch lesson resources:', err);
+        setError('Failed to load resources. Please try again later.');
+        setLoading(false);
+      }
+    };
+
+    if (courseId && moduleId && lessonId) {
+      fetchResources();
     } else {
       console.error('Missing route parameters:', {
         courseId,
@@ -91,7 +63,7 @@ const LessonResourcesPage = () => {
       setError('Invalid route parameters. Please navigate from a lesson page.');
       setLoading(false);
     }
-  }, [courseId, moduleId, lessonId]);
+  }, [courseId, moduleId, lessonId, toast]);
 
   const getFileIcon = (fileType, fileName) => {
     if (!fileType && fileName) {

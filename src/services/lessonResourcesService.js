@@ -1,4 +1,4 @@
-// Lesson Resources Service
+// Lesson Resources API Service
 import api from './apiClient';
 import { getAuthHeader } from './authHeader';
 
