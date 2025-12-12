@@ -41,6 +41,15 @@ const SponsorRequestPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaPreview) {
+        URL.revokeObjectURL(mediaPreview);
+      }
+    };
+  }, [mediaPreview]);
+
   // Pre-fill user email if available
   useEffect(() => {
     if (userProfile?.email && !formState.contactEmail) {
@@ -60,9 +69,23 @@ const SponsorRequestPage = () => {
   const handleFileChange = e => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Clean up previous preview URL to prevent memory leaks
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview);
+    }
+
     const preview = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/');
+    const adType = isVideo ? 'Video' : 'Image';
+
     setMediaPreview(preview);
-    setFormState(prev => ({ ...prev, mediaFile: file, mediaUrl: preview }));
+    setFormState(prev => ({
+      ...prev,
+      mediaFile: file,
+      mediaUrl: preview,
+      adType: adType,
+    }));
   };
 
   const validate = () => {
@@ -139,6 +162,11 @@ const SponsorRequestPage = () => {
         result.message ||
           'Ad application submitted successfully. Admin will review your request.'
       );
+      // Clean up preview URL before resetting
+      if (mediaPreview) {
+        URL.revokeObjectURL(mediaPreview);
+      }
+
       setFormState(initialForm);
       setMediaPreview('');
       setFormState(prev => ({
@@ -154,21 +182,24 @@ const SponsorRequestPage = () => {
     }
   };
 
-  const previewData = useMemo(
-    () => ({
+  const previewData = useMemo(() => {
+    // Determine mediaType based on adType (lowercase for mediaType)
+    const mediaType = formState.adType === 'Video' ? 'video' : 'image';
+
+    return {
       sponsorName: formState.sponsorName || 'Sponsor name',
       adTitle: formState.adTitle || 'Ad title',
       description: formState.description || 'Preview copy will appear here.',
       mediaUrl: mediaPreview || formState.mediaUrl,
+      mediaType: mediaType,
       placement: formState.placement,
       type: formState.adType || 'Image',
       status: 'Preview',
       startDate: formState.startDate,
       endDate: formState.endDate,
       budget: formState.budget,
-    }),
-    [formState, mediaPreview]
-  );
+    };
+  }, [formState, mediaPreview]);
 
   if (loading) {
     return (
