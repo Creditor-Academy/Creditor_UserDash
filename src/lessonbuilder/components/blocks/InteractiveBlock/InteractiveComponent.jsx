@@ -202,6 +202,17 @@ const InteractiveComponent = forwardRef(
         audio: null,
       },
     ]);
+    const [quizData, setQuizData] = useState({
+      title: 'Quiz',
+      questions: [
+        {
+          question: 'Sample question?',
+          options: ['Option A', 'Option B', 'Option C', 'Option D'],
+          correctAnswer: 0,
+          explanation: 'This is the correct answer because...',
+        },
+      ],
+    });
     const [editingHotspot, setEditingHotspot] = useState(null);
     const [showHotspotDialog, setShowHotspotDialog] = useState(false);
     const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] =
@@ -879,6 +890,19 @@ const InteractiveComponent = forwardRef(
           }
         }
 
+        // If still no template, try to detect from content structure (for quiz)
+        if (!template && editingInteractiveBlock.content) {
+          try {
+            const content = JSON.parse(editingInteractiveBlock.content);
+            // Check if it's a quiz structure
+            if (content.type === 'quiz' && content.questions) {
+              template = 'quiz';
+            }
+          } catch (error) {
+            // Not JSON, continue to HTML detection
+          }
+        }
+
         // If still no template, detect from HTML patterns
         if (!template && editingInteractiveBlock.html_css) {
           const htmlContent = editingInteractiveBlock.html_css;
@@ -908,7 +932,25 @@ const InteractiveComponent = forwardRef(
             htmlContent.includes('interactive-process')
           ) {
             template = 'process';
+          } else if (
+            htmlContent.includes('quiz') ||
+            (htmlContent.includes('border-blue-500') &&
+              htmlContent.includes('Question'))
+          ) {
+            // Quiz HTML pattern detection
+            template = 'quiz';
           }
+        }
+
+        // Also check metadata for quiz type
+        if (
+          !template &&
+          editingInteractiveBlock.metadata?.interactiveType === 'quiz'
+        ) {
+          template = 'quiz';
+        }
+        if (!template && editingInteractiveBlock.metadata?.variant === 'quiz') {
+          template = 'quiz';
         }
 
         devLogger.debug('Detected template:', template);
@@ -944,6 +986,25 @@ const InteractiveComponent = forwardRef(
               } else if (template === 'process' && content.processData) {
                 devLogger.debug('Loading process data:', content.processData);
                 setProcessData(content.processData);
+              } else if (template === 'quiz') {
+                // Quiz content structure: { type: 'quiz', title: string, questions: array }
+                devLogger.debug('Loading quiz data:', content);
+                if (content.questions && Array.isArray(content.questions)) {
+                  devLogger.debug(
+                    'Quiz questions found:',
+                    content.questions.length
+                  );
+                  setQuizData({
+                    title: content.title || 'Quiz',
+                    questions: content.questions,
+                  });
+                } else if (content.type === 'quiz' && content.questions) {
+                  // Handle direct quiz structure
+                  setQuizData({
+                    title: content.title || 'Quiz',
+                    questions: content.questions,
+                  });
+                }
               }
             } else {
               devLogger.debug(
@@ -2585,6 +2646,58 @@ const InteractiveComponent = forwardRef(
         </div>
       `;
         return processHTML;
+      } else if (template === 'quiz') {
+        // Handle quiz data structure: { type: 'quiz', title: string, questions: array }
+        const quizData = data.questions || (Array.isArray(data) ? data : []);
+        const quizTitle = data.title || 'Quiz';
+
+        let quizHTML = `<div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">`;
+        quizHTML += `<h3 class="text-xl font-semibold text-gray-900 mb-6">${quizTitle}</h3>`;
+
+        if (quizData && quizData.length > 0) {
+          quizData.forEach((q, idx) => {
+            const question = q.question || q.text || '';
+            const options = q.options || [];
+            const correctAnswer =
+              q.correctAnswer !== undefined
+                ? q.correctAnswer
+                : q.correct !== undefined
+                  ? q.correct
+                  : 0;
+            const explanation = q.explanation || '';
+
+            quizHTML += `<div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">`;
+            quizHTML += `<p class="font-semibold text-gray-800 mb-4 text-lg">${idx + 1}. ${question}</p>`;
+            quizHTML += `<div class="space-y-2">`;
+
+            options.forEach((option, optIndex) => {
+              const isCorrect = optIndex === correctAnswer;
+              quizHTML += `<div class="flex items-start p-3 rounded-lg ${isCorrect ? 'bg-green-50 border-l-4 border-green-500' : 'bg-white border border-gray-200'}">`;
+              quizHTML += `<span class="mr-3 font-medium text-gray-700">${String.fromCharCode(97 + optIndex)})</span>`;
+              quizHTML += `<span class="flex-1 text-gray-700">${option}</span>`;
+              if (isCorrect) {
+                quizHTML += `<span class="ml-2 text-green-600 font-semibold">✓</span>`;
+              }
+              quizHTML += `</div>`;
+            });
+
+            quizHTML += `</div>`;
+
+            if (explanation) {
+              quizHTML += `<div class="mt-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">`;
+              quizHTML += `<p class="text-sm font-medium text-blue-800 mb-1">Explanation:</p>`;
+              quizHTML += `<p class="text-sm text-blue-700">${explanation}</p>`;
+              quizHTML += `</div>`;
+            }
+
+            quizHTML += `</div>`;
+          });
+        } else {
+          quizHTML += `<p class="text-gray-600">No questions available.</p>`;
+        }
+
+        quizHTML += `</div>`;
+        return quizHTML;
       }
       return '';
     };
@@ -2804,6 +2917,34 @@ const InteractiveComponent = forwardRef(
           toast.error('Please fill in all titles and descriptions');
           return;
         }
+      } else if (selectedTemplate === 'quiz') {
+        // For quiz, use the existing quizData structure
+        data = quizData.questions || [];
+        dataKey = 'questions';
+        const interactiveContent = {
+          type: 'quiz',
+          title: quizData.title || 'Quiz',
+          questions: quizData.questions || [],
+        };
+        const htmlContent = generateInteractiveHTML('quiz', interactiveContent);
+        if (editingInteractiveBlock) {
+          onInteractiveUpdate(editingInteractiveBlock.id, {
+            content: JSON.stringify(interactiveContent),
+            html_css: htmlContent,
+            subtype: 'quiz',
+          });
+        } else {
+          onInteractiveTemplateSelect({
+            type: 'interactive',
+            subtype: 'quiz',
+            template: 'quiz',
+            content: JSON.stringify(interactiveContent),
+            html_css: htmlContent,
+          });
+        }
+        setShowInteractiveEditDialog(false);
+        toast.success('Quiz content saved successfully!');
+        return;
       }
 
       const interactiveContent = {
@@ -3029,7 +3170,10 @@ const InteractiveComponent = forwardRef(
             }
           }}
         >
-          <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto sm:max-w-5xl !fixed !left-1/2 !top-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
+          <DialogContent
+            className="max-w-5xl max-h-[95vh] overflow-y-auto sm:max-w-5xl !fixed !left-1/2 !top-1/2 !transform !-translate-x-1/2 !-translate-y-1/2"
+            aria-describedby={undefined}
+          >
             {/* Loading overlay */}
             {isImageProcessing && (
               <div className="absolute inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center rounded-lg">
@@ -3067,7 +3211,9 @@ const InteractiveComponent = forwardRef(
                         ? 'Timeline'
                         : selectedTemplate === 'process'
                           ? 'Process'
-                          : 'Interactive Content'}
+                          : selectedTemplate === 'quiz'
+                            ? 'Quiz'
+                            : 'Interactive Content'}
               </DialogTitle>
             </DialogHeader>
 
@@ -4158,6 +4304,105 @@ const InteractiveComponent = forwardRef(
                   </div>
                 </div>
               )}
+
+              {selectedTemplate === 'quiz' && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">Quiz Content</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Quiz Title
+                      </label>
+                      <input
+                        type="text"
+                        value={quizData.title || ''}
+                        onChange={e =>
+                          setQuizData({ ...quizData, title: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter quiz title"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Questions
+                        </label>
+                        <span className="text-sm text-gray-500">
+                          {quizData.questions?.length || 0} question(s)
+                        </span>
+                      </div>
+                      {quizData.questions && quizData.questions.length > 0 ? (
+                        <div className="space-y-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                          {quizData.questions.map((q, index) => (
+                            <div
+                              key={index}
+                              className="bg-white rounded-lg p-4 border border-gray-200"
+                            >
+                              <div className="mb-3">
+                                <span className="text-sm font-semibold text-gray-700">
+                                  Question {index + 1}:
+                                </span>
+                                <p className="mt-1 text-gray-800">
+                                  {q.question || q.text || 'No question text'}
+                                </p>
+                              </div>
+                              {q.options && Array.isArray(q.options) && (
+                                <div className="space-y-2 ml-4">
+                                  {q.options.map((option, optIndex) => (
+                                    <div
+                                      key={optIndex}
+                                      className={`flex items-center gap-2 p-2 rounded ${
+                                        q.correctAnswer === optIndex
+                                          ? 'bg-green-50 border border-green-200'
+                                          : 'bg-gray-50'
+                                      }`}
+                                    >
+                                      <span className="text-sm font-medium text-gray-600">
+                                        {String.fromCharCode(97 + optIndex)})
+                                      </span>
+                                      <span className="text-sm text-gray-700">
+                                        {option}
+                                      </span>
+                                      {q.correctAnswer === optIndex && (
+                                        <span className="ml-auto text-xs font-semibold text-green-600">
+                                          ✓ Correct
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {q.explanation && (
+                                <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                                  <p className="text-xs font-medium text-blue-800 mb-1">
+                                    Explanation:
+                                  </p>
+                                  <p className="text-xs text-blue-700">
+                                    {q.explanation}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                          <p className="text-gray-500">
+                            No questions found in this quiz.
+                          </p>
+                        </div>
+                      )}
+                      <p className="mt-4 text-sm text-gray-600 italic">
+                        Note: Quiz editing is currently view-only. The quiz
+                        content is displayed above for reference.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -4178,7 +4423,7 @@ const InteractiveComponent = forwardRef(
 
         {/* Hotspot Edit Dialog */}
         <Dialog open={showHotspotDialog} onOpenChange={setShowHotspotDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Edit Hotspot</DialogTitle>
             </DialogHeader>

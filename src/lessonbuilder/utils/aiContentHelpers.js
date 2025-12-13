@@ -156,6 +156,11 @@ export function getTemplatesForBlockType(blockType) {
         description: 'Chronological timeline',
       },
       { id: 'process', title: 'Process', description: 'Step-by-step process' },
+      {
+        id: 'quiz',
+        title: 'Quiz',
+        description: 'Multiple choice quiz questions with answers',
+      },
     ],
 
     divider: [
@@ -521,8 +526,40 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         }
       }
 
+      // Extract image URL - prioritize S3 URL if available, otherwise use OpenAI URL
+      let imageUrl =
+        aiResponse.data?.url || // Backend returns S3 URL in data.url if uploaded
+        aiResponse.url || // Fallback to direct URL
+        imageContent?.imageUrl ||
+        imageContent?.url ||
+        '';
+
+      // Check if URL is already an S3 URL
+      const isS3Url =
+        imageUrl.includes('s3.amazonaws.com') ||
+        imageUrl.includes('.s3.') ||
+        imageUrl.includes('amazonaws.com');
+
+      // Check if URL is from OpenAI (temporary, needs S3 upload)
+      const isOpenAIUrl =
+        imageUrl.includes('oaidalleapiprodscus') ||
+        imageUrl.includes('dalle') ||
+        (imageUrl.startsWith('https://') &&
+          !isS3Url &&
+          imageUrl.includes('openai'));
+
+      // If it's an OpenAI URL and not already uploaded to S3, mark it for upload
+      const needsS3Upload = isOpenAIUrl && !isS3Url;
+
+      devLogger.debug('Image URL analysis:', {
+        imageUrl,
+        isS3Url,
+        isOpenAIUrl,
+        needsS3Upload,
+        uploadedToS3: aiResponse.data?.uploadedToS3 || aiResponse.uploadedToS3,
+      });
+
       const {
-        imageUrl = imageContent?.imageUrl || imageContent?.url || '',
         imageTitle = imageContent?.imageTitle || imageContent?.title || '',
         imageDescription = imageContent?.imageDescription ||
           imageContent?.description ||
@@ -556,6 +593,11 @@ export function formatAIContentForBlock(aiResponse, blockType) {
         imageTitle,
         imageDescription: imageDescription || captionText || '',
         text: textHtml,
+        // Store metadata about S3 upload status
+        needsS3Upload, // Flag to indicate if image needs S3 upload
+        originalImageUrl: isOpenAIUrl ? imageUrl : undefined, // Store original OpenAI URL if needed
+        uploadedToS3:
+          aiResponse.data?.uploadedToS3 || aiResponse.uploadedToS3 || isS3Url,
         details: {
           ...(aiResponse.details || {}),
           image_url: imageUrl,
@@ -565,6 +607,9 @@ export function formatAIContentForBlock(aiResponse, blockType) {
           layout: template?.layout || 'centered',
           template: templateId,
           alignment,
+          uploadedToS3:
+            aiResponse.data?.uploadedToS3 || aiResponse.uploadedToS3 || isS3Url,
+          needsS3Upload, // Store flag in details too
         },
       };
 
@@ -684,7 +729,7 @@ function generateTextHTML(textType, content = '') {
   }
 }
 
-function generateImageHTML(block) {
+export function generateImageHTML(block) {
   const layout = block.layout || 'centered';
   const textContent = (block.text || block.details?.caption_html || '').trim();
   const fallbackText = block.imageDescription || block.details?.caption || '';

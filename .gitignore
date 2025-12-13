@@ -40,3 +40,15 @@ ai-provider-config.js
 *.njsproj
 *.sln
 *.sw?
+*.md
+*.txt
+
+# AI Service Configuration (Keep private)
+ai-config.json
+ai-models.json
+ai-provider-config.js
+
+# Vernibility 
+.env
+.env.*
+*.env

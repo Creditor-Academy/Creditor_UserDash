@@ -1,3 +1,5 @@
+import { emitActiveOrgUsageRefresh } from '../utils/activeOrgUsageEvents';
+
 /**
  * Secure AI Service - Backend-Only Implementation
  * Replaces all direct OpenAI calls with secure backend API calls
@@ -352,6 +354,7 @@ class SecureAIService {
         `✅ Text generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
+      this.notifyUsageRefresh();
       return result.data.text;
     } catch (error) {
       const formattedError = this.handleError(
@@ -419,6 +422,7 @@ class SecureAIService {
         `✅ Structured JSON generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
+      this.notifyUsageRefresh();
       return result.data.jsonData;
     } catch (error) {
       const formattedError = this.handleError(
@@ -535,6 +539,8 @@ class SecureAIService {
         );
       }
 
+      this.notifyUsageRefresh();
+
       return {
         success: true,
         data: imageData,
@@ -608,6 +614,8 @@ class SecureAIService {
         `✅ Course outline generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
+      this.notifyUsageRefresh();
+
       return {
         success: true,
         data: result.data.course,
@@ -671,6 +679,8 @@ class SecureAIService {
           result.message || 'Comprehensive course generation failed'
         );
       }
+
+      this.notifyUsageRefresh();
 
       clientLogger.debug(
         `✅ Comprehensive course generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
@@ -758,6 +768,8 @@ class SecureAIService {
         `✅ Course blueprint generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
+      this.notifyUsageRefresh();
+
       return {
         success: true,
         data: result.data.blueprint,
@@ -803,6 +815,8 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
               skipStatusCheck: true,
             }
           );
+
+          this.notifyUsageRefresh();
 
           return {
             success: true,
@@ -1074,6 +1088,13 @@ Return ONLY valid JSON.`;
     } catch (error) {
       this.handleError(error, 'Quiz generation');
     }
+  }
+
+  /**
+   * Notify listeners to refresh active organization usage
+   */
+  notifyUsageRefresh() {
+    emitActiveOrgUsageRefresh();
   }
 
   /**

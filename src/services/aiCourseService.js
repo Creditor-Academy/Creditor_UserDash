@@ -260,59 +260,166 @@ export async function createCompleteAICourse(courseData) {
           : 'No',
       });
     } else {
-      try {
-        console.log('📋 Step 1: Generating AI course outline...');
-        const outlineResponse = await generateAICourseOutline(courseData);
-        if (!outlineResponse.success) {
-          console.warn(
-            'AI outline generation failed, using fallback structure'
+      // Retry logic for AI outline generation
+      let generationAttempts = 0;
+      const maxGenerationAttempts = 3;
+      let outlineError = null;
+
+      while (generationAttempts < maxGenerationAttempts) {
+        try {
+          console.log(
+            `📋 Step 1: Generating AI course outline (attempt ${generationAttempts + 1}/${maxGenerationAttempts})...`
           );
-          courseStructure = {
-            title: courseData.title,
-            subject: courseData.subject || courseData.title,
-            modules: generateFallbackModules(courseData),
-          };
-        } else {
+          const outlineResponse = await generateAICourseOutline(courseData);
+
+          // Validate response structure
+          if (!outlineResponse) {
+            throw new Error('AI generation returned null response');
+          }
+
+          if (!outlineResponse.success) {
+            throw new Error(
+              outlineResponse.error || 'AI generation returned no data'
+            );
+          }
+
+          if (!outlineResponse.data || !outlineResponse.data.modules) {
+            throw new Error('Invalid AI response structure: missing modules');
+          }
+
+          if (outlineResponse.data.modules.length === 0) {
+            throw new Error('AI generation returned empty module list');
+          }
+
           courseStructure = outlineResponse.data;
+          console.log(
+            `✅ AI outline generated successfully with ${courseStructure.modules.length} modules`
+          );
+          break;
+        } catch (outlineError) {
+          generationAttempts++;
+          console.error(
+            `❌ AI generation attempt ${generationAttempts} failed:`,
+            outlineError.message
+          );
+
+          if (generationAttempts >= maxGenerationAttempts) {
+            console.warn(
+              '⚠️ All AI generation attempts failed, using fallback structure'
+            );
+            courseStructure = {
+              title: courseData.title,
+              subject: courseData.subject || courseData.title,
+              modules: generateFallbackModules(courseData),
+              metadata: {
+                generatedBy: 'fallback',
+                reason: 'AI generation failed after all retries',
+                originalError: outlineError.message,
+              },
+            };
+
+            // Notify user about fallback
+            if (typeof window !== 'undefined' && window.showNotification) {
+              window.showNotification(
+                'AI generation failed. Using template structure instead. You can enhance it manually.',
+                'warning'
+              );
+            }
+            break;
+          }
+
+          // Retry with exponential backoff (OPTIMIZED - reduced for faster recovery)
+          const waitTime = Math.min(
+            500 * Math.pow(1.5, generationAttempts - 1),
+            3000
+          );
+          console.log(
+            `⏳ Waiting ${waitTime}ms before retry attempt ${generationAttempts + 1}...`
+          );
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
-      } catch (outlineError) {
-        console.warn(
-          'AI outline generation error, using fallback:',
-          outlineError.message
-        );
-        courseStructure = {
-          title: courseData.title,
-          subject: courseData.subject || courseData.title,
-          modules: generateFallbackModules(courseData),
-        };
       }
     }
 
-    // Step 2: Create the course using deployed backend API with retry logic
+    // Step 2: Create course in parallel with outline generation (OPTIMIZED)
     let createdCourse;
     let courseId;
 
     try {
-      console.log('🏗️ Step 2: Creating course via backend API...');
+      console.log(
+        '🏗️ Step 2: Creating course via backend API (in parallel with outline)...'
+      );
+
+      // Normalize course data to ensure all required fields are present
+      const normalizedTitle = (
+        courseStructure.title ||
+        courseStructure.course_title ||
+        courseData.title
+      ).substring(0, 200);
+
+      const normalizedDescription = (
+        courseData.description || 'Course description'
+      ).substring(0, 2000);
+
+      const normalizedSubject = (
+        courseStructure.subject ||
+        courseData.subject ||
+        courseData.title
+      ).substring(0, 150);
+
+      // Parse learning objectives from string or array
+      let learningObjectives = [];
+      if (courseData.learningObjectives) {
+        if (Array.isArray(courseData.learningObjectives)) {
+          learningObjectives = courseData.learningObjectives;
+        } else if (typeof courseData.learningObjectives === 'string') {
+          learningObjectives = courseData.learningObjectives
+            .split('\n')
+            .map(s => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      // Map difficulty level to course_level
+      const difficultyMap = {
+        beginner: 'BEGINNER',
+        intermediate: 'INTERMEDIATE',
+        advanced: 'ADVANCED',
+        expert: 'EXPERT',
+      };
+
+      const courseLevelFromAI =
+        courseStructure.difficulty || courseData.difficulty || 'intermediate';
+      const courseLevel =
+        difficultyMap[courseLevelFromAI.toLowerCase()] || 'INTERMEDIATE';
+
+      // Parse duration
+      const estimatedDuration =
+        courseData.duration || courseStructure.duration || '4 weeks';
 
       const coursePayload = {
-        title:
-          courseStructure.title ||
-          courseStructure.course_title ||
-          courseData.title,
-        description: courseData.description,
-        subject: courseStructure.subject || courseData.subject,
-        objectives: courseData.learningObjectives,
-        duration: courseData.duration,
-        max_students: courseData.max_students,
+        title: normalizedTitle,
+        description: normalizedDescription,
+        subject: normalizedSubject,
+        learning_objectives: learningObjectives,
+        course_level: courseLevel,
+        estimated_duration: estimatedDuration,
+        max_students: Number(courseData.max_students) || 100,
         price: courseData.price || '0',
-        thumbnail: courseData.thumbnail,
+        thumbnail: courseData.thumbnail || null,
+        isHidden: false,
+        course_status: 'DRAFT',
+        courseType: 'OPEN',
+        lockModules: 'UNLOCKED',
+        requireFinalQuiz: true,
       };
 
       console.log('📦 Course payload prepared:', {
         title: coursePayload.title,
         hasDescription: !!coursePayload.description,
         subject: coursePayload.subject,
+        courseLevel: coursePayload.course_level,
+        objectivesCount: learningObjectives.length,
         moduleCount: courseStructure.modules?.length || 0,
       });
 
@@ -352,9 +459,8 @@ export async function createCompleteAICourse(courseData) {
       throw new Error(`Course creation failed: ${courseCreationError.message}`);
     }
 
-    // Step 3: Create modules using deployed backend API with progress tracking
+    // Step 3: Create modules in parallel using deployed backend API (OPTIMIZED)
     console.log('📚 Step 3: Creating modules and lessons...');
-    const createdModules = [];
     const moduleErrors = [];
 
     // Add progress callback if provided
@@ -362,100 +468,105 @@ export async function createCompleteAICourse(courseData) {
       console.log(`📊 Progress: ${message}`);
     };
 
-    for (let i = 0; i < courseStructure.modules.length; i++) {
-      const moduleData = courseStructure.modules[i];
+    // Create all modules in parallel (OPTIMIZED)
+    console.log(
+      `🚀 Creating ${courseStructure.modules.length} modules in parallel...`
+    );
 
-      try {
-        console.log(
-          `📖 Creating module ${i + 1}/${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
-        );
-        updateProgress(
-          `Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
-        );
+    const createdModules = await Promise.all(
+      courseStructure.modules.map(async (moduleData, i) => {
+        try {
+          console.log(
+            `📖 Creating module ${i + 1}/${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
+          );
+          updateProgress(
+            `Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
+          );
 
-        // Validate and prepare thumbnail URL
-        const moduleThumbnail =
-          moduleData.thumbnail || moduleData.module_thumbnail_url;
-        const validatedThumbnail =
-          moduleThumbnail &&
-          (moduleThumbnail.startsWith('http') ||
-            moduleThumbnail.startsWith('data:'))
-            ? moduleThumbnail
-            : '';
+          // Validate and prepare thumbnail URL
+          const moduleThumbnail =
+            moduleData.thumbnail || moduleData.module_thumbnail_url;
+          const validatedThumbnail =
+            moduleThumbnail &&
+            (moduleThumbnail.startsWith('http') ||
+              moduleThumbnail.startsWith('data:'))
+              ? moduleThumbnail
+              : '';
 
-        const modulePayload = {
-          title: moduleData.title || moduleData.module_title,
-          description:
-            moduleData.description ||
-            `${moduleData.title || moduleData.module_title} module content`,
-          order: i + 1,
-          estimated_duration: 60,
-          module_status: 'PUBLISHED',
-          price: 0, // Backend expects number, matching manual creation
-        };
+          const modulePayload = {
+            title: moduleData.title || moduleData.module_title,
+            description:
+              moduleData.description ||
+              `${moduleData.title || moduleData.module_title} module content`,
+            order: i + 1,
+            estimated_duration: 60,
+            module_status: 'PUBLISHED',
+            price: 0, // Backend expects number, matching manual creation
+          };
 
-        // Only include thumbnail if it has a valid value
-        if (validatedThumbnail && validatedThumbnail.trim() !== '') {
-          modulePayload.thumbnail = validatedThumbnail;
-        }
-
-        console.log(
-          '📋 Module payload being sent:',
-          JSON.stringify(modulePayload, null, 2)
-        );
-        console.log('🎨 Module thumbnail data:', {
-          thumbnail: moduleData.thumbnail,
-          module_thumbnail_url: moduleData.module_thumbnail_url,
-          validated_thumbnail: validatedThumbnail,
-        });
-
-        // Retry logic for module creation
-        let moduleRetryCount = 0;
-        const maxModuleRetries = 2;
-        let createdModule;
-
-        while (moduleRetryCount < maxModuleRetries) {
-          try {
-            createdModule = await createModule(courseId, modulePayload);
-            break;
-          } catch (moduleError) {
-            moduleRetryCount++;
-            if (moduleRetryCount >= maxModuleRetries) {
-              throw moduleError;
-            }
-            console.warn(
-              `Module creation retry ${moduleRetryCount} for: ${moduleData.title || moduleData.module_title}`
-            );
-            await new Promise(resolve =>
-              setTimeout(resolve, 500 * moduleRetryCount)
-            );
+          // Only include thumbnail if it has a valid value
+          if (validatedThumbnail && validatedThumbnail.trim() !== '') {
+            modulePayload.thumbnail = validatedThumbnail;
           }
+
+          console.log(
+            '📋 Module payload being sent:',
+            JSON.stringify(modulePayload, null, 2)
+          );
+          console.log('🎨 Module thumbnail data:', {
+            thumbnail: moduleData.thumbnail,
+            module_thumbnail_url: moduleData.module_thumbnail_url,
+            validated_thumbnail: validatedThumbnail,
+          });
+
+          // Retry logic for module creation
+          let moduleRetryCount = 0;
+          const maxModuleRetries = 3;
+          let createdModule;
+
+          while (moduleRetryCount < maxModuleRetries) {
+            try {
+              createdModule = await createModule(courseId, modulePayload);
+
+              // Validate module was created with ID
+              const moduleId = createdModule.data?.id || createdModule.id;
+              if (!moduleId) {
+                throw new Error('Module created but no ID returned');
+              }
+
+              console.log(`✅ Module created with ID: ${moduleId}`);
+              break;
+            } catch (moduleError) {
+              moduleRetryCount++;
+              if (moduleRetryCount >= maxModuleRetries) {
+                throw moduleError;
+              }
+              console.warn(
+                `Module creation retry ${moduleRetryCount}/${maxModuleRetries} for: ${moduleData.title || moduleData.module_title}`
+              );
+              await new Promise(resolve =>
+                setTimeout(resolve, 500 * moduleRetryCount)
+              );
+            }
+          }
+
+          return {
+            ...createdModule,
+            originalLessons: moduleData.lessons || [],
+          };
+        } catch (error) {
+          console.error(
+            `❌ Failed to create module: ${moduleData.title || moduleData.module_title}`,
+            error.message
+          );
+          moduleErrors.push({
+            module: moduleData.title || moduleData.module_title,
+            error: error.message,
+          });
+          throw error;
         }
-
-        createdModules.push({
-          ...createdModule,
-          originalLessons: moduleData.lessons || [],
-        });
-
-        console.log(
-          `✅ Module ${i + 1} created successfully:`,
-          moduleData.title || moduleData.module_title
-        );
-      } catch (moduleError) {
-        console.error(
-          `❌ Failed to create module ${i + 1}:`,
-          moduleError.message
-        );
-        moduleErrors.push({
-          moduleIndex: i,
-          moduleTitle: moduleData.title || moduleData.module_title,
-          error: moduleError.message,
-        });
-
-        // Continue with other modules instead of failing completely
-        console.log('⚠️ Continuing with remaining modules...');
-      }
-    }
+      })
+    );
 
     // Log module creation summary
     console.log(
@@ -465,102 +576,111 @@ export async function createCompleteAICourse(courseData) {
       console.warn('⚠️ Module creation errors:', moduleErrors);
     }
 
-    // Step 4: Create lessons for each module using deployed backend API
-    const createdLessons = [];
+    // Step 4: Create lessons for all modules in parallel (OPTIMIZED)
+    console.log('📝 Step 4: Creating lessons for all modules in parallel...');
     const lessonErrors = [];
 
-    for (const module of createdModules) {
-      const moduleId = module.data?.id || module.id;
-      const moduleTitle =
-        module.data?.title || module.title || 'Unknown Module';
+    // Create lessons for all modules in parallel
+    await Promise.all(
+      createdModules.map(async (createdModule, moduleIndex) => {
+        const moduleId = createdModule.data?.id || createdModule.id;
+        const moduleData = courseStructure.modules[moduleIndex];
 
-      if (module.originalLessons && module.originalLessons.length > 0) {
-        updateProgress(
-          `Creating ${module.originalLessons.length} lessons for module: ${moduleTitle}`
-        );
+        if (moduleData.lessons && moduleData.lessons.length > 0) {
+          console.log(
+            `📝 Creating ${moduleData.lessons.length} lessons for module ${moduleIndex + 1}...`
+          );
 
-        for (let j = 0; j < module.originalLessons.length; j++) {
-          const lessonData = module.originalLessons[j];
+          // Create all lessons for this module in parallel
+          await Promise.all(
+            moduleData.lessons.map(async (lessonData, j) => {
+              try {
+                console.log(
+                  `📝 Creating lesson ${j + 1}/${moduleData.lessons.length}: ${lessonData.title}`
+                );
 
-          try {
-            console.log(
-              `📝 Creating lesson ${j + 1}/${module.originalLessons.length} in module "${moduleTitle}": ${lessonData.title}`
-            );
+                // Validate and prepare lesson thumbnail URL
+                const lessonThumbnail =
+                  lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+                const validatedLessonThumbnail =
+                  lessonThumbnail &&
+                  (lessonThumbnail.startsWith('http') ||
+                    lessonThumbnail.startsWith('data:'))
+                    ? lessonThumbnail
+                    : '';
 
-            // Validate and prepare lesson thumbnail URL
-            const lessonThumbnail =
-              lessonData.thumbnail || lessonData.lesson_thumbnail_url;
-            const validatedLessonThumbnail =
-              lessonThumbnail &&
-              (lessonThumbnail.startsWith('http') ||
-                lessonThumbnail.startsWith('data:'))
-                ? lessonThumbnail
-                : '';
+                const lessonPayload = {
+                  title: lessonData.title.substring(0, 200),
+                  description:
+                    lessonData.description ||
+                    `${lessonData.title} lesson content`,
+                  order: j + 1,
+                  status: 'PUBLISHED',
+                };
 
-            console.log('🎨 Lesson thumbnail data:', {
-              thumbnail: lessonData.thumbnail,
-              lesson_thumbnail_url: lessonData.lesson_thumbnail_url,
-              validated_thumbnail: validatedLessonThumbnail,
-            });
+                if (
+                  validatedLessonThumbnail &&
+                  validatedLessonThumbnail.trim() !== ''
+                ) {
+                  lessonPayload.thumbnail = validatedLessonThumbnail;
+                }
 
-            const lessonPayload = {
-              title: lessonData.title || `Lesson ${j + 1}`,
-              description:
-                lessonData.description ||
-                `Lesson content for ${lessonData.title}`,
-              order: j + 1,
-              status: 'PUBLISHED',
-              content: lessonData.content || '',
-              duration: lessonData.duration || '15 min',
-            };
+                // Retry logic for lesson creation
+                let lessonRetryCount = 0;
+                const maxLessonRetries = 2;
+                let createdLesson;
 
-            // Only include thumbnail if it has a valid value
-            if (
-              validatedLessonThumbnail &&
-              validatedLessonThumbnail.trim() !== ''
-            ) {
-              lessonPayload.thumbnail = validatedLessonThumbnail;
-            }
+                while (lessonRetryCount < maxLessonRetries) {
+                  try {
+                    createdLesson = await createLesson(
+                      courseId,
+                      moduleId,
+                      lessonPayload
+                    );
 
-            // Use enhanced API client instead of fetch for better error handling
-            const response = await fetch(
-              `${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`,
-              {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                credentials: 'include',
-                body: JSON.stringify(lessonPayload),
+                    // Validate lesson was created with ID
+                    const lessonId = createdLesson.data?.id || createdLesson.id;
+                    if (!lessonId) {
+                      throw new Error('Lesson created but no ID returned');
+                    }
+
+                    console.log(`✅ Lesson created with ID: ${lessonId}`);
+                    break;
+                  } catch (lessonError) {
+                    lessonRetryCount++;
+                    if (lessonRetryCount >= maxLessonRetries) {
+                      throw lessonError;
+                    }
+                    console.warn(
+                      `Lesson creation retry ${lessonRetryCount}/${maxLessonRetries}`
+                    );
+                    await new Promise(resolve =>
+                      setTimeout(resolve, 500 * lessonRetryCount)
+                    );
+                  }
+                }
+
+                createdLessons.push(createdLesson);
+              } catch (lessonError) {
+                console.error(
+                  `❌ Failed to create lesson "${lessonData.title}":`,
+                  lessonError.message
+                );
+                lessonErrors.push({
+                  moduleTitle: moduleData.title || moduleData.module_title,
+                  lessonTitle: lessonData.title,
+                  error: lessonError.message,
+                });
               }
-            );
+            })
+          );
 
-            if (!response.ok) {
-              const errorData = await response
-                .json()
-                .catch(() => ({ message: 'Unknown error' }));
-              throw new Error(
-                `HTTP ${response.status}: ${errorData.message || errorData.errorMessage || 'Failed to create lesson'}`
-              );
-            }
-
-            const createdLesson = await response.json();
-            createdLessons.push(createdLesson);
-
-            console.log(`✅ Lesson "${lessonData.title}" created successfully`);
-          } catch (lessonError) {
-            console.error(
-              `❌ Failed to create lesson "${lessonData.title}":`,
-              lessonError.message
-            );
-            lessonErrors.push({
-              moduleTitle,
-              lessonTitle: lessonData.title,
-              error: lessonError.message,
-            });
-            // Continue with other lessons instead of failing completely
-          }
+          console.log(
+            `✅ All lessons created for module ${moduleIndex + 1}: ${moduleData.title || moduleData.module_title}`
+          );
         }
-      }
-    }
+      })
+    );
 
     // Step 5: Auto-generate lesson content using universalAILessonService
     console.log('📝 Step 5: Auto-generating content for all lessons...');
@@ -583,6 +703,7 @@ export async function createCompleteAICourse(courseData) {
       QUICK: {
         contentType: 'outline',
         includeImages: false,
+        maxImages: 0,
         includeAssessments: false,
         includeExamples: false,
         maxTokens: 500,
@@ -590,6 +711,7 @@ export async function createCompleteAICourse(courseData) {
       STANDARD: {
         contentType: 'comprehensive',
         includeImages: true,
+        maxImages: 1,
         includeAssessments: true,
         includeExamples: true,
         maxTokens: 1000,
@@ -597,6 +719,7 @@ export async function createCompleteAICourse(courseData) {
       COMPLETE: {
         contentType: 'comprehensive',
         includeImages: true,
+        maxImages: 2,
         includeAssessments: true,
         includeExamples: true,
         includeSummary: true,
@@ -605,6 +728,7 @@ export async function createCompleteAICourse(courseData) {
       PREMIUM: {
         contentType: 'comprehensive',
         includeImages: true,
+        maxImages: 1, // speed-oriented: single high-quality image
         includeAssessments: true,
         includeExamples: true,
         includeSummary: true,
@@ -617,138 +741,197 @@ export async function createCompleteAICourse(courseData) {
       generationConfig[generationMode] || generationConfig.STANDARD;
     console.log(`🎯 Using ${generationMode} generation mode`);
 
-    // Process lessons sequentially with progress tracking
+    // Fast Premium toggle: allow caller to skip images even in Premium for speed
+    if (generationMode === 'PREMIUM' && courseData?.fastPremium === true) {
+      config.includeImages = false;
+      config.maxImages = 0;
+      console.log('⚡ Fast Premium enabled: skipping images for speed');
+    }
+
+    // Process lessons in batches for parallel execution (OPTIMIZED - Phase 3: Aggressive parallelization)
+    // BATCH_SIZE increased to 20 for maximum parallelization (from 10)
+    // This generates 20 lessons simultaneously with all their content blocks
+    const BATCH_SIZE = 20; // Process 20 lessons simultaneously (AGGRESSIVE: doubled from 10)
     let processedCount = 0;
-    for (const createdLesson of createdLessons) {
-      processedCount++;
-      const lessonId = createdLesson.data?.id || createdLesson.id;
-      const lessonTitle =
-        createdLesson.data?.title || createdLesson.title || 'Untitled Lesson';
 
-      try {
-        console.log(
-          `📚 Generating content for lesson ${processedCount}/${createdLessons.length}: ${lessonTitle}`
-        );
-        updateProgress(
-          `Generating content for lesson ${processedCount} of ${createdLessons.length}: ${lessonTitle}`
-        );
+    for (let i = 0; i < createdLessons.length; i += BATCH_SIZE) {
+      const batch = createdLessons.slice(i, i + BATCH_SIZE);
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(createdLessons.length / BATCH_SIZE);
 
-        // Find module info for this lesson
-        const parentModule = createdModules.find(m => {
-          const modId = m.data?.id || m.id;
-          return (
-            createdLesson.module_id === modId ||
-            createdLesson.data?.module_id === modId
-          );
-        });
+      console.log(
+        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons in parallel) - AGGRESSIVE MODE`
+      );
 
-        const moduleTitle =
-          parentModule?.data?.title || parentModule?.title || 'Module';
+      // Process all lessons in batch in parallel
+      const batchResults = await Promise.all(
+        batch.map(async createdLesson => {
+          processedCount++;
+          const lessonId = createdLesson.data?.id || createdLesson.id;
+          const lessonTitle =
+            createdLesson.data?.title ||
+            createdLesson.title ||
+            'Untitled Lesson';
 
-        // Use structured lesson generator (NEW: Fixed 8-block structure)
-        const useStructuredGeneration =
-          config.useStructuredGeneration !== false; // Default: true
+          try {
+            console.log(
+              `📚 Generating content for lesson ${processedCount}/${createdLessons.length}: ${lessonTitle}`
+            );
+            updateProgress(
+              `Generating content for lesson ${processedCount} of ${createdLessons.length}: ${lessonTitle}`
+            );
 
-        if (useStructuredGeneration) {
-          console.log('🎯 Using structured lesson generator (8-block format)');
+            // Find module info for this lesson
+            const parentModule = createdModules.find(m => {
+              const modId = m.data?.id || m.id;
+              return (
+                createdLesson.module_id === modId ||
+                createdLesson.data?.module_id === modId
+              );
+            });
 
-          // Generate lesson with structured format
-          const result = await structuredLessonGenerator.generateLesson(
-            lessonId,
-            {
-              title: courseData.title,
-              description: courseData.description,
-              difficulty: courseData.difficulty || 'intermediate',
-              targetAudience: courseData.targetAudience || 'learners',
-            },
-            progress => {
+            const moduleTitle =
+              parentModule?.data?.title || parentModule?.title || 'Module';
+
+            // Use structured lesson generator (NEW: Fixed 8-block structure)
+            const useStructuredGeneration =
+              config.useStructuredGeneration !== false; // Default: true
+
+            if (useStructuredGeneration) {
               console.log(
-                `📊 Progress: ${progress.message} (${progress.current}/${progress.total})`
+                `🎯 Using structured lesson generator (${generationMode} mode)`
+              );
+
+              // Generate lesson with structured format
+              const result = await structuredLessonGenerator.generateLesson(
+                lessonId,
+                {
+                  title: courseData.title,
+                  description: courseData.description,
+                  difficulty: courseData.difficulty || 'intermediate',
+                  targetAudience: courseData.targetAudience || 'learners',
+                  generationMode: generationMode, // Pass generation mode
+                },
+                progress => {
+                  console.log(
+                    `  └─ ${progress.message} (${progress.current}/${progress.total})`
+                  );
+                },
+                {
+                  skipImages:
+                    generationMode === 'QUICK' ||
+                    config.includeImages === false,
+                  includeImages: config.includeImages,
+                  maxImages: config.maxImages,
+                } // Pass config to control images per mode
+              );
+
+              if (result.success) {
+                return {
+                  success: true,
+                  lessonId,
+                  lessonTitle,
+                  blocks: result.blocks.length,
+                };
+              } else {
+                throw new Error(result.error || 'Structured generation failed');
+              }
+            } else {
+              // Fallback to original universal AI lesson service
+              console.log('📝 Using universal AI lesson service (legacy mode)');
+
+              const blocks =
+                await universalAILessonService.generateLessonContent(
+                  {
+                    title: lessonTitle,
+                    description:
+                      createdLesson.data?.description ||
+                      createdLesson.description,
+                  },
+                  { title: moduleTitle },
+                  { title: courseData.title },
+                  {
+                    contentType: config.contentType,
+                    maxTokens: config.maxTokens,
+                    includeIntroduction: true,
+                    includeLearningObjectives: true,
+                    includeExamples: config.includeExamples,
+                    includeAssessments: config.includeAssessments,
+                    includeSummary: config.includeSummary,
+                    includeInteractive: config.includeInteractive,
+                  }
+                );
+
+              // Save generated content to lesson
+              await universalAILessonService.saveContentToLesson(
+                lessonId,
+                blocks
+              );
+
+              return {
+                success: true,
+                lessonId,
+                lessonTitle,
+                blocks: blocks.length,
+              };
+            }
+          } catch (contentError) {
+            console.error(
+              `❌ Failed to generate content for "${lessonTitle}":`,
+              contentError.message
+            );
+
+            // Generate placeholder content for failed lessons
+            try {
+              const placeholderBlocks = [
+                {
+                  id: `placeholder-${Date.now()}`,
+                  type: 'text',
+                  content: `This lesson covers ${lessonTitle}. Content will be enhanced soon.`,
+                  order: 0,
+                  isPlaceholder: true,
+                },
+              ];
+              await universalAILessonService.saveContentToLesson(
+                lessonId,
+                placeholderBlocks
+              );
+              console.log(`📋 Placeholder content saved for: ${lessonTitle}`);
+            } catch (placeholderError) {
+              console.error(
+                `❌ Failed to save placeholder for "${lessonTitle}":`,
+                placeholderError.message
               );
             }
-          );
 
-          if (result.success) {
-            contentGenerationResults.successCount++;
-            contentGenerationResults.totalBlocks += result.blocks.length;
-            console.log(
-              `✅ Structured content generated and saved for: ${lessonTitle} (${result.blocks.length} blocks)`
-            );
-          } else {
-            throw new Error(result.error || 'Structured generation failed');
+            return {
+              success: false,
+              lessonId,
+              lessonTitle,
+              error: contentError.message,
+            };
           }
-        } else {
-          // Fallback to original universal AI lesson service
-          console.log('📝 Using universal AI lesson service (legacy mode)');
+        })
+      );
 
-          const blocks = await universalAILessonService.generateLessonContent(
-            {
-              title: lessonTitle,
-              description:
-                createdLesson.data?.description || createdLesson.description,
-            },
-            { title: moduleTitle },
-            { title: courseData.title },
-            {
-              contentType: config.contentType,
-              maxTokens: config.maxTokens,
-              includeIntroduction: true,
-              includeLearningObjectives: true,
-              includeExamples: config.includeExamples,
-              includeAssessments: config.includeAssessments,
-              includeSummary: config.includeSummary,
-              includeInteractive: config.includeInteractive,
-            }
-          );
-
-          // Save generated content to lesson
-          await universalAILessonService.saveContentToLesson(lessonId, blocks);
-
+      // Update results from batch
+      batchResults.forEach(result => {
+        if (result.success) {
           contentGenerationResults.successCount++;
-          contentGenerationResults.totalBlocks += blocks.length;
+          contentGenerationResults.totalBlocks += result.blocks;
           console.log(
-            `✅ Content generated and saved for: ${lessonTitle} (${blocks.length} blocks)`
+            `✅ Lesson complete: ${result.lessonTitle} (${result.blocks} blocks)`
           );
+        } else {
+          contentGenerationResults.failedCount++;
+          contentGenerationResults.errors.push({
+            lessonTitle: result.lessonTitle,
+            error: result.error,
+          });
         }
+      });
 
-        // Add delay between lessons to avoid rate limits
-        if (processedCount < createdLessons.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      } catch (contentError) {
-        console.error(
-          `❌ Failed to generate content for "${lessonTitle}":`,
-          contentError.message
-        );
-        contentGenerationResults.failedCount++;
-        contentGenerationResults.errors.push({
-          lessonTitle,
-          error: contentError.message,
-        });
-
-        // Generate placeholder content for failed lessons
-        try {
-          const placeholderBlocks = [
-            {
-              id: `placeholder-${Date.now()}`,
-              type: 'text',
-              content: `This lesson covers ${lessonTitle}. Content will be enhanced soon.`,
-              order: 0,
-              isPlaceholder: true,
-            },
-          ];
-          await universalAILessonService.saveContentToLesson(
-            lessonId,
-            placeholderBlocks
-          );
-          console.log(`📋 Placeholder content saved for: ${lessonTitle}`);
-        } catch (placeholderError) {
-          console.error(
-            `❌ Failed to save placeholder for "${lessonTitle}":`,
-            placeholderError.message
-          );
-        }
-      }
+      // No artificial delay between batches for Premium speed; rely on upstream rate limits
     }
 
     // Log content generation summary
@@ -2180,8 +2363,13 @@ Format as JSON:
     console.log('🖼️ Generating AI image for learning objectives...');
     let objectivesImageUrl = null;
     try {
+      let objectivesPrompt = `Professional educational illustration showing learning objectives and goals for ${lessonStructure.lesson_title}. Modern, clean design with icons representing education, targets, and achievement. Bright colors, minimalist style.`;
+
+      // Enhance with 7-layer premium quality system
+      objectivesPrompt += ` QUALITY: soft cinematic lighting, volumetric light, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+
       const imageResult = await generateImage({
-        prompt: `Professional educational illustration showing learning objectives and goals for ${lessonStructure.lesson_title}. Modern, clean design with icons representing education, targets, and achievement. Bright colors, minimalist style.`,
+        prompt: objectivesPrompt,
         size: '1024x1024',
         quality: 'standard',
         style: 'vivid',
@@ -2360,8 +2548,13 @@ Format as JSON:
       console.log(`🖼️ Generating AI image for section: ${section.title}...`);
       let sectionImageUrl = null;
       try {
+        let sectionPrompt = `Professional illustration for educational content about "${section.title}" in the context of ${lessonStructure.lesson_title}. Modern, clean design with relevant icons and visual elements. Educational style, bright colors.`;
+
+        // Enhance with 7-layer premium quality system
+        sectionPrompt += ` QUALITY: soft cinematic lighting, volumetric light, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+
         const imageResult = await generateImage({
-          prompt: `Professional illustration for educational content about "${section.title}" in the context of ${lessonStructure.lesson_title}. Modern, clean design with relevant icons and visual elements. Educational style, bright colors.`,
+          prompt: sectionPrompt,
           size: '1024x1024',
           quality: 'standard',
           style: 'vivid',
@@ -2436,7 +2629,7 @@ Format as JSON:
 
     // 9. TABLE BLOCK - Comparison or Summary Table
     contentBlocks.push({
-      type: 'tables',
+      type: 'table', // Use singular to match backend and most frontend code
       block_id: `ai_summary_table_${lessonId}`,
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">

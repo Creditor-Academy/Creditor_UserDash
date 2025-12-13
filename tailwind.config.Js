@@ -258,5 +258,11 @@ module.exports = {
 
     },
   },
-  plugins: [import("tailwindcss-animate")],
+  plugins: [
+    import("tailwindcss-animate"),
+    function ({ addVariant }) {
+      // Normalize data-state checked buttons to avoid odd selectors during minify
+      addVariant('data-checked', '&[data-state="checked"]');
+    },
+  ],
 };

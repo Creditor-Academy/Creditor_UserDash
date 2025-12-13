@@ -1,24 +1,47 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft, Users, Crown, X, ChevronRight, Edit3 } from "lucide-react";
-import CreateGroupButton from "@/components/messages/CreateGroupButton";
-import GroupInfoModal from "@/components/messages/GroupInfoModal";
-import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  MessageCircle,
+  Search,
+  Send,
+  Smile,
+  Paperclip,
+  Mic,
+  Plus,
+  Trash2,
+  MoreVertical,
+  Clock,
+  Check,
+  CheckCheck,
+  Loader2,
+  ExternalLink,
+  Globe,
+  ImageIcon,
+  ArrowLeft,
+  Users,
+  Crown,
+  X,
+  ChevronRight,
+  Edit3,
+} from 'lucide-react';
+import CreateGroupButton from '@/components/messages/CreateGroupButton';
+import GroupInfoModal from '@/components/messages/GroupInfoModal';
+import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 // Voice recording components - commented out
 // import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 // import { VoiceMessage } from "@/components/messages/VoiceMessage";
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker from 'emoji-picker-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,32 +51,46 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { fetchAllUsers, getUserRole } from "@/services/userService";
-import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation } from "@/services/messageService";
-import { 
-  getMyPrivateGroup, 
-  getMyMemberPrivateGroups, 
-  createPrivateGroup, 
+} from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { fetchAllUsers, getUserRole } from '@/services/userService';
+import {
+  getAllConversations,
+  loadPreviousConversation,
+  deleteConversationMessage,
+  deleteConversation,
+} from '@/services/messageService';
+import {
+  getMyPrivateGroup,
+  getMyMemberPrivateGroups,
+  createPrivateGroup,
   addPrivateGroupMembers,
   getGroupMembers,
   getPrivateGroupMessages,
   sendPrivateGroupMessage,
   deletePrivateGroupMessage,
-  editPrivateGroupMessage
-} from "@/services/privateGroupService";
-import getSocket from "@/services/socketClient";
-import privateGroupSocket from "@/services/privateGroupSocket";
-import api from "@/services/apiClient";
-import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+  editPrivateGroupMessage,
+} from '@/services/privateGroupService';
+import getSocket from '@/services/socketClient';
+import privateGroupSocket from '@/services/privateGroupSocket';
+import api from '@/services/apiClient';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 
 // Will be loaded from backend
 const initialAllUsers = [];
 
 function getHostname(url) {
-  try { return new URL(url).hostname; } catch { return null; }
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
 }
 
 function extractUrls(text) {
@@ -66,12 +103,23 @@ function extractUrls(text) {
 function LinkCard({ url }) {
   const host = getHostname(url);
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="block mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2">
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="block mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2"
+    >
       <div className="rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl border border-muted/30 shadow-sm bg-white text-foreground overflow-hidden">
         <div className="flex items-center justify-between px-1 sm:px-1.5 md:px-2 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2">
           <div className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5 lg:gap-2">
-            <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`} alt="" className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
-            <span className="font-semibold text-[9px] sm:text-[10px] md:text-xs lg:text-sm truncate max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[220px]">{host || url}</span>
+            <img
+              src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`}
+              alt=""
+              className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4"
+            />
+            <span className="font-semibold text-[9px] sm:text-[10px] md:text-xs lg:text-sm truncate max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[220px]">
+              {host || url}
+            </span>
           </div>
           <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 text-muted-foreground" />
         </div>
@@ -93,15 +141,29 @@ function renderRichText(text, isOnDark = false) {
         if (urlRegex.test(part)) {
           const host = getHostname(part);
           return (
-            <a key={idx} href={part} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-0.5 sm:gap-1 ${isOnDark ? 'text-white underline' : 'text-primary hover:underline'}`}>
+            <a
+              key={idx}
+              href={part}
+              target="_blank"
+              rel="noreferrer"
+              className={`inline-flex items-center gap-0.5 sm:gap-1 ${isOnDark ? 'text-white underline' : 'text-primary hover:underline'}`}
+            >
               {host && (
-                <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=16`} alt="" className={`h-3 w-3 sm:h-4 sm:w-4 ${isOnDark ? 'brightness-200' : ''}`} />
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${host}&sz=16`}
+                  alt=""
+                  className={`h-3 w-3 sm:h-4 sm:w-4 ${isOnDark ? 'brightness-200' : ''}`}
+                />
               )}
               <span className="break-all">{part}</span>
             </a>
           );
         }
-        return <span key={idx} className="break-words">{part}</span>;
+        return (
+          <span key={idx} className="break-words">
+            {part}
+          </span>
+        );
       })}
     </span>
   );
@@ -114,8 +176,8 @@ function Messages() {
   const [allUsers, setAllUsers] = useState([]);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [convosLoaded, setConvosLoaded] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [newMessage, setNewMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   // Voice recording state - commented out
   // const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -124,13 +186,13 @@ function Messages() {
   const [roomId, setRoomId] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [newChatUsers, setNewChatUsers] = useState([]);
-  const [newChatSearch, setNewChatSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all"); // "all", "chats", "groups"
+  const [newChatSearch, setNewChatSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all'); // "all", "chats", "groups"
   const [startingUserId, setStartingUserId] = useState(null);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState(null);
-  const [editingText, setEditingText] = useState("");
+  const [editingText, setEditingText] = useState('');
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const conversationIdRef = useRef(null); // Ref to track current conversationId for event handlers
@@ -139,25 +201,26 @@ function Messages() {
   const [imagePreview, setImagePreview] = useState({ open: false, url: null });
   const [deletingMessageId, setDeletingMessageId] = useState(null);
   const [deleteConversationId, setDeleteConversationId] = useState(null);
-  const [showDeleteConversationDialog, setShowDeleteConversationDialog] = useState(false);
-  
+  const [showDeleteConversationDialog, setShowDeleteConversationDialog] =
+    useState(false);
+
   // Group info modal state
   const [showGroupInfoModal, setShowGroupInfoModal] = useState(false);
   const [selectedGroupInfo, setSelectedGroupInfo] = useState(null);
-  
+
   // Group creation state
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupDescription, setGroupDescription] = useState("");
+  const [groupName, setGroupName] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
-  const [groupSearchQuery, setGroupSearchQuery] = useState("");
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [userHasGroup, setUserHasGroup] = useState(false);
-  
+
   const { toast } = useToast();
 
-  const formatChatTime = (iso) => {
-    if (!iso) return "";
+  const formatChatTime = iso => {
+    if (!iso) return '';
     const d = new Date(iso);
     const now = new Date();
     const isSameDay = d.toDateString() === now.toDateString();
@@ -168,7 +231,7 @@ function Messages() {
   };
 
   // Truncate message to a small, fixed preview with custom ellipsis for chat list
-  const getHalfPreview = (text) => {
+  const getHalfPreview = text => {
     if (!text) return '';
     const str = String(text).trim();
     const PREVIEW_LIMIT = 24; // small portion
@@ -183,7 +246,7 @@ function Messages() {
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
   useEffect(() => {
-    if (location.pathname.endsWith("/messages")) {
+    if (location.pathname.endsWith('/messages')) {
       setSelectedFriend(null);
       setFriends([]);
       setAllUsers([]);
@@ -214,7 +277,7 @@ function Messages() {
       try {
         // Initialize socket
         privateGroupSocket.initialize();
-        
+
         // Wait for socket to connect if not already connected
         if (!privateGroupSocket.connected) {
           await new Promise((resolve, reject) => {
@@ -241,49 +304,58 @@ function Messages() {
     initializeSocket();
 
     // Handle private group messages
-    const onPrivateGroupMessage = (event) => {
+    const onPrivateGroupMessage = event => {
       const { groupId, message } = event.detail;
       if (!groupId || !message) {
         console.error('Invalid message data received:', event.detail);
         return;
       }
       console.log('Private group message received:', { groupId, message });
-      
+
       // Update the group's last message in the friends list and move to top
       setFriends(prev => {
-        const existingIndex = prev.findIndex(f => 
-          (f.conversationId === groupId || String(f.conversationId) === String(groupId) || 
-           f.id === groupId || String(f.id) === String(groupId)) && f.isPrivateGroup
+        const existingIndex = prev.findIndex(
+          f =>
+            (f.conversationId === groupId ||
+              String(f.conversationId) === String(groupId) ||
+              f.id === groupId ||
+              String(f.id) === String(groupId)) &&
+            f.isPrivateGroup
         );
-        
+
         if (existingIndex === -1) return prev; // Group not found
-        
+
         const existingGroup = prev[existingIndex];
         const currentUserId = localStorage.getItem('userId');
         const isSelf = String(message.sender_id) === String(currentUserId);
         const isSystem = message.type === 'SYSTEM';
-        
+
         let messageText = message.content;
         let messageType = message.type || 'TEXT';
-        
+
         if (messageType === 'IMAGE') {
           messageText = 'Image';
         } else if (isSystem) {
           messageText = message.content || 'System message';
         }
-        
+
         const updatedGroup = {
           ...existingGroup,
           lastMessage: messageText,
           lastMessageType: messageType,
           lastMessageFrom: message.sender_id,
-          lastMessageAt: message.timeStamp || message.created_at || new Date().toISOString(),
+          lastMessageAt:
+            message.timeStamp || message.created_at || new Date().toISOString(),
           isRead: isSelf || isSystem ? true : false, // Mark as read if we sent it or system message, otherwise mark as unread
-          lastMessageSenderName: isSystem ? 'System' : (isSelf ? 'You' : (message.sender?.first_name && message.sender?.last_name
-            ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
-            : message.sender?.name || message.sender?.email || 'User'))
+          lastMessageSenderName: isSystem
+            ? 'System'
+            : isSelf
+              ? 'You'
+              : message.sender?.first_name && message.sender?.last_name
+                ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
+                : message.sender?.name || message.sender?.email || 'User',
         };
-        
+
         // Move to top: return updated group first, then all others except the old position
         return [updatedGroup, ...prev.filter((_, i) => i !== existingIndex)];
       });
@@ -294,7 +366,7 @@ function Messages() {
           const currentUserId = localStorage.getItem('userId');
           const isSelf = String(message.sender_id) === String(currentUserId);
           const isSystem = message.type === 'SYSTEM';
-          
+
           // Check if message already exists
           const exists = prev.some(m => String(m.id) === String(message.id));
           if (exists) return prev;
@@ -302,21 +374,26 @@ function Messages() {
           // For own messages, update the optimistic message
           if (isSelf) {
             const updated = prev.map(m => {
-              if (m.tempId || (m.status === 'sending' && m.text === message.content)) {
+              if (
+                m.tempId ||
+                (m.status === 'sending' && m.text === message.content)
+              ) {
                 return {
                   ...m,
                   id: message.id,
                   tempId: undefined,
                   status: 'sent',
-                  timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })
+                  timestamp: new Date(
+                    message.timeStamp || message.created_at || new Date()
+                  ).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
                 };
               }
               return m;
             });
-            
+
             // If no message was updated, add as new
             if (updated.every(m => m.id !== message.id)) {
               const mappedMessage = {
@@ -326,11 +403,13 @@ function Messages() {
                 senderName: 'You',
                 text: message.type === 'IMAGE' ? null : message.content,
                 image: message.type === 'IMAGE' ? message.content : null,
-                timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
+                timestamp: new Date(
+                  message.timeStamp || message.created_at || new Date()
+                ).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
                 }),
-                status: 'sent'
+                status: 'sent',
               };
               return [...updated, mappedMessage];
             }
@@ -341,19 +420,21 @@ function Messages() {
           const mappedMessage = {
             id: message.id,
             senderId: isSystem ? 'system' : String(message.sender_id),
-            senderImage: isSystem ? null : (message.sender?.image || null),
-            senderName: isSystem ? 'System' : (
-              message.sender?.first_name && message.sender?.last_name 
+            senderImage: isSystem ? null : message.sender?.image || null,
+            senderName: isSystem
+              ? 'System'
+              : message.sender?.first_name && message.sender?.last_name
                 ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
-                : message.sender?.name || message.sender?.email || 'User'
-            ),
+                : message.sender?.name || message.sender?.email || 'User',
             text: message.type === 'IMAGE' ? null : message.content,
             image: message.type === 'IMAGE' ? message.content : null,
-            timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            timestamp: new Date(
+              message.timeStamp || message.created_at || new Date()
+            ).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
             }),
-            status: 'delivered'
+            status: 'delivered',
           };
 
           // Auto-scroll to bottom for new messages
@@ -365,7 +446,9 @@ function Messages() {
         });
 
         // Play notification sound for incoming messages
-        if (String(message.sender_id) !== String(localStorage.getItem('userId'))) {
+        if (
+          String(message.sender_id) !== String(localStorage.getItem('userId'))
+        ) {
           try {
             new Audio('/message.mp3').play().catch(() => {});
           } catch (e) {}
@@ -374,14 +457,14 @@ function Messages() {
     };
 
     // Handle member updates
-    const onMemberAdded = (event) => {
+    const onMemberAdded = event => {
       const detail = event.detail;
       console.log('Member added event:', detail);
       // These handlers are defined further down in the socket setup
       // Will be processed by onPrivateGroupMembersAdded
     };
 
-    const onMemberRemoved = (event) => {
+    const onMemberRemoved = event => {
       const detail = event.detail;
       console.log('Member removed event:', detail);
       // These handlers are defined further down in the socket setup
@@ -391,52 +474,62 @@ function Messages() {
     // Note: Group updates are handled by handleLocalPrivateGroupUpdated (defined below)
 
     // Handle message status
-    const onMessageRead = (event) => {
+    const onMessageRead = event => {
       const { groupId, messageId } = event.detail;
       console.log('Message read:', { groupId, messageId });
       // Update message status in UI
-      setMessages(prev => prev.map(msg => 
-        String(msg.id) === String(messageId) 
-          ? { ...msg, status: 'read' }
-          : msg
-      ));
+      setMessages(prev =>
+        prev.map(msg =>
+          String(msg.id) === String(messageId)
+            ? { ...msg, status: 'read' }
+            : msg
+        )
+      );
     };
 
     // Handle message edits
-    const onMessageEdited = (event) => {
+    const onMessageEdited = event => {
       const { groupId, messageId, content } = event.detail;
-      console.log('Private group message edited:', { groupId, messageId, content });
-      
+      console.log('Private group message edited:', {
+        groupId,
+        messageId,
+        content,
+      });
+
       // If we're viewing this group, update the message
       if (String(conversationIdRef.current) === String(groupId)) {
-        setMessages(prev => prev.map(msg => 
-          String(msg.id) === String(messageId) 
-            ? { ...msg, text: content, edited: true }
-            : msg
-        ));
+        setMessages(prev =>
+          prev.map(msg =>
+            String(msg.id) === String(messageId)
+              ? { ...msg, text: content, edited: true }
+              : msg
+          )
+        );
       }
     };
 
     // Handle message deletes
-    const onMessageDeleted = (event) => {
+    const onMessageDeleted = event => {
       const { groupId, messageId } = event.detail;
       console.log('Private group message deleted:', { groupId, messageId });
-      
+
       // If we're viewing this group, remove the message
       if (String(conversationIdRef.current) === String(groupId)) {
-        setMessages(prev => prev.filter(msg => String(msg.id) !== String(messageId)));
+        setMessages(prev =>
+          prev.filter(msg => String(msg.id) !== String(messageId))
+        );
       }
     };
 
     // Handle invitation acceptance
-    const onInvitationAccepted = async (event) => {
+    const onInvitationAccepted = async event => {
       const { groupId, userId, group } = event.detail || {};
       const currentUserId = localStorage.getItem('userId');
-      
+
       // If current user accepted the invitation, add group to their list
       if (String(userId) === String(currentUserId) && group) {
         console.log('Current user accepted invitation to group:', group);
-        
+
         const newGroup = {
           id: `private_group_${groupId}`,
           name: group.name,
@@ -454,9 +547,11 @@ function Messages() {
           memberCount: group.member_count || 1,
           description: group.description,
         };
-        
+
         setFriends(prev => {
-          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
+          const exists = prev.some(
+            f => String(f.conversationId || f.id) === String(groupId)
+          );
           return exists ? prev : [newGroup, ...prev];
         });
         setUserHasGroup(true);
@@ -471,31 +566,39 @@ function Messages() {
     window.addEventListener('privateGroupMessageRead', onMessageRead);
     window.addEventListener('privateGroupMessageEdited', onMessageEdited);
     window.addEventListener('privateGroupMessageDeleted', onMessageDeleted);
-    window.addEventListener('privateGroupInvitationAccepted', onInvitationAccepted);
+    window.addEventListener(
+      'privateGroupInvitationAccepted',
+      onInvitationAccepted
+    );
 
     // Regular socket setup
     const socket = getSocket();
-    
+
     // Handle local custom events for immediate UI updates
-    const handleLocalPrivateGroupUpdated = (event) => {
+    const handleLocalPrivateGroupUpdated = event => {
       const { groupId, updates } = event.detail;
       console.log('Local private group updated:', { groupId, updates });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            name: updates.name || f.name,
-            description: updates.description !== undefined ? updates.description : f.description,
-            avatar: updates.thumbnail || updates.avatar || f.avatar,
-            lastMessage: 'Group updated',
-            lastMessageAt: new Date().toISOString(),
-          };
-        }
-        return f;
-      }));
+      setFriends(prev =>
+        prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              name: updates.name || f.name,
+              description:
+                updates.description !== undefined
+                  ? updates.description
+                  : f.description,
+              avatar: updates.thumbnail || updates.avatar || f.avatar,
+              lastMessage: 'Group updated',
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        })
+      );
     };
-    
-    const handleLocalPrivateGroupDeleted = (event) => {
+
+    const handleLocalPrivateGroupDeleted = event => {
       const { groupId } = event.detail;
       console.log('Local private group deleted:', groupId);
       setFriends(prev => prev.filter(f => f.conversationId !== groupId));
@@ -507,12 +610,16 @@ function Messages() {
       }
       setUserHasGroup(false);
     };
-    
-    const handleLocalPrivateGroupMemberLeft = (event) => {
+
+    const handleLocalPrivateGroupMemberLeft = event => {
       const { groupId, userId, userName } = event.detail;
-      console.log('Local private group member left:', { groupId, userId, userName });
+      console.log('Local private group member left:', {
+        groupId,
+        userId,
+        userName,
+      });
       const currentUserId = localStorage.getItem('userId');
-      
+
       // If the current user is leaving the group, remove it from the list
       if (String(userId) === String(currentUserId)) {
         setFriends(prev => prev.filter(f => f.conversationId !== groupId));
@@ -526,25 +633,36 @@ function Messages() {
         setUserHasGroup(false);
       } else {
         // If another member left, just update the member count
-        setFriends(prev => prev.map(f => {
-          if (f.conversationId === groupId && f.isPrivateGroup) {
-            return {
-              ...f,
-              memberCount: Math.max(0, (f.memberCount || 1) - 1),
-              lastMessage: `${userName || 'A member'} left the group`,
-              lastMessageAt: new Date().toISOString(),
-            };
-          }
-          return f;
-        }));
+        setFriends(prev =>
+          prev.map(f => {
+            if (f.conversationId === groupId && f.isPrivateGroup) {
+              return {
+                ...f,
+                memberCount: Math.max(0, (f.memberCount || 1) - 1),
+                lastMessage: `${userName || 'A member'} left the group`,
+                lastMessageAt: new Date().toISOString(),
+              };
+            }
+            return f;
+          })
+        );
       }
     };
-    
+
     // Add event listeners for local custom events
-    window.addEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
-    window.addEventListener('privateGroupDeleted', handleLocalPrivateGroupDeleted);
-    window.addEventListener('privateGroupMemberLeft', handleLocalPrivateGroupMemberLeft);
-    
+    window.addEventListener(
+      'privateGroupUpdated',
+      handleLocalPrivateGroupUpdated
+    );
+    window.addEventListener(
+      'privateGroupDeleted',
+      handleLocalPrivateGroupDeleted
+    );
+    window.addEventListener(
+      'privateGroupMemberLeft',
+      handleLocalPrivateGroupMemberLeft
+    );
+
     // Cleanup event listeners
     return () => {
       // Remove private group socket event listeners
@@ -554,24 +672,44 @@ function Messages() {
       // Note: privateGroupUpdated cleanup is handled in the local event listeners section below
       window.removeEventListener('privateGroupMessageRead', onMessageRead);
       window.removeEventListener('privateGroupMessageEdited', onMessageEdited);
-      window.removeEventListener('privateGroupMessageDeleted', onMessageDeleted);
-      window.removeEventListener('privateGroupInvitationAccepted', onInvitationAccepted);
+      window.removeEventListener(
+        'privateGroupMessageDeleted',
+        onMessageDeleted
+      );
+      window.removeEventListener(
+        'privateGroupInvitationAccepted',
+        onInvitationAccepted
+      );
 
       // Remove local event listeners
-      window.removeEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
-      window.removeEventListener('privateGroupDeleted', handleLocalPrivateGroupDeleted);
-      window.removeEventListener('privateGroupMemberLeft', handleLocalPrivateGroupMemberLeft);
+      window.removeEventListener(
+        'privateGroupUpdated',
+        handleLocalPrivateGroupUpdated
+      );
+      window.removeEventListener(
+        'privateGroupDeleted',
+        handleLocalPrivateGroupDeleted
+      );
+      window.removeEventListener(
+        'privateGroupMemberLeft',
+        handleLocalPrivateGroupMemberLeft
+      );
     };
   }, []);
-  
+
   useEffect(() => {
     const socket = getSocket();
     // Optional: log to verify connection lifecycle specific to Messages
     const onConnect = () => {
       console.log('[Messages] socket connected');
     };
-    const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
-    const onRoomIdForSender = ({ conversationid, roomId: serverRoomId, to }) => {
+    const onDisconnect = reason =>
+      console.log('[Messages] socket disconnected', reason);
+    const onRoomIdForSender = ({
+      conversationid,
+      roomId: serverRoomId,
+      to,
+    }) => {
       // Clear in-flight blocker once backend responds
       setStartingUserId(null);
       setRoomId(serverRoomId);
@@ -590,37 +728,48 @@ function Messages() {
       void (async () => {
         try {
           const convos = await getAllConversations();
-          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
-            id: String(c.id),
-            name: c.title || 'User',
-            avatar: c.image || '/placeholder.svg',
-            lastMessage: c.lastMessage || '',
-            lastMessageType: c.lastMessageType || null,
-            room: c.room,
-            conversationId: c.id,
-            isRead: c.isRead,
-            lastMessageFrom: c.lastMessageFrom,
-            lastMessageAt: c.lastMessageAt,
-            lastMessageSenderName: c.lastMessageSenderName || null, // Store sender name if available
-          }));
-          
+          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(
+            c => ({
+              id: String(c.id),
+              name: c.title || 'User',
+              avatar: c.image || '/placeholder.svg',
+              lastMessage: c.lastMessage || '',
+              lastMessageType: c.lastMessageType || null,
+              room: c.room,
+              conversationId: c.id,
+              isRead: c.isRead,
+              lastMessageFrom: c.lastMessageFrom,
+              lastMessageAt: c.lastMessageAt,
+              lastMessageSenderName: c.lastMessageSenderName || null, // Store sender name if available
+            })
+          );
+
           // PRESERVE existing private groups while updating regular conversations
           setFriends(prev => {
             // Keep all private groups
-            const existingGroups = prev.filter(f => f.isPrivateGroup || f.isGroup);
-            
-            // Merge with updated conversations, avoiding duplicates
-            const conversationIds = new Set(normalizedFriends.map(f => String(f.conversationId || f.id)));
-            const existingNonGroups = prev.filter(f => 
-              !f.isPrivateGroup && 
-              !f.isGroup && 
-              !conversationIds.has(String(f.conversationId || f.id))
+            const existingGroups = prev.filter(
+              f => f.isPrivateGroup || f.isGroup
             );
-            
+
+            // Merge with updated conversations, avoiding duplicates
+            const conversationIds = new Set(
+              normalizedFriends.map(f => String(f.conversationId || f.id))
+            );
+            const existingNonGroups = prev.filter(
+              f =>
+                !f.isPrivateGroup &&
+                !f.isGroup &&
+                !conversationIds.has(String(f.conversationId || f.id))
+            );
+
             // Return: groups first, then new/updated conversations, then remaining conversations
-            return [...existingGroups, ...normalizedFriends, ...existingNonGroups];
+            return [
+              ...existingGroups,
+              ...normalizedFriends,
+              ...existingNonGroups,
+            ];
           });
-          
+
           setConvosLoaded(true);
         } catch {}
       })();
@@ -628,20 +777,30 @@ function Messages() {
       (async () => {
         try {
           const data = await loadPreviousConversation(conversationid);
-                          const currentUserId = localStorage.getItem('userId');
-                          const mapped = (data?.cov_messages || []).map(m => ({
-                            id: m.id,
-                            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
-                            senderImage: m?.sender?.image || null,
-                            senderName: m?.sender?.first_name && m?.sender?.last_name 
-                              ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
-                              : m?.sender?.name || m?.sender?.email || 'User',
-                            text: m.type === 'IMAGE' ? null : m.content,
-                            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            type: m.type === 'IMAGE' ? 'image' : 'text',
-                            file: m.type === 'IMAGE' ? m.content : null,
-                            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
-                          }));
+          const currentUserId = localStorage.getItem('userId');
+          const mapped = (data?.cov_messages || []).map(m => ({
+            id: m.id,
+            senderId:
+              String(m.sender_id) === String(currentUserId)
+                ? 0
+                : String(m.sender_id),
+            senderImage: m?.sender?.image || null,
+            senderName:
+              m?.sender?.first_name && m?.sender?.last_name
+                ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
+                : m?.sender?.name || m?.sender?.email || 'User',
+            text: m.type === 'IMAGE' ? null : m.content,
+            timestamp: new Date(m.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            type: m.type === 'IMAGE' ? 'image' : 'text',
+            file: m.type === 'IMAGE' ? m.content : null,
+            status:
+              String(m.sender_id) === String(currentUserId)
+                ? 'sent'
+                : 'delivered', // Default status for loaded messages
+          }));
           setMessages(mapped);
           setChatLoading(false);
         } catch (e) {
@@ -659,7 +818,7 @@ function Messages() {
       setSelectedFriend(`private_group_${groupId}`);
       setMessages([]);
       setChatLoading(true);
-      
+
       // Load previous messages for private group
       (async () => {
         try {
@@ -669,13 +828,22 @@ function Messages() {
           const currentUserId = localStorage.getItem('userId');
           const mapped = (data?.cov_messages || []).map(m => ({
             id: m.id,
-            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+            senderId:
+              String(m.sender_id) === String(currentUserId)
+                ? 0
+                : String(m.sender_id),
             senderImage: m?.sender?.image || null,
             text: m.type === 'IMAGE' ? null : m.content,
-            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: new Date(m.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
             type: m.type === 'IMAGE' ? 'image' : 'text',
             file: m.type === 'IMAGE' ? m.content : null,
-            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
+            status:
+              String(m.sender_id) === String(currentUserId)
+                ? 'sent'
+                : 'delivered',
           }));
           setMessages(mapped);
           setChatLoading(false);
@@ -689,16 +857,20 @@ function Messages() {
     // Handle private group creation event
     const onPrivateGroupCreated = ({ group }) => {
       console.log('Private group created:', group);
-      
+
       // Only add group if current user is the creator
       const currentUserId = localStorage.getItem('userId');
-      const isCreator = String(group.owner_id || group.creator_id || group.created_by) === String(currentUserId);
-      
+      const isCreator =
+        String(group.owner_id || group.creator_id || group.created_by) ===
+        String(currentUserId);
+
       if (!isCreator) {
-        console.log('Ignoring privateGroupCreated event: current user is not the creator');
+        console.log(
+          'Ignoring privateGroupCreated event: current user is not the creator'
+        );
         return;
       }
-      
+
       // Build new group entry
       const newGroup = {
         id: `private_group_${group.id}`,
@@ -719,7 +891,9 @@ function Messages() {
       };
       // Avoid duplicate if already present (e.g., from initial fetch)
       setFriends(prev => {
-        const exists = prev.some(f => String(f.conversationId || f.id) === String(group.id));
+        const exists = prev.some(
+          f => String(f.conversationId || f.id) === String(group.id)
+        );
         return exists ? prev : [newGroup, ...prev];
       });
       setUserHasGroup(true);
@@ -728,10 +902,12 @@ function Messages() {
     // Handle private group members added event
     const onPrivateGroupMembersAdded = ({ groupId, users, group }) => {
       console.log('Private group members added:', { groupId, users, group });
-      
+
       const currentUserId = localStorage.getItem('userId');
-      const isAddedMember = users.some(user => String(user.id || user.user_id) === String(currentUserId));
-      
+      const isAddedMember = users.some(
+        user => String(user.id || user.user_id) === String(currentUserId)
+      );
+
       // If current user is one of the added members, add group to their list
       if (isAddedMember && group) {
         const newGroup = {
@@ -751,45 +927,54 @@ function Messages() {
           memberCount: (group.member_count || 1) + users.length,
           description: group.description,
         };
-        
+
         setFriends(prev => {
-          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
+          const exists = prev.some(
+            f => String(f.conversationId || f.id) === String(groupId)
+          );
           return exists ? prev : [newGroup, ...prev];
         });
         setUserHasGroup(true);
         return;
       }
-      
+
       // If current user is already in the group (e.g., admin), just update member count
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            memberCount: (f.memberCount || 1) + users.length,
-            lastMessage: `${users.length} member(s) added to group`,
-            lastMessageAt: new Date().toISOString(),
-          };
-        }
-        return f;
-      }));
+      setFriends(prev =>
+        prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              memberCount: (f.memberCount || 1) + users.length,
+              lastMessage: `${users.length} member(s) added to group`,
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        })
+      );
     };
 
     // Handle private group updated event (name, description, avatar changes)
     const onPrivateGroupUpdated = ({ groupId, updates }) => {
       console.log('Private group updated:', { groupId, updates });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            name: updates.name || f.name,
-            description: updates.description !== undefined ? updates.description : f.description,
-            avatar: updates.thumbnail || updates.avatar || f.avatar,
-            lastMessage: 'Group updated',
-            lastMessageAt: new Date().toISOString(),
-          };
-        }
-        return f;
-      }));
+      setFriends(prev =>
+        prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              name: updates.name || f.name,
+              description:
+                updates.description !== undefined
+                  ? updates.description
+                  : f.description,
+              avatar: updates.thumbnail || updates.avatar || f.avatar,
+              lastMessage: 'Group updated',
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        })
+      );
     };
 
     // Handle private group deleted event
@@ -811,7 +996,7 @@ function Messages() {
     const onPrivateGroupMemberLeft = ({ groupId, userId, userName }) => {
       console.log('Private group member left:', { groupId, userId, userName });
       const currentUserId = localStorage.getItem('userId');
-      
+
       // If the current user is leaving the group, remove it from the list
       if (String(userId) === String(currentUserId)) {
         setFriends(prev => prev.filter(f => f.conversationId !== groupId));
@@ -825,25 +1010,37 @@ function Messages() {
         setUserHasGroup(false);
       } else {
         // If another member left, just update the member count
-        setFriends(prev => prev.map(f => {
-          if (f.conversationId === groupId && f.isPrivateGroup) {
-            return {
-              ...f,
-              memberCount: Math.max(0, (f.memberCount || 1) - 1),
-              lastMessage: `${userName || 'A member'} left the group`,
-              lastMessageAt: new Date().toISOString(),
-            };
-          }
-          return f;
-        }));
+        setFriends(prev =>
+          prev.map(f => {
+            if (f.conversationId === groupId && f.isPrivateGroup) {
+              return {
+                ...f,
+                memberCount: Math.max(0, (f.memberCount || 1) - 1),
+                lastMessage: `${userName || 'A member'} left the group`,
+                lastMessageAt: new Date().toISOString(),
+              };
+            }
+            return f;
+          })
+        );
       }
     };
 
     // Handle private group member removed event
-    const onPrivateGroupMemberRemoved = ({ groupId, userId, userName, removedBy }) => {
-      console.log('Private group member removed:', { groupId, userId, userName, removedBy });
+    const onPrivateGroupMemberRemoved = ({
+      groupId,
+      userId,
+      userName,
+      removedBy,
+    }) => {
+      console.log('Private group member removed:', {
+        groupId,
+        userId,
+        userName,
+        removedBy,
+      });
       const currentUserId = localStorage.getItem('userId');
-      
+
       // If the current user is removed from the group, remove it from the list
       if (String(userId) === String(currentUserId)) {
         setFriends(prev => prev.filter(f => f.conversationId !== groupId));
@@ -857,72 +1054,87 @@ function Messages() {
         setUserHasGroup(false);
       } else {
         // If another member was removed, just update the member count
-        setFriends(prev => prev.map(f => {
-          if (f.conversationId === groupId && f.isPrivateGroup) {
-            return {
-              ...f,
-              memberCount: Math.max(0, (f.memberCount || 1) - 1),
-              lastMessage: `${userName || 'A member'} was removed from the group`,
-              lastMessageAt: new Date().toISOString(),
-            };
-          }
-          return f;
-        }));
+        setFriends(prev =>
+          prev.map(f => {
+            if (f.conversationId === groupId && f.isPrivateGroup) {
+              return {
+                ...f,
+                memberCount: Math.max(0, (f.memberCount || 1) - 1),
+                lastMessage: `${userName || 'A member'} was removed from the group`,
+                lastMessageAt: new Date().toISOString(),
+              };
+            }
+            return f;
+          })
+        );
       }
     };
 
     // Handle private group member promoted event
     const onPrivateGroupMemberPromoted = ({ groupId, userId, userName }) => {
-      console.log('Private group member promoted:', { groupId, userId, userName });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            lastMessage: `${userName || 'A member'} was promoted to admin`,
-            lastMessageAt: new Date().toISOString(),
-          };
-        }
-        return f;
-      }));
+      console.log('Private group member promoted:', {
+        groupId,
+        userId,
+        userName,
+      });
+      setFriends(prev =>
+        prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              lastMessage: `${userName || 'A member'} was promoted to admin`,
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        })
+      );
     };
 
     // Handle private group joined event (when someone joins via invitation)
     const onPrivateGroupJoined = ({ groupId, userId, userName }) => {
       console.log('Private group joined:', { groupId, userId, userName });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            memberCount: (f.memberCount || 1) + 1,
-            lastMessage: `${userName || 'A new member'} joined the group`,
-            lastMessageAt: new Date().toISOString(),
-          };
-        }
-        return f;
-      }));
+      setFriends(prev =>
+        prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              memberCount: (f.memberCount || 1) + 1,
+              lastMessage: `${userName || 'A new member'} joined the group`,
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        })
+      );
     };
 
     // Handle new private group message event
-    const onNewGroupMessage = (data) => {
+    const onNewGroupMessage = data => {
       console.log('Raw group message received:', data);
-      
+
       // Extract data from either format
       const messageData = data?.detail || data;
       const groupId = messageData?.groupId || messageData?.group_id;
       const message = messageData?.message || messageData;
-      
+
       // Validate message data
       if (!message || !groupId) {
-        console.error('Invalid message data received:', { groupId, message, originalData: data });
+        console.error('Invalid message data received:', {
+          groupId,
+          message,
+          originalData: data,
+        });
         return;
       }
-      
+
       console.log('Processed message data:', { groupId, message });
 
       const currentUserId = localStorage.getItem('userId');
-      const isSelf = String(message.sender_id || message.senderId) === String(currentUserId);
+      const isSelf =
+        String(message.sender_id || message.senderId) === String(currentUserId);
       const isSystem = (message.type || '').toUpperCase() === 'SYSTEM';
-      
+
       // Play notification sound for incoming messages (not for own messages or system messages)
       if (!isSelf && !isSystem) {
         try {
@@ -932,17 +1144,20 @@ function Messages() {
 
       // Update the group's last message in the friends list and move to top
       setFriends(prev => {
-        const existingIndex = prev.findIndex(f => 
-          (f.conversationId === groupId || String(f.conversationId) === String(groupId) || 
-           f.id === groupId || String(f.id) === String(groupId))
+        const existingIndex = prev.findIndex(
+          f =>
+            f.conversationId === groupId ||
+            String(f.conversationId) === String(groupId) ||
+            f.id === groupId ||
+            String(f.id) === String(groupId)
         );
-        
+
         if (existingIndex === -1) return prev; // Group not found
-        
+
         const existingGroup = prev[existingIndex];
         let messageText = message.content;
         let messageType = message.type || 'TEXT';
-        
+
         // Handle different message types
         if (message.type === 'IMAGE') {
           messageText = 'Image';
@@ -951,19 +1166,32 @@ function Messages() {
           messageText = message.content;
           messageType = 'system';
         }
-        
+
         const updatedGroup = {
           ...existingGroup,
           lastMessage: messageText,
           lastMessageType: messageType,
-          lastMessageFrom: isSystem ? 'System' : (isSelf ? currentUserId : message.sender_id),
-          lastMessageAt: message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date().toISOString(),
+          lastMessageFrom: isSystem
+            ? 'System'
+            : isSelf
+              ? currentUserId
+              : message.sender_id,
+          lastMessageAt:
+            message.createdAt ||
+            message.created_at ||
+            message.timeStamp ||
+            message.timestamp ||
+            new Date().toISOString(),
           isRead: isSelf || isSystem ? true : false, // Mark as read if it's our own message or system message, otherwise mark as unread
-          lastMessageSenderName: isSystem ? 'System' : (isSelf ? 'You' : (message.sender?.first_name && message.sender?.last_name
-            ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
-            : message.sender?.name || message.sender?.email || 'User'))
+          lastMessageSenderName: isSystem
+            ? 'System'
+            : isSelf
+              ? 'You'
+              : message.sender?.first_name && message.sender?.last_name
+                ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
+                : message.sender?.name || message.sender?.email || 'User',
         };
-        
+
         // Move to top: return updated group first, then all others except the old position
         return [updatedGroup, ...prev.filter((_, i) => i !== existingIndex)];
       });
@@ -975,21 +1203,30 @@ function Messages() {
           if (isSelf) {
             const updated = prev.map(m => {
               // Match by tempId or content for optimistic updates
-              if (m.tempId || (m.status === 'sending' && m.text === message.content)) {
+              if (
+                m.tempId ||
+                (m.status === 'sending' && m.text === message.content)
+              ) {
                 return {
                   ...m,
                   id: message.id,
                   tempId: undefined,
                   status: 'sent',
-                  timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })
+                  timestamp: new Date(
+                    message.createdAt ||
+                      message.created_at ||
+                      message.timeStamp ||
+                      message.timestamp ||
+                      new Date()
+                  ).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
                 };
               }
               return m;
             });
-            
+
             // If no message was updated (no optimistic update found), add as new
             if (updated.every(m => m.id !== message.id)) {
               const mappedMessage = {
@@ -998,13 +1235,24 @@ function Messages() {
                 senderImage: message.sender?.image || null,
                 senderName: 'You',
                 text: message.type === 'IMAGE' ? null : message.content,
-                timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
+                timestamp: new Date(
+                  message.createdAt ||
+                    message.created_at ||
+                    message.timeStamp ||
+                    message.timestamp ||
+                    new Date()
+                ).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
                 }),
-                type: message.type === 'IMAGE' ? 'image' : (message.type === 'SYSTEM' ? 'system' : 'text'),
+                type:
+                  message.type === 'IMAGE'
+                    ? 'image'
+                    : message.type === 'SYSTEM'
+                      ? 'system'
+                      : 'text',
                 file: message.type === 'IMAGE' ? message.content : null,
-                status: 'sent'
+                status: 'sent',
               };
               return [...updated, mappedMessage];
             }
@@ -1018,20 +1266,31 @@ function Messages() {
           const mappedMessage = {
             id: message.id,
             senderId: isSystem ? 'system' : String(message.sender_id),
-            senderImage: isSystem ? null : (message.sender?.image || null),
-            senderName: isSystem ? 'System' : (
-              message.sender?.first_name && message.sender?.last_name 
+            senderImage: isSystem ? null : message.sender?.image || null,
+            senderName: isSystem
+              ? 'System'
+              : message.sender?.first_name && message.sender?.last_name
                 ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
-                : message.sender?.name || message.sender?.email || 'User'
-            ),
+                : message.sender?.name || message.sender?.email || 'User',
             text: message.type === 'IMAGE' ? null : message.content,
-            timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            timestamp: new Date(
+              message.createdAt ||
+                message.created_at ||
+                message.timeStamp ||
+                message.timestamp ||
+                new Date()
+            ).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
             }),
-            type: message.type === 'IMAGE' ? 'image' : (message.type === 'SYSTEM' ? 'system' : 'text'),
+            type:
+              message.type === 'IMAGE'
+                ? 'image'
+                : message.type === 'SYSTEM'
+                  ? 'system'
+                  : 'text',
             file: message.type === 'IMAGE' ? message.content : null,
-            status: 'delivered'
+            status: 'delivered',
           };
 
           // Auto-scroll to bottom for new messages
@@ -1044,20 +1303,29 @@ function Messages() {
       }
     };
 
-    const onReceiveMessage = ({ from, message, image, messageid, type, conversationid }) => {
+    const onReceiveMessage = ({
+      from,
+      message,
+      image,
+      messageid,
+      type,
+      conversationid,
+    }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
-      
+
       if (isSelf) {
         // This is our own message coming back from server - replace optimistic message
         setMessages(prev => {
           // Find the most recent optimistic message with 'sending' status
-          const optimisticIndex = prev.findLastIndex(msg => 
-            msg.senderId === 0 && msg.status === 'sending' && (
-              (type === 'IMAGE' && msg.type === 'image') || (type !== 'IMAGE' && msg.text === message)
-            )
+          const optimisticIndex = prev.findLastIndex(
+            msg =>
+              msg.senderId === 0 &&
+              msg.status === 'sending' &&
+              ((type === 'IMAGE' && msg.type === 'image') ||
+                (type !== 'IMAGE' && msg.text === message))
           );
-          
+
           if (optimisticIndex !== -1) {
             // Replace optimistic message with real one
             const updated = [...prev];
@@ -1081,9 +1349,9 @@ function Messages() {
                 text: type === 'IMAGE' ? null : message,
                 senderImage: image || null,
                 senderName: 'You',
-                timestamp: new Date().toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
+                timestamp: new Date().toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
                 }),
                 type: type === 'IMAGE' ? 'image' : 'text',
                 file: type === 'IMAGE' ? message : null,
@@ -1095,10 +1363,12 @@ function Messages() {
       } else {
         // Message from someone else - add as new message
         // Try to get sender name from friends list or allUsers
-        const currentFriend = friends.find(f => String(f.conversationId || f.id) === String(conversationid));
+        const currentFriend = friends.find(
+          f => String(f.conversationId || f.id) === String(conversationid)
+        );
         const senderUser = allUsers.find(u => String(u.id) === String(from));
         const senderName = currentFriend?.name || senderUser?.name || 'User';
-        
+
         setMessages(prev => [
           ...prev,
           {
@@ -1107,9 +1377,9 @@ function Messages() {
             text: type === 'IMAGE' ? null : message,
             senderImage: image || null,
             senderName: senderName,
-            timestamp: new Date().toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+            timestamp: new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
             }),
             type: type === 'IMAGE' ? 'image' : 'text',
             file: type === 'IMAGE' ? message : null,
@@ -1122,19 +1392,22 @@ function Messages() {
       try {
         if (!isSelf && conversationid && messageid) {
           const s = getSocket();
-          setTimeout(()=>{
-            s.emit('messageSeenByReceiver', { messageid, conversationid: conversationid });
-          console.log("message seen by receiver", messageid, conversationid);
+          setTimeout(() => {
+            s.emit('messageSeenByReceiver', {
+              messageid,
+              conversationid: conversationid,
+            });
+            console.log('message seen by receiver', messageid, conversationid);
           }, 2000);
-
         }
       } catch {}
     };
-    const onConversationUpdated = (updatePayload) => {
+    const onConversationUpdated = updatePayload => {
       console.log('Conversation updated:', updatePayload);
       setFriends(prev => {
         const existingIndex = prev.findIndex(f => f.id === updatePayload.id);
-        const isOpen = String(updatePayload.id) === String(conversationIdRef.current);
+        const isOpen =
+          String(updatePayload.id) === String(conversationIdRef.current);
 
         const updatedFriend = {
           id: String(updatePayload.id),
@@ -1150,12 +1423,15 @@ function Messages() {
           lastMessageAt: updatePayload.lastMessageAt,
           lastMessageSenderName: updatePayload.lastMessageSenderName || null,
         };
-        
+
         if (existingIndex >= 0) {
           // Update existing conversation and move to top
           const updated = [...prev];
           updated[existingIndex] = updatedFriend;
-          return [updatedFriend, ...updated.filter((_, i) => i !== existingIndex)];
+          return [
+            updatedFriend,
+            ...updated.filter((_, i) => i !== existingIndex),
+          ];
         } else {
           // Add new conversation to top
           return [updatedFriend, ...prev];
@@ -1180,47 +1456,61 @@ function Messages() {
     socket.on('receiveMessage', onReceiveMessage);
     const onMessagesRead = ({ conversationId: readConvId }) => {
       if (!readConvId) return;
-      setFriends(prev => prev.map(f => (
-        String(f.conversationId || f.id) === String(readConvId)
-          ? { ...f, isRead: true } // This will remove bold styling since isRead is now true
-          : f
-      )));
+      setFriends(prev =>
+        prev.map(f =>
+          String(f.conversationId || f.id) === String(readConvId)
+            ? { ...f, isRead: true } // This will remove bold styling since isRead is now true
+            : f
+        )
+      );
     };
     socket.on('messagesRead', onMessagesRead);
     const onDeleteMessage = ({ messageid, conversation_id }) => {
       if (!messageid) return;
       // Only act if we're on the same conversation or if unknown treat as current
-      if (!conversationIdRef.current || String(conversationIdRef.current) === String(conversation_id)) {
+      if (
+        !conversationIdRef.current ||
+        String(conversationIdRef.current) === String(conversation_id)
+      ) {
         setDeletingMessageId(messageid);
         setTimeout(() => {
-          setMessages(prev => prev.filter(m => String(m.id) !== String(messageid)));
+          setMessages(prev =>
+            prev.filter(m => String(m.id) !== String(messageid))
+          );
           setDeletingMessageId(null);
         }, 220);
       }
     };
     socket.on('deleteMessage', onDeleteMessage);
     socket.on('conversationUpdated', onConversationUpdated);
-    const onConversationDeleted = (deletedConversationId) => {
+    const onConversationDeleted = deletedConversationId => {
       if (!deletedConversationId) return;
-      setFriends(prev => prev.filter(f => String(f.conversationId || f.id) !== String(deletedConversationId)));
+      setFriends(prev =>
+        prev.filter(
+          f =>
+            String(f.conversationId || f.id) !== String(deletedConversationId)
+        )
+      );
       // If the open chat is deleted, navigate back to list
-      setSelectedFriend(prevSel => (String(prevSel) === String(deletedConversationId) ? null : prevSel));
+      setSelectedFriend(prevSel =>
+        String(prevSel) === String(deletedConversationId) ? null : prevSel
+      );
     };
     socket.on('conversationdeleted', onConversationDeleted);
-    
+
     // Handle error events from backend
     const onError = ({ message }) => {
       if (message) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: message,
-          variant: "destructive",
+          variant: 'destructive',
           duration: 4000,
         });
       }
     };
     socket.on('error', onError);
-    
+
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
@@ -1254,57 +1544,78 @@ function Messages() {
       if (privateGroups.length === 0) return;
 
       try {
-        const lastMessagePromises = privateGroups.map(async (group) => {
+        const lastMessagePromises = privateGroups.map(async group => {
           try {
-            const messagesRes = await getPrivateGroupMessages(group.conversationId, 1, 1);
-            const messages = messagesRes?.data?.messages || messagesRes?.messages || [];
+            const messagesRes = await getPrivateGroupMessages(
+              group.conversationId,
+              1,
+              1
+            );
+            const messages =
+              messagesRes?.data?.messages || messagesRes?.messages || [];
             if (messages.length > 0) {
               const lastMsg = messages[0];
               const currentUserId = localStorage.getItem('userId');
-              const isSelf = String(lastMsg.sender_id) === String(currentUserId);
-              
+              const isSelf =
+                String(lastMsg.sender_id) === String(currentUserId);
+
               return {
                 groupId: group.conversationId,
-                lastMessage: lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
+                lastMessage:
+                  lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
                 lastMessageType: lastMsg.type || 'TEXT',
                 lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
-                lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
-                lastMessageSenderName: isSelf ? 'You' : (lastMsg.sender?.first_name && lastMsg.sender?.last_name
-                  ? `${lastMsg.sender.first_name} ${lastMsg.sender.last_name}`.trim()
-                  : lastMsg.sender?.name || lastMsg.sender?.email || 'User'),
+                lastMessageAt:
+                  lastMsg.createdAt ||
+                  lastMsg.created_at ||
+                  lastMsg.timeStamp ||
+                  lastMsg.timestamp ||
+                  new Date().toISOString(),
+                lastMessageSenderName: isSelf
+                  ? 'You'
+                  : lastMsg.sender?.first_name && lastMsg.sender?.last_name
+                    ? `${lastMsg.sender.first_name} ${lastMsg.sender.last_name}`.trim()
+                    : lastMsg.sender?.name || lastMsg.sender?.email || 'User',
               };
             }
             return null;
           } catch (error) {
-            console.warn(`Failed to refresh last message for group ${group.conversationId}:`, error);
+            console.warn(
+              `Failed to refresh last message for group ${group.conversationId}:`,
+              error
+            );
             return null;
           }
         });
 
         const lastMessages = await Promise.all(lastMessagePromises);
-        
+
         // Update friends list with refreshed last messages
-        setFriends(prev => prev.map(f => {
-          if (f.isPrivateGroup) {
-            const lastMsgData = lastMessages.find(lm => lm && String(lm.groupId) === String(f.conversationId));
-            if (lastMsgData) {
-              // Only update if the message is actually newer
-              const currentTime = new Date(f.lastMessageAt).getTime();
-              const newTime = new Date(lastMsgData.lastMessageAt).getTime();
-              if (newTime > currentTime) {
-                return {
-                  ...f,
-                  lastMessage: lastMsgData.lastMessage,
-                  lastMessageType: lastMsgData.lastMessageType,
-                  lastMessageFrom: lastMsgData.lastMessageFrom,
-                  lastMessageAt: lastMsgData.lastMessageAt,
-                  lastMessageSenderName: lastMsgData.lastMessageSenderName,
-                };
+        setFriends(prev =>
+          prev.map(f => {
+            if (f.isPrivateGroup) {
+              const lastMsgData = lastMessages.find(
+                lm => lm && String(lm.groupId) === String(f.conversationId)
+              );
+              if (lastMsgData) {
+                // Only update if the message is actually newer
+                const currentTime = new Date(f.lastMessageAt).getTime();
+                const newTime = new Date(lastMsgData.lastMessageAt).getTime();
+                if (newTime > currentTime) {
+                  return {
+                    ...f,
+                    lastMessage: lastMsgData.lastMessage,
+                    lastMessageType: lastMsgData.lastMessageType,
+                    lastMessageFrom: lastMsgData.lastMessageFrom,
+                    lastMessageAt: lastMsgData.lastMessageAt,
+                    lastMessageSenderName: lastMsgData.lastMessageSenderName,
+                  };
+                }
               }
             }
-          }
-          return f;
-        }));
+            return f;
+          })
+        );
       } catch (error) {
         console.warn('Failed to refresh private group messages:', error);
       }
@@ -1312,7 +1623,7 @@ function Messages() {
 
     // Refresh every 30 seconds
     const interval = setInterval(refreshPrivateGroupMessages, 30000);
-    
+
     return () => clearInterval(interval);
   }, [convosLoaded, friends]);
 
@@ -1324,21 +1635,23 @@ function Messages() {
         const [convos, privateGroupRes, memberGroupsRes] = await Promise.all([
           getAllConversations().catch(() => []),
           getMyPrivateGroup().catch(() => null),
-          getMyMemberPrivateGroups().catch(() => [])
+          getMyMemberPrivateGroups().catch(() => []),
         ]);
-        
+
         console.log('getAllConversations ->', convos);
         console.log('getMyPrivateGroup ->', privateGroupRes);
         console.log('getMyMemberPrivateGroups ->', memberGroupsRes);
-        
+
         // Check if user already has a group
-        const hasGroup = convos.some(convo => convo.isGroup) || 
-                        (privateGroupRes?.success && privateGroupRes?.data) ||
-                        (Array.isArray(memberGroupsRes?.data) && memberGroupsRes.data.length > 0);
+        const hasGroup =
+          convos.some(convo => convo.isGroup) ||
+          (privateGroupRes?.success && privateGroupRes?.data) ||
+          (Array.isArray(memberGroupsRes?.data) &&
+            memberGroupsRes.data.length > 0);
         setUserHasGroup(hasGroup);
-        
+
         let allConversations = [];
-        
+
         // Add regular conversations
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
           const idFriends = convos.map(id => ({
@@ -1350,23 +1663,25 @@ function Messages() {
           allConversations = [...allConversations, ...idFriends];
         } else {
           // Normalize using backend contract (id, room, title, image, isRead, lastMessageFrom)
-          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
-            id: String(c.id),
-            name: c.title || 'User',
-            avatar: c.image || '/placeholder.svg',
-            lastMessage: c.lastMessage || '',
-            lastMessageType: c.lastMessageType || null,
-            room: c.room,
-            conversationId: c.id,
-            isRead: c.isRead,
-            lastMessageFrom: c.lastMessageFrom,
-            lastMessageAt: c.lastMessageAt,
-            isGroup: c.isGroup || false,
-            lastMessageSenderName: c.lastMessageSenderName || null, // Store sender name if available
-          }));
+          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(
+            c => ({
+              id: String(c.id),
+              name: c.title || 'User',
+              avatar: c.image || '/placeholder.svg',
+              lastMessage: c.lastMessage || '',
+              lastMessageType: c.lastMessageType || null,
+              room: c.room,
+              conversationId: c.id,
+              isRead: c.isRead,
+              lastMessageFrom: c.lastMessageFrom,
+              lastMessageAt: c.lastMessageAt,
+              isGroup: c.isGroup || false,
+              lastMessageSenderName: c.lastMessageSenderName || null, // Store sender name if available
+            })
+          );
           allConversations = [...allConversations, ...normalizedFriends];
         }
-        
+
         // Add private group if user owns one
         if (privateGroupRes?.success && privateGroupRes?.data) {
           const privateGroup = {
@@ -1379,7 +1694,8 @@ function Messages() {
             conversationId: privateGroupRes.data.id,
             isRead: true,
             lastMessageFrom: 'System',
-            lastMessageAt: privateGroupRes.data.createdAt || new Date().toISOString(),
+            lastMessageAt:
+              privateGroupRes.data.createdAt || new Date().toISOString(),
             isGroup: true,
             isPrivateGroup: true,
             isAdmin: true,
@@ -1389,9 +1705,12 @@ function Messages() {
           };
           allConversations = [privateGroup, ...allConversations];
         }
-        
+
         // Add member groups (groups user is a member of but doesn't own)
-        if (Array.isArray(memberGroupsRes?.data) && memberGroupsRes.data.length > 0) {
+        if (
+          Array.isArray(memberGroupsRes?.data) &&
+          memberGroupsRes.data.length > 0
+        ) {
           const memberGroups = memberGroupsRes.data.map(group => ({
             id: `private_group_${group.id}`,
             name: group.name,
@@ -1412,7 +1731,7 @@ function Messages() {
           }));
           allConversations = [...allConversations, ...memberGroups];
         }
-        
+
         // Deduplicate conversations by conversationId (or id fallback)
         const seenKeys = new Set();
         const dedupedConversations = [];
@@ -1426,82 +1745,115 @@ function Messages() {
         setFriends(dedupedConversations);
 
         // Fetch last messages for private groups
-        const privateGroups = dedupedConversations.filter(conv => conv.isPrivateGroup);
+        const privateGroups = dedupedConversations.filter(
+          conv => conv.isPrivateGroup
+        );
         if (privateGroups.length > 0) {
           // Fetch last messages for each private group
-          const lastMessagePromises = privateGroups.map(async (group) => {
+          const lastMessagePromises = privateGroups.map(async group => {
             try {
-              const messagesRes = await getPrivateGroupMessages(group.conversationId, 1, 1);
-              const messages = messagesRes?.data?.messages || messagesRes?.messages || [];
+              const messagesRes = await getPrivateGroupMessages(
+                group.conversationId,
+                1,
+                1
+              );
+              const messages =
+                messagesRes?.data?.messages || messagesRes?.messages || [];
               if (messages.length > 0) {
                 const lastMsg = messages[0]; // Most recent message
                 const currentUserId = localStorage.getItem('userId');
-                const isSelf = String(lastMsg.sender_id) === String(currentUserId);
-                
+                const isSelf =
+                  String(lastMsg.sender_id) === String(currentUserId);
+
                 return {
                   groupId: group.conversationId,
-                  lastMessage: lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
+                  lastMessage:
+                    lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
                   lastMessageType: lastMsg.type || 'TEXT',
                   lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
-                  lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
-                  lastMessageSenderName: isSelf ? 'You' : (lastMsg.sender?.first_name && lastMsg.sender?.last_name
-                    ? `${lastMsg.sender.first_name} ${lastMsg.sender.last_name}`.trim()
-                    : lastMsg.sender?.name || lastMsg.sender?.email || 'User'),
+                  lastMessageAt:
+                    lastMsg.createdAt ||
+                    lastMsg.created_at ||
+                    lastMsg.timeStamp ||
+                    lastMsg.timestamp ||
+                    new Date().toISOString(),
+                  lastMessageSenderName: isSelf
+                    ? 'You'
+                    : lastMsg.sender?.first_name && lastMsg.sender?.last_name
+                      ? `${lastMsg.sender.first_name} ${lastMsg.sender.last_name}`.trim()
+                      : lastMsg.sender?.name || lastMsg.sender?.email || 'User',
                 };
               }
               return null;
             } catch (error) {
-              console.warn(`Failed to fetch last message for group ${group.conversationId}:`, error);
+              console.warn(
+                `Failed to fetch last message for group ${group.conversationId}:`,
+                error
+              );
               return null;
             }
           });
 
           const lastMessages = await Promise.all(lastMessagePromises);
-          
+
           // Update friends list with real last messages
-          setFriends(prev => prev.map(f => {
-            if (f.isPrivateGroup) {
-              const lastMsgData = lastMessages.find(lm => lm && String(lm.groupId) === String(f.conversationId));
-              if (lastMsgData) {
-                return {
-                  ...f,
-                  lastMessage: lastMsgData.lastMessage,
-                  lastMessageType: lastMsgData.lastMessageType,
-                  lastMessageFrom: lastMsgData.lastMessageFrom,
-                  lastMessageAt: lastMsgData.lastMessageAt,
-                  lastMessageSenderName: lastMsgData.lastMessageSenderName,
-                };
+          setFriends(prev =>
+            prev.map(f => {
+              if (f.isPrivateGroup) {
+                const lastMsgData = lastMessages.find(
+                  lm => lm && String(lm.groupId) === String(f.conversationId)
+                );
+                if (lastMsgData) {
+                  return {
+                    ...f,
+                    lastMessage: lastMsgData.lastMessage,
+                    lastMessageType: lastMsgData.lastMessageType,
+                    lastMessageFrom: lastMsgData.lastMessageFrom,
+                    lastMessageAt: lastMsgData.lastMessageAt,
+                    lastMessageSenderName: lastMsgData.lastMessageSenderName,
+                  };
+                }
               }
-            }
-            return f;
-          }));
+              return f;
+            })
+          );
         }
 
         // Load directory of all users for the + modal
         const users = await fetchAllUsers();
         // Normalize to {id, name, avatar, role}
-        const normalized = (users || []).map(u => {
-          // Extract user role from user_roles array
-          let userRole = 'User';
-          if (u.user_roles && Array.isArray(u.user_roles) && u.user_roles.length > 0) {
-            const roles = u.user_roles.map(r => r.role);
-            // Priority order: admin > instructor > user
-            if (roles.includes('admin')) {
-              userRole = 'Admin';
-            } else if (roles.includes('instructor')) {
-              userRole = 'Instructor';
-            } else {
-              userRole = roles[0] || 'User';
+        const normalized = (users || [])
+          .map(u => {
+            // Extract user role from user_roles array
+            let userRole = 'User';
+            if (
+              u.user_roles &&
+              Array.isArray(u.user_roles) &&
+              u.user_roles.length > 0
+            ) {
+              const roles = u.user_roles.map(r => r.role);
+              // Priority order: admin > instructor > user
+              if (roles.includes('admin')) {
+                userRole = 'Admin';
+              } else if (roles.includes('instructor')) {
+                userRole = 'Instructor';
+              } else {
+                userRole = roles[0] || 'User';
+              }
             }
-          }
-          
-          return {
-            id: u.id || u._id || u.user_id || u.userId,
-            name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.email || 'User',
-            avatar: u.image || u.avatar || '/placeholder.svg',
-            role: userRole,
-          };
-        }).filter(u => u.id);
+
+            return {
+              id: u.id || u._id || u.user_id || u.userId,
+              name:
+                [u.first_name, u.last_name].filter(Boolean).join(' ') ||
+                u.name ||
+                u.email ||
+                'User',
+              avatar: u.image || u.avatar || '/placeholder.svg',
+              role: userRole,
+            };
+          })
+          .filter(u => u.id);
         setAllUsers(normalized);
         setConvosLoaded(true);
       } catch (e) {
@@ -1513,7 +1865,7 @@ function Messages() {
 
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -1523,7 +1875,7 @@ function Messages() {
       console.warn('Messages: cannot send, missing roomId or conversationId');
       return;
     }
-    
+
     // If there is a pending image, send as attachment-like message first
     if (pendingImage) {
       const tempId = `img_${Date.now()}_${Math.random()}`;
@@ -1536,9 +1888,9 @@ function Messages() {
           fileName: pendingImage.name,
           fileType: 'image',
           senderName: 'You',
-          timestamp: new Date().toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
           }),
           type: 'image',
           status: 'sending',
@@ -1552,37 +1904,59 @@ function Messages() {
       (async () => {
         try {
           const selectedFriendData = friends.find(f => f.id === selectedFriend);
-          
+
           // Handle private groups differently for image sending
           if (selectedFriendData?.isPrivateGroup) {
-            const groupId = selectedFriendData.conversationId || selectedFriendData.id;
-            const response = await sendPrivateGroupMessage(groupId, formData, true);
+            const groupId =
+              selectedFriendData.conversationId || selectedFriendData.id;
+            const response = await sendPrivateGroupMessage(
+              groupId,
+              formData,
+              true
+            );
             // Update the optimistic message with the real message data
             if (response?.success && response?.data) {
-              setMessages(prev => prev.map(msg => 
-                msg.id === tempId ? { 
-                  ...msg, 
-                  id: response.data.id,
-                  status: 'sent',
-                  file: response.data.content || response.data.url || msg.file
-                } : msg
-              ));
-              
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.id === tempId
+                    ? {
+                        ...msg,
+                        id: response.data.id,
+                        status: 'sent',
+                        file:
+                          response.data.content ||
+                          response.data.url ||
+                          msg.file,
+                      }
+                    : msg
+                )
+              );
+
               // Update the group's last message in the friends list
-              setFriends(prev => prev.map(f => {
-                if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
-                  return {
-                    ...f,
-                    lastMessage: 'Image',
-                    lastMessageType: 'IMAGE',
-                    lastMessageFrom: localStorage.getItem('userId'),
-                    lastMessageAt: response.data.createdAt || response.data.created_at || response.data.timeStamp || response.data.timestamp || new Date().toISOString(),
-                    isRead: true,
-                    lastMessageSenderName: 'You',
-                  };
-                }
-                return f;
-              }));
+              setFriends(prev =>
+                prev.map(f => {
+                  if (
+                    (f.conversationId === groupId || f.id === groupId) &&
+                    f.isPrivateGroup
+                  ) {
+                    return {
+                      ...f,
+                      lastMessage: 'Image',
+                      lastMessageType: 'IMAGE',
+                      lastMessageFrom: localStorage.getItem('userId'),
+                      lastMessageAt:
+                        response.data.createdAt ||
+                        response.data.created_at ||
+                        response.data.timeStamp ||
+                        response.data.timestamp ||
+                        new Date().toISOString(),
+                      isRead: true,
+                      lastMessageSenderName: 'You',
+                    };
+                  }
+                  return f;
+                })
+              );
 
               // Emit via socket for real-time
               privateGroupSocket.sendMessage(
@@ -1598,7 +1972,9 @@ function Messages() {
             });
           }
         } catch (e) {
-          setMessages(prev => prev.map(m => (m.id === tempId ? { ...m, status: 'failed' } : m)));
+          setMessages(prev =>
+            prev.map(m => (m.id === tempId ? { ...m, status: 'failed' } : m))
+          );
         }
       })();
     }
@@ -1611,82 +1987,97 @@ function Messages() {
         ...prev,
         {
           id: tempId,
-        senderId: 0,
+          senderId: 0,
           text: messageText,
           senderImage: null,
           senderName: 'You',
-        timestamp: new Date().toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
           type: 'text',
           status: 'sending', // sending, sent, delivered
-          tempId: tempId
-      },
-    ]);
-      setNewMessage("");
+          tempId: tempId,
+        },
+      ]);
+      setNewMessage('');
       try {
         const socket = getSocket();
         const selectedFriendData = friends.find(f => f.id === selectedFriend);
-        
+
         // Handle private groups: send via REST API; others via socket
         if (selectedFriendData?.isPrivateGroup) {
           try {
             // Get the correct group ID
-            const groupId = selectedFriendData.conversationId || selectedFriendData.id;
-            
+            const groupId =
+              selectedFriendData.conversationId || selectedFriendData.id;
+
             // Send via REST API
-            const response = await sendPrivateGroupMessage(groupId, { content: messageText });
-            
+            const response = await sendPrivateGroupMessage(groupId, {
+              content: messageText,
+            });
+
             // Update the optimistic message with the real message data
             if (response?.success && response?.data) {
-              setMessages(prev => prev.map(msg => 
-                msg.tempId === tempId ? { 
-                  ...msg, 
-                  id: response.data.id,
-                  status: 'sent',
-                  tempId: undefined // Remove tempId since we have real ID
-                } : msg
-              ));
-              
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.tempId === tempId
+                    ? {
+                        ...msg,
+                        id: response.data.id,
+                        status: 'sent',
+                        tempId: undefined, // Remove tempId since we have real ID
+                      }
+                    : msg
+                )
+              );
+
               // Update the group's last message in the friends list
-              setFriends(prev => prev.map(f => {
-                if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
-                  return {
-                    ...f,
-                    lastMessage: messageText,
-                    lastMessageType: 'TEXT',
-                    lastMessageFrom: localStorage.getItem('userId'),
-                    lastMessageAt: response.data.createdAt || response.data.created_at || response.data.timeStamp || response.data.timestamp || new Date().toISOString(),
-                    isRead: true,
-                    lastMessageSenderName: 'You',
-                  };
-                }
-                return f;
-              }));
+              setFriends(prev =>
+                prev.map(f => {
+                  if (
+                    (f.conversationId === groupId || f.id === groupId) &&
+                    f.isPrivateGroup
+                  ) {
+                    return {
+                      ...f,
+                      lastMessage: messageText,
+                      lastMessageType: 'TEXT',
+                      lastMessageFrom: localStorage.getItem('userId'),
+                      lastMessageAt:
+                        response.data.createdAt ||
+                        response.data.created_at ||
+                        response.data.timeStamp ||
+                        response.data.timestamp ||
+                        new Date().toISOString(),
+                      isRead: true,
+                      lastMessageSenderName: 'You',
+                    };
+                  }
+                  return f;
+                })
+              );
 
               // Emit via socket for real-time
-              privateGroupSocket.sendMessage(
-                groupId,
-                messageText,
-                'TEXT'
-              );
+              privateGroupSocket.sendMessage(groupId, messageText, 'TEXT');
             }
           } catch (e) {
             throw e;
           }
         } else {
-          socket.emit('sendMessage', { 
-            conversationid: conversationId, 
-            roomId, 
-            message: messageText 
+          socket.emit('sendMessage', {
+            conversationid: conversationId,
+            roomId,
+            message: messageText,
           });
         }
       } catch (error) {
         console.warn('Messages: failed to send message', error);
-        setMessages(prev => prev.map(msg => 
-          msg.tempId === tempId ? { ...msg, status: 'failed' } : msg
-        ));
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.tempId === tempId ? { ...msg, status: 'failed' } : msg
+          )
+        );
       }
     }
   };
@@ -1700,9 +2091,9 @@ function Messages() {
   //       senderId: 0,
   //       audioBlob,
   //       audioDuration: duration,
-  //       timestamp: new Date().toLocaleTimeString([], { 
-  //         hour: '2-digit', 
-  //         minute: '2-digit' 
+  //       timestamp: new Date().toLocaleTimeString([], {
+  //         hour: '2-digit',
+  //         minute: '2-digit'
   //       }),
   //       type: 'voice',
   //     },
@@ -1710,14 +2101,14 @@ function Messages() {
   //   setShowVoiceRecorder(false);
   // };
 
-  const handleSendAttachment = (file) => {
+  const handleSendAttachment = file => {
     if (!file) return;
     if (!file.type || !file.type.startsWith('image/')) return; // images only
     const previewUrl = URL.createObjectURL(file);
     setPendingImage({ name: file.name, file, previewUrl });
   };
 
-  const handleEmojiClick = (emojiData) => {
+  const handleEmojiClick = emojiData => {
     setNewMessage(prev => prev + emojiData.emoji);
     setShowEmojiPicker(false);
   };
@@ -1726,7 +2117,7 @@ function Messages() {
     if (fileInputRef.current) fileInputRef.current.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = e => {
     const file = e.target.files[0];
     if (file) {
       handleSendAttachment(file);
@@ -1734,7 +2125,7 @@ function Messages() {
     e.target.value = '';
   };
 
-  const handleDeleteMessage = (messageId) => {
+  const handleDeleteMessage = messageId => {
     setDeleteMessageId(messageId);
     setShowDeleteDialog(true);
   };
@@ -1751,15 +2142,25 @@ function Messages() {
       if (selectedFriendData?.isPrivateGroup) {
         await deletePrivateGroupMessage(conversationId, deleteMessageId);
       } else {
-      await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
+        await deleteConversationMessage({
+          messageid: deleteMessageId,
+          conversation_id: conversationId,
+          roomId,
+        });
       }
       // Notify success
       try {
-        toast({ title: 'Message Deleted Successfully', duration: 1500, className: 'text-xs py-1 px-2' });
+        toast({
+          title: 'Message Deleted Successfully',
+          duration: 1500,
+          className: 'text-xs py-1 px-2',
+        });
       } catch {}
       // Delay removal slightly to allow animation
       setTimeout(() => {
-        setMessages(prev => prev.filter(msg => String(msg.id) !== String(deleteMessageId)));
+        setMessages(prev =>
+          prev.filter(msg => String(msg.id) !== String(deleteMessageId))
+        );
         setDeletingMessageId(null);
       }, 220);
     } catch (err) {
@@ -1784,41 +2185,54 @@ function Messages() {
   const handleSaveEdit = async () => {
     if (!editingMessageId || !editingText.trim() || !conversationId) {
       setEditingMessageId(null);
-      setEditingText("");
+      setEditingText('');
       return;
     }
 
     try {
       const selectedFriendData = friends.find(f => f.id === selectedFriend);
       if (selectedFriendData?.isPrivateGroup) {
-        await editPrivateGroupMessage(conversationId, editingMessageId, { content: editingText.trim() });
+        await editPrivateGroupMessage(conversationId, editingMessageId, {
+          content: editingText.trim(),
+        });
       }
-      
+
       // Update the message in the UI
-      setMessages(prev => prev.map(msg => 
-        String(msg.id) === String(editingMessageId) 
-          ? { ...msg, text: editingText.trim() }
-          : msg
-      ));
-      
-      toast({ title: 'Message updated successfully', duration: 1500, className: 'text-xs py-1 px-2' });
+      setMessages(prev =>
+        prev.map(msg =>
+          String(msg.id) === String(editingMessageId)
+            ? { ...msg, text: editingText.trim() }
+            : msg
+        )
+      );
+
+      toast({
+        title: 'Message updated successfully',
+        duration: 1500,
+        className: 'text-xs py-1 px-2',
+      });
     } catch (err) {
       console.warn('Failed to edit message', err);
-      toast({ title: 'Failed to update message', variant: 'destructive', duration: 1500, className: 'text-xs py-1 px-2' });
+      toast({
+        title: 'Failed to update message',
+        variant: 'destructive',
+        duration: 1500,
+        className: 'text-xs py-1 px-2',
+      });
     } finally {
       setEditingMessageId(null);
-      setEditingText("");
+      setEditingText('');
     }
   };
 
   const handleCancelEdit = () => {
     setEditingMessageId(null);
-    setEditingText("");
+    setEditingText('');
   };
 
-  const handleNewChatUserSelect = (userId) => {
-    setNewChatUsers(prev => 
-      prev.includes(userId) 
+  const handleNewChatUserSelect = userId => {
+    setNewChatUsers(prev =>
+      prev.includes(userId)
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
@@ -1826,24 +2240,26 @@ function Messages() {
 
   const handleCreateNewChat = () => {
     if (newChatUsers.length === 0) return;
-    
+
     // Find the selected users
-    const selectedUsers = allUsers.filter(user => newChatUsers.includes(user.id));
-    
+    const selectedUsers = allUsers.filter(user =>
+      newChatUsers.includes(user.id)
+    );
+
     // For simplicity, we'll just add the first selected user to friends
     // In a real app, you might create a group chat or handle multiple users differently
     const newFriend = selectedUsers[0];
-    
+
     if (!friends.some(f => f.id === newFriend.id)) {
       setFriends(prev => [
         ...prev,
         {
           ...newFriend,
-          lastMessage: "New conversation started",
-        }
+          lastMessage: 'New conversation started',
+        },
       ]);
     }
-    
+
     setSelectedFriend(newFriend.id);
     setNewChatUsers([]);
   };
@@ -1852,18 +2268,19 @@ function Messages() {
   const handleCreateGroup = async () => {
     if (!groupName.trim() || selectedGroupMembers.length === 0) {
       toast({
-        title: "Error",
-        description: "Please provide a group name and select at least one member",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          'Please provide a group name and select at least one member',
+        variant: 'destructive',
       });
       return;
     }
 
     if (userHasGroup) {
       toast({
-        title: "Error",
-        description: "You can only create one private group",
-        variant: "destructive",
+        title: 'Error',
+        description: 'You can only create one private group',
+        variant: 'destructive',
       });
       return;
     }
@@ -1878,10 +2295,10 @@ function Messages() {
       };
 
       const response = await createPrivateGroup(groupData);
-      
+
       if (response?.success && response?.data) {
         const groupId = response.data.id;
-        
+
         // Add selected members to the group
         if (selectedGroupMembers.length > 0) {
           try {
@@ -1896,7 +2313,7 @@ function Messages() {
           id: `private_group_${groupId}`,
           name: response.data.name,
           avatar: response.data.thumbnail || '/placeholder.svg',
-          lastMessage: "Private group created",
+          lastMessage: 'Private group created',
           lastMessageType: 'system',
           room: `private_group_${groupId}`,
           conversationId: groupId,
@@ -1912,80 +2329,92 @@ function Messages() {
 
         // Avoid duplicate if group already exists
         setFriends(prev => {
-          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
+          const exists = prev.some(
+            f => String(f.conversationId || f.id) === String(groupId)
+          );
           return exists ? prev : [newGroup, ...prev];
         });
         setUserHasGroup(true);
-        
+
         toast({
-          title: "Success",
-          description: "Private group created successfully!",
+          title: 'Success',
+          description: 'Private group created successfully!',
         });
 
         // Reset form and close modal
-        setGroupName("");
-        setGroupDescription("");
+        setGroupName('');
+        setGroupDescription('');
         setSelectedGroupMembers([]);
-        setGroupSearchQuery("");
+        setGroupSearchQuery('');
         setShowCreateGroupModal(false);
       } else {
-        throw new Error(response?.message || "Failed to create private group");
+        throw new Error(response?.message || 'Failed to create private group');
       }
     } catch (error) {
-      console.error("Error creating private group:", error);
+      console.error('Error creating private group:', error);
       toast({
-        title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to create private group",
-        variant: "destructive",
+        title: 'Error',
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to create private group',
+        variant: 'destructive',
       });
     } finally {
       setIsCreatingGroup(false);
     }
   };
 
-  const handleGroupMemberSelect = (userId) => {
-    setSelectedGroupMembers(prev => 
-      prev.includes(userId) 
+  const handleGroupMemberSelect = userId => {
+    setSelectedGroupMembers(prev =>
+      prev.includes(userId)
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
   };
 
-  const filteredUsers = allUsers.filter(user => 
-    user.name.toLowerCase().includes(groupSearchQuery.toLowerCase()) &&
-    !selectedGroupMembers.includes(user.id)
+  const filteredUsers = allUsers.filter(
+    user =>
+      user.name.toLowerCase().includes(groupSearchQuery.toLowerCase()) &&
+      !selectedGroupMembers.includes(user.id)
   );
 
   const filteredFriends = friends.filter(friend => {
-    const matchesSearch = friend.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const matchesSearch = friend.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
     // Apply filter based on activeFilter
     let matchesFilter = true;
-    if (activeFilter === "chats") {
+    if (activeFilter === 'chats') {
       matchesFilter = !friend.isPrivateGroup; // Only 1-on-1 chats
-    } else if (activeFilter === "groups") {
+    } else if (activeFilter === 'groups') {
       matchesFilter = friend.isPrivateGroup; // Only private groups
     }
     // "all" shows everything, so matchesFilter remains true
-    
+
     return matchesSearch && matchesFilter;
   });
 
   const filteredNewChatUsers = (() => {
     const currentUserId = String(localStorage.getItem('userId') || '');
     const engagedUserIds = new Set(
-      (friends || []).map(f => {
-        const parts = String(f.room || '').split('_');
-        if (parts.length === 2) {
-          const [a, b] = parts;
-          return String(a) === currentUserId ? String(b) : String(a);
-        }
-        // fallback: no parsable room
-        return null;
-      }).filter(Boolean)
+      (friends || [])
+        .map(f => {
+          const parts = String(f.room || '').split('_');
+          if (parts.length === 2) {
+            const [a, b] = parts;
+            return String(a) === currentUserId ? String(b) : String(a);
+          }
+          // fallback: no parsable room
+          return null;
+        })
+        .filter(Boolean)
     );
     return (allUsers || []).filter(user => {
-      const inSearch = (user.name || '').toLowerCase().includes((newChatSearch || '').toLowerCase());
+      const inSearch = (user.name || '')
+        .toLowerCase()
+        .includes((newChatSearch || '').toLowerCase());
       // Exclude current user and users already in conversations
       const isSelf = String(user.id) === currentUserId;
       return inSearch && !isSelf && !engagedUserIds.has(String(user.id));
@@ -1998,385 +2427,559 @@ function Messages() {
         <div className="h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)]">
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
-          <div className="w-full flex flex-col h-full">
-            <div className="p-2 sm:p-3 border-b">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-base sm:text-lg font-semibold">Messages</h2>
-                <div className="flex items-center gap-1 sm:gap-2">
-                <CreateGroupButton
-                  onCreated={(created) => {
-                    try { 
-                      // Check for duplicates before adding (socket event may have already added it)
-                      setFriends(prev => {
-                        const exists = prev.some(f => 
-                          String(f.conversationId || f.id) === String(created.conversationId) ||
-                          String(f.id) === String(created.id)
-                        );
-                        return exists ? prev : [created, ...prev];
-                      });
-                    } catch {}
-                    try { setUserHasGroup(true); } catch {}
-                    try { setSelectedFriend(created.id); } catch {}
-                    try { setRoomId(created.room); } catch {}
-                    try { setConversationId(created.conversationId); } catch {}
-                  }}
-                />
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600" title="New Chat">
-                    <Plus className="h-4 w-4 mr-1" />
-                    New Chat
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="w-[95vw] sm:max-w-[425px] max-h-[80vh]">
-                  <DialogHeader>
-                    <DialogTitle className="text-sm sm:text-base">Start a new chat</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search users..."
-                        className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
-                        value={newChatSearch}
-                        onChange={(e) => setNewChatSearch(e.target.value)}
-                      />
-                    </div>
-                    <ScrollArea className="h-48 sm:h-64 overflow-x-hidden">
-                      <div className="space-y-2">
-                        {filteredNewChatUsers.map((user) => (
-                          <div 
-                            key={user.id}
-                            className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded cursor-pointer ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent'}`}
-                            onClick={() => {
-                              if (startingUserId) return; // block double clicks globally until response
-                              setStartingUserId(user.id);
-                              const socket = getSocket();
-                              socket.emit("startConversation", { to: user.id });
-                            }}
-                          >
-                            <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback className="text-xs">{user.name?.[0] || 'U'}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium text-xs sm:text-sm truncate">{user.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                </DialogContent>
-              </Dialog>
-                </div>
-              </div>
-              
-              {/* Filter Buttons */}
-              <div className="flex items-center gap-1">
-                <Button
-                  variant={activeFilter === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveFilter("all")}
-                  className={`text-xs px-2 py-1 h-7 ${activeFilter === "all" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={activeFilter === "chats" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveFilter("chats")}
-                  className={`text-xs px-2 py-1 h-7 ${activeFilter === "chats" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-                >
-                  Chats
-                </Button>
-                <Button
-                  variant={activeFilter === "groups" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveFilter("groups")}
-                  className={`text-xs px-2 py-1 h-7 ${activeFilter === "groups" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-                >
-                  Groups
-                </Button>
-              </div>
-            </div>
-            <div className="p-2 sm:p-3 border-b">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search contacts..."
-                  className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-            <ScrollArea className="flex-1 overflow-x-hidden">
-              {!convosLoaded ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                    <span className="text-xs sm:text-sm">Loading conversations...</span>
-                  </div>
-                </div>
-              ) : filteredFriends.map((friend) => (
-                <div
-                  key={friend.id}
-                  onClick={() => {
-                    // Open existing conversation: join its room and set IDs
-                    const socket = getSocket();
-                    if (friend.room) {
-                      const convId = friend.conversationId || friend.id;
-                      setRoomId(friend.room);
-                      setConversationId(convId);
-                      
-                      // Mark conversation as read when opening it
-                      setFriends(prev => prev.map(f => 
-                        f.id === friend.id 
-                          ? { ...f, isRead: true }
-                          : f
-                      ));
-                      
-                      // Reset and show loading while fetching previous messages for this conversation
-                      setMessages([]);
-                      setChatLoading(true);
-                      
-                      // Handle private groups differently
-                      if (friend.isPrivateGroup) {
-                        // Use private group socket handler to join the room
-                        privateGroupSocket.joinGroup(convId);
-                        
-                        // Refresh the last message for this group when opening
-                        (async () => {
-                          try {
-                            const messagesRes = await getPrivateGroupMessages(convId, 1, 1);
-                            const messages = messagesRes?.data?.messages || messagesRes?.messages || [];
-                            if (messages.length > 0) {
-                              const lastMsg = messages[0];
-                              const currentUserId = localStorage.getItem('userId');
-                              const isSelf = String(lastMsg.sender_id) === String(currentUserId);
-                              
-                              // Update the group's last message in the friends list
-                              setFriends(prev => prev.map(f => {
-                                if (f.conversationId === convId && f.isPrivateGroup) {
-                                  return {
-                                    ...f,
-                                    lastMessage: lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
-                                    lastMessageType: lastMsg.type || 'TEXT',
-                                    lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
-                                    lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
-                                  };
-                                }
-                                return f;
-                              }));
-                            }
-                          } catch (error) {
-                            console.warn(`Failed to refresh last message for group ${convId}:`, error);
-                          }
-                        })();
-                      } else {
-                        // For regular conversations
-                        socket.emit('joinRoom', friend.room, convId);
-                      }
-                      
-                      // Load previous messages for this conversation
-                      (async () => {
+            <div className="w-full flex flex-col h-full">
+              <div className="p-2 sm:p-3 border-b">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-base sm:text-lg font-semibold">
+                    Messages
+                  </h2>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <CreateGroupButton
+                      onCreated={created => {
                         try {
-                          // Use private group API for private groups; fallback to conversation API otherwise
-                          const currentUserId = localStorage.getItem('userId');
-                          let mapped = [];
-                          if (friend.isPrivateGroup) {
-                            const res = await getPrivateGroupMessages(convId, 1, 50);
-                            const list = res?.data?.messages || res?.messages || [];
-                            mapped = list.map(m => {
-                              const created = m.createdAt || m.created_at || m.timeStamp || m.timestamp || null;
-                              const ts = created ? new Date(created) : new Date();
-                              return {
-                                id: m.id,
-                                senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
-                                senderImage: m?.sender?.image || null,
-                                senderName: String(m.sender_id) === String(currentUserId) 
-                                  ? 'You'
-                                  : (m?.sender?.first_name && m?.sender?.last_name 
-                                    ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
-                                    : m?.sender?.name || m?.sender?.email || 'User'),
-                                text: (m.type || m.message_type) === 'IMAGE' ? null : (m.content || m.message || ''),
-                                timestamp: isNaN(ts.getTime()) 
-                                  ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                  : ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                type: (m.type || m.message_type) === 'IMAGE' ? 'image' : 'text',
-                                file: (m.type || m.message_type) === 'IMAGE' ? (m.content || m.url) : null,
-                                status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
-                              };
-                            });
-                          } else {
-                            const data = await loadPreviousConversation(convId);
-                            mapped = (data?.cov_messages || []).map(m => ({
-                            id: m.id,
-                            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
-                            senderImage: m?.sender?.image || null,
-                            senderName: String(m.sender_id) === String(currentUserId) 
-                              ? 'You'
-                              : (m?.sender?.first_name && m?.sender?.last_name 
-                                ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
-                                : m?.sender?.name || m?.sender?.email || 'User'),
-                            text: m.type === 'IMAGE' ? null : m.content,
-                            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            type: m.type === 'IMAGE' ? 'image' : 'text',
-                            file: m.type === 'IMAGE' ? m.content : null,
-                              status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
-                          }));
-                          }
-                          setMessages(mapped);
-                          setChatLoading(false);
-                        } catch (e) {
-                          console.warn('Failed to load previous messages', e);
-                          setChatLoading(false);
-                        }
-                      })();
-                    }
-                    setSelectedFriend(friend.id);
-                  }}
-                  className={`group p-2 sm:p-3 mx-0.5 sm:mx-1 my-0.5 sm:my-1 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
-                    selectedFriend === friend.id ? "bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md" : ""
-                  }`}
-                >
-                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
-                    <AvatarImage src={friend.avatar} />
-                    <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                       <p className={`font-medium text-sm sm:text-[15px] ${(() => {
-                         const currentUserId = localStorage.getItem('userId');
-                         const isUnread = friend.isRead === false && 
-                                         friend.lastMessageFrom && 
-                                         String(friend.lastMessageFrom) !== String(currentUserId);
-                         return isUnread ? 'font-bold' : '';
-                       })()}`}>
-                         {friend.name}
-                       </p>
-                       <div className="flex items-start gap-1 sm:gap-2">
-                         <div className="flex flex-col items-end gap-0.5 sm:gap-1 min-w-[36px] sm:min-w-[42px]">
-                           <span className="text-[10px] sm:text-[11px] text-muted-foreground tabular-nums">
-                             {formatChatTime(friend.lastMessageAt)}
-                           </span>
-                           {(() => {
-                             const currentUserId = localStorage.getItem('userId');
-                             const isUnread = friend.isRead === false && 
-                                             friend.lastMessageFrom && 
-                                             String(friend.lastMessageFrom) !== String(currentUserId);
-                             return isUnread ? (
-                               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
-                             ) : null;
-                           })()}
-                    </div>
-                          <div className="flex items-center gap-1">
-                            {/* Delete/Leave Button */}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
-                                    title="Delete conversation"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeleteConversationId(friend.conversationId || friend.id);
-                                      setShowDeleteConversationDialog(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>{friend.isGroup ? "Leave group" : "Delete conversation"}</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                          // Check for duplicates before adding (socket event may have already added it)
+                          setFriends(prev => {
+                            const exists = prev.some(
+                              f =>
+                                String(f.conversationId || f.id) ===
+                                  String(created.conversationId) ||
+                                String(f.id) === String(created.id)
+                            );
+                            return exists ? prev : [created, ...prev];
+                          });
+                        } catch {}
+                        try {
+                          setUserHasGroup(true);
+                        } catch {}
+                        try {
+                          setSelectedFriend(created.id);
+                        } catch {}
+                        try {
+                          setRoomId(created.room);
+                        } catch {}
+                        try {
+                          setConversationId(created.conversationId);
+                        } catch {}
+                      }}
+                    />
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                          title="New Chat"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          New Chat
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="w-[95vw] sm:max-w-[425px] max-h-[80vh]">
+                        <DialogHeader>
+                          <DialogTitle className="text-sm sm:text-base">
+                            Start a new chat
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Search users..."
+                              className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
+                              value={newChatSearch}
+                              onChange={e => setNewChatSearch(e.target.value)}
+                            />
                           </div>
-                       </div>
-                    </div>
-                     <p className={`text-[11px] sm:text-[12px] truncate ${(() => {
-                       const currentUserId = localStorage.getItem('userId');
-                       const isUnread = friend.isRead === false && 
-                                       friend.lastMessageFrom && 
-                                       String(friend.lastMessageFrom) !== String(currentUserId);
-                       return isUnread ? 'font-bold text-foreground' : 'text-muted-foreground';
-                     })()}`}>
-                       {(() => {
-                         const currentUserId = localStorage.getItem('userId');
-                         const isSentByMe = friend.lastMessageFrom && 
-                                           String(friend.lastMessageFrom) === String(currentUserId);
-                         
-                         // If last message is an image, show icon + Image label
-                         if (friend.lastMessageType === 'IMAGE') {
-                           if (isSentByMe) { // For both private chats and private groups
-                             return (
-                               <span className="flex items-center gap-1 sm:gap-1.5">
-                                 <span>You:</span>
-                                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
-                                 <span>Image</span>
-                                 <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
-                               </span>
-                             );
-                           } else if (!isSentByMe && friend.isPrivateGroup && friend.lastMessageSenderName) { // For others' images in private groups
-                             return (
-                               <span className="flex items-center gap-1 sm:gap-1.5">
-                                 <span className="font-medium text-purple-600">{friend.lastMessageSenderName}:</span>
-                                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
-                                 <span>Image</span>
-                               </span>
-                             );
-                           } else { // Default for non-private group images or if sender name not available
-                             return (
-                               <span className="flex items-center gap-1 sm:gap-1.5">
-                                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
-                                 <span>Image</span>
-                               </span>
-                             );
-                           }
-                         }
-
-                         if (isSentByMe && friend.lastMessage) { // For both private chats and private groups
-                           return (
-                             <span className="flex items-center gap-1 sm:gap-1.5">
-                               <span>You:</span>
-                               <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
-                                <span>{getHalfPreview(friend.lastMessage)}</span>
-                             </span>
-                           );
-                         }
-
-                         // For messages from others in private groups, show sender name if available
-                         if (friend.isPrivateGroup && friend.lastMessageFrom && String(friend.lastMessageFrom) !== String(currentUserId) && friend.lastMessageSenderName) {
-                           return (
-                             <span className="flex items-center gap-1 sm:gap-1.5">
-                               <span className="font-medium text-purple-600">{friend.lastMessageSenderName}:</span>
-                               <span>{getHalfPreview(friend.lastMessage)}</span>
-                             </span>
-                           );
-                         }
-
-                          return getHalfPreview(friend.lastMessage || 'Start a conversation');
-                       })()}
-                    </p>
+                          <ScrollArea className="h-48 sm:h-64 overflow-x-hidden">
+                            <div className="space-y-2">
+                              {filteredNewChatUsers.map(user => (
+                                <div
+                                  key={user.id}
+                                  className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded cursor-pointer ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent'}`}
+                                  onClick={() => {
+                                    if (startingUserId) return; // block double clicks globally until response
+                                    setStartingUserId(user.id);
+                                    const socket = getSocket();
+                                    socket.emit('startConversation', {
+                                      to: user.id,
+                                    });
+                                  }}
+                                >
+                                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+                                    <AvatarImage src={user.avatar} />
+                                    <AvatarFallback className="text-xs">
+                                      {user.name?.[0] || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="font-medium text-xs sm:text-sm truncate">
+                                    {user.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
-              ))}
-              {convosLoaded && filteredFriends.length === 0 && (
-                <div className="p-4 sm:p-6 text-xs sm:text-sm text-muted-foreground text-center">
-                  No conversations yet. Click the + icon to start a chat.
+
+                {/* Filter Buttons */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant={activeFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveFilter('all')}
+                    className={`text-xs px-2 py-1 h-7 ${activeFilter === 'all' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={activeFilter === 'chats' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveFilter('chats')}
+                    className={`text-xs px-2 py-1 h-7 ${activeFilter === 'chats' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
+                  >
+                    Chats
+                  </Button>
+                  <Button
+                    variant={activeFilter === 'groups' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveFilter('groups')}
+                    className={`text-xs px-2 py-1 h-7 ${activeFilter === 'groups' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
+                  >
+                    Groups
+                  </Button>
                 </div>
-              )}
-            </ScrollArea>
-          </div>
+              </div>
+              <div className="p-2 sm:p-3 border-b">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search contacts..."
+                    className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+              <ScrollArea className="flex-1 overflow-x-hidden">
+                {!convosLoaded ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="text-xs sm:text-sm">
+                        Loading conversations...
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  filteredFriends.map(friend => (
+                    <div
+                      key={friend.id}
+                      onClick={() => {
+                        // Open existing conversation: join its room and set IDs
+                        const socket = getSocket();
+                        if (friend.room) {
+                          const convId = friend.conversationId || friend.id;
+                          setRoomId(friend.room);
+                          setConversationId(convId);
+
+                          // Mark conversation as read when opening it
+                          setFriends(prev =>
+                            prev.map(f =>
+                              f.id === friend.id ? { ...f, isRead: true } : f
+                            )
+                          );
+
+                          // Reset and show loading while fetching previous messages for this conversation
+                          setMessages([]);
+                          setChatLoading(true);
+
+                          // Handle private groups differently
+                          if (friend.isPrivateGroup) {
+                            // Use private group socket handler to join the room
+                            privateGroupSocket.joinGroup(convId);
+
+                            // Refresh the last message for this group when opening
+                            (async () => {
+                              try {
+                                const messagesRes =
+                                  await getPrivateGroupMessages(convId, 1, 1);
+                                const messages =
+                                  messagesRes?.data?.messages ||
+                                  messagesRes?.messages ||
+                                  [];
+                                if (messages.length > 0) {
+                                  const lastMsg = messages[0];
+                                  const currentUserId =
+                                    localStorage.getItem('userId');
+                                  const isSelf =
+                                    String(lastMsg.sender_id) ===
+                                    String(currentUserId);
+
+                                  // Update the group's last message in the friends list
+                                  setFriends(prev =>
+                                    prev.map(f => {
+                                      if (
+                                        f.conversationId === convId &&
+                                        f.isPrivateGroup
+                                      ) {
+                                        return {
+                                          ...f,
+                                          lastMessage:
+                                            lastMsg.type === 'IMAGE'
+                                              ? 'Image'
+                                              : lastMsg.content,
+                                          lastMessageType:
+                                            lastMsg.type || 'TEXT',
+                                          lastMessageFrom: isSelf
+                                            ? currentUserId
+                                            : lastMsg.sender_id,
+                                          lastMessageAt:
+                                            lastMsg.createdAt ||
+                                            lastMsg.created_at ||
+                                            lastMsg.timeStamp ||
+                                            lastMsg.timestamp ||
+                                            new Date().toISOString(),
+                                        };
+                                      }
+                                      return f;
+                                    })
+                                  );
+                                }
+                              } catch (error) {
+                                console.warn(
+                                  `Failed to refresh last message for group ${convId}:`,
+                                  error
+                                );
+                              }
+                            })();
+                          } else {
+                            // For regular conversations
+                            socket.emit('joinRoom', friend.room, convId);
+                          }
+
+                          // Load previous messages for this conversation
+                          (async () => {
+                            try {
+                              // Use private group API for private groups; fallback to conversation API otherwise
+                              const currentUserId =
+                                localStorage.getItem('userId');
+                              let mapped = [];
+                              if (friend.isPrivateGroup) {
+                                const res = await getPrivateGroupMessages(
+                                  convId,
+                                  1,
+                                  50
+                                );
+                                const list =
+                                  res?.data?.messages || res?.messages || [];
+                                mapped = list.map(m => {
+                                  const created =
+                                    m.createdAt ||
+                                    m.created_at ||
+                                    m.timeStamp ||
+                                    m.timestamp ||
+                                    null;
+                                  const ts = created
+                                    ? new Date(created)
+                                    : new Date();
+                                  return {
+                                    id: m.id,
+                                    senderId:
+                                      String(m.sender_id) ===
+                                      String(currentUserId)
+                                        ? 0
+                                        : String(m.sender_id),
+                                    senderImage: m?.sender?.image || null,
+                                    senderName:
+                                      String(m.sender_id) ===
+                                      String(currentUserId)
+                                        ? 'You'
+                                        : m?.sender?.first_name &&
+                                            m?.sender?.last_name
+                                          ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
+                                          : m?.sender?.name ||
+                                            m?.sender?.email ||
+                                            'User',
+                                    text:
+                                      (m.type || m.message_type) === 'IMAGE'
+                                        ? null
+                                        : m.content || m.message || '',
+                                    timestamp: isNaN(ts.getTime())
+                                      ? new Date().toLocaleTimeString([], {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })
+                                      : ts.toLocaleTimeString([], {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        }),
+                                    type:
+                                      (m.type || m.message_type) === 'IMAGE'
+                                        ? 'image'
+                                        : 'text',
+                                    file:
+                                      (m.type || m.message_type) === 'IMAGE'
+                                        ? m.content || m.url
+                                        : null,
+                                    status:
+                                      String(m.sender_id) ===
+                                      String(currentUserId)
+                                        ? 'sent'
+                                        : 'delivered',
+                                  };
+                                });
+                              } else {
+                                const data =
+                                  await loadPreviousConversation(convId);
+                                mapped = (data?.cov_messages || []).map(m => ({
+                                  id: m.id,
+                                  senderId:
+                                    String(m.sender_id) ===
+                                    String(currentUserId)
+                                      ? 0
+                                      : String(m.sender_id),
+                                  senderImage: m?.sender?.image || null,
+                                  senderName:
+                                    String(m.sender_id) ===
+                                    String(currentUserId)
+                                      ? 'You'
+                                      : m?.sender?.first_name &&
+                                          m?.sender?.last_name
+                                        ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
+                                        : m?.sender?.name ||
+                                          m?.sender?.email ||
+                                          'User',
+                                  text: m.type === 'IMAGE' ? null : m.content,
+                                  timestamp: new Date(
+                                    m.createdAt
+                                  ).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }),
+                                  type: m.type === 'IMAGE' ? 'image' : 'text',
+                                  file: m.type === 'IMAGE' ? m.content : null,
+                                  status:
+                                    String(m.sender_id) ===
+                                    String(currentUserId)
+                                      ? 'sent'
+                                      : 'delivered',
+                                }));
+                              }
+                              setMessages(mapped);
+                              setChatLoading(false);
+                            } catch (e) {
+                              console.warn(
+                                'Failed to load previous messages',
+                                e
+                              );
+                              setChatLoading(false);
+                            }
+                          })();
+                        }
+                        setSelectedFriend(friend.id);
+                      }}
+                      className={`group p-2 sm:p-3 mx-0.5 sm:mx-1 my-0.5 sm:my-1 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
+                        selectedFriend === friend.id
+                          ? 'bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md'
+                          : ''
+                      }`}
+                    >
+                      <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
+                        <AvatarImage src={friend.avatar} />
+                        <AvatarFallback className="text-xs">
+                          {friend.name?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <p
+                            className={`font-medium text-sm sm:text-[15px] ${(() => {
+                              const currentUserId =
+                                localStorage.getItem('userId');
+                              const isUnread =
+                                friend.isRead === false &&
+                                friend.lastMessageFrom &&
+                                String(friend.lastMessageFrom) !==
+                                  String(currentUserId);
+                              return isUnread ? 'font-bold' : '';
+                            })()}`}
+                          >
+                            {friend.name}
+                          </p>
+                          <div className="flex items-start gap-1 sm:gap-2">
+                            <div className="flex flex-col items-end gap-0.5 sm:gap-1 min-w-[36px] sm:min-w-[42px]">
+                              <span className="text-[10px] sm:text-[11px] text-muted-foreground tabular-nums">
+                                {formatChatTime(friend.lastMessageAt)}
+                              </span>
+                              {(() => {
+                                const currentUserId =
+                                  localStorage.getItem('userId');
+                                const isUnread =
+                                  friend.isRead === false &&
+                                  friend.lastMessageFrom &&
+                                  String(friend.lastMessageFrom) !==
+                                    String(currentUserId);
+                                return isUnread ? (
+                                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
+                                ) : null;
+                              })()}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {/* Delete/Leave Button */}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
+                                      title="Delete conversation"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setDeleteConversationId(
+                                          friend.conversationId || friend.id
+                                        );
+                                        setShowDeleteConversationDialog(true);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {friend.isGroup
+                                      ? 'Leave group'
+                                      : 'Delete conversation'}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        </div>
+                        <p
+                          className={`text-[11px] sm:text-[12px] truncate ${(() => {
+                            const currentUserId =
+                              localStorage.getItem('userId');
+                            const isUnread =
+                              friend.isRead === false &&
+                              friend.lastMessageFrom &&
+                              String(friend.lastMessageFrom) !==
+                                String(currentUserId);
+                            return isUnread
+                              ? 'font-bold text-foreground'
+                              : 'text-muted-foreground';
+                          })()}`}
+                        >
+                          {(() => {
+                            const currentUserId =
+                              localStorage.getItem('userId');
+                            const isSentByMe =
+                              friend.lastMessageFrom &&
+                              String(friend.lastMessageFrom) ===
+                                String(currentUserId);
+
+                            // If last message is an image, show icon + Image label
+                            if (friend.lastMessageType === 'IMAGE') {
+                              if (isSentByMe) {
+                                // For both private chats and private groups
+                                return (
+                                  <span className="flex items-center gap-1 sm:gap-1.5">
+                                    <span>You:</span>
+                                    <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                    <span>Image</span>
+                                    <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
+                                  </span>
+                                );
+                              } else if (
+                                !isSentByMe &&
+                                friend.isPrivateGroup &&
+                                friend.lastMessageSenderName
+                              ) {
+                                // For others' images in private groups
+                                return (
+                                  <span className="flex items-center gap-1 sm:gap-1.5">
+                                    <span className="font-medium text-purple-600">
+                                      {friend.lastMessageSenderName}:
+                                    </span>
+                                    <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                    <span>Image</span>
+                                  </span>
+                                );
+                              } else {
+                                // Default for non-private group images or if sender name not available
+                                return (
+                                  <span className="flex items-center gap-1 sm:gap-1.5">
+                                    <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                    <span>Image</span>
+                                  </span>
+                                );
+                              }
+                            }
+
+                            if (isSentByMe && friend.lastMessage) {
+                              // For both private chats and private groups
+                              return (
+                                <span className="flex items-center gap-1 sm:gap-1.5">
+                                  <span>You:</span>
+                                  <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
+                                  <span>
+                                    {getHalfPreview(friend.lastMessage)}
+                                  </span>
+                                </span>
+                              );
+                            }
+
+                            // For messages from others in private groups, show sender name if available
+                            if (
+                              friend.isPrivateGroup &&
+                              friend.lastMessageFrom &&
+                              String(friend.lastMessageFrom) !==
+                                String(currentUserId) &&
+                              friend.lastMessageSenderName
+                            ) {
+                              return (
+                                <span className="flex items-center gap-1 sm:gap-1.5">
+                                  <span className="font-medium text-purple-600">
+                                    {friend.lastMessageSenderName}:
+                                  </span>
+                                  <span>
+                                    {getHalfPreview(friend.lastMessage)}
+                                  </span>
+                                </span>
+                              );
+                            }
+
+                            return getHalfPreview(
+                              friend.lastMessage || 'Start a conversation'
+                            );
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {convosLoaded && filteredFriends.length === 0 && (
+                  <div className="p-4 sm:p-6 text-xs sm:text-sm text-muted-foreground text-center">
+                    No conversations yet. Click the + icon to start a chat.
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           )}
 
           {/* Chat Area - takes full width when a chat is open */}
           {selectedFriend && (
-          <div className="w-full h-full flex flex-col min-h-0">
-                {/* Chat Header */}
-                <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <Button variant="ghost" size="icon" className="mr-0.5 sm:mr-1 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all" onClick={() => {
+            <div className="w-full h-full flex flex-col min-h-0">
+              {/* Chat Header */}
+              <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mr-0.5 sm:mr-1 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all"
+                    onClick={() => {
                       // Leave the room when going back to chat list
                       if (roomId) {
                         try {
@@ -2387,24 +2990,34 @@ function Messages() {
                         }
                       }
                       setSelectedFriend(null);
-                    }} title="Back to chats">
-                      <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
-                    </Button>
-                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
-                      {convosLoaded && (
-                        <>
-                          <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                      <AvatarFallback className="text-xs sm:text-sm">
-                            {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
-                      </AvatarFallback>
-                        </>
-                      )}
-                    </Avatar>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-sm sm:text-base">
-                        {convosLoaded ? (friends.find((f) => f.id === selectedFriend)?.name || '') : ''}
-                      </h3>
-                      {convosLoaded && friends.find((f) => f.id === selectedFriend)?.isGroup && (
+                    }}
+                    title="Back to chats"
+                  >
+                    <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
+                  </Button>
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+                    {convosLoaded && (
+                      <>
+                        <AvatarImage
+                          src={
+                            friends.find(f => f.id === selectedFriend)?.avatar
+                          }
+                        />
+                        <AvatarFallback className="text-xs sm:text-sm">
+                          {friends.find(f => f.id === selectedFriend)
+                            ?.name?.[0] || ''}
+                        </AvatarFallback>
+                      </>
+                    )}
+                  </Avatar>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-sm sm:text-base">
+                      {convosLoaded
+                        ? friends.find(f => f.id === selectedFriend)?.name || ''
+                        : ''}
+                    </h3>
+                    {convosLoaded &&
+                      friends.find(f => f.id === selectedFriend)?.isGroup && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -2414,13 +3027,17 @@ function Messages() {
                                 className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all"
                                 title="Group information"
                                 onClick={() => {
-                                  const currentFriend = friends.find((f) => f.id === selectedFriend);
+                                  const currentFriend = friends.find(
+                                    f => f.id === selectedFriend
+                                  );
                                   console.log('Opening group info for:', {
                                     selectedFriend,
                                     currentFriend,
-                                    conversationId: currentFriend?.conversationId,
+                                    conversationId:
+                                      currentFriend?.conversationId,
                                     isGroup: currentFriend?.isGroup,
-                                    isPrivateGroup: currentFriend?.isPrivateGroup
+                                    isPrivateGroup:
+                                      currentFriend?.isPrivateGroup,
                                   });
                                   setSelectedGroupInfo(currentFriend);
                                   setShowGroupInfoModal(true);
@@ -2433,48 +3050,60 @@ function Messages() {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Messages Area */}
-                <ScrollArea className="flex-1 px-0 py-1 sm:py-2 md:py-3 overflow-y-auto overflow-x-hidden">
-                  <div className="space-y-0.5 sm:space-y-1 md:space-y-1.5 lg:space-y-2 relative min-h-0 w-full">
-                    <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,_#8b5cf6_0,_transparent_40%),_radial-gradient(circle_at_80%_10%,_#a78bfa_0,_transparent_35%),_radial-gradient(circle_at_10%_80%,_#6d28d9_0,_transparent_35%),_radial-gradient(circle_at_90%_85%,_#c4b5fd_0,_transparent_40%)]" />
-                    {chatLoading && (
-                      <div className="h-full w-full flex items-center justify-center py-8 sm:py-10">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                          <span className="text-xs sm:text-sm">Loading conversation...</span>
-                        </div>
+              {/* Messages Area */}
+              <ScrollArea className="flex-1 px-0 py-1 sm:py-2 md:py-3 overflow-y-auto overflow-x-hidden">
+                <div className="space-y-0.5 sm:space-y-1 md:space-y-1.5 lg:space-y-2 relative min-h-0 w-full">
+                  <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,_#8b5cf6_0,_transparent_40%),_radial-gradient(circle_at_80%_10%,_#a78bfa_0,_transparent_35%),_radial-gradient(circle_at_10%_80%,_#6d28d9_0,_transparent_35%),_radial-gradient(circle_at_90%_85%,_#c4b5fd_0,_transparent_40%)]" />
+                  {chatLoading && (
+                    <div className="h-full w-full flex items-center justify-center py-8 sm:py-10">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                        <span className="text-xs sm:text-sm">
+                          Loading conversation...
+                        </span>
                       </div>
-                    )}
-                    {!chatLoading && (
-                      <div className="w-full flex justify-center py-1 sm:py-2">
-                        <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
-                          Chats before 7 days will be deleted automatically
-                        </div>
+                    </div>
+                  )}
+                  {!chatLoading && (
+                    <div className="w-full flex justify-center py-1 sm:py-2">
+                      <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                        Chats before 7 days will be deleted automatically
                       </div>
-                    )}
-                    {!chatLoading && messages.map((message, index) => (
+                    </div>
+                  )}
+                  {!chatLoading &&
+                    messages.map((message, index) => (
                       <div
                         key={message.id}
                         className={`flex items-end gap-0 sm:gap-0.5 md:gap-1 lg:gap-1.5 xl:gap-2 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 w-full px-1 sm:px-2 min-w-0 ${
-                          message.senderId === 0 ? "justify-end" : "justify-start"
+                          message.senderId === 0
+                            ? 'justify-end'
+                            : 'justify-start'
                         }`}
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {message.senderId !== 0 && (
                           <div className="flex flex-col items-center gap-0.5 sm:gap-1">
                             <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 ring-1 sm:ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110 flex-shrink-0">
-                              <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
+                              <AvatarImage
+                                src={
+                                  message.senderImage ||
+                                  friends.find(f => f.id === selectedFriend)
+                                    ?.avatar
+                                }
+                              />
                               <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold text-[10px] sm:text-xs md:text-sm">
-                                {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
+                                {friends.find(f => f.id === selectedFriend)
+                                  ?.name?.[0] || 'U'}
                               </AvatarFallback>
                             </Avatar>
                           </div>
                         )}
-                        
+
                         {/* Voice message rendering - commented out */}
                         {/* {message.type === 'voice' && message.audioBlob ? (
                           <div className="max-w-[68%]">
@@ -2487,38 +3116,54 @@ function Messages() {
                               {message.timestamp}
                             </p>
                           </div>
-                        ) : */} 
+                        ) : */}
                         {message.type === 'image' ? (
-                          <div className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group flex-shrink-0 w-fit min-w-0`}>
+                          <div
+                            className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group flex-shrink-0 w-fit min-w-0`}
+                          >
                             {/* Sender name - only show for messages from others in private groups (not senderId 0) */}
-                            {message.senderId !== 0 && message.senderName && friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
-                              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1 mb-1 block">
-                                {message.senderName}
-                              </span>
-                            )}
-                            <div className={`relative rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
-                              message.senderId === 0 
-                                ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/25" 
-                                : "border border-gray-200/80 shadow-md shadow-gray-200/60"
-                            }`}>
-                                <img 
-                                  src={message.file} 
-                                alt={message.fileName || 'image'} 
-                                 className="max-h-28 sm:max-h-32 md:max-h-40 lg:max-h-48 xl:max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
-                                onClick={() => setImagePreview({ open: true, url: message.file })}
+                            {message.senderId !== 0 &&
+                              message.senderName &&
+                              friends.find(f => f.id === selectedFriend)
+                                ?.isPrivateGroup && (
+                                <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1 mb-1 block">
+                                  {message.senderName}
+                                </span>
+                              )}
+                            <div
+                              className={`relative rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
+                                message.senderId === 0
+                                  ? 'border-2 border-purple-300/30 shadow-lg shadow-purple-500/25'
+                                  : 'border border-gray-200/80 shadow-md shadow-gray-200/60'
+                              }`}
+                            >
+                              <img
+                                src={message.file}
+                                alt={message.fileName || 'image'}
+                                className="max-h-28 sm:max-h-32 md:max-h-40 lg:max-h-48 xl:max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                                onClick={() =>
+                                  setImagePreview({
+                                    open: true,
+                                    url: message.file,
+                                  })
+                                }
                               />
                               {deletingMessageId === message.id && (
                                 <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center gap-1 sm:gap-2">
                                   <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-purple-600" />
-                                  <span className="text-xs sm:text-sm text-foreground">Deleting...</span>
+                                  <span className="text-xs sm:text-sm text-foreground">
+                                    Deleting...
+                                  </span>
                                 </div>
                               )}
                             </div>
-                             <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
-                              <p className={`text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] xl:text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
-                              {message.timestamp}
-                            </p>
-                        <div className="flex items-center gap-0.5 sm:gap-1">
+                            <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
+                              <p
+                                className={`text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] xl:text-[11px] font-medium ${message.senderId === 0 ? 'text-purple-600' : 'text-gray-500'}`}
+                              >
+                                {message.timestamp}
+                              </p>
+                              <div className="flex items-center gap-0.5 sm:gap-1">
                                 {/* Message Status Icons for images */}
                                 {message.senderId === 0 && (
                                   <div className="flex items-center">
@@ -2533,7 +3178,9 @@ function Messages() {
                                     )}
                                     {message.status === 'failed' && (
                                       <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                                        <span className="text-white text-[5px] sm:text-[6px] md:text-[7px] lg:text-[8px] font-bold">!</span>
+                                        <span className="text-white text-[5px] sm:text-[6px] md:text-[7px] lg:text-[8px] font-bold">
+                                          !
+                                        </span>
                                       </div>
                                     )}
                                   </div>
@@ -2544,7 +3191,9 @@ function Messages() {
                                     variant="ghost"
                                     size="sm"
                                     className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-red-100 text-red-500 hover:scale-110"
-                                    onClick={() => handleDeleteMessage(message.id)}
+                                    onClick={() =>
+                                      handleDeleteMessage(message.id)
+                                    }
                                   >
                                     <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
                                   </Button>
@@ -2555,92 +3204,113 @@ function Messages() {
                         ) : (
                           <div className="flex flex-col gap-0.5 sm:gap-1 max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%]">
                             {/* Sender name - only show for messages from others in private groups (not senderId 0) */}
-                            {message.senderId !== 0 && message.senderName && friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
-                              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1">
-                                {message.senderName}
-                              </span>
-                            )}
+                            {message.senderId !== 0 &&
+                              message.senderName &&
+                              friends.find(f => f.id === selectedFriend)
+                                ?.isPrivateGroup && (
+                                <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1">
+                                  {message.senderName}
+                                </span>
+                              )}
                             <div
                               className={`group relative transition-all duration-300 hover:scale-[1.02] flex-shrink-0 w-fit min-w-0 ${
                                 message.senderId === 0
-                                  ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40" 
-                                  : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
+                                  ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40'
+                                  : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60'
                               } rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl px-1 sm:px-1.5 md:px-2 lg:px-2.5 xl:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2 xl:py-2.5 shadow-sm backdrop-blur-sm`}
                             >
-                            {editingMessageId === message.id ? (
-                              <div className="space-y-2">
-                                <Input
-                                  value={editingText}
-                                  onChange={(e) => setEditingText(e.target.value)}
-                                  className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] bg-white/10 border-white/20 text-white placeholder-white/70"
-                                  placeholder="Edit message..."
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleSaveEdit();
-                                    } else if (e.key === 'Escape') {
-                                      handleCancelEdit();
+                              {editingMessageId === message.id ? (
+                                <div className="space-y-2">
+                                  <Input
+                                    value={editingText}
+                                    onChange={e =>
+                                      setEditingText(e.target.value)
                                     }
-                                  }}
-                                  autoFocus
-                                />
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    onClick={handleSaveEdit}
-                                    className="h-5 px-2 text-[8px] sm:text-[9px] bg-white/20 hover:bg-white/30 text-white"
-                                  >
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleCancelEdit}
-                                    className="h-5 px-2 text-[8px] sm:text-[9px] border-white/20 text-white hover:bg-white/10"
-                                  >
-                                    Cancel
-                                  </Button>
+                                    className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] bg-white/10 border-white/20 text-white placeholder-white/70"
+                                    placeholder="Edit message..."
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        handleSaveEdit();
+                                      } else if (e.key === 'Escape') {
+                                        handleCancelEdit();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      onClick={handleSaveEdit}
+                                      className="h-5 px-2 text-[8px] sm:text-[9px] bg-white/20 hover:bg-white/30 text-white"
+                                    >
+                                      Save
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={handleCancelEdit}
+                                      className="h-5 px-2 text-[8px] sm:text-[9px] border-white/20 text-white hover:bg-white/10"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            ) : (
-                            <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
-                            )}
-                            {message.text && extractUrls(message.text).length > 0 && (
-                              <div className="mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2 xl:mt-3">
-                                {extractUrls(message.text).map((u, i) => (
-                                  <LinkCard key={`${message.id}-link-${i}`} url={u} />
-                                ))}
-                              </div>
-                            )}
-                            {/* Deleting overlay only for images. None for text messages. */}
-                            <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
-                              <p className={`text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] xl:text-[10px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
-                              {message.timestamp}
-                            </p>
-                              <div className="flex items-center gap-0.5 sm:gap-1">
-                                {/* Message Status Icons */}
-                                {message.senderId === 0 && (
-                                  <div className="flex items-center">
-                                    {message.status === 'sending' && (
-                                      <Clock className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70 animate-pulse" />
+                              ) : (
+                                <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">
+                                  {message.text &&
+                                    renderRichText(
+                                      message.text,
+                                      message.senderId === 0
                                     )}
-                                    {message.status === 'sent' && (
-                                      <Check className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70" />
-                                    )}
-                                    {message.status === 'delivered' && (
-                                      <CheckCheck className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70" />
-                                    )}
-                                    {message.status === 'failed' && (
-                                      <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                                        <span className="text-white text-[5px] sm:text-[6px] md:text-[7px] lg:text-[8px] font-bold">!</span>
-                                      </div>
-                                    )}
+                                </p>
+                              )}
+                              {message.text &&
+                                extractUrls(message.text).length > 0 && (
+                                  <div className="mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2 xl:mt-3">
+                                    {extractUrls(message.text).map((u, i) => (
+                                      <LinkCard
+                                        key={`${message.id}-link-${i}`}
+                                        url={u}
+                                      />
+                                    ))}
                                   </div>
                                 )}
-                                {/* Edit and Delete buttons - only show for own messages in private groups */}
-                                {message.senderId === 0 && friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
-                                  <>
-                                    {/* Edit button - disabled until backend implements PUT /api/private-groups/:groupId/messages/:messageId */}
-                                    {/* <Button
+                              {/* Deleting overlay only for images. None for text messages. */}
+                              <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
+                                <p
+                                  className={`text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] xl:text-[10px] font-medium ${message.senderId === 0 ? 'text-white/90' : 'text-gray-500'}`}
+                                >
+                                  {message.timestamp}
+                                </p>
+                                <div className="flex items-center gap-0.5 sm:gap-1">
+                                  {/* Message Status Icons */}
+                                  {message.senderId === 0 && (
+                                    <div className="flex items-center">
+                                      {message.status === 'sending' && (
+                                        <Clock className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70 animate-pulse" />
+                                      )}
+                                      {message.status === 'sent' && (
+                                        <Check className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70" />
+                                      )}
+                                      {message.status === 'delivered' && (
+                                        <CheckCheck className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70" />
+                                      )}
+                                      {message.status === 'failed' && (
+                                        <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                          <span className="text-white text-[5px] sm:text-[6px] md:text-[7px] lg:text-[8px] font-bold">
+                                            !
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  {/* Edit and Delete buttons - only show for own messages in private groups */}
+                                  {message.senderId === 0 &&
+                                    friends.find(f => f.id === selectedFriend)
+                                      ?.isPrivateGroup && (
+                                      <>
+                                        {/* Edit button - disabled until backend implements PUT /api/private-groups/:groupId/messages/:messageId */}
+                                        {/* <Button
                                       variant="ghost"
                                       size="sm"
                                       className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
@@ -2648,120 +3318,145 @@ function Messages() {
                                     >
                                       <Edit3 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
                                     </Button> */}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
-                                      onClick={() => handleDeleteMessage(message.id)}
-                                    >
-                                      <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
-                                    </Button>
-                                  </>
-                                )}
-                                {/* Delete button for non-private groups */}
-                                {message.senderId === 0 && !friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
-                                    onClick={() => handleDeleteMessage(message.id)}
-                                  >
-                                    <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
-                                  </Button>
-                                )}
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                          onClick={() =>
+                                            handleDeleteMessage(message.id)
+                                          }
+                                        >
+                                          <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  {/* Delete button for non-private groups */}
+                                  {message.senderId === 0 &&
+                                    !friends.find(f => f.id === selectedFriend)
+                                      ?.isPrivateGroup && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                        onClick={() =>
+                                          handleDeleteMessage(message.id)
+                                        }
+                                      >
+                                        <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
+                                      </Button>
+                                    )}
+                                </div>
                               </div>
-                            </div>
                             </div>
                           </div>
                         )}
-                        
+
                         {message.senderId === 0 && (
-                            <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 mt-1 ring-1 sm:ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110 flex-shrink-0 overflow-visible">
-                            <AvatarImage src={message.senderImage || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold text-[10px] sm:text-xs md:text-sm">Y</AvatarFallback>
+                          <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 mt-1 ring-1 sm:ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110 flex-shrink-0 overflow-visible">
+                            <AvatarImage
+                              src={message.senderImage || undefined}
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold text-[10px] sm:text-xs md:text-sm">
+                              Y
+                            </AvatarFallback>
                           </Avatar>
                         )}
                       </div>
                     ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </ScrollArea>
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
 
-                {/* Message Input */}
-                <div className="p-3 sm:p-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  {pendingImage && (
-                    <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-md border bg-muted/40 max-w-xs">
-                      <img src={pendingImage.previewUrl} alt={pendingImage.name} className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{pendingImage.name}</p>
-                        <p className="text-[10px] sm:text-[11px] text-muted-foreground">Will send when you press Send</p>
-                      </div>
-                      <Button size="sm" variant="ghost" className="h-6 sm:h-7 px-1.5 sm:px-2 text-xs" onClick={() => setPendingImage(null)}>Remove</Button>
+              {/* Message Input */}
+              <div className="p-3 sm:p-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                {pendingImage && (
+                  <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-md border bg-muted/40 max-w-xs">
+                    <img
+                      src={pendingImage.previewUrl}
+                      alt={pendingImage.name}
+                      className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">
+                        {pendingImage.name}
+                      </p>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">
+                        Will send when you press Send
+                      </p>
                     </div>
-                  )}
-                  
-                  {/* Voice recorder - commented out */}
-                  {/* {showVoiceRecorder ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 sm:h-7 px-1.5 sm:px-2 text-xs"
+                      onClick={() => setPendingImage(null)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+
+                {/* Voice recorder - commented out */}
+                {/* {showVoiceRecorder ? (
                     <VoiceRecorder 
                       onSendVoiceMessage={handleSendVoiceMessage}
                       onCancel={() => setShowVoiceRecorder(false)}
                     />
                   ) : ( */}
-                  {true && (
-                    <div className="relative w-full">
-                      {showEmojiPicker && (
-                        <div className="absolute bottom-14 sm:bottom-16 left-0 z-10">
-                          <EmojiPicker 
-                            onEmojiClick={handleEmojiClick}
-                            width={280}
-                            height={320}
-                          />
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-2 sm:gap-3 items-center">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground"
-                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        >
-                          <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </Button>
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground"
-                          onClick={handleAttachmentClick}
-                        >
-                          <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </Button>
-                        
-                        <div className="flex-1 relative min-w-0">
-                          <Input
-                            placeholder="Type a message..."
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleSendMessage();
-                              }
-                            }}
-                            className="rounded-full pl-3 sm:pl-4 pr-12 sm:pr-16 h-10 sm:h-12 text-sm sm:text-base bg-gray-100 border-gray-200 focus:bg-white break-words break-all whitespace-pre-wrap"
-                          />
-                        </div>
-                        
-                        <div className="flex gap-2 sm:gap-3">
-                          {/* Voice recording button - commented out */}
-                          {/* <Button 
+                {true && (
+                  <div className="relative w-full">
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-14 sm:bottom-16 left-0 z-10">
+                        <EmojiPicker
+                          onEmojiClick={handleEmojiClick}
+                          width={280}
+                          height={320}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 sm:gap-3 items-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      >
+                        <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground"
+                        onClick={handleAttachmentClick}
+                      >
+                        <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+
+                      <div className="flex-1 relative min-w-0">
+                        <Input
+                          placeholder="Type a message..."
+                          value={newMessage}
+                          onChange={e => setNewMessage(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              handleSendMessage();
+                            }
+                          }}
+                          className="rounded-full pl-3 sm:pl-4 pr-12 sm:pr-16 h-10 sm:h-12 text-sm sm:text-base bg-gray-100 border-gray-200 focus:bg-white break-words break-all whitespace-pre-wrap"
+                        />
+                      </div>
+
+                      <div className="flex gap-2 sm:gap-3">
+                        {/* Voice recording button - commented out */}
+                        {/* <Button 
                             onClick={() => setShowVoiceRecorder(true)} 
                             variant="ghost"
                             size="icon"
@@ -2769,58 +3464,67 @@ function Messages() {
                           >
                             <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                           </Button> */}
-                          
-                          <Button 
-                            onClick={handleSendMessage} 
-                            className={`rounded-full h-10 w-10 sm:h-12 sm:w-12 transition-all ${
-                              newMessage.trim() || pendingImage 
-                                ? "bg-purple-500 hover:bg-purple-600 text-white" 
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                            size="icon"
-                            disabled={!newMessage.trim() && !pendingImage}
-                          >
-                            <Send className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </Button>
-                        </div>
+
+                        <Button
+                          onClick={handleSendMessage}
+                          className={`rounded-full h-10 w-10 sm:h-12 sm:w-12 transition-all ${
+                            newMessage.trim() || pendingImage
+                              ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          }`}
+                          size="icon"
+                          disabled={!newMessage.trim() && !pendingImage}
+                        >
+                          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </Button>
                       </div>
                     </div>
-                  )}
-                </div>
-          </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
 
       {/* Image Preview Modal new */}
-      <Dialog open={imagePreview.open} onOpenChange={(o) => setImagePreview(prev => ({ ...prev, open: o }))}>
-        <DialogContent className="p-0 bg-white w-auto max-w-none rounded-lg sm:rounded-xl shadow-2xl">
+      <Dialog
+        open={imagePreview.open}
+        onOpenChange={o => setImagePreview(prev => ({ ...prev, open: o }))}
+      >
+        <DialogContent className="p-4 bg-black/95 w-auto max-w-4xl rounded-lg sm:rounded-xl shadow-2xl border-0 flex items-center justify-center">
           {imagePreview.url && (
-            <img 
-              src={imagePreview.url} 
-              alt="preview" 
-              className="block h-auto w-auto max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[90vh] object-contain" 
-            />
+            <div className="flex flex-col items-center justify-center gap-3">
+              <img
+                src={imagePreview.url}
+                alt="preview"
+                className="max-w-full max-h-[70vh] w-auto h-auto object-contain rounded-lg"
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
-
-      
 
       {/* Delete Message Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="w-[95vw] sm:w-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm sm:text-base">Delete Message</AlertDialogTitle>
+            <AlertDialogTitle className="text-sm sm:text-base">
+              Delete Message
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
-              Are you sure you want to delete this message? This action cannot be undone.
+              Are you sure you want to delete this message? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteMessage} className="text-xs sm:text-sm">
+            <AlertDialogCancel
+              onClick={cancelDeleteMessage}
+              className="text-xs sm:text-sm"
+            >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDeleteMessage}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm"
             >
@@ -2831,16 +3535,30 @@ function Messages() {
       </AlertDialog>
 
       {/* Delete Conversation Confirmation Dialog */}
-      <AlertDialog open={showDeleteConversationDialog} onOpenChange={setShowDeleteConversationDialog}>
+      <AlertDialog
+        open={showDeleteConversationDialog}
+        onOpenChange={setShowDeleteConversationDialog}
+      >
         <AlertDialogContent className="w-[95vw] sm:w-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-sm sm:text-base">Delete Conversation</AlertDialogTitle>
+            <AlertDialogTitle className="text-sm sm:text-base">
+              Delete Conversation
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
-              This will permanently delete this entire conversation, including images. This action cannot be undone.
+              This will permanently delete this entire conversation, including
+              images. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowDeleteConversationDialog(false); setDeleteConversationId(null); }} className="text-xs sm:text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowDeleteConversationDialog(false);
+                setDeleteConversationId(null);
+              }}
+              className="text-xs sm:text-sm"
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm"
               onClick={async () => {
@@ -2848,13 +3566,31 @@ function Messages() {
                 try {
                   await deleteConversation(deleteConversationId);
                   // Optimistically remove from UI; backend socket will also send confirmation
-                  setFriends(prev => prev.filter(f => String(f.conversationId || f.id) !== String(deleteConversationId)));
+                  setFriends(prev =>
+                    prev.filter(
+                      f =>
+                        String(f.conversationId || f.id) !==
+                        String(deleteConversationId)
+                    )
+                  );
                   if (String(selectedFriend) === String(deleteConversationId)) {
                     setSelectedFriend(null);
                   }
-                  try { toast({ title: 'Conversation deleted', duration: 1400, className: 'text-xs py-1 px-2' }); } catch {}
+                  try {
+                    toast({
+                      title: 'Conversation deleted',
+                      duration: 1400,
+                      className: 'text-xs py-1 px-2',
+                    });
+                  } catch {}
                 } catch (err) {
-                  try { toast({ title: 'Failed to delete conversation', duration: 1600, className: 'text-xs py-1 px-2' }); } catch {}
+                  try {
+                    toast({
+                      title: 'Failed to delete conversation',
+                      duration: 1600,
+                      className: 'text-xs py-1 px-2',
+                    });
+                  } catch {}
                 } finally {
                   setShowDeleteConversationDialog(false);
                   setDeleteConversationId(null);

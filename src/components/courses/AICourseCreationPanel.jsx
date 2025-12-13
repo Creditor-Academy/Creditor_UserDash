@@ -38,37 +38,220 @@ import {
 import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
 import AIStreamingGeneration from './AIStreamingGeneration';
+import {
+  AnalysisPhaseCard,
+  ObjectivesPhaseCard,
+  InstructionDesignPhaseCard,
+  LearnerExperiencePhaseCard,
+  DevelopmentPhaseCard,
+  ImplementationPhaseCard,
+  BrandingPhaseCard,
+  QualityPhaseCard,
+} from './ADDIEPhasesForms';
 import '@lessonbuilder/styles/AITextEditor.css';
+
+const PHASES = [
+  {
+    id: 'analysis',
+    label: 'Phase 1',
+    title: 'Analyze Purpose',
+    description: 'Goals, audience, constraints, and blueprint inputs.',
+  },
+  {
+    id: 'objectives',
+    label: 'Phase 2',
+    title: 'Define Objectives',
+    description: 'Bloom-aligned objectives and evidence of success.',
+  },
+  {
+    id: 'design',
+    label: 'Phase 3',
+    title: 'Instruction Design',
+    description: 'Map Gagné’s events and lesson flow.',
+  },
+  {
+    id: 'experience',
+    label: 'Phase 4',
+    title: 'Learner Experience',
+    description: 'VAK modalities, storytelling, adaptive paths.',
+  },
+  {
+    id: 'development',
+    label: 'Phase 5',
+    title: 'Development Plan',
+    description: 'Inputs, storyboard format, review cadence.',
+  },
+  {
+    id: 'implementation',
+    label: 'Phase 6',
+    title: 'Implementation',
+    description: 'Delivery channels, analytics, evaluation plan.',
+  },
+  {
+    id: 'branding',
+    label: 'Phase 7',
+    title: 'Branding & Creative',
+    description: 'Tone, visual system, characters, media.',
+  },
+  {
+    id: 'quality',
+    label: 'Phase 8',
+    title: 'Quality & Accuracy',
+    description: 'Validation rules, references, compliance notes.',
+  },
+];
+
+const createDefaultDesignPhases = () => ({
+  analysis: {
+    mainGoal: '',
+    targetLearner: '',
+    problemToSolve: '',
+    businessOutcome: '',
+    learningConstraints: '',
+    complianceNeeds: '',
+    prerequisites: '',
+    courseLength: '',
+    successMeasures: '',
+    requiredResources: '',
+    courseTitle: '',
+    finalPerformance: '',
+    audienceProfile: '',
+    prerequisiteSkills: '',
+    totalDuration: '',
+    moduleCount: 4,
+    lessonsPerModule: 3,
+    flowPreference: 'linear',
+    moduleList: [],
+    moduleExperiencePlan: [],
+  },
+  objectives: {
+    overallObjectives: [],
+    optionalObjectives: [],
+    bloomTargets: {
+      course: 'apply',
+      byModule: {},
+    },
+    evidencePlan: '',
+    bloomByModuleNotes: '',
+    rememberGoals: {},
+    understandGoals: {},
+    applyGoals: {},
+    analyzeGoals: {},
+    createGoals: {},
+    highestBloomPerModule: {},
+    autoGenerateLessonObjectives: true,
+  },
+  design: {
+    attentionStrategy: '',
+    objectivesAnnouncement: '',
+    priorKnowledgeActivation: '',
+    contentPresentation: '',
+    guidancePlan: '',
+    practicePlan: '',
+    feedbackPlan: '',
+    assessmentPlan: '',
+    retentionPlan: '',
+  },
+  experience: {
+    deliveryMode: 'self_paced',
+    visualApproach: '',
+    auditoryApproach: '',
+    kinestheticApproach: '',
+    storytellingPlan: '',
+    practiceCadence: 'per_lesson',
+    feedbackChannels: [],
+    adaptivePaths: false,
+    brandStyle: '',
+    learningFormats: [],
+    modalityStrategyByModule: {},
+    autoBalanceModalities: true,
+  },
+  development: {
+    inputsProvided: '',
+    moduleStructureNotes: '',
+    storyboardFormat: 'slide-by-slide',
+    reviewCycle: 'Draft → Review → Revise',
+    localizationNeeds: '',
+    interactiveElements: '',
+    autoAssessments: true,
+    mediaHandling: '',
+    addieCoverage: {
+      analysis: true,
+      design: true,
+      development: true,
+      implementation: false,
+      evaluation: false,
+    },
+    samPreferences: {
+      prototypingStyle: 'rapid',
+      feedbackCadence: 'per_module',
+      collaborationMode: 'collaborative',
+    },
+  },
+  implementation: {
+    deliveryChannels: [],
+    analyticsNeeds: [],
+    evaluationCriteria: [],
+    optimizationCadence: 'quarterly',
+    learnerInsights: '',
+    feedbackLoops: '',
+    assessmentDataNeeds: [],
+  },
+  branding: {
+    tone: 'professional',
+    visualStyle: 'modern',
+    characters: '',
+    narrator: '',
+    musicStyle: '',
+    storytellingStyle: '',
+    accessibilityGuidelines: true,
+  },
+  quality: {
+    accuracyBenchmark: '99%',
+    referenceCheck: true,
+    humanValidation: true,
+    ambiguityHandling: 'ask',
+    autoTagging: true,
+    qualityChecklist: [],
+    complianceNotes: '',
+  },
+});
+
+const createInitialCourseData = () => ({
+  courseName: '',
+  learningOutcomes: '',
+  targetAudience: '',
+  priorKnowledge: 'no',
+  priorKnowledgeDetails: '',
+  description: '',
+  duration: '',
+  difficulty: 'beginner',
+  thumbnail: null,
+  // Keep legacy fields for backwards compatibility
+  title: '',
+  subject: '',
+  objectives: '',
+  // Blueprint-specific inputs (1.1–1.8)
+  blueprintCoursePurpose: '',
+  blueprintLearnerProfile: '',
+  blueprintLearningConstraints: '',
+  blueprintComplianceRequirements: '',
+  blueprintPriorKnowledge: '',
+  blueprintCourseStructure: '',
+  blueprintSuccessMeasurement: '',
+  blueprintRequiredResources: '',
+  moduleCount: 4,
+  lessonsPerModule: 3,
+  designPhases: createDefaultDesignPhases(),
+});
 
 const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('outline');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [activePhase, setActivePhase] = useState('analysis');
   const [formStep, setFormStep] = useState(1);
-  const [courseData, setCourseData] = useState({
-    courseName: '',
-    learningOutcomes: '',
-    targetAudience: '',
-    priorKnowledge: 'no',
-    priorKnowledgeDetails: '',
-    description: '',
-    duration: '',
-    difficulty: 'beginner',
-    thumbnail: null,
-    // Keep legacy fields for backwards compatibility
-    title: '',
-    subject: '',
-    objectives: '',
-    // Blueprint-specific inputs (1.1–1.8)
-    blueprintCoursePurpose: '',
-    blueprintLearnerProfile: '',
-    blueprintLearningConstraints: '',
-    blueprintComplianceRequirements: '',
-    blueprintPriorKnowledge: '',
-    blueprintCourseStructure: '',
-    blueprintSuccessMeasurement: '',
-    blueprintRequiredResources: '',
-  });
+  const [courseData, setCourseData] = useState(() => createInitialCourseData());
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiOutline, setAiOutline] = useState(null);
   const [generatedContent, setGeneratedContent] = useState({});
@@ -94,6 +277,10 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [showStreamingModal, setShowStreamingModal] = useState(false);
   const [isStreamingGeneration, setIsStreamingGeneration] = useState(false);
   const [streamingMessages, setStreamingMessages] = useState([]);
+  const [lastBlueprintHash, setLastBlueprintHash] = useState(null);
+  const [lastBlueprintData, setLastBlueprintData] = useState(null);
+  const [lastImagePrompt, setLastImagePrompt] = useState('');
+  const [lastImageUrl, setLastImageUrl] = useState('');
   const [streamingProgress, setStreamingProgress] = useState(0);
   const [currentBlock, setCurrentBlock] = useState(null);
   const [createdCourseId, setCreatedCourseId] = useState(null);
@@ -105,6 +292,22 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [isGeneratingBlueprint, setIsGeneratingBlueprint] = useState(false);
   const [blueprintError, setBlueprintError] = useState('');
   const [hasEnhancedBlueprint, setHasEnhancedBlueprint] = useState(false);
+  const [quickArchitectConfig, setQuickArchitectConfig] = useState({
+    primaryPurpose: 'skill', // awareness | skill | behavior | compliance | certification | performance
+    learnerLevel: 'beginner', // beginner | intermediate | advanced
+    timeProfile: 'standard', // micro | standard | deep
+    deliveryContext: 'remote', // on_the_job | classroom | remote
+    successFocus: 'quiz_scores', // completion | quiz_scores | on_job | project | certification
+  });
+  const [architectStrategyConfig, setArchitectStrategyConfig] = useState({
+    bloomMaxLevel: 'apply', // remember | understand | apply | analyze | evaluate | create
+    deliveryMode: 'self_paced', // self_paced | blended | instructor_led | microlearning
+    vakEmphasis: 'balanced', // balanced | visual | auditory | kinesthetic
+    practiceFrequency: 'per_lesson', // per_lesson | per_module | milestones | ai_decides
+    assessmentPlacement: 'mixed', // after_each_lesson | end_of_module | final_only | mixed
+    mainAssessmentType: 'mcq', // mcq | simulation | reflection | mixed
+    implementationMode: 'lms', // lms | classroom | blended
+  });
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -283,6 +486,819 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
   const tabs = [{ id: 'outline', label: 'Course Outline', icon: BookOpen }];
 
+  const updateDesignPhase = (phase, updates) => {
+    setCourseData(prev => ({
+      ...prev,
+      designPhases: {
+        ...prev.designPhases,
+        [phase]: {
+          ...(prev.designPhases?.[phase] || {}),
+          ...updates,
+        },
+      },
+    }));
+  };
+
+  const getPhaseMeta = phaseId =>
+    PHASES.find(phase => phase.id === phaseId) || PHASES[0];
+
+  const renderPhaseComingSoon = phaseId => {
+    const phase = getPhaseMeta(phaseId);
+    return (
+      <div className="bg-white border border-dashed border-gray-300 rounded-xl p-8 text-center space-y-3">
+        <p className="text-xs uppercase tracking-wide text-gray-400">
+          {phase.label}
+        </p>
+        <h3 className="text-lg font-semibold text-gray-900">
+          {phase.title} — in progress
+        </h3>
+        <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+          This phase already powers the backend logic. We’re wiring the UI next
+          so you can guide AI on{' '}
+          <span className="font-medium">{phase.description}</span>. For now,
+          keep shaping Phase 1 and generate a blueprint — your inputs will still
+          flow into the AI pipeline.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => setActivePhase('analysis')}
+          className="mt-2"
+        >
+          Back to Phase 1
+        </Button>
+      </div>
+    );
+  };
+
+  const renderAnalysisBasicsSection = () => (
+    <div className="space-y-6">
+      {/* 1. Course Name */}
+      <div className="group">
+        <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold">
+            1
+          </span>
+          Course Name *
+        </label>
+        <input
+          type="text"
+          value={courseData.courseName}
+          onChange={e => {
+            const value = e.target.value;
+            setCourseData(prev => ({
+              ...prev,
+              courseName: value,
+              title: value,
+            }));
+          }}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all group-hover:border-gray-300"
+          placeholder="e.g., Introduction to React Development"
+        />
+      </div>
+
+      {/* 2. Learning Outcomes */}
+      <div className="group">
+        <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">
+            2
+          </span>
+          What will learners be able to do after the course? *
+        </label>
+        <textarea
+          value={courseData.learningOutcomes}
+          onChange={e => {
+            const value = e.target.value;
+            setCourseData(prev => ({
+              ...prev,
+              learningOutcomes: value,
+              objectives: value,
+            }));
+          }}
+          rows="3"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all group-hover:border-gray-300"
+          placeholder="e.g., Build responsive web applications, understand React hooks, create reusable components..."
+        />
+      </div>
+
+      {/* 3. Target Audience */}
+      <div className="group">
+        <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-pink-100 text-pink-600 text-xs font-bold">
+            3
+          </span>
+          Who is this course for? (one job/role) *
+        </label>
+        <input
+          type="text"
+          value={courseData.targetAudience}
+          onChange={e => {
+            const value = e.target.value;
+            setCourseData(prev => ({
+              ...prev,
+              targetAudience: value,
+              subject: value,
+            }));
+          }}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all group-hover:border-gray-300"
+          placeholder="e.g., Junior Frontend Developer, Marketing Manager, Data Analyst..."
+        />
+      </div>
+
+      {/* 4. Prior Knowledge */}
+      <div className="group">
+        <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 text-xs font-bold">
+            4
+          </span>
+          Do learners need any prior knowledge? *
+        </label>
+
+        <div className="flex gap-4 mb-3">
+          <label
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+              courseData.priorKnowledge === 'no'
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="priorKnowledge"
+              value="no"
+              checked={courseData.priorKnowledge === 'no'}
+              onChange={e =>
+                setCourseData(prev => ({
+                  ...prev,
+                  priorKnowledge: e.target.value,
+                  priorKnowledgeDetails: '',
+                }))
+              }
+              className="w-4 h-4 text-emerald-600"
+            />
+            <span className="font-medium">No</span>
+          </label>
+
+          <label
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+              courseData.priorKnowledge === 'yes'
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="priorKnowledge"
+              value="yes"
+              checked={courseData.priorKnowledge === 'yes'}
+              onChange={e =>
+                setCourseData(prev => ({
+                  ...prev,
+                  priorKnowledge: e.target.value,
+                }))
+              }
+              className="w-4 h-4 text-emerald-600"
+            />
+            <span className="font-medium">Yes</span>
+          </label>
+        </div>
+
+        {courseData.priorKnowledge === 'yes' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-3"
+          >
+            <input
+              type="text"
+              value={courseData.priorKnowledgeDetails}
+              onChange={e =>
+                setCourseData(prev => ({
+                  ...prev,
+                  priorKnowledgeDetails: e.target.value,
+                }))
+              }
+              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50/50"
+              placeholder="Write the required prior knowledge..."
+            />
+          </motion.div>
+        )}
+      </div>
+
+      {/* 5. Generate Thumbnails */}
+      <div className="group">
+        <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-xs font-bold">
+            5
+          </span>
+          Generate AI Thumbnails for Module & Lesson? *
+        </label>
+
+        <div className="flex gap-4">
+          <label
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+              generateThumbnails === 'yes'
+                ? 'border-orange-500 bg-orange-50 text-orange-700'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="generateThumbnails"
+              value="yes"
+              checked={generateThumbnails === 'yes'}
+              onChange={e => setGenerateThumbnails(e.target.value)}
+              className="w-4 h-4 text-orange-600"
+            />
+            <span className="font-medium">Yes</span>
+          </label>
+
+          <label
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
+              generateThumbnails === 'no'
+                ? 'border-orange-500 bg-orange-50 text-orange-700'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="generateThumbnails"
+              value="no"
+              checked={generateThumbnails === 'no'}
+              onChange={e => setGenerateThumbnails(e.target.value)}
+              className="w-4 h-4 text-orange-600"
+            />
+            <span className="font-medium">No</span>
+          </label>
+        </div>
+
+        <p className="mt-2 text-xs text-gray-500">
+          AI-generated thumbnails will be created using DALL-E 3 for visual
+          appeal
+        </p>
+      </div>
+
+      {/* 6. Course Description (Optional) */}
+      <div className="group">
+        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-gray-500" />
+          Additional Description (Optional)
+        </label>
+        <textarea
+          value={courseData.description}
+          onChange={e =>
+            setCourseData(prev => ({
+              ...prev,
+              description: e.target.value,
+            }))
+          }
+          rows="2"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all group-hover:border-gray-300"
+          placeholder="Any additional context or specific topics to cover..."
+        />
+      </div>
+
+      {/* Difficulty Level */}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">
+            Difficulty
+          </label>
+          <select
+            value={courseData.difficulty}
+            onChange={e =>
+              setCourseData(prev => ({
+                ...prev,
+                difficulty: e.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          >
+            <option value="beginner">🌱 Beginner</option>
+            <option value="intermediate">⚡ Intermediate</option>
+            <option value="advanced">🚀 Advanced</option>
+          </select>
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-xs font-medium text-gray-600 mb-2">
+            Duration (Optional)
+          </label>
+          <input
+            type="text"
+            value={courseData.duration}
+            onChange={e =>
+              setCourseData(prev => ({
+                ...prev,
+                duration: e.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+            placeholder="e.g., 2 weeks"
+          />
+        </div>
+      </div>
+
+      {/* Optional: Structure Preferences */}
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Number of modules (optional)
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={courseData.moduleCount || ''}
+            onChange={e => {
+              const value = parseInt(e.target.value, 10);
+              setCourseData(prev => ({
+                ...prev,
+                moduleCount: Number.isNaN(value) ? '' : value,
+              }));
+            }}
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+            placeholder="e.g., 4"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Lessons per module (optional)
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={courseData.lessonsPerModule || ''}
+            onChange={e => {
+              const value = parseInt(e.target.value, 10);
+              setCourseData(prev => ({
+                ...prev,
+                lessonsPerModule: Number.isNaN(value) ? '' : value,
+              }));
+            }}
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+            placeholder="e.g., 3"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBlueprintSection = () => (
+    <div className="space-y-6">
+      {/* Course Architect Blueprint (optional) */}
+      <div className="space-y-2 mt-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Course Architect Blueprint
+        </label>
+        <p className="text-xs text-gray-500">
+          Let AI design a master course blueprint (purpose, persona, modules,
+          lessons, assessments) before building content.
+        </p>
+
+        <div className="mt-2 mb-2">
+          <span className="text-xs text-gray-500">
+            Architect inputs 1.1–1.8 (purpose, persona, constraints, etc.) -
+            Will be automatically enhanced when generating blueprint
+          </span>
+        </div>
+
+        {/* Quick Architect (MCQ helper) */}
+        <div className="mb-4 p-3 rounded-lg border border-indigo-100 bg-indigo-50/40 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-indigo-700">
+                Quick Architect (recommended)
+              </p>
+              <p className="text-[11px] text-indigo-600/80">
+                Answer a few quick choices and we will auto-fill 1.1–1.8 for
+                you. You can still edit the text afterwards.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleApplyQuickArchitect}
+              className="text-[11px] h-8 px-3 border-indigo-300 text-indigo-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600"
+            >
+              <Sparkles className="w-3 h-3 mr-1" />
+              Fill 1.1–1.8
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">Main course purpose</p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'awareness', label: 'Awareness / understanding' },
+                  { id: 'skill', label: 'Skill / procedure' },
+                  { id: 'behavior', label: 'Behavior change' },
+                  { id: 'compliance', label: 'Compliance' },
+                  { id: 'certification', label: 'Certification' },
+                  { id: 'performance', label: 'Performance KPI' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setQuickArchitectConfig(prev => ({
+                        ...prev,
+                        primaryPurpose: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      quickArchitectConfig.primaryPurpose === option.id
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">
+                Typical learner level
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'beginner', label: 'Beginner' },
+                  { id: 'intermediate', label: 'Intermediate' },
+                  { id: 'advanced', label: 'Advanced' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setQuickArchitectConfig(prev => ({
+                        ...prev,
+                        learnerLevel: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      quickArchitectConfig.learnerLevel === option.id
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">
+                Learning time profile
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'micro', label: 'Microlearning (10–15 min)' },
+                  { id: 'standard', label: 'Standard (20–30 min)' },
+                  { id: 'deep', label: 'Deep dives (40–60 min)' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setQuickArchitectConfig(prev => ({
+                        ...prev,
+                        timeProfile: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      quickArchitectConfig.timeProfile === option.id
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">
+                Primary delivery context
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'on_the_job', label: 'On-the-job' },
+                  { id: 'classroom', label: 'Classroom / workshop' },
+                  { id: 'remote', label: 'Remote / self-paced' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setQuickArchitectConfig(prev => ({
+                        ...prev,
+                        deliveryContext: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      quickArchitectConfig.deliveryContext === option.id
+                        ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">Main success focus</p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'completion', label: 'Completion' },
+                  { id: 'quiz_scores', label: 'Quiz / test scores' },
+                  { id: 'on_job', label: 'On-the-job performance' },
+                  { id: 'project', label: 'Projects / assignments' },
+                  { id: 'certification', label: 'Certification / exam' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setQuickArchitectConfig(prev => ({
+                        ...prev,
+                        successFocus: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      quickArchitectConfig.successFocus === option.id
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover-border-amber-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Learning Strategy */}
+        <div className="mb-4 p-3 rounded-lg border border-slate-100 bg-slate-50/60 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-slate-800">
+                Learning Strategy (Bloom, Delivery, Assessment)
+              </p>
+              <p className="text-[11px] text-slate-600/90">
+                Choose how deep the course should go, how it is delivered, and
+                how often learners will practice and be assessed.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">Highest Bloom level</p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'remember', label: 'Remember' },
+                  { id: 'understand', label: 'Understand' },
+                  { id: 'apply', label: 'Apply' },
+                  { id: 'analyze', label: 'Analyze' },
+                  { id: 'evaluate', label: 'Evaluate' },
+                  { id: 'create', label: 'Create' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        bloomMaxLevel: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.bloomMaxLevel === option.id
+                        ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">Delivery mode</p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'self_paced', label: 'Self-paced' },
+                  { id: 'blended', label: 'Blended' },
+                  { id: 'instructor_led', label: 'Instructor-led' },
+                  { id: 'microlearning', label: 'Microlearning' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        deliveryMode: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.deliveryMode === option.id
+                        ? 'bg-sky-700 text-white border-sky-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">
+                Dominant learning style
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'balanced', label: 'Balanced (VAK)' },
+                  { id: 'visual', label: 'Visual-heavy' },
+                  { id: 'auditory', label: 'Auditory-heavy' },
+                  { id: 'kinesthetic', label: 'Hands-on / kinesthetic' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        vakEmphasis: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.vakEmphasis === option.id
+                        ? 'bg-purple-700 text-white border-purple-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">Practice frequency</p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'per_lesson', label: 'After each lesson' },
+                  { id: 'per_module', label: 'End of each module' },
+                  { id: 'milestones', label: 'Only at key milestones' },
+                  { id: 'ai_decides', label: 'Let AI decide' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        practiceFrequency: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.practiceFrequency === option.id
+                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">
+                Assessment placement
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'after_each_lesson', label: 'After each lesson' },
+                  { id: 'end_of_module', label: 'End of module only' },
+                  { id: 'final_only', label: 'Final assessment only' },
+                  { id: 'mixed', label: 'Mix of checks + final' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        assessmentPlacement: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.assessmentPlacement === option.id
+                        ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">
+                Main assessment type
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'mcq', label: 'MCQ / quizzes' },
+                  { id: 'simulation', label: 'Simulations / scenarios' },
+                  { id: 'reflection', label: 'Reflections / journals' },
+                  { id: 'mixed', label: 'Mixed types' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        mainAssessmentType: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.mainAssessmentType === option.id
+                        ? 'bg-amber-700 text-white border-amber-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-700">Implementation mode</p>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  { id: 'lms', label: 'LMS / platform' },
+                  { id: 'classroom', label: 'Classroom / ILT' },
+                  { id: 'blended', label: 'Blended delivery' },
+                ].map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setArchitectStrategyConfig(prev => ({
+                        ...prev,
+                        implementationMode: option.id,
+                      }))
+                    }
+                    className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                      architectStrategyConfig.implementationMode === option.id
+                        ? 'bg-slate-700 text-white border-slate-700 shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-6">
+          {/* Course Architect Blueprint (existing content) */}
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">
+              Architect Blueprint
+            </p>
+            <h4 className="text-base font-semibold text-gray-900">
+              Auto-design the full course strategy
+            </h4>
+            <p className="text-sm text-gray-500">
+              Let AI translate your purpose into modules, lessons,
+              interactivity, and assessments.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -305,13 +1321,31 @@ ${JSON.stringify(userPayload, null, 2)}`;
     ]);
   };
 
+  const trimPayload = obj => {
+    const out = {};
+    Object.entries(obj || {}).forEach(([k, v]) => {
+      if (v === '' || v === undefined || v === null) return;
+      if (Array.isArray(v) && v.length === 0) return;
+      out[k] = v;
+    });
+    return out;
+  };
+
+  const computeBlueprintHash = blueprintInput => {
+    try {
+      return JSON.stringify(blueprintInput);
+    } catch (e) {
+      return null;
+    }
+  };
+
   // Start inline streaming generation
   const startInlineGeneration = async () => {
     setIsStreamingGeneration(true);
     setStreamingMessages([]);
     setStreamingProgress(0);
 
-    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const delay = () => Promise.resolve(); // remove artificial waits for speed
 
     try {
       // Step 1: Welcome
@@ -449,6 +1483,127 @@ ${JSON.stringify(userPayload, null, 2)}`;
     }
   };
 
+  const buildBlueprintFromQuickArchitect = (course, config) => {
+    const title =
+      course.courseName?.trim() || course.title?.trim() || 'this course';
+    const audience = course.targetAudience?.trim() || 'the target learners';
+    const outcomes =
+      course.learningOutcomes?.trim() || course.objectives?.trim() || '';
+    const duration = course.duration?.trim() || '4 weeks';
+    const difficulty = course.difficulty || config.learnerLevel || 'beginner';
+
+    let purposeSentence = '';
+    if (config.primaryPurpose === 'awareness') {
+      purposeSentence = `This course is designed to build awareness and foundational understanding of ${title} for ${audience}.`;
+    } else if (config.primaryPurpose === 'skill') {
+      purposeSentence = `This course is designed to develop practical, job-ready skills in ${title} for ${audience}.`;
+    } else if (config.primaryPurpose === 'behavior') {
+      purposeSentence = `This course is designed to change day-to-day behaviors and habits related to ${title} for ${audience}.`;
+    } else if (config.primaryPurpose === 'compliance') {
+      purposeSentence = `This course is designed to ensure ${audience} meet compliance and policy requirements related to ${title}.`;
+    } else if (config.primaryPurpose === 'certification') {
+      purposeSentence = `This course is designed to prepare ${audience} to successfully clear a certification or formal assessment in ${title}.`;
+    } else {
+      purposeSentence = `This course is designed to improve performance and outcomes related to ${title} for ${audience}.`;
+    }
+
+    const outcomeSentence = outcomes
+      ? `By the end of the course, learners will be able to ${outcomes}.`
+      : '';
+
+    let constraintsParts = [];
+    if (config.timeProfile === 'micro') {
+      constraintsParts.push(
+        'learn in short, focused microlearning segments (10–15 minutes each)'
+      );
+    } else if (config.timeProfile === 'deep') {
+      constraintsParts.push(
+        'engage in longer, deep-dive sessions for complex topics'
+      );
+    } else {
+      constraintsParts.push('learn through standard 20–30 minute lessons');
+    }
+
+    if (config.deliveryContext === 'on_the_job') {
+      constraintsParts.push('apply learning directly on the job while working');
+    } else if (config.deliveryContext === 'classroom') {
+      constraintsParts.push(
+        'participate in a structured classroom or workshop environment'
+      );
+    } else {
+      constraintsParts.push(
+        'access the course remotely in a self-paced environment'
+      );
+    }
+
+    const constraintsSentence = `Learners are expected to ${constraintsParts.join(
+      ' and '
+    )}, using standard devices with typical internet access.`;
+
+    const prereqSentence =
+      course.priorKnowledge === 'yes'
+        ? `Learners should already have the following prerequisite knowledge: ${course.priorKnowledgeDetails || 'basic familiarity with the domain'}.`
+        : 'No strict prerequisites are required beyond general digital literacy.';
+
+    let successSentence = '';
+    if (config.successFocus === 'completion') {
+      successSentence =
+        'Success will primarily be measured through course completion rates and consistent engagement across all modules.';
+    } else if (config.successFocus === 'on_job') {
+      successSentence =
+        'Success will be measured by on-the-job performance improvements, behavior change, and observable application of skills.';
+    } else if (config.successFocus === 'project') {
+      successSentence =
+        'Success will be measured by the quality of project outputs, assignments, and practical deliverables produced by learners.';
+    } else if (config.successFocus === 'certification') {
+      successSentence =
+        'Success will be measured by learners’ performance in external or internal certification exams and high-stakes assessments.';
+    } else {
+      successSentence =
+        'Success will be measured through formative and summative assessments, including quiz scores and performance on scenario-based tasks.';
+    }
+
+    const courseStructureSentence = `The course is planned to run for approximately ${duration}, with a structured path appropriate for ${difficulty} level learners.`;
+
+    return {
+      blueprintCoursePurpose: [purposeSentence, outcomeSentence]
+        .filter(Boolean)
+        .join(' '),
+      blueprintLearnerProfile: `Primary audience: ${audience}. Typical experience level: ${difficulty}. Learners are expected to be motivated to improve their performance in ${title} and apply concepts in real-world situations.`,
+      blueprintLearningConstraints: constraintsSentence,
+      blueprintComplianceRequirements:
+        quickArchitectConfig.primaryPurpose === 'compliance'
+          ? 'This course must align with organizational policies and any applicable regulatory or compliance frameworks. The blueprint should flag any content that may require legal or compliance review.'
+          : 'There are no strict external compliance frameworks identified, but the course should still follow internal quality and accessibility standards.',
+      blueprintPriorKnowledge: prereqSentence,
+      blueprintCourseStructure: courseStructureSentence,
+      blueprintSuccessMeasurement: successSentence,
+      blueprintRequiredResources:
+        'Where available, the blueprint should reference existing SOPs, internal documents, slide decks, and job aids, and clearly indicate where AI-generated content will be primary.',
+    };
+  };
+
+  const handleApplyQuickArchitect = () => {
+    try {
+      const fields = buildBlueprintFromQuickArchitect(
+        courseData,
+        quickArchitectConfig
+      );
+      setCourseData(prev => ({
+        ...prev,
+        ...fields,
+      }));
+      toast.success(
+        'Architect blueprint fields filled from quick choices. You can still review or tweak the text below.'
+      );
+    } catch (error) {
+      console.error('Quick architect application error:', error);
+      toast.error(
+        'Failed to apply quick architect settings. Please try again.'
+      );
+    }
+  };
+
   const handleGenerateBlueprint = async () => {
     const courseTitle =
       courseData.courseName?.trim() || courseData.title?.trim();
@@ -474,6 +1629,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
     setBlueprintError('');
 
     try {
+      const {
+        moduleCount: requestedModuleCount,
+        lessonsPerModule: requestedLessonsPerModule,
+        designPhases,
+      } = courseData;
+
       // Auto-enhance blueprint inputs (1.1-1.8) if they exist
       const hasBlueprintInputs = [
         courseData.blueprintCoursePurpose,
@@ -486,16 +1647,57 @@ ${JSON.stringify(userPayload, null, 2)}`;
         courseData.blueprintRequiredResources,
       ].some(value => value && value.trim().length > 0);
 
-      if (hasBlueprintInputs && !hasEnhancedBlueprint) {
-        // Auto-enhance blueprint inputs before generating
-        await handleEnhanceBlueprintInputs();
+      // If no manual architect text has been provided, derive it automatically
+      // from the Quick Architect selections so users don't need to type.
+      let architectTextFields = {
+        blueprintCoursePurpose: courseData.blueprintCoursePurpose,
+        blueprintLearnerProfile: courseData.blueprintLearnerProfile,
+        blueprintLearningConstraints: courseData.blueprintLearningConstraints,
+        blueprintComplianceRequirements:
+          courseData.blueprintComplianceRequirements,
+        blueprintPriorKnowledge: courseData.blueprintPriorKnowledge,
+        blueprintCourseStructure: courseData.blueprintCourseStructure,
+        blueprintSuccessMeasurement: courseData.blueprintSuccessMeasurement,
+        blueprintRequiredResources: courseData.blueprintRequiredResources,
+      };
+
+      if (!hasBlueprintInputs) {
+        const autoFields = buildBlueprintFromQuickArchitect(
+          courseData,
+          quickArchitectConfig
+        );
+        architectTextFields = {
+          ...architectTextFields,
+          ...autoFields,
+        };
       }
 
-      // Get module and lesson counts (default to 1 if not specified)
-      const moduleCount = courseData.moduleCount || 1;
-      const lessonsPerModule = courseData.lessonsPerModule || 1;
+      const phaseAnalysis = designPhases?.analysis || {};
+      const phaseDesign = designPhases?.design || {};
+      const phaseDevelopment = designPhases?.development || {};
+      const phaseImplementation = designPhases?.implementation || {};
+      const phaseExperience = designPhases?.experience || {};
 
-      const blueprintInput = {
+      // Get module and lesson counts (default to 1 if not specified)
+      // Use nullish coalescing (??) instead of || to handle 0 values correctly
+      const moduleCount =
+        (requestedModuleCount !== null &&
+        requestedModuleCount !== undefined &&
+        requestedModuleCount !== ''
+          ? Number(requestedModuleCount)
+          : null) ||
+        phaseAnalysis.moduleCount ||
+        1;
+      const lessonsPerModule =
+        (requestedLessonsPerModule !== null &&
+        requestedLessonsPerModule !== undefined &&
+        requestedLessonsPerModule !== ''
+          ? Number(requestedLessonsPerModule)
+          : null) ||
+        phaseAnalysis.lessonsPerModule ||
+        1;
+
+      const blueprintInputRaw = {
         courseTitle,
         subjectDomain: courseData.subject || courseData.targetAudience,
         courseDescription:
@@ -510,19 +1712,72 @@ ${JSON.stringify(userPayload, null, 2)}`;
           details: courseData.priorKnowledgeDetails || '',
         },
         // Extended architect inputs (1.1–1.8)
-        coursePurpose: courseData.blueprintCoursePurpose,
-        targetLearnerProfile: courseData.blueprintLearnerProfile,
-        learningConstraints: courseData.blueprintLearningConstraints,
-        complianceRequirements: courseData.blueprintComplianceRequirements,
-        priorKnowledgeExtra: courseData.blueprintPriorKnowledge,
-        courseStructure: courseData.blueprintCourseStructure,
-        successMeasurement: courseData.blueprintSuccessMeasurement,
-        requiredResources: courseData.blueprintRequiredResources,
+        coursePurpose: architectTextFields.blueprintCoursePurpose,
+        targetLearnerProfile: architectTextFields.blueprintLearnerProfile,
+        learningConstraints: architectTextFields.blueprintLearningConstraints,
+        complianceRequirements:
+          architectTextFields.blueprintComplianceRequirements,
+        priorKnowledgeExtra: architectTextFields.blueprintPriorKnowledge,
+        courseStructure: architectTextFields.blueprintCourseStructure,
+        successMeasurement: architectTextFields.blueprintSuccessMeasurement,
+        requiredResources: architectTextFields.blueprintRequiredResources,
         // Add target structure to explicitly control module/lesson count
-        targetStructure: `${moduleCount} module${moduleCount !== 1 ? 's' : ''}, ${moduleCount * lessonsPerModule} lesson${moduleCount * lessonsPerModule !== 1 ? 's' : ''}, ${lessonsPerModule} lesson${lessonsPerModule !== 1 ? 's' : ''} per module`,
+        targetStructure: `${moduleCount} module${moduleCount !== 1 ? 's' : ''}, ${moduleCount * lessonsPerModule} lesson${moduleCount * lessonsPerModule !== 1 ? 's' : ''} per module`,
         moduleCount,
         lessonsPerModule,
+        architectStrategyConfig,
+        // ADDIE payload (19 answers expected by backend)
+        contentTypes: phaseDevelopment.contentTypes || [],
+        mediaFormats: phaseDevelopment.mediaFormats || [],
+        instructionalStrategies: phaseDevelopment.instructionalStrategies || [],
+        deploymentConstraints: phaseImplementation.deploymentConstraints || [],
+        supportNeeded: phaseImplementation.supportNeeded || [],
+        feedbackMechanism: phaseImplementation.feedbackMechanism || '',
+        learnerFeedbackGathering:
+          phaseImplementation.feedbackCollection ||
+          phaseImplementation.feedbackGathering ||
+          [],
+        gagnesEvent1: phaseDesign.attentionStrategy || '',
+        gagnesEvent2: phaseDesign.objectivesAnnouncement || '',
+        gagnesEvent3: phaseDesign.priorKnowledgeActivation || '',
+        gagnesEvent4: phaseDesign.contentPresentation || [],
+        gagnesEvent5: phaseDesign.guidancePlan || [],
+        gagnesEvent6: phaseDesign.practicePlan || [],
+        gagnesEvent7: phaseDesign.feedbackPlan || '',
+        gagnesEvent8: phaseDesign.assessmentPlan || [],
+        gagnesEvent9: phaseDesign.retentionPlan || [],
+        visualApproach:
+          phaseExperience.visualApproaches ||
+          phaseExperience.visualApproach ||
+          [],
+        auditoryApproach:
+          phaseExperience.auditoryApproaches ||
+          phaseExperience.auditoryApproach ||
+          [],
+        kinestheticApproach:
+          phaseExperience.kinestheticApproaches ||
+          phaseExperience.kinestheticApproach ||
+          [],
+        // Keep full designPhases for any future use
+        designPhases: designPhases || createDefaultDesignPhases(),
+        // Model profile hint for backend routing (blueprint = high-fidelity)
+        modelProfile: 'blueprint',
       };
+
+      // Trim empty fields to reduce payload size
+      const blueprintInput = trimPayload(blueprintInputRaw);
+
+      // Hash to avoid regenerating the same blueprint
+      const currentHash = computeBlueprintHash(blueprintInput);
+      if (
+        currentHash &&
+        currentHash === lastBlueprintHash &&
+        lastBlueprintData
+      ) {
+        setCourseBlueprint(lastBlueprintData);
+        toast.success('Using existing blueprint (no changes detected)');
+        return lastBlueprintData;
+      }
 
       const result =
         await openAIService.generateCourseBlueprint(blueprintInput);
@@ -532,6 +1787,10 @@ ${JSON.stringify(userPayload, null, 2)}`;
       }
 
       setCourseBlueprint(result.data);
+      if (currentHash) {
+        setLastBlueprintHash(currentHash);
+        setLastBlueprintData(result.data);
+      }
 
       // Also derive the outline/comprehensive view directly from the blueprint
       // so the "Comprehensive Course Generated" card always reflects the
@@ -591,6 +1850,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
       }
 
       toast.success('Master course blueprint generated successfully!');
+      return result.data;
     } catch (error) {
       console.error('Course blueprint generation error:', error);
       const message =
@@ -613,10 +1873,32 @@ ${JSON.stringify(userPayload, null, 2)}`;
     try {
       // If a master blueprint already exists, derive the outline directly
       // from the blueprint instead of generating a separate 1-module course.
-      const blueprintModules =
+      let blueprintModules =
         courseBlueprint?.structure?.modules?.length > 0
           ? courseBlueprint.structure.modules
           : null;
+
+      // If no blueprint yet, generate one (this will include all ADDIE answers)
+      if (!blueprintModules) {
+        addStreamingMessage(
+          '✨ Using your ADDIE answers to build the master blueprint...',
+          'ai'
+        );
+        const generatedBlueprint = await handleGenerateBlueprint();
+        blueprintModules =
+          generatedBlueprint?.structure?.modules?.length > 0
+            ? generatedBlueprint.structure.modules
+            : courseBlueprint?.structure?.modules?.length > 0
+              ? courseBlueprint.structure.modules
+              : null;
+
+        if (generatedBlueprint?.meta?.courseTitle) {
+          addStreamingMessage(
+            `📘 Master Blueprint ready for "${generatedBlueprint.meta.courseTitle}"`,
+            'success'
+          );
+        }
+      }
 
       if (blueprintModules) {
         console.log(
@@ -675,64 +1957,29 @@ ${JSON.stringify(userPayload, null, 2)}`;
         return;
       }
 
+      // If still no blueprint modules, try a lightweight outline only (no showcase)
       console.log(
-        '🎯 Generating comprehensive showcase course with single module...'
+        '⚠️ No blueprint modules found; generating lightweight outline...'
       );
+      const fallbackResult = await generateAICourseOutline({
+        title: courseData.title,
+        subject: courseData.subject || courseData.title,
+        difficulty: courseData.difficulty || 'intermediate',
+        modelProfile: 'outline',
+      });
 
-      // Prepare course data for comprehensive generation when no blueprint exists
-      const comprehensiveCourseData = {
-        courseTitle: courseData.title,
-        difficultyLevel: courseData.difficulty || 'intermediate',
-        duration: courseData.duration || '4 weeks',
-        targetAudience: courseData.targetAudience || 'professionals',
-        moduleCount: 1, // ONE MODULE ONLY (legacy showcase mode)
-        lessonsPerModule: 1, // ONE LESSON ONLY
-        generateThumbnails: generateThumbnails === 'yes', // Pass thumbnail setting
-      };
-
-      console.log('📋 Comprehensive course data:', comprehensiveCourseData);
-      console.log('🎨 Thumbnail generation:', generateThumbnails);
-
-      // Generate comprehensive course with showcase lesson
-      const result = await generateShowcaseCourse(comprehensiveCourseData);
-
-      if (result && result.modules && result.modules.length > 0) {
-        console.log('✅ Comprehensive showcase course generated successfully');
-        console.log('📋 Generated course structure:', result);
-        console.log('📋 Number of modules:', result.modules.length);
-        console.log('📋 Module details:', result.modules[0]);
-        console.log(
-          '📋 Lesson blocks count:',
-          result.modules[0].lessons[0].lesson_blocks?.length || 0
-        );
-
-        // Set the generated outline
-        setAiOutline(result);
-
-        // Set the comprehensive flag since our approach is always comprehensive
+      if (fallbackResult?.success && fallbackResult.data) {
+        setAiOutline(fallbackResult.data);
         setGeneratedContent(prev => ({
           ...prev,
-          outline: result,
+          outline: fallbackResult.data,
           comprehensive: true,
         }));
-
-        console.log(
-          `✅ Course outline generated successfully with ${result.modules.length} comprehensive module`
-        );
-        console.log(
-          `🎨 Module thumbnail: ${result.modules[0].thumbnail || 'Not generated'}`
-        );
-        console.log(
-          `🎨 Lesson thumbnail: ${
-            result.modules[0].lessons[0].thumbnail || 'Not generated'
-          }`
-        );
-      } else {
-        console.error(
-          '❌ Comprehensive course generation failed: No modules generated'
-        );
-        throw new Error('Failed to generate comprehensive course structure');
+        console.log('✅ Lightweight outline generated as fallback');
+        return;
       }
+
+      throw new Error('No blueprint modules and fallback outline failed');
     } catch (error) {
       console.error('❌ Comprehensive course generation error:', error);
       console.error('Error details:', {
@@ -748,6 +1995,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
           title: courseData.title,
           subject: courseData.subject || courseData.title,
           difficulty: courseData.difficulty || 'intermediate',
+          modelProfile: 'outline', // hint backend to use mini model for speed
         });
 
         if (fallbackResult.success) {
@@ -774,19 +2022,46 @@ ${JSON.stringify(userPayload, null, 2)}`;
     setAiImageError('');
 
     try {
-      // Create a more descriptive prompt based on course title if no prompt is provided
-      const prompt =
-        aiImagePrompt.trim() ||
-        `Professional course thumbnail for "${courseData.title}" - educational, modern, clean design, high quality`;
+      // Create a premium prompt based on course title if no prompt is provided
+      let prompt = aiImagePrompt.trim();
 
-      console.log('🎨 Generating AI thumbnail with OpenAI DALL-E:', prompt);
+      if (!prompt) {
+        // Enhanced premium prompt with all 7 quality techniques
+        prompt = `Create a stunning, professional course thumbnail for "${courseData.title}"
 
-      // Use OpenAI service for image generation
+QUALITY REQUIREMENTS:
+1. CINEMATIC LIGHTING: soft cinematic lighting, volumetric light, HDR glow, dramatic contrast, rim lighting
+2. ULTRA-DETAIL: ultra-detailed, 8K clarity, crisp textures, photorealistic depth, hyper-real
+3. COMPOSITION: centered composition, balanced spacing, clean layout, wide angle perspective
+4. COLOR PALETTE: vivid colors, premium gradient palette, high contrast, accent highlights
+5. SHADOWS & REFLECTIONS: soft deep shadows, realistic reflections, smooth lighting falloff, subtle highlights
+6. MATERIAL STYLE: glossy surface, metallic reflections, smooth 3D elements, professional finish
+7. EXCLUSIONS: no text, no watermarks, clean background, no clutter
+
+STYLE: Professional, vivid, photorealistic, premium quality, educational
+MOOD: Modern, inspiring, professional, engaging`;
+      }
+
+      // Short-circuit if we already generated this prompt
+      if (prompt === lastImagePrompt && lastImageUrl) {
+        console.log('♻️ Reusing cached thumbnail for same prompt');
+        setCourseData(prev => ({
+          ...prev,
+          thumbnail: lastImageUrl,
+        }));
+        setAiImageGenerating(false);
+        return;
+      }
+
+      console.log(
+        '🎨 Generating AI thumbnail with OpenAI DALL-E (Premium Quality):',
+        prompt.substring(0, 100) + '...'
+      );
+
+      // Use OpenAI service for image generation with premium quality settings
       const response = await openAIService.generateCourseImage(prompt, {
-        style: 'vivid',
         size: '1024x1024',
         quality: 'standard',
-        style: 'vivid',
       });
 
       // Check if we have a valid image URL (either from success or fallback)
@@ -800,11 +2075,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
           ...prev,
           thumbnail: imageUrl,
         }));
+        setLastImagePrompt(prompt);
+        setLastImageUrl(imageUrl);
 
         // Show success message
         const successMsg =
           `✅ AI thumbnail generated and uploaded successfully!\n\n` +
-          `🎨 Generated with: DALL-E 3\n` +
           `📏 Size: 1024x1024\n` +
           `☁️ Uploaded to S3 automatically\n` +
           `📁 S3 URL: ${imageUrl.substring(0, 50)}...`;
@@ -965,11 +2241,37 @@ ${JSON.stringify(userPayload, null, 2)}`;
       }
       setStreamingProgress(30);
 
+      // Respect user-configured structure if provided; otherwise use full AI structure
+      const requestedModules =
+        Number(courseData.moduleCount) > 0
+          ? Number(courseData.moduleCount)
+          : null;
+      const requestedLessonsPerModule =
+        Number(courseData.lessonsPerModule) > 0
+          ? Number(courseData.lessonsPerModule)
+          : null;
+
+      const normalizedModules =
+        requestedModules || requestedLessonsPerModule
+          ? modulesToCreate
+              .slice(0, requestedModules || modulesToCreate.length)
+              .map(module => {
+                const lessons = module.lessons || [];
+                const limitedLessons = requestedLessonsPerModule
+                  ? lessons.slice(0, requestedLessonsPerModule)
+                  : lessons;
+                return {
+                  ...module,
+                  lessons: limitedLessons,
+                };
+              })
+          : modulesToCreate;
+
       const createdModules = [];
       const moduleErrors = [];
 
-      for (let i = 0; i < modulesToCreate.length; i++) {
-        const moduleData = modulesToCreate[i] || {};
+      for (let i = 0; i < normalizedModules.length; i++) {
+        const moduleData = normalizedModules[i] || {};
         const moduleTitle =
           moduleData.moduleTitle || moduleData.title || `Module ${i + 1}`;
         const moduleDescription =
@@ -1394,6 +2696,9 @@ ${JSON.stringify(userPayload, null, 2)}`;
         };
       }
 
+      // Attach assessment strategy so lesson generator can choose quiz vs reflection style
+      generationOptions.assessmentStrategy = architectStrategyConfig;
+
       let firstLessonBlocks = null;
       let firstLessonTitle = null;
 
@@ -1700,30 +3005,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
       // If no meaningful work was done, reset the session so the next open is fresh
       if (!hasSavedWork) {
-        setCourseData({
-          courseName: '',
-          learningOutcomes: '',
-          targetAudience: '',
-          priorKnowledge: 'no',
-          priorKnowledgeDetails: '',
-          description: '',
-          duration: '',
-          difficulty: 'beginner',
-          thumbnail: null,
-          // Keep legacy fields for backwards compatibility
-          title: '',
-          subject: '',
-          objectives: '',
-          // Blueprint-specific inputs (1.1–1.8)
-          blueprintCoursePurpose: '',
-          blueprintLearnerProfile: '',
-          blueprintLearningConstraints: '',
-          blueprintComplianceRequirements: '',
-          blueprintPriorKnowledge: '',
-          blueprintCourseStructure: '',
-          blueprintSuccessMeasurement: '',
-          blueprintRequiredResources: '',
-        });
+        setCourseData(createInitialCourseData());
         setAiOutline(null);
         setGeneratedContent({});
         setCourseBlueprint(null);
@@ -2587,231 +3869,1578 @@ ${JSON.stringify(userPayload, null, 2)}`;
                               )}
 
                               {formStep === 2 && (
-                                <>
-                                  {/* Course Architect Blueprint (optional) */}
-                                  <div className="space-y-2 mt-4">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                      Course Architect Blueprint
-                                    </label>
-                                    <p className="text-xs text-gray-500">
-                                      Let AI design a master course blueprint
-                                      (purpose, persona, modules, lessons,
-                                      assessments) before building content.
-                                    </p>
-
-                                    <div className="mt-2 mb-2">
-                                      <span className="text-xs text-gray-500">
-                                        Architect inputs 1.1–1.8 (purpose,
-                                        persona, constraints, etc.) - Will be
-                                        automatically enhanced when generating
-                                        blueprint
+                                <div className="space-y-6">
+                                  {/* Course structure (modules & lessons) */}
+                                  <div className="p-3 rounded-lg border border-gray-200 bg-white shadow-sm space-y-3">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                                      Course structure
+                                      <span className="text-xs font-normal text-gray-500">
+                                        (set modules and lessons before
+                                        blueprint)
                                       </span>
                                     </div>
-
-                                    {/* Architect inputs 1.1–1.8 */}
-                                    <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                       <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.1 Course Purpose
+                                        <label className="block font-semibold text-gray-700 mb-1">
+                                          Number of modules
                                         </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintCoursePurpose
-                                          }
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="20"
+                                          value={courseData.moduleCount || ''}
                                           onChange={e =>
                                             setCourseData(prev => ({
                                               ...prev,
-                                              blueprintCoursePurpose:
-                                                e.target.value,
+                                              moduleCount: e.target.value
+                                                ? parseInt(e.target.value)
+                                                : 1,
                                             }))
                                           }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="What change must occur in learners' knowledge, skills, or attitude? What business outcome should this course support?"
+                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                          placeholder="e.g., 4"
                                         />
                                       </div>
-
                                       <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.2 Target Learner Profile
+                                        <label className="block font-semibold text-gray-700 mb-1">
+                                          Lessons per module
                                         </label>
-                                        <textarea
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="20"
                                           value={
-                                            courseData.blueprintLearnerProfile
+                                            courseData.lessonsPerModule || ''
                                           }
                                           onChange={e =>
                                             setCourseData(prev => ({
                                               ...prev,
-                                              blueprintLearnerProfile:
-                                                e.target.value,
+                                              lessonsPerModule: e.target.value
+                                                ? parseInt(e.target.value)
+                                                : 1,
                                             }))
                                           }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="Role, background, motivation, challenges, work environment, language level, learning preferences, tech comfort level..."
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.3 Learning Constraints
-                                        </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintLearningConstraints
-                                          }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
-                                              ...prev,
-                                              blueprintLearningConstraints:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="Time available, devices used, tools, internet limitations, LMS or platform restrictions..."
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.4 Compliance Requirements
-                                        </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintComplianceRequirements
-                                          }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
-                                              ...prev,
-                                              blueprintComplianceRequirements:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="SCORM? Internal L&D model? Industry standards or regulations to follow?"
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.5 Prior Knowledge / Prerequisites
-                                        </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintPriorKnowledge
-                                          }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
-                                              ...prev,
-                                              blueprintPriorKnowledge:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="Required skills vs optional skills, recommended background before taking this course..."
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.6 Course Length & Structure
-                                        </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintCourseStructure
-                                          }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
-                                              ...prev,
-                                              blueprintCourseStructure:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="Total duration, target number of modules/lessons, and flow style (linear vs modular/choose-your-own-path)."
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.7 Success Measurement
-                                        </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintSuccessMeasurement
-                                          }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
-                                              ...prev,
-                                              blueprintSuccessMeasurement:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="How will you measure success? Completion, assessment scores, job performance, project submission, etc."
-                                        />
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                          1.8 Required Resources
-                                        </label>
-                                        <textarea
-                                          value={
-                                            courseData.blueprintRequiredResources
-                                          }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
-                                              ...prev,
-                                              blueprintRequiredResources:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          rows="2"
-                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                          placeholder="List any SOPs, PPTs, documents, videos, or brand kits that the blueprint should assume are available."
+                                          className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                          placeholder="e.g., 3"
                                         />
                                       </div>
                                     </div>
+                                  </div>
 
-                                    <Button
-                                      type="button"
-                                      onClick={handleGenerateBlueprint}
-                                      disabled={isGeneratingBlueprint}
-                                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
-                                    >
-                                      {isGeneratingBlueprint ? (
-                                        <>
-                                          <Loader2 className="w-4 h-4 animate-spin" />
-                                          Generating blueprint...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Sparkles className="w-4 h-4" />
-                                          Generate Master Blueprint
-                                        </>
-                                      )}
-                                    </Button>
-                                    {blueprintError && (
-                                      <p className="text-xs text-red-600">
-                                        {blueprintError}
+                                  {/* PHASE 1 — Course Architect Blueprint */}
+                                  <div className="mb-4 p-3 rounded-lg border border-indigo-200 bg-indigo-50/40 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold">
+                                        PHASE 1
+                                      </span>
+                                      <p className="text-xs font-semibold text-indigo-800">
+                                        Course Architect Blueprint
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-indigo-700/90">
+                                      Define the foundation before creating any
+                                      content (purpose, audience, goals,
+                                      delivery, assessment alignment).
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Main course purpose
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'awareness',
+                                              label:
+                                                'Awareness / understanding',
+                                            },
+                                            {
+                                              id: 'skill',
+                                              label: 'Skill / procedure',
+                                            },
+                                            {
+                                              id: 'behavior',
+                                              label: 'Behavior change',
+                                            },
+                                            {
+                                              id: 'compliance',
+                                              label: 'Compliance',
+                                            },
+                                            {
+                                              id: 'certification',
+                                              label: 'Certification',
+                                            },
+                                            {
+                                              id: 'performance',
+                                              label: 'Performance KPI',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setQuickArchitectConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    primaryPurpose: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.primaryPurpose === option.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Typical learner level
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'beginner',
+                                              label: 'Beginner',
+                                            },
+                                            {
+                                              id: 'intermediate',
+                                              label: 'Intermediate',
+                                            },
+                                            {
+                                              id: 'advanced',
+                                              label: 'Advanced',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setQuickArchitectConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    learnerLevel: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.learnerLevel === option.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'}`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Learning time profile
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'micro',
+                                              label:
+                                                'Microlearning (10–15 min)',
+                                            },
+                                            {
+                                              id: 'standard',
+                                              label: 'Standard (20–30 min)',
+                                            },
+                                            {
+                                              id: 'deep',
+                                              label: 'Deep dives (40–60 min)',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setQuickArchitectConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    timeProfile: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.timeProfile === option.id ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'}`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Primary delivery context
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'on_the_job',
+                                              label: 'On-the-job',
+                                            },
+                                            {
+                                              id: 'classroom',
+                                              label: 'Classroom / workshop',
+                                            },
+                                            {
+                                              id: 'remote',
+                                              label: 'Remote / self-paced',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setQuickArchitectConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    deliveryContext: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.deliveryContext === option.id ? 'bg-sky-600 text-white border-sky-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'}`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Main success focus
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'completion',
+                                              label: 'Completion',
+                                            },
+                                            {
+                                              id: 'quiz_scores',
+                                              label: 'Quiz / test scores',
+                                            },
+                                            {
+                                              id: 'on_job',
+                                              label: 'On-the-job performance',
+                                            },
+                                            {
+                                              id: 'project',
+                                              label: 'Projects / assignments',
+                                            },
+                                            {
+                                              id: 'certification',
+                                              label: 'Certification / exam',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setQuickArchitectConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    successFocus: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.successFocus === option.id ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'}`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* PHASE 2 - Learning Strategy */}
+                                  <div className="mb-4 p-3 rounded-lg border border-slate-200 bg-slate-50/60 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-slate-700 text-white text-[10px] font-bold">
+                                        PHASE 2
+                                      </span>
+                                      <p className="text-xs font-semibold text-slate-800">
+                                        Learning Strategy
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-slate-600/90">
+                                      How learners will learn + how they will be
+                                      assessed (Bloom, Delivery, Assessment).
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Highest Bloom level
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'remember',
+                                              label: 'Remember',
+                                            },
+                                            {
+                                              id: 'understand',
+                                              label: 'Understand',
+                                            },
+                                            { id: 'apply', label: 'Apply' },
+                                            { id: 'analyze', label: 'Analyze' },
+                                            {
+                                              id: 'evaluate',
+                                              label: 'Evaluate',
+                                            },
+                                            { id: 'create', label: 'Create' },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    bloomMaxLevel: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${architectStrategyConfig.bloomMaxLevel === option.id ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Delivery mode
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'self_paced',
+                                              label: 'Self-paced',
+                                            },
+                                            {
+                                              id: 'blended',
+                                              label: 'Blended',
+                                            },
+                                            {
+                                              id: 'instructor_led',
+                                              label: 'Instructor-led',
+                                            },
+                                            {
+                                              id: 'microlearning',
+                                              label: 'Microlearning',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    deliveryMode: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                architectStrategyConfig.deliveryMode ===
+                                                option.id
+                                                  ? 'bg-sky-700 text-white border-sky-700 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'
+                                              }`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Dominant learning style
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'balanced',
+                                              label: 'Balanced (VAK)',
+                                            },
+                                            {
+                                              id: 'visual',
+                                              label: 'Visual-heavy',
+                                            },
+                                            {
+                                              id: 'auditory',
+                                              label: 'Auditory-heavy',
+                                            },
+                                            {
+                                              id: 'kinesthetic',
+                                              label: 'Hands-on / kinesthetic',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    vakEmphasis: option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                architectStrategyConfig.vakEmphasis ===
+                                                option.id
+                                                  ? 'bg-purple-700 text-white border-purple-700 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                              }`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Practice frequency
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'per_lesson',
+                                              label: 'After each lesson',
+                                            },
+                                            {
+                                              id: 'per_module',
+                                              label: 'End of each module',
+                                            },
+                                            {
+                                              id: 'milestones',
+                                              label: 'Only at key milestones',
+                                            },
+                                            {
+                                              id: 'ai_decides',
+                                              label: 'Let AI decide',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    practiceFrequency:
+                                                      option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                architectStrategyConfig.practiceFrequency ===
+                                                option.id
+                                                  ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                                              }`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Assessment placement
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'after_each_lesson',
+                                              label: 'After each lesson',
+                                            },
+                                            {
+                                              id: 'end_of_module',
+                                              label: 'End of module only',
+                                            },
+                                            {
+                                              id: 'final_only',
+                                              label: 'Final assessment only',
+                                            },
+                                            {
+                                              id: 'mixed',
+                                              label: 'Mix of checks + final',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    assessmentPlacement:
+                                                      option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                architectStrategyConfig.assessmentPlacement ===
+                                                option.id
+                                                  ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                              }`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Main assessment type
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'mcq',
+                                              label: 'MCQ / quizzes',
+                                            },
+                                            {
+                                              id: 'simulation',
+                                              label: 'Simulations / scenarios',
+                                            },
+                                            {
+                                              id: 'reflection',
+                                              label: 'Reflections / journals',
+                                            },
+                                            {
+                                              id: 'mixed',
+                                              label: 'Mixed types',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    mainAssessmentType:
+                                                      option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                architectStrategyConfig.mainAssessmentType ===
+                                                option.id
+                                                  ? 'bg-amber-700 text-white border-amber-700 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                                              }`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Implementation mode
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            {
+                                              id: 'lms',
+                                              label: 'LMS / platform',
+                                            },
+                                            {
+                                              id: 'classroom',
+                                              label: 'Classroom / ILT',
+                                            },
+                                            {
+                                              id: 'blended',
+                                              label: 'Blended delivery',
+                                            },
+                                          ].map(option => (
+                                            <button
+                                              key={option.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setArchitectStrategyConfig(
+                                                  prev => ({
+                                                    ...prev,
+                                                    implementationMode:
+                                                      option.id,
+                                                  })
+                                                )
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                architectStrategyConfig.implementationMode ===
+                                                option.id
+                                                  ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-slate-300'
+                                              }`}
+                                            >
+                                              {option.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* PHASE 3 - DEVELOP (Content Creation) */}
+                                  <div className="mb-4 p-3 rounded-lg border border-rose-200 bg-rose-50/40 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold">
+                                        PHASE 3
+                                      </span>
+                                      <p className="text-xs font-semibold text-rose-800">
+                                        DEVELOP — Content Creation
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-rose-700/90">
+                                      What type of content the AI will generate.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Content types
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Text/Reading',
+                                            'Video',
+                                            'Infographics',
+                                            'Interactive simulations',
+                                            'Case studies',
+                                            'Hands-on exercises',
+                                            'Podcasts/Audio',
+                                            'Animations',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.development
+                                                    ?.contentTypes || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'development',
+                                                  { contentTypes: updated }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.development
+                                                    ?.contentTypes || []
+                                                ).includes(option)
+                                                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Media formats
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Static images',
+                                            'Animated graphics',
+                                            'Short-form video',
+                                            'Long-form video',
+                                            'Interactive elements',
+                                            '3D models',
+                                            'AR/VR',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.development
+                                                    ?.mediaFormats || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'development',
+                                                  { mediaFormats: updated }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.development
+                                                    ?.mediaFormats || []
+                                                ).includes(option)
+                                                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1 sm:col-span-2">
+                                        <p className="font-semibold text-gray-700">
+                                          Instructional strategies
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Problem-based learning',
+                                            'Case-based learning',
+                                            'Scenario-based learning',
+                                            'Storytelling',
+                                            'Gamification',
+                                            'Peer learning',
+                                            'Mentoring',
+                                            'Scaffolding',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.development
+                                                    ?.instructionalStrategies ||
+                                                  [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'development',
+                                                  {
+                                                    instructionalStrategies:
+                                                      updated,
+                                                  }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.development
+                                                    ?.instructionalStrategies ||
+                                                  []
+                                                ).includes(option)
+                                                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* PHASE 4 - IMPLEMENT (Deployment) */}
+                                  <div className="mb-4 p-3 rounded-lg border border-amber-200 bg-amber-50/40 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-amber-600 text-white text-[10px] font-bold">
+                                        PHASE 4
+                                      </span>
+                                      <p className="text-xs font-semibold text-amber-800">
+                                        IMPLEMENT — Deployment
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-amber-700/90">
+                                      Technical + Accessibility requirements.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Deployment constraints
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Internet connectivity',
+                                            'Device compatibility',
+                                            'Bandwidth limitations',
+                                            'Offline access needed',
+                                            'Mobile-first requirement',
+                                            'Accessibility requirements',
+                                            'Language localization',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.deploymentConstraints ||
+                                                  [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'implementation',
+                                                  {
+                                                    deploymentConstraints:
+                                                      updated,
+                                                  }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.deploymentConstraints ||
+                                                  []
+                                                ).includes(option)
+                                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Support needed
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Instructor support',
+                                            'Peer support',
+                                            'Help desk/FAQ',
+                                            'Tutoring',
+                                            'Mentoring',
+                                            'Community forums',
+                                            'Live chat support',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.supportNeeded || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'implementation',
+                                                  { supportNeeded: updated }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.supportNeeded || []
+                                                ).includes(option)
+                                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* ═══════════════════════════════════════════════════════════════ */}
+                                  {/* PHASE 5 — Evaluate (Assessment & Feedback) */}
+                                  {/* ═══════════════════════════════════════════════════════════════ */}
+                                  <div className="mb-4 p-3 rounded-lg border border-emerald-200 bg-emerald-50/40 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold">
+                                        PHASE 5
+                                      </span>
+                                      <p className="text-xs font-semibold text-emerald-800">
+                                        EVALUATE — Assessment & Feedback
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-emerald-700/90">
+                                      How learners get feedback + how
+                                      performance is tracked.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Feedback mechanism
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Automated feedback',
+                                            'Instructor feedback',
+                                            'Peer feedback',
+                                            'Self-reflection',
+                                            'Combination of above',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.feedbackMechanism || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'implementation',
+                                                  { feedbackMechanism: updated }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.feedbackMechanism || []
+                                                ).includes(option)
+                                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Feedback collection
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Post-course survey',
+                                            'Satisfaction rating',
+                                            'Learning outcome assessment',
+                                            'On-the-job performance tracking',
+                                            'Learner interviews',
+                                            'Focus groups',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.feedbackCollection || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'implementation',
+                                                  {
+                                                    feedbackCollection: updated,
+                                                  }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.implementation
+                                                    ?.feedbackCollection || []
+                                                ).includes(option)
+                                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* ═══════════════════════════════════════════════════════════════ */}
+                                  {/* PHASE 6 — Gagné's 9 Instructional Events */}
+                                  {/* ═══════════════════════════════════════════════════════════════ */}
+                                  <div className="mb-4 p-3 rounded-lg border border-orange-200 bg-orange-50/40 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-orange-600 text-white text-[10px] font-bold">
+                                        PHASE 6
+                                      </span>
+                                      <p className="text-xs font-semibold text-orange-800">
+                                        GAGNÉ'S 9 EVENTS — Instructional Design
+                                      </p>
+                                      <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 text-[9px] font-bold">
+                                        CRITICAL
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-orange-700/90">
+                                      These 9 events structure the entire lesson
+                                      flow for effective learning.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 1: Gain attention
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Story',
+                                            'Fact',
+                                            'Problem',
+                                            'Visual',
+                                            'Question',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  attentionStrategy: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.attentionStrategy === option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 2: Inform objectives
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Clear outcomes',
+                                            'Syllabus',
+                                            'Module-level',
+                                            'Lesson-level',
+                                            'With criteria',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  objectivesAnnouncement:
+                                                    option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.objectivesAnnouncement ===
+                                                option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 3: Recall prior knowledge
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Pre-test',
+                                            'Discussion',
+                                            'Case link',
+                                            'Warm-up',
+                                            'Knowledge check',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  priorKnowledgeActivation:
+                                                    option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.priorKnowledgeActivation ===
+                                                option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 4: Present content
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Lecture',
+                                            'Reading',
+                                            'Video',
+                                            'Tutorial',
+                                            'Infographic',
+                                            'Animation',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  contentPresentation: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.contentPresentation ===
+                                                option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 5: Provide guidance
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Instructions',
+                                            'Visuals',
+                                            'Job aids',
+                                            'Examples',
+                                            'Hints',
+                                            'Narration',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  guidancePlan: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.guidancePlan === option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 6: Elicit performance
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Guided practice',
+                                            'Independent',
+                                            'Simulations',
+                                            'Role-plays',
+                                            'Scenarios',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  practicePlan: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.practicePlan === option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 7: Provide feedback
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Immediate',
+                                            'Delayed',
+                                            'Corrective',
+                                            'Confirmatory',
+                                            'Coaching',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  feedbackPlan: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.feedbackPlan === option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 8: Assess performance
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Quiz',
+                                            'Project',
+                                            'Practical task',
+                                            'Reflection',
+                                            'Portfolio',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  assessmentPlan: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.assessmentPlan === option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Event 9: Enhance retention
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Assignments',
+                                            'Real-world app',
+                                            'Summary/review',
+                                            'Job aids',
+                                            'Follow-up',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() =>
+                                                updateDesignPhase('design', {
+                                                  retentionPlan: option,
+                                                })
+                                              }
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                courseData.designPhases?.design
+                                                  ?.retentionPlan === option
+                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* ═══════════════════════════════════════════════════════════════ */}
+                                  {/* PHASE 7 — Inclusive (VAK Learning Styles) */}
+                                  {/* ═══════════════════════════════════════════════════════════════ */}
+                                  <div className="mb-4 p-3 rounded-lg border border-purple-200 bg-purple-50/40 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-bold">
+                                        PHASE 7
+                                      </span>
+                                      <p className="text-xs font-semibold text-purple-800">
+                                        VAK LEARNING STYLES — Inclusive Content
+                                      </p>
+                                    </div>
+                                    <p className="text-[11px] text-purple-700/90">
+                                      Ensures materials support all types of
+                                      learners.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Visual learning approach
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Infographics',
+                                            'Diagrams/flowcharts',
+                                            'Color-coded',
+                                            'Mind maps',
+                                            'Charts/graphs',
+                                            'Video demos',
+                                            'Annotated images',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.experience
+                                                    ?.visualApproaches || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'experience',
+                                                  { visualApproaches: updated }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.experience
+                                                    ?.visualApproaches || []
+                                                ).includes(option)
+                                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Auditory learning approach
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Narration/voiceover',
+                                            'Podcasts',
+                                            'Audio explanations',
+                                            'Discussions',
+                                            'Verbal instructions',
+                                            'Music/sound effects',
+                                            'Interviews',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.experience
+                                                    ?.auditoryApproaches || [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'experience',
+                                                  {
+                                                    auditoryApproaches: updated,
+                                                  }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.experience
+                                                    ?.auditoryApproaches || []
+                                                ).includes(option)
+                                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <p className="font-semibold text-gray-700">
+                                          Kinesthetic learning approach
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {[
+                                            'Hands-on exercises',
+                                            'Interactive simulations',
+                                            'Virtual labs',
+                                            'Role-plays',
+                                            'Physical demos',
+                                            'Drag-and-drop',
+                                            'Real-world practice',
+                                          ].map(option => (
+                                            <button
+                                              key={option}
+                                              type="button"
+                                              onClick={() => {
+                                                const current =
+                                                  courseData.designPhases
+                                                    ?.experience
+                                                    ?.kinestheticApproaches ||
+                                                  [];
+                                                const updated =
+                                                  current.includes(option)
+                                                    ? current.filter(
+                                                        c => c !== option
+                                                      )
+                                                    : [...current, option];
+                                                updateDesignPhase(
+                                                  'experience',
+                                                  {
+                                                    kinestheticApproaches:
+                                                      updated,
+                                                  }
+                                                );
+                                              }}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
+                                                (
+                                                  courseData.designPhases
+                                                    ?.experience
+                                                    ?.kinestheticApproaches ||
+                                                  []
+                                                ).includes(option)
+                                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                              }`}
+                                            >
+                                              {option}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <Button
+                                    type="button"
+                                    onClick={handleGenerateBlueprint}
+                                    disabled={isGeneratingBlueprint}
+                                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                                  >
+                                    {isGeneratingBlueprint ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Generating blueprint...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="w-4 h-4" />
+                                        Generate Master Blueprint
+                                      </>
+                                    )}
+                                  </Button>
+                                  {blueprintError && (
+                                    <p className="text-xs text-red-600">
+                                      {blueprintError}
+                                    </p>
+                                  )}
+                                  {courseBlueprint &&
+                                    !blueprintError &&
+                                    !isGeneratingBlueprint && (
+                                      <p className="text-xs text-emerald-600 flex items-center gap-1">
+                                        <Check className="w-3 h-3" />
+                                        Blueprint ready - see preview on the
+                                        left
                                       </p>
                                     )}
-                                    {courseBlueprint &&
-                                      !blueprintError &&
-                                      !isGeneratingBlueprint && (
-                                        <p className="text-xs text-emerald-600 flex items-center gap-1">
-                                          <Check className="w-3 h-3" />
-                                          Blueprint ready  see preview on the
-                                          left
-                                        </p>
-                                      )}
-                                  </div>
 
                                   {/* Generation Mode Selector */}
                                   <div>
@@ -3116,18 +5745,14 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                             onChange={e =>
                                               setAiImagePrompt(e.target.value)
                                             }
-                                            placeholder={`Describe the image you want to generate for "${courseData.title || 'your course'}"`}
+                                            placeholder={`Describe the image you want to generate for "${courseData.title || 'your course'}" - include details like subject matter, style, and mood for better results.`}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                             rows={3}
                                           />
                                           {!aiImagePrompt &&
                                             courseData.title && (
                                               <p className="text-xs text-gray-500 mt-1">
-                                                Using course title as prompt:
-                                                "Professional course thumbnail
-                                                for "{courseData.title}" -
-                                                educational, modern, clean
-                                                design"
+                                                {`Using course title as prompt: "Professional course thumbnail for "${courseData.title}" - educational, modern, clean design"`}
                                               </p>
                                             )}
                                         </div>
@@ -3192,7 +5817,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                         startInlineGeneration();
                                       }}
                                       disabled={isGenerating}
-                                      className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold shadow-lg hover:shadow-xl transition-all text-base sm:text-lg flex items-center justify-center gap-2"
+                                      className="w-full py-4 px-6 bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 hover:from-cyan-500 hover:via-sky-600 hover:to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all text-base sm:text-lg flex items-center justify-center gap-2"
                                     >
                                       <Sparkles className="w-5 h-5 flex-shrink-0" />
                                       <span className="whitespace-normal text-center leading-tight">
@@ -3244,7 +5869,125 @@ ${JSON.stringify(userPayload, null, 2)}`;
                                       )}
                                     </>
                                   )}
-                                </>
+                                </div>
+                              )}
+                              {formStep === 3 && (
+                                <div className="space-y-6">
+                                  {/* Phase Navigation */}
+                                  <div className="flex gap-2 overflow-x-auto pb-2">
+                                    {PHASES.map(phase => (
+                                      <button
+                                        key={phase.id}
+                                        onClick={() => setActivePhase(phase.id)}
+                                        className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
+                                          activePhase === phase.id
+                                            ? 'bg-purple-600 text-white shadow-lg'
+                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                      >
+                                        <div className="font-medium text-sm">
+                                          {phase.label}
+                                        </div>
+                                        <div className="text-xs opacity-80">
+                                          {phase.title}
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  {/* Phase Content */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+                                    {activePhase === 'analysis' && (
+                                      <AnalysisPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'objectives' && (
+                                      <ObjectivesPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'design' && (
+                                      <InstructionDesignPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'experience' && (
+                                      <LearnerExperiencePhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'development' && (
+                                      <DevelopmentPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'implementation' && (
+                                      <ImplementationPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'branding' && (
+                                      <BrandingPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                    {activePhase === 'quality' && (
+                                      <QualityPhaseCard
+                                        courseData={courseData}
+                                        updateDesignPhase={updateDesignPhase}
+                                      />
+                                    )}
+                                  </div>
+
+                                  {/* Navigation Buttons */}
+                                  <div className="flex justify-between gap-3">
+                                    <Button
+                                      onClick={() => setFormStep(2)}
+                                      variant="outline"
+                                      className="flex items-center gap-2"
+                                    >
+                                      <ChevronLeft className="w-4 h-4" />
+                                      Back to Blueprint
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        if (!courseData.courseName.trim()) {
+                                          toast.error(
+                                            'Please enter a course name'
+                                          );
+                                          return;
+                                        }
+                                        if (
+                                          !courseData.learningOutcomes.trim()
+                                        ) {
+                                          toast.error(
+                                            'Please describe what learners will be able to do'
+                                          );
+                                          return;
+                                        }
+                                        if (!courseData.targetAudience.trim()) {
+                                          toast.error(
+                                            'Please specify who this course is for'
+                                          );
+                                          return;
+                                        }
+                                        startInlineGeneration();
+                                      }}
+                                      className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white flex items-center gap-2"
+                                    >
+                                      <Sparkles className="w-4 h-4" />
+                                      Generate Course with ADDIE Design
+                                    </Button>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           )}

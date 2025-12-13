@@ -44,7 +44,8 @@ const UniversalAIContentButton = ({
     includeExamples: true,
     includeAssessments: true,
     includeSummary: true,
-    includeInteractive: false,
+    includeInteractive: true,
+    useContentLibrary: true,
   });
 
   const handleGenerateAIContent = () => {
@@ -127,7 +128,7 @@ const UniversalAIContentButton = ({
         size={size}
         onClick={handleGenerateAIContent}
         disabled={disabled || isGenerating}
-        className={`flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 ${className}`}
+        className={`flex items-center gap-1 text-cyan-600 border-cyan-200 hover:bg-cyan-50 ${className}`}
       >
         {isGenerating ? (
           <Loader2 className="h-4 w-4 animate-spin mr-1" />

@@ -39,6 +39,17 @@ const AIContentGeneratorDialog = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
+  // Word/character limits based on backend constraints
+  const MAX_CHARACTERS = 4000; // Backend limit
+  const MAX_WORDS = 800; // Approximate word limit (5 chars per word average)
+
+  // Calculate current usage
+  const characterCount = userPrompt.length;
+  const wordCount = userPrompt.trim().split(/\s+/).filter(Boolean).length;
+  const isOverCharacterLimit = characterCount > MAX_CHARACTERS;
+  const isOverWordLimit = wordCount > MAX_WORDS;
+  const isNearLimit = characterCount > MAX_CHARACTERS * 0.9; // 90% of limit
+
   // Set default template when templates change
   useEffect(() => {
     if (availableTemplates.length > 0 && !selectedTemplate) {
@@ -71,11 +82,14 @@ const AIContentGeneratorDialog = ({
       const API_BASE =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/ai-proxy/generate-text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: 'include', // allow cookie-based auth too
         body: JSON.stringify({
           prompt: userPrompt,
           enhancePrompt: true,
@@ -110,6 +124,22 @@ const AIContentGeneratorDialog = ({
   const handleGenerate = async () => {
     if (!userPrompt.trim()) {
       toast.error('Please describe what you want to create');
+      return;
+    }
+
+    // Validate character limit
+    if (characterCount > MAX_CHARACTERS) {
+      toast.error(
+        `Prompt is too long. Maximum ${MAX_CHARACTERS} characters allowed. Current: ${characterCount}`
+      );
+      return;
+    }
+
+    // Validate word limit
+    if (wordCount > MAX_WORDS) {
+      toast.error(
+        `Prompt is too long. Maximum ${MAX_WORDS} words allowed. Current: ${wordCount}`
+      );
       return;
     }
 
@@ -210,6 +240,22 @@ const AIContentGeneratorDialog = ({
   const handleGeneratePreview = async () => {
     if (!userPrompt.trim()) {
       toast.error('Please describe what you want to create');
+      return;
+    }
+
+    // Validate character limit
+    if (characterCount > MAX_CHARACTERS) {
+      toast.error(
+        `Prompt is too long. Maximum ${MAX_CHARACTERS} characters allowed. Current: ${characterCount}`
+      );
+      return;
+    }
+
+    // Validate word limit
+    if (wordCount > MAX_WORDS) {
+      toast.error(
+        `Prompt is too long. Maximum ${MAX_WORDS} words allowed. Current: ${wordCount}`
+      );
       return;
     }
 
@@ -561,222 +607,289 @@ const AIContentGeneratorDialog = ({
       />
 
       {/* Sidebar Dialog */}
-      <div className="relative bg-white w-full max-w-6xl h-full shadow-xl overflow-hidden animate-slide-in-left flex">
+      <div className="relative bg-white w-full sm:w-2/3 lg:w-1/3 max-w-xl h-full shadow-xl overflow-hidden animate-slide-in-left flex ml-auto">
         {/* Left Panel - Input */}
-        <div className="w-1/2 border-r border-gray-200 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500">
-                  <Sparkles className="w-6 h-6 text-white" />
+        {!showPreview && (
+          <div className="w-full border-r border-gray-200 flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-500 via-sky-600 to-blue-700 bg-clip-text text-transparent">
+                      Generate {blockType?.title} with AI
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Describe what you want to create
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Generate {blockType?.title} with AI
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Describe what you want to create
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  ×
+                </Button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Context Display */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <p className="text-xs text-blue-700">
+                    <span className="font-semibold">
+                      {courseContext?.courseName}
+                    </span>{' '}
+                    → {courseContext?.moduleName} → {courseContext?.lessonTitle}
                   </p>
                 </div>
               </div>
+
+              {/* Main Prompt Input */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-gray-900">
+                    What do you want to create?{' '}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleEnhancePrompt}
+                    disabled={isEnhancing || isGenerating || !userPrompt.trim()}
+                    className="h-7 text-xs flex items-center gap-1 hover:bg-purple-50 hover:border-purple-300"
+                  >
+                    {isEnhancing ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-3 h-3" />
+                    )}
+                    Enhance
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <textarea
+                    value={userPrompt}
+                    onChange={e => {
+                      const newValue = e.target.value;
+                      // Prevent exceeding character limit
+                      if (newValue.length <= MAX_CHARACTERS) {
+                        setUserPrompt(newValue);
+                      } else {
+                        toast.error(
+                          `Maximum ${MAX_CHARACTERS} characters allowed`
+                        );
+                      }
+                    }}
+                    placeholder={getPlaceholder()}
+                    className={`w-full min-h-[120px] p-3 text-sm border-2 rounded-lg focus:ring-2 transition-all resize-none ${
+                      isOverCharacterLimit || isOverWordLimit
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-200'
+                        : isNearLimit
+                          ? 'border-yellow-400 focus:border-yellow-500 focus:ring-yellow-200'
+                          : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'
+                    }`}
+                    disabled={isGenerating || isEnhancing}
+                    maxLength={MAX_CHARACTERS}
+                  />
+
+                  {/* Character/Word Count */}
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-4">
+                      <span
+                        className={
+                          isOverCharacterLimit
+                            ? 'text-red-600 font-semibold'
+                            : isNearLimit
+                              ? 'text-yellow-600'
+                              : 'text-gray-500'
+                        }
+                      >
+                        {characterCount} / {MAX_CHARACTERS} characters
+                      </span>
+                      <span
+                        className={
+                          isOverWordLimit
+                            ? 'text-red-600 font-semibold'
+                            : isNearLimit
+                              ? 'text-yellow-600'
+                              : 'text-gray-500'
+                        }
+                      >
+                        {wordCount} / {MAX_WORDS} words
+                      </span>
+                    </div>
+                    {(isOverCharacterLimit || isOverWordLimit) && (
+                      <span className="text-red-600 font-semibold text-xs">
+                        ⚠️ Limit exceeded
+                      </span>
+                    )}
+                    {isNearLimit &&
+                      !isOverCharacterLimit &&
+                      !isOverWordLimit && (
+                        <span className="text-yellow-600 text-xs">
+                          ⚠️ Approaching limit
+                        </span>
+                      )}
+                  </div>
+                </div>
+
+                {/* Quick Examples */}
+                {getExamples().length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-2">
+                      Quick examples:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {getExamples()
+                        .slice(0, 3)
+                        .map((example, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors text-xs py-1 px-3"
+                            onClick={() => setUserPrompt(example)}
+                          >
+                            {example}
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Template Selection */}
+              {availableTemplates.length > 0 && (
+                <div>
+                  <label className="text-sm font-semibold mb-2 block text-gray-900">
+                    Template Style
+                  </label>
+                  <Select
+                    value={selectedTemplate}
+                    onValueChange={setSelectedTemplate}
+                    disabled={isGenerating}
+                  >
+                    <SelectTrigger className="w-full h-10 text-sm border-2 border-gray-200 rounded-lg focus:border-purple-500">
+                      <SelectValue placeholder="Choose a template style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTemplates.map(template => (
+                        <SelectItem
+                          key={template.id}
+                          value={template.id}
+                          className="cursor-pointer text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {template.title}
+                            </span>
+                            {template.description && (
+                              <span className="text-xs text-gray-500">
+                                - {template.description}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Generate Button */}
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0 hover:bg-gray-100"
+                onClick={handleGeneratePreview}
+                disabled={
+                  !userPrompt.trim() ||
+                  isGenerating ||
+                  isEnhancing ||
+                  isOverCharacterLimit ||
+                  isOverWordLimit
+                }
+                className="w-full bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 hover:from-cyan-500 hover:via-sky-600 hover:to-blue-700 text-white font-semibold h-10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                ×
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Preview
+                  </>
+                )}
               </Button>
             </div>
           </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Context Display */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <p className="text-xs text-blue-700">
-                  <span className="font-semibold">
-                    {courseContext?.courseName}
-                  </span>{' '}
-                  → {courseContext?.moduleName} → {courseContext?.lessonTitle}
-                </p>
-              </div>
-            </div>
-
-            {/* Main Prompt Input */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-gray-900">
-                  What do you want to create?{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleEnhancePrompt}
-                  disabled={isEnhancing || isGenerating || !userPrompt.trim()}
-                  className="h-7 text-xs flex items-center gap-1 hover:bg-purple-50 hover:border-purple-300"
-                >
-                  {isEnhancing ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Wand2 className="w-3 h-3" />
-                  )}
-                  Enhance
-                </Button>
-              </div>
-              <textarea
-                value={userPrompt}
-                onChange={e => setUserPrompt(e.target.value)}
-                placeholder={getPlaceholder()}
-                className="w-full min-h-[120px] p-3 text-sm border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all resize-none"
-                disabled={isGenerating || isEnhancing}
-              />
-
-              {/* Quick Examples */}
-              {getExamples().length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs text-gray-500 mb-2">Quick examples:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {getExamples()
-                      .slice(0, 3)
-                      .map((example, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors text-xs py-1 px-3"
-                          onClick={() => setUserPrompt(example)}
-                        >
-                          {example}
-                        </Badge>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Template Selection */}
-            {availableTemplates.length > 0 && (
-              <div>
-                <label className="text-sm font-semibold mb-2 block text-gray-900">
-                  Template Style
-                </label>
-                <Select
-                  value={selectedTemplate}
-                  onValueChange={setSelectedTemplate}
-                  disabled={isGenerating}
-                >
-                  <SelectTrigger className="w-full h-10 text-sm border-2 border-gray-200 rounded-lg focus:border-purple-500">
-                    <SelectValue placeholder="Choose a template style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTemplates.map(template => (
-                      <SelectItem
-                        key={template.id}
-                        value={template.id}
-                        className="cursor-pointer text-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{template.title}</span>
-                          {template.description && (
-                            <span className="text-xs text-gray-500">
-                              - {template.description}
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Generate Button */}
-            <Button
-              onClick={handleGeneratePreview}
-              disabled={!userPrompt.trim() || isGenerating || isEnhancing}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold h-10"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Preview
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        )}
 
         {/* Right Panel - Preview */}
-        <div className="w-1/2 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Preview</h3>
-                <p className="text-sm text-gray-600">
-                  Generated content will appear here
-                </p>
+        {showPreview && (
+          <div className="w-full flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Preview
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Generated content will appear here
+                  </p>
+                </div>
+                {generatedContent && (
+                  <Button
+                    onClick={handleAddToLesson}
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add to Lesson
+                  </Button>
+                )}
               </div>
-              {generatedContent && (
-                <Button
-                  onClick={handleAddToLesson}
-                  className="bg-green-500 hover:bg-green-600 text-white font-semibold flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add to Lesson
-                </Button>
-              )}
             </div>
-          </div>
 
-          {/* Preview Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {!showPreview ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <Sparkles className="w-12 h-12 mb-3" />
-                <p className="text-sm font-medium">No content generated yet</p>
-                <p className="text-xs">
-                  Fill in the prompt and click "Generate Preview"
-                </p>
-              </div>
-            ) : generatedContent ? (
-              <div className="space-y-3">
-                <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm max-h-[calc(100vh-200px)] overflow-y-auto">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                      <Sparkles className="w-3 h-3 text-green-600" />
+            {/* Preview Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {generatedContent ? (
+                <div className="space-y-3">
+                  <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm max-h-[calc(100vh-200px)] overflow-y-auto">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-green-600" />
+                      </div>
+                      <span className="text-xs font-medium text-gray-700">
+                        Generated {blockType?.title}
+                      </span>
                     </div>
-                    <span className="text-xs font-medium text-gray-700">
-                      Generated {blockType?.title}
-                    </span>
-                  </div>
 
-                  {/* Render content based on blockType with limited visual size */}
-                  <div className="prose prose-xs max-w-none text-sm scale-90 origin-top-left">
-                    <div className="transform scale-[0.85]">
-                      {renderPreviewContent(generatedContent)}
+                    {/* Render content based on blockType with limited visual size */}
+                    <div className="prose prose-xs max-w-none text-sm scale-90 origin-top-left">
+                      <div className="transform scale-[0.85]">
+                        {renderPreviewContent(generatedContent)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <Loader2 className="w-12 h-12 mb-3 animate-spin" />
-                <p className="text-sm font-medium">Generating content...</p>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <Loader2 className="w-12 h-12 mb-3 animate-spin" />
+                  <p className="text-sm font-medium">Generating content...</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

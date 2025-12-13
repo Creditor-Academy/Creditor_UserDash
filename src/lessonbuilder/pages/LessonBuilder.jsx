@@ -32,12 +32,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 import AIContentGeneratorDialog from '@lessonbuilder/components/ai/AIContentGeneratorDialog';
+import RegenerateComparisonDialog from '@lessonbuilder/components/ai/RegenerateComparisonDialog';
 import { contentBlockAIService } from '@lessonbuilder/services/contentBlockAIService';
 import {
   getTemplatesForBlockType,
   getCourseContext,
   formatAIContentForBlock,
+  generateImageHTML,
 } from '@lessonbuilder/utils/aiContentHelpers';
+import { gradientOptions } from '@lessonbuilder/constants/textTypesConfig';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@lessonbuilder/components/blocks/QuoteBlock/QuoteComponent';
 import TableComponent from '@lessonbuilder/components/blocks/TableBlock/TableComponent';
@@ -187,6 +190,12 @@ function LessonBuilder() {
   const [showAIGeneratorDialog, setShowAIGeneratorDialog] = useState(false);
   const [currentAIBlockType, setCurrentAIBlockType] = useState(null);
   const [blockToReplace, setBlockToReplace] = useState(null); // Track block being replaced
+  const [showComparisonDialog, setShowComparisonDialog] = useState(false);
+  const [regeneratedBlock, setRegeneratedBlock] = useState(null); // Newly generated block for comparison
+  const [oldBlockForComparison, setOldBlockForComparison] = useState(null); // Store old block specifically for comparison dialog
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  // Use ref to persist blockToReplace across renders to avoid closure issues
+  const blockToReplaceRef = React.useRef(null);
 
   const listComponentRef = React.useRef();
   const statementComponentRef = React.useRef();
@@ -256,7 +265,7 @@ function LessonBuilder() {
       supportsAI: true,
     },
     {
-      id: 'tables',
+      id: 'table', // Use singular to match backend and most frontend code
       title: 'Tables',
       icon: <Table className="h-5 w-5" />,
       supportsAI: true,
@@ -425,7 +434,7 @@ function LessonBuilder() {
       setShowAudioDialog(true);
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
-    } else if (blockType.id === 'tables') {
+    } else if (blockType.id === 'table' || blockType.id === 'tables') {
       setShowTableComponent(true);
     } else if (blockType.id === 'link') {
       setShowLinkDialog(true);
@@ -446,11 +455,91 @@ function LessonBuilder() {
     }
   };
 
-  // Handle AI creation
+  // Handle AI creation (for NEW blocks, not replacements)
   const handleAICreation = blockType => {
     setCurrentAIBlockType(blockType);
-    setBlockToReplace(null); // Clear any block to replace when creating new
+    // CRITICAL: Clear blockToReplace when creating NEW blocks (not replacing)
+    setBlockToReplace(null);
+    blockToReplaceRef.current = null;
+    devLogger.debug('Creating NEW AI block - cleared blockToReplace');
     setShowAIGeneratorDialog(true);
+  };
+
+  // Helper function to regenerate HTML with preserved styling from original block
+  const regenerateHTMLWithPreservedStyling = (newBlock, originalBlock) => {
+    if (!originalBlock) return newBlock.html_css;
+
+    // For text blocks, preserve textType and regenerate HTML accordingly
+    if (originalBlock.type === 'text' && originalBlock.textType) {
+      const textType = originalBlock.textType || originalBlock.text_type;
+      const content = newBlock.content || newBlock.text || '';
+
+      // For master_heading, preserve gradient
+      if (textType === 'master_heading') {
+        // Get gradient from original block
+        let gradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // default
+
+        if (originalBlock.gradient) {
+          const gradientOption = gradientOptions.find(
+            g => g.id === originalBlock.gradient
+          );
+          gradient = gradientOption?.gradient || gradient;
+        } else if (originalBlock.html_css) {
+          // Try to extract gradient from existing HTML
+          const gradientMatch = originalBlock.html_css.match(
+            /background:\s*([^;'"]+)/
+          );
+          if (gradientMatch) {
+            gradient = gradientMatch[1].trim();
+          }
+        }
+
+        // Extract just the text content (remove HTML tags)
+        const textContent =
+          content.replace(/<[^>]*>/g, '').trim() || content.trim();
+
+        return `<div class="rounded-xl p-6 text-white font-extrabold text-3xl md:text-4xl leading-tight tracking-tight text-center" style="background: ${gradient}">
+          ${textContent}
+        </div>`;
+      }
+
+      // For heading with background color
+      if (textType === 'heading' && originalBlock.headingBgColor) {
+        const textContent =
+          content.replace(/<[^>]*>/g, '').trim() || content.trim();
+        return `<div class="relative rounded-2xl shadow-md p-6" style="background-color: ${originalBlock.headingBgColor};">
+          <h2 class="text-2xl font-bold text-gray-900 leading-tight">${textContent}</h2>
+        </div>`;
+      }
+
+      // For subheading with background color
+      if (textType === 'subheading' && originalBlock.subheadingBgColor) {
+        const textContent =
+          content.replace(/<[^>]*>/g, '').trim() || content.trim();
+        return `<div class="relative rounded-2xl shadow-md p-6" style="background-color: ${originalBlock.subheadingBgColor};">
+          <h3 class="text-xl font-semibold text-gray-800 leading-snug">${textContent}</h3>
+        </div>`;
+      }
+
+      // For other text types, use the new html_css but ensure it matches the type
+      // The formatAIContentForBlock should have already generated correct HTML
+      return newBlock.html_css;
+    }
+
+    // For statement blocks, preserve statementType
+    if (originalBlock.type === 'statement' && originalBlock.statementType) {
+      // The html_css should already be generated with the correct statementType
+      return newBlock.html_css;
+    }
+
+    // For image blocks, preserve layout and alignment
+    if (originalBlock.type === 'image') {
+      // The formatAIContentForBlock should handle this, but ensure layout is preserved
+      return newBlock.html_css;
+    }
+
+    // For other block types, use new html_css but merge any preserved styling
+    return newBlock.html_css;
   };
 
   // Handle AI content generation
@@ -482,39 +571,211 @@ function LessonBuilder() {
         };
       }
 
+      // CRITICAL: If replacing a block, use the original block's template/type
+      let templateToUse = templateId;
+      if (blockToReplace) {
+        // Preserve the original block's template/type
+        if (blockToReplace.type === 'text' && blockToReplace.textType) {
+          templateToUse =
+            blockToReplace.textType || blockToReplace.text_type || templateId;
+          devLogger.debug(
+            'Preserving original textType for regeneration:',
+            templateToUse
+          );
+        } else if (
+          blockToReplace.type === 'statement' &&
+          blockToReplace.statementType
+        ) {
+          templateToUse =
+            blockToReplace.statementType ||
+            blockToReplace.statement_type ||
+            templateId;
+          devLogger.debug(
+            'Preserving original statementType for regeneration:',
+            templateToUse
+          );
+        } else if (blockToReplace.templateType || blockToReplace.template) {
+          templateToUse =
+            blockToReplace.templateType ||
+            blockToReplace.template ||
+            templateId;
+          devLogger.debug(
+            'Preserving original templateType for regeneration:',
+            templateToUse
+          );
+        }
+      }
+
       if (!aiResponse) {
         // Generate content using AI service if preview payload is not available
         aiResponse = await contentBlockAIService.generateContentBlock({
           blockType: currentAIBlockType.id,
-          templateId,
+          templateId: templateToUse, // Use preserved template
           userPrompt,
           instructions,
           courseContext,
         });
       } else if (
-        templateId &&
+        templateToUse &&
         !aiResponse.templateId &&
         currentAIBlockType.id !== 'image'
       ) {
-        aiResponse.templateId = templateId;
+        aiResponse.templateId = templateToUse; // Use preserved template
       }
 
       devLogger.debug('✅ AI generated:', aiResponse);
 
-      // Ensure block type is correct - handle 'tables' vs 'table' inconsistency
+      // Ensure block type is correct - normalize to 'table' (singular) to match backend
       let blockTypeToUse = currentAIBlockType.id;
       if (blockTypeToUse === 'tables') {
-        blockTypeToUse = 'tables'; // Keep as 'tables' for formatAIContentForBlock which handles it
+        blockTypeToUse = 'table'; // Normalize to singular to match backend storage
       }
 
       // Format the AI response to match block structure
-      const newBlock = formatAIContentForBlock(aiResponse, blockTypeToUse);
+      let newBlock = formatAIContentForBlock(aiResponse, blockTypeToUse);
+
+      // CRITICAL: For image blocks, ensure image is uploaded to S3 if not already
+      if (newBlock.type === 'image' && newBlock.imageUrl) {
+        const isS3Url =
+          newBlock.imageUrl.includes('s3.amazonaws.com') ||
+          newBlock.imageUrl.includes('.s3.') ||
+          newBlock.imageUrl.includes('amazonaws.com');
+        const isOpenAIUrl =
+          newBlock.imageUrl.includes('oaidalleapiprodscus') ||
+          newBlock.imageUrl.includes('dalle') ||
+          (newBlock.imageUrl.startsWith('https://') && !isS3Url);
+
+        // If image needs S3 upload and not already uploaded, upload it
+        if (
+          (newBlock.needsS3Upload || isOpenAIUrl) &&
+          !isS3Url &&
+          !newBlock.uploadedToS3
+        ) {
+          devLogger.debug('🔄 AI-generated image needs S3 upload:', {
+            imageUrl: newBlock.imageUrl,
+            isOpenAIUrl,
+            isS3Url,
+            uploadedToS3: newBlock.uploadedToS3,
+          });
+
+          try {
+            // Import uploadAIGeneratedImage dynamically to avoid circular dependencies
+            const { uploadAIGeneratedImage } = await import(
+              '@/services/aiUploadService'
+            );
+
+            const uploadResult = await uploadAIGeneratedImage(
+              newBlock.imageUrl,
+              {
+                folder: 'lessonbuilder-content-images',
+                public: true,
+              }
+            );
+
+            if (uploadResult.success && uploadResult.imageUrl) {
+              devLogger.debug(
+                '✅ AI image uploaded to S3:',
+                uploadResult.imageUrl
+              );
+
+              // Update block with S3 URL
+              newBlock.imageUrl = uploadResult.imageUrl;
+              newBlock.details = {
+                ...newBlock.details,
+                image_url: uploadResult.imageUrl,
+                uploadedToS3: true,
+                needsS3Upload: false,
+              };
+              newBlock.uploadedToS3 = true;
+              newBlock.needsS3Upload = false;
+
+              // Regenerate HTML with S3 URL
+              newBlock.html_css = generateImageHTML(newBlock);
+            } else {
+              devLogger.warn(
+                '⚠️ S3 upload failed, using original URL:',
+                newBlock.imageUrl
+              );
+            }
+          } catch (uploadError) {
+            devLogger.error('❌ Error uploading AI image to S3:', uploadError);
+            // Continue with original URL - don't fail the entire operation
+          }
+        } else if (isS3Url || newBlock.uploadedToS3) {
+          devLogger.debug('✅ Image already on S3:', newBlock.imageUrl);
+        }
+      }
+
+      // CRITICAL: If replacing a block, preserve the original block's type, styling, and structure
+      if (blockToReplace) {
+        devLogger.debug('Preserving original block properties:', {
+          originalType: blockToReplace.type,
+          originalTextType: blockToReplace.textType,
+          originalStatementType: blockToReplace.statementType,
+          originalTemplateType: blockToReplace.templateType,
+          originalGradient: blockToReplace.gradient,
+          originalLayout: blockToReplace.layout,
+          originalAlignment: blockToReplace.alignment,
+        });
+
+        // Preserve all styling and type properties from the original block
+        newBlock = {
+          ...newBlock,
+          // Preserve type (should already match, but ensure it)
+          type: blockToReplace.type,
+          // Preserve text type for text blocks
+          textType:
+            blockToReplace.textType ||
+            blockToReplace.text_type ||
+            newBlock.textType,
+          text_type:
+            blockToReplace.textType ||
+            blockToReplace.text_type ||
+            newBlock.textType,
+          // Preserve statement type for statement blocks
+          statementType:
+            blockToReplace.statementType ||
+            blockToReplace.statement_type ||
+            newBlock.statementType,
+          statement_type:
+            blockToReplace.statementType ||
+            blockToReplace.statement_type ||
+            newBlock.statementType,
+          // Preserve template type
+          templateType:
+            blockToReplace.templateType ||
+            blockToReplace.template ||
+            newBlock.templateType,
+          template:
+            blockToReplace.templateType ||
+            blockToReplace.template ||
+            newBlock.template,
+          // Preserve gradient for master headings
+          gradient: blockToReplace.gradient || newBlock.gradient,
+          // Preserve layout for image blocks
+          layout: blockToReplace.layout || newBlock.layout,
+          // Preserve alignment
+          alignment: blockToReplace.alignment || newBlock.alignment,
+          // Preserve background colors
+          headingBgColor: blockToReplace.headingBgColor,
+          subheadingBgColor: blockToReplace.subheadingBgColor,
+          // Preserve other styling properties
+          style: blockToReplace.style || newBlock.style,
+          // Regenerate html_css with preserved styling
+          html_css: regenerateHTMLWithPreservedStyling(
+            newBlock,
+            blockToReplace
+          ),
+        };
+      }
 
       // Ensure the block type is correctly set (formatAIContentForBlock may auto-detect)
       devLogger.debug('📦 Formatted block:', {
         originalBlockType: blockTypeToUse,
         finalBlockType: newBlock.type,
         blockId: newBlock.id,
+        preservedTextType: newBlock.textType,
+        preservedGradient: newBlock.gradient,
       });
 
       // Calculate order for new block
@@ -578,49 +839,102 @@ function LessonBuilder() {
       }
 
       // Ensure unique block ID to prevent duplicates
-      const existingIds = new Set(
-        blocksToUse.map(b => b.id || b.block_id).filter(Boolean)
-      );
-      if (existingIds.has(newBlock.id || newBlock.block_id)) {
-        // Generate a new unique ID if duplicate
-        newBlock.id = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        newBlock.block_id = newBlock.id;
-        devLogger.warn('Generated new ID for duplicate block:', newBlock.id);
+      // Only check for duplicates if this is a NEW block (not a replacement)
+      if (!blockToReplace && !blockToReplaceRef.current) {
+        const existingIds = new Set(
+          blocksToUse.map(b => b.id || b.block_id).filter(Boolean)
+        );
+        if (existingIds.has(newBlock.id || newBlock.block_id)) {
+          // Generate a new unique ID if duplicate
+          newBlock.id = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          newBlock.block_id = newBlock.id;
+          devLogger.warn('Generated new ID for duplicate block:', {
+            oldId: existingIds.has(newBlock.id || newBlock.block_id),
+            newId: newBlock.id,
+          });
+        }
+      } else {
+        // For replacements, preserve the original ID (handled in replacement logic)
+        devLogger.debug('Skipping duplicate check for block replacement');
       }
 
       // Replace existing block or add new one
-      if (blockToReplace) {
-        // Replace the existing block
-        setContentBlocks(prev =>
-          prev.map(block => (block.id === blockToReplace.id ? newBlock : block))
-        );
+      if (blockToReplace || blockToReplaceRef.current) {
+        const originalBlock = blockToReplaceRef.current || blockToReplace;
 
-        if (lessonContent?.data?.content) {
-          setLessonContent(prev => {
-            const existingIds = new Set(
-              prev.data.content.map(b => b.id || b.block_id).filter(Boolean)
-            );
-            // Ensure new block has unique ID
-            if (existingIds.has(newBlock.id || newBlock.block_id)) {
-              newBlock.id = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-              newBlock.block_id = newBlock.id;
-            }
-            return {
-              ...prev,
-              data: {
-                ...prev.data,
-                content: prev.data.content.map(block =>
-                  (block.block_id || block.id) ===
-                  (blockToReplace.block_id || blockToReplace.id)
-                    ? { ...newBlock, block_id: block.block_id || block.id }
-                    : block
-                ),
-              },
-            };
-          });
+        devLogger.debug('Block to replace found, showing comparison dialog:', {
+          blockToReplaceId: originalBlock.id,
+          blockToReplaceIdAlt: originalBlock.block_id,
+          blockToReplaceType: originalBlock.type,
+          newBlockId: newBlock.id,
+          newBlockType: newBlock.type,
+          hasBlockInRef: !!blockToReplaceRef.current,
+          hasBlockInState: !!blockToReplace,
+        });
+
+        // CRITICAL: Ensure blockToReplace is set in both state and ref before showing dialog
+        // This prevents "old block is null" error in comparison dialog
+        if (!blockToReplace && blockToReplaceRef.current) {
+          setBlockToReplace(blockToReplaceRef.current);
         }
+        if (!blockToReplaceRef.current && blockToReplace) {
+          blockToReplaceRef.current = blockToReplace;
+        }
+        // Double-check: ensure we have the block in both places
+        if (blockToReplace && !blockToReplaceRef.current) {
+          blockToReplaceRef.current = blockToReplace;
+        }
+        if (blockToReplaceRef.current && !blockToReplace) {
+          setBlockToReplace(blockToReplaceRef.current);
+        }
+
+        // Final verification before showing dialog
+        const finalBlockToReplace = blockToReplaceRef.current || blockToReplace;
+        if (!finalBlockToReplace) {
+          devLogger.error(
+            '❌ CRITICAL: blockToReplace is null when trying to show comparison dialog'
+          );
+          toast.error(
+            'Error: Could not find original block. Please try again.'
+          );
+          // Clear and proceed as new block instead
+          setBlockToReplace(null);
+          blockToReplaceRef.current = null;
+          // Fall through to add as new block
+        } else {
+          // CRITICAL: Store the block in a dedicated state for the comparison dialog
+          // This ensures it persists even if blockToReplace state changes
+          setOldBlockForComparison(finalBlockToReplace);
+
+          devLogger.debug('✅ Showing comparison dialog with block:', {
+            blockId: finalBlockToReplace.id || finalBlockToReplace.block_id,
+            blockType: finalBlockToReplace.type,
+            hasHtmlCss: !!finalBlockToReplace.html_css,
+            allKeys: Object.keys(finalBlockToReplace),
+          });
+
+          // Show comparison dialog instead of directly replacing
+          setRegeneratedBlock(newBlock);
+          setShowComparisonDialog(true);
+          setShowAIGeneratorDialog(false); // Close the generation dialog
+          // Don't replace yet - wait for user confirmation in comparison dialog
+          return; // CRITICAL: Exit early to prevent adding as new block
+        }
+      }
+
+      // If we reach here, this is a NEW block (not a replacement)
+      // Clear any lingering blockToReplace state to prevent confusion
+      if (blockToReplace || blockToReplaceRef.current) {
+        devLogger.warn(
+          '⚠️ blockToReplace was set but block was not found - clearing and adding as new block'
+        );
         setBlockToReplace(null);
-      } else if (insertionPosition !== null) {
+        blockToReplaceRef.current = null;
+      }
+
+      // Add as new block (either at insertion position or at end)
+      if (insertionPosition !== null) {
+        // Inserting at specific position
         // Check for duplicates before inserting
         const updatedBlocks = [...contentBlocks];
         const duplicateIndex = updatedBlocks.findIndex(
@@ -629,17 +943,44 @@ function LessonBuilder() {
         if (duplicateIndex === -1) {
           updatedBlocks.splice(insertionPosition, 0, newBlock);
           setContentBlocks(updatedBlocks);
+
+          // Also update lessonContent if it exists
+          if (lessonContent?.data?.content) {
+            setLessonContent(prev => {
+              const newContent = [...prev.data.content];
+              newContent.splice(insertionPosition, 0, newBlock);
+              return {
+                ...prev,
+                data: {
+                  ...prev.data,
+                  content: newContent,
+                },
+              };
+            });
+          }
         } else {
           devLogger.warn('Skipping duplicate block insertion');
         }
         setInsertionPosition(null);
       } else {
+        // Adding at the end
         // Check for duplicates before adding
         const hasDuplicate = contentBlocks.some(
           b => (b.id || b.block_id) === (newBlock.id || newBlock.block_id)
         );
         if (!hasDuplicate) {
           setContentBlocks(prev => [...prev, newBlock]);
+
+          // CRITICAL: Also update lessonContent if it exists (for AI-generated blocks from course creation)
+          if (lessonContent?.data?.content) {
+            setLessonContent(prev => ({
+              ...prev,
+              data: {
+                ...prev.data,
+                content: [...prev.data.content, newBlock],
+              },
+            }));
+          }
         } else {
           devLogger.warn('Skipping duplicate block addition');
         }
@@ -1427,9 +1768,27 @@ function LessonBuilder() {
                             ? lessonContent.data.content
                             : contentBlocks;
 
+                        // Normalize block types and ensure IDs exist
+                        const normalizedBlocks = blocksToRender.map(block => {
+                          // Normalize table type: backend and most code use 'table' (singular)
+                          // But some UI checks use 'tables' (plural) - normalize to 'table'
+                          if (block.type === 'tables') {
+                            return { ...block, type: 'table' };
+                          }
+                          // Ensure block_id exists
+                          if (!block.block_id && block.id) {
+                            return { ...block, block_id: block.id };
+                          }
+                          // Ensure id exists
+                          if (!block.id && block.block_id) {
+                            return { ...block, id: block.block_id };
+                          }
+                          return block;
+                        });
+
                         // Remove duplicate blocks based on ID to prevent outline issues
                         const seenBlockIds = new Set();
-                        const uniqueBlocks = blocksToRender.filter(block => {
+                        const uniqueBlocks = normalizedBlocks.filter(block => {
                           const blockId = block.id || block.block_id;
                           if (!blockId) return true; // Keep blocks without IDs
                           if (seenBlockIds.has(blockId)) {
@@ -1587,40 +1946,170 @@ function LessonBuilder() {
                                       {!block.isEditing && (
                                         <>
                                           {/* AI Generate Button for Individual Block */}
-                                          {contentBlockTypes.find(
-                                            bt => bt.id === block.type
-                                          )?.supportsAI && (
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-purple-100"
-                                              onClick={() => {
-                                                setCurrentAIBlockType(
-                                                  contentBlockTypes.find(
-                                                    bt => bt.id === block.type
-                                                  )
-                                                );
-                                                setBlockToReplace(block); // Set block to replace
-                                                setShowAIGeneratorDialog(true);
-                                              }}
-                                              title={`Regenerate ${block.type} with AI`}
-                                            >
-                                              <Sparkles className="h-4 w-4 text-purple-600" />
-                                            </Button>
-                                          )}
+                                          {(() => {
+                                            // Normalize block type for checking (handle table/tables inconsistency)
+                                            // Backend and most code use 'table' (singular), but check both
+                                            const normalizedType =
+                                              block.type === 'tables'
+                                                ? 'table'
+                                                : block.type === 'table'
+                                                  ? 'table'
+                                                  : block.type;
+
+                                            const blockTypeConfig =
+                                              contentBlockTypes.find(
+                                                bt =>
+                                                  bt.id === normalizedType ||
+                                                  bt.id === block.type ||
+                                                  (bt.id === 'table' &&
+                                                    block.type === 'tables') ||
+                                                  (bt.id === 'tables' &&
+                                                    block.type === 'table')
+                                              );
+
+                                            // Also check if block is AI-generated (from course creation)
+                                            const isAIGenerated =
+                                              block.isAIGenerated ||
+                                              block.metadata?.aiGenerated ||
+                                              block.details?.aiGenerated ||
+                                              block.metadata?.blockType;
+
+                                            // Show regenerate button if:
+                                            // 1. Block type supports AI, OR
+                                            // 2. Block is AI-generated (even if type not explicitly in contentBlockTypes)
+                                            return (
+                                              (blockTypeConfig?.supportsAI ||
+                                                isAIGenerated) && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-8 w-8 rounded-full bg-white/80 hover:bg-purple-100"
+                                                  onClick={() => {
+                                                    // The block from filteredBlocks should already have full data
+                                                    // But let's ensure we're preserving ALL fields by creating a deep copy
+                                                    const blockId =
+                                                      block.id ||
+                                                      block.block_id;
+
+                                                    // Create a complete copy of the block with all possible fields
+                                                    const fullBlock = {
+                                                      ...block,
+                                                      // Ensure we preserve all content fields
+                                                      html_css:
+                                                        block.html_css ||
+                                                        block.content ||
+                                                        '',
+                                                      content:
+                                                        block.content ||
+                                                        block.html_css ||
+                                                        '',
+                                                      // Preserve details object completely
+                                                      details: block.details
+                                                        ? { ...block.details }
+                                                        : undefined,
+                                                      // Preserve all other fields
+                                                      text: block.text,
+                                                      textType:
+                                                        block.textType ||
+                                                        block.text_type,
+                                                      statementType:
+                                                        block.statementType ||
+                                                        block.statement_type,
+                                                      imageUrl:
+                                                        block.imageUrl ||
+                                                        block.details
+                                                          ?.image_url,
+                                                      imageTitle:
+                                                        block.imageTitle ||
+                                                        block.details?.alt_text,
+                                                      imageDescription:
+                                                        block.imageDescription ||
+                                                        block.details?.caption,
+                                                      // Preserve IDs
+                                                      id:
+                                                        block.id ||
+                                                        block.block_id,
+                                                      block_id:
+                                                        block.block_id ||
+                                                        block.id,
+                                                      order: block.order,
+                                                    };
+
+                                                    devLogger.debug(
+                                                      'Setting blockToReplace with full data:',
+                                                      {
+                                                        blockId:
+                                                          fullBlock.id ||
+                                                          fullBlock.block_id,
+                                                        type: fullBlock.type,
+                                                        hasHtmlCss:
+                                                          !!fullBlock.html_css,
+                                                        htmlCssLength:
+                                                          fullBlock.html_css
+                                                            ?.length || 0,
+                                                        hasContent:
+                                                          !!fullBlock.content,
+                                                        contentLength:
+                                                          fullBlock.content
+                                                            ?.length || 0,
+                                                        hasDetails:
+                                                          !!fullBlock.details,
+                                                        detailsKeys:
+                                                          fullBlock.details
+                                                            ? Object.keys(
+                                                                fullBlock.details
+                                                              )
+                                                            : [],
+                                                        allBlockKeys:
+                                                          Object.keys(
+                                                            fullBlock
+                                                          ),
+                                                      }
+                                                    );
+
+                                                    setCurrentAIBlockType(
+                                                      contentBlockTypes.find(
+                                                        bt =>
+                                                          bt.id === block.type
+                                                      )
+                                                    );
+                                                    setBlockToReplace(
+                                                      fullBlock
+                                                    ); // Set FULL block to replace
+                                                    blockToReplaceRef.current =
+                                                      fullBlock; // Also store in ref for persistence
+                                                    setShowAIGeneratorDialog(
+                                                      true
+                                                    );
+                                                  }}
+                                                  title={`Regenerate ${block.type} with AI`}
+                                                >
+                                                  <Sparkles className="h-4 w-4 text-purple-600" />
+                                                </Button>
+                                              )
+                                            );
+                                          })()}
                                           <Button
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
                                             onClick={() => {
-                                              // Always use handleEditBlock for proper type detection
-                                              if (
-                                                block.type === 'image' &&
-                                                block.layout
-                                              ) {
-                                                toggleImageBlockEditing(
-                                                  block.id
-                                                );
+                                              // For image blocks, always use handleEditImage from ImageBlockComponent
+                                              if (block.type === 'image') {
+                                                if (
+                                                  imageBlockComponentRef.current &&
+                                                  imageBlockComponentRef.current
+                                                    .handleEditImage
+                                                ) {
+                                                  imageBlockComponentRef.current.handleEditImage(
+                                                    block.id || block.block_id
+                                                  );
+                                                } else {
+                                                  // Fallback: toggle inline editing
+                                                  toggleImageBlockEditing(
+                                                    block.id
+                                                  );
+                                                }
                                               } else {
                                                 handleEditBlock(block.id);
                                               }
@@ -3080,6 +3569,7 @@ function LessonBuilder() {
         setImageUploading={setImageUploading}
         contentBlocks={contentBlocks}
         setContentBlocks={setContentBlocks}
+        lessonContent={lessonContent}
         onAICreation={handleAICreation}
       />
 
@@ -3138,13 +3628,341 @@ function LessonBuilder() {
       {/* AI Content Generator Dialog */}
       <AIContentGeneratorDialog
         show={showAIGeneratorDialog}
-        onClose={() => setShowAIGeneratorDialog(false)}
+        onClose={() => {
+          setShowAIGeneratorDialog(false);
+          // Only clear blockToReplace if we're not in the middle of a replacement flow
+          // (i.e., if comparison dialog is not open)
+          if (!showComparisonDialog) {
+            setBlockToReplace(null);
+            blockToReplaceRef.current = null;
+          }
+        }}
         blockType={currentAIBlockType}
         courseContext={getCourseContext(lessonData, lessonContent)}
         onGenerate={handleAIGenerate}
         availableTemplates={getTemplatesForBlockType(
           currentAIBlockType?.id || ''
         )}
+      />
+
+      {/* Regenerate Comparison Dialog */}
+      <RegenerateComparisonDialog
+        isOpen={showComparisonDialog}
+        onClose={() => {
+          setShowComparisonDialog(false);
+          setRegeneratedBlock(null);
+          setOldBlockForComparison(null);
+          setBlockToReplace(null);
+          blockToReplaceRef.current = null;
+        }}
+        oldBlock={
+          oldBlockForComparison || blockToReplaceRef.current || blockToReplace
+        }
+        newBlock={regeneratedBlock}
+        blockType={currentAIBlockType}
+        onKeepOld={oldBlock => {
+          // Keep the original block - do nothing
+          setShowComparisonDialog(false);
+          setRegeneratedBlock(null);
+          setOldBlockForComparison(null);
+          setBlockToReplace(null);
+          blockToReplaceRef.current = null;
+        }}
+        onUseNew={newBlock => {
+          // Use the stored old block from comparison dialog state (most reliable)
+          const originalBlock =
+            oldBlockForComparison ||
+            blockToReplaceRef.current ||
+            blockToReplace;
+
+          // Replace the old block with the new one
+          if (!originalBlock || !newBlock) {
+            devLogger.error(
+              'Cannot replace: missing blockToReplace or newBlock',
+              {
+                hasBlockToReplace: !!originalBlock,
+                hasNewBlock: !!newBlock,
+                hasOldBlockForComparison: !!oldBlockForComparison,
+                blockToReplaceFromState: !!blockToReplace,
+                blockToReplaceFromRef: !!blockToReplaceRef.current,
+              }
+            );
+            toast.error(
+              'Error: Could not find original block. The new content was not applied.'
+            );
+            setShowComparisonDialog(false);
+            setRegeneratedBlock(null);
+            setOldBlockForComparison(null);
+            setBlockToReplace(null);
+            blockToReplaceRef.current = null;
+            return;
+          }
+
+          if (originalBlock && newBlock) {
+            devLogger.debug('Replacing block:', {
+              oldBlockId: originalBlock.id,
+              oldBlockIdAlt: originalBlock.block_id,
+              newBlockId: newBlock.id,
+              newBlockType: newBlock.type,
+            });
+
+            // Preserve the original block's ID, order, and ALL styling properties
+            const finalBlock = {
+              ...newBlock,
+              id: originalBlock.id,
+              block_id: originalBlock.block_id || originalBlock.id,
+              order: originalBlock.order,
+              // Preserve type and styling
+              type: originalBlock.type,
+              textType:
+                originalBlock.textType ||
+                originalBlock.text_type ||
+                newBlock.textType,
+              text_type:
+                originalBlock.textType ||
+                originalBlock.text_type ||
+                newBlock.textType,
+              statementType:
+                originalBlock.statementType ||
+                originalBlock.statement_type ||
+                newBlock.statementType,
+              statement_type:
+                originalBlock.statementType ||
+                originalBlock.statement_type ||
+                newBlock.statementType,
+              templateType:
+                originalBlock.templateType ||
+                originalBlock.template ||
+                newBlock.templateType,
+              template:
+                originalBlock.templateType ||
+                originalBlock.template ||
+                newBlock.template,
+              gradient: originalBlock.gradient || newBlock.gradient,
+              layout: originalBlock.layout || newBlock.layout,
+              alignment: originalBlock.alignment || newBlock.alignment,
+              headingBgColor: originalBlock.headingBgColor,
+              subheadingBgColor: originalBlock.subheadingBgColor,
+              style: originalBlock.style || newBlock.style,
+            };
+
+            // Replace in contentBlocks - check both id and block_id
+            setContentBlocks(prev => {
+              const updated = prev.map(block => {
+                const matchesId =
+                  block.id === originalBlock.id ||
+                  block.block_id === originalBlock.id ||
+                  block.id === originalBlock.block_id ||
+                  block.block_id === originalBlock.block_id;
+
+                if (matchesId) {
+                  devLogger.debug('Found matching block in contentBlocks:', {
+                    blockId: block.id,
+                    blockIdAlt: block.block_id,
+                  });
+                  return finalBlock;
+                }
+                return block;
+              });
+
+              devLogger.debug('Updated contentBlocks:', {
+                originalLength: prev.length,
+                updatedLength: updated.length,
+                replaced: updated.some(b => b.id === finalBlock.id),
+              });
+
+              return updated;
+            });
+
+            // Replace in lessonContent if it exists
+            if (lessonContent?.data?.content) {
+              setLessonContent(prev => {
+                const updatedContent = prev.data.content.map(block => {
+                  const matchesId =
+                    (block.block_id || block.id) ===
+                      (originalBlock.block_id || originalBlock.id) ||
+                    block.block_id === originalBlock.id ||
+                    block.id === originalBlock.id ||
+                    block.block_id === originalBlock.block_id;
+
+                  if (matchesId) {
+                    devLogger.debug('Found matching block in lessonContent:', {
+                      blockId: block.id,
+                      blockIdAlt: block.block_id,
+                    });
+                    return {
+                      ...finalBlock,
+                      block_id: block.block_id || block.id,
+                    };
+                  }
+                  return block;
+                });
+
+                devLogger.debug('Updated lessonContent:', {
+                  originalLength: prev.data.content.length,
+                  updatedLength: updatedContent.length,
+                });
+
+                return {
+                  ...prev,
+                  data: {
+                    ...prev.data,
+                    content: updatedContent,
+                  },
+                };
+              });
+            }
+
+            setHasUnsavedChanges(true);
+            toast.success('Content replaced successfully!');
+            devLogger.debug('✅ Block replaced with regenerated version');
+          } else {
+            devLogger.warn(
+              'Cannot replace: missing blockToReplace or newBlock',
+              {
+                hasBlockToReplace: !!originalBlock,
+                hasNewBlock: !!newBlock,
+                blockToReplaceFromState: !!blockToReplace,
+                blockToReplaceFromRef: !!blockToReplaceRef.current,
+              }
+            );
+            toast.error('Failed to replace content. Please try again.');
+          }
+
+          setShowComparisonDialog(false);
+          setRegeneratedBlock(null);
+          setOldBlockForComparison(null);
+          setBlockToReplace(null);
+          blockToReplaceRef.current = null;
+        }}
+        onRegenerate={async () => {
+          // Regenerate the content
+          setIsRegenerating(true);
+          try {
+            // Use ref to get the latest blockToReplace
+            const originalBlock = blockToReplaceRef.current || blockToReplace;
+
+            if (!originalBlock) {
+              toast.error('Original block data not found. Please try again.');
+              setIsRegenerating(false);
+              return;
+            }
+
+            // Get the original prompt or generate a new one
+            const courseContext = getCourseContext(lessonData, lessonContent);
+
+            // Preserve the original block's template/type
+            let templateToUse =
+              regeneratedBlock?.templateType || regeneratedBlock?.template;
+            if (originalBlock.type === 'text' && originalBlock.textType) {
+              templateToUse =
+                originalBlock.textType ||
+                originalBlock.text_type ||
+                templateToUse;
+            } else if (
+              originalBlock.type === 'statement' &&
+              originalBlock.statementType
+            ) {
+              templateToUse =
+                originalBlock.statementType ||
+                originalBlock.statement_type ||
+                templateToUse;
+            } else if (originalBlock.templateType || originalBlock.template) {
+              templateToUse =
+                originalBlock.templateType ||
+                originalBlock.template ||
+                templateToUse;
+            }
+
+            devLogger.debug('Regenerating with preserved template:', {
+              templateToUse,
+              originalType: originalBlock.type,
+              originalTextType: originalBlock.textType,
+            });
+
+            // Generate new content
+            const aiResponse = await contentBlockAIService.generateContentBlock(
+              {
+                blockType: currentAIBlockType?.id || originalBlock.type,
+                templateId: templateToUse,
+                userPrompt: `Regenerate ${currentAIBlockType?.title?.toLowerCase() || originalBlock.type} content`,
+                instructions: '',
+                courseContext,
+              }
+            );
+
+            const blockTypeToUse =
+              currentAIBlockType?.id || originalBlock.type || 'text';
+            let newRegeneratedBlock = formatAIContentForBlock(
+              aiResponse,
+              blockTypeToUse
+            );
+
+            // Preserve ID, order, type, and styling from originalBlock
+            newRegeneratedBlock.id = originalBlock.id;
+            newRegeneratedBlock.block_id =
+              originalBlock.block_id || originalBlock.id;
+            newRegeneratedBlock.order = originalBlock.order;
+            // Preserve type and styling
+            newRegeneratedBlock.type = originalBlock.type;
+            newRegeneratedBlock.textType =
+              originalBlock.textType ||
+              originalBlock.text_type ||
+              newRegeneratedBlock.textType;
+            newRegeneratedBlock.text_type =
+              originalBlock.textType ||
+              originalBlock.text_type ||
+              newRegeneratedBlock.textType;
+            newRegeneratedBlock.statementType =
+              originalBlock.statementType ||
+              originalBlock.statement_type ||
+              newRegeneratedBlock.statementType;
+            newRegeneratedBlock.statement_type =
+              originalBlock.statementType ||
+              originalBlock.statement_type ||
+              newRegeneratedBlock.statementType;
+            newRegeneratedBlock.templateType =
+              originalBlock.templateType ||
+              originalBlock.template ||
+              newRegeneratedBlock.templateType;
+            newRegeneratedBlock.template =
+              originalBlock.templateType ||
+              originalBlock.template ||
+              newRegeneratedBlock.template;
+            newRegeneratedBlock.gradient =
+              originalBlock.gradient || newRegeneratedBlock.gradient;
+            newRegeneratedBlock.layout =
+              originalBlock.layout || newRegeneratedBlock.layout;
+            newRegeneratedBlock.alignment =
+              originalBlock.alignment || newRegeneratedBlock.alignment;
+            newRegeneratedBlock.headingBgColor = originalBlock.headingBgColor;
+            newRegeneratedBlock.subheadingBgColor =
+              originalBlock.subheadingBgColor;
+            newRegeneratedBlock.style =
+              originalBlock.style || newRegeneratedBlock.style;
+            // Regenerate HTML with preserved styling
+            newRegeneratedBlock.html_css = regenerateHTMLWithPreservedStyling(
+              newRegeneratedBlock,
+              originalBlock
+            );
+
+            devLogger.debug('Regenerated block with preserved properties:', {
+              type: newRegeneratedBlock.type,
+              textType: newRegeneratedBlock.textType,
+              gradient: newRegeneratedBlock.gradient,
+              hasHtmlCss: !!newRegeneratedBlock.html_css,
+            });
+
+            setRegeneratedBlock(newRegeneratedBlock);
+            toast.success('Content regenerated!');
+          } catch (error) {
+            devLogger.error('Regeneration error:', error);
+            toast.error('Failed to regenerate content');
+          } finally {
+            setIsRegenerating(false);
+          }
+        }}
+        isRegenerating={isRegenerating}
       />
     </>
   );

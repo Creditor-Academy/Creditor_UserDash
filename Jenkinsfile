@@ -5,13 +5,21 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git url: 'https://github.com/Creditor-Academy/Creditor_UserDash.git', branch: 'main', credentialsId: 'github'
+                // Use the branch Jenkins is building (multibranch-friendly)
+                checkout scm
+                sh 'echo "Building branch: $(git rev-parse --abbrev-ref HEAD)"'
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh 'npm run test:run'
             }
         }
 

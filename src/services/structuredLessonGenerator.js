@@ -1,4 +1,4 @@
-import openAIService from './openAIService.js';
+import optimizedOpenAIService from './optimizedOpenAIService.js';
 import { updateLessonContent } from './courseService.js';
 
 /**
@@ -96,10 +96,180 @@ class StructuredLessonGenerator {
     return [...new Set(words)].slice(0, 5);
   }
 
+  safeParseJSON(text, fallback) {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.warn('JSON parse failed, using fallback bundle', e.message);
+      return fallback;
+    }
+  }
+
+  getDefaultBundle(context) {
+    return {
+      master_heading: `Mastering ${context.topic}`,
+      paragraph: `Explore the essentials of ${context.topic} with clear explanations tailored for ${context.targetAudience}.`,
+      elegant_quote: `${context.topic} empowers people to solve real problems.`,
+      carousel_quotes: [
+        {
+          quote: `${context.topic} is reshaping modern practice.`,
+          author: 'Expert Instructor',
+          title: 'Learning Strategist',
+        },
+        {
+          quote: `Understanding ${context.topic} unlocks new opportunities.`,
+          author: 'Industry Leader',
+          title: 'Practitioner',
+        },
+        {
+          quote: `Practical mastery of ${context.topic} is a career advantage.`,
+          author: 'Coach',
+          title: 'Mentor',
+        },
+      ],
+      numbered_list: [
+        `Key principle of ${context.topic}`,
+        `Practical application for ${context.subject}`,
+        `Common pitfall to avoid`,
+      ],
+      table: {
+        headers: ['Concept', 'Why it matters', 'Example'],
+        rows: [
+          [
+            `${context.topic} Basics`,
+            'Foundation for growth',
+            'Real-world scenario',
+          ],
+          ['Application', 'Turns theory into action', 'Project walkthrough'],
+          ['Next Steps', 'Plan continued learning', 'Practice checklist'],
+        ],
+      },
+    };
+  }
+
+  async generateTextBundle(context) {
+    const systemPrompt =
+      'You are a concise instructional writer. Return compact Premium-quality lesson blocks as JSON only.';
+    const userPrompt = `Produce JSON with keys:
+- master_heading: 5-10 word title
+- paragraph: 3-4 sentence intro
+- elegant_quote: 1-2 sentence motivating quote (no quotes around it)
+- carousel_quotes: array of 3 objects [{quote, author, title}]
+- numbered_list: array of 5 concise bullet strings
+- table: {headers: array of 3 short headers, rows: array of 3 rows, each row array of 3 concise cells}
+Topic: ${context.topic}
+Audience: ${context.targetAudience}
+Difficulty: ${context.difficulty}
+Keep outputs short and direct.`;
+
+    const fallback = this.getDefaultBundle(context);
+    try {
+      const raw = await optimizedOpenAIService.generateText(userPrompt, {
+        maxTokens: 240, // tighter budget for faster turnaround
+        temperature: 0.65,
+        systemPrompt,
+        timeout: 30000,
+      });
+      const parsed = this.safeParseJSON(raw, fallback);
+      return parsed || fallback;
+    } catch (error) {
+      console.warn(
+        'Text bundle generation failed, using defaults:',
+        error.message
+      );
+      return fallback;
+    }
+  }
+
+  buildBlocksFromBundle(bundle) {
+    const blocks = [];
+
+    blocks.push({
+      id: `master-heading-${Date.now()}`,
+      type: 'text',
+      textType: 'master_heading',
+      content: bundle.master_heading,
+      gradient: `gradient${Math.floor(Math.random() * 6) + 1}`,
+      order: 0,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'master_heading',
+        aiGenerated: true,
+        generatedAt: new Date().toISOString(),
+      },
+    });
+
+    blocks.push({
+      id: `paragraph-${Date.now()}`,
+      type: 'text',
+      textType: 'paragraph',
+      content: bundle.paragraph,
+      order: 1,
+      isAIGenerated: true,
+      metadata: { variant: 'paragraph', aiGenerated: true },
+    });
+
+    blocks.push({
+      id: `statement-${Date.now()}`,
+      type: 'statement',
+      variant: 'statement-b',
+      content: bundle.elegant_quote,
+      order: 2,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'statement-b',
+        style: 'elegant-quote',
+        aiGenerated: true,
+      },
+    });
+
+    blocks.push({
+      id: `quote-carousel-${Date.now()}`,
+      type: 'quote',
+      variant: 'quote_carousel',
+      quotes: bundle.carousel_quotes,
+      order: 3,
+      isAIGenerated: true,
+      metadata: { variant: 'quote_carousel', aiGenerated: true },
+    });
+
+    blocks.push({
+      id: `numbered-list-${Date.now()}`,
+      type: 'list',
+      listType: 'numbered',
+      numberingStyle: 'decimal',
+      items: bundle.numbered_list,
+      order: 6, // will be re-ordered when assembled
+      isAIGenerated: true,
+      metadata: {
+        variant: 'numbered',
+        aiGenerated: true,
+        itemCount: bundle.numbered_list?.length || 0,
+      },
+    });
+
+    const tableData = bundle.table || { headers: [], rows: [] };
+    blocks.push({
+      id: `table-${Date.now()}`,
+      type: 'table',
+      variant: 'styled',
+      headers: tableData.headers,
+      rows: tableData.rows,
+      order: 7, // will be re-ordered when assembled
+      isAIGenerated: true,
+      metadata: {
+        variant: 'styled-with-headers',
+        rowCount: tableData.rows?.length || 0,
+        aiGenerated: true,
+      },
+    });
+
+    return blocks;
+  }
+
   /**
-   * Generate complete lesson with 8 fixed blocks
    */
-  async generateLesson(lessonId, courseData, onProgress = null) {
+  async generateLesson(lessonId, courseData, onProgress = null, config = {}) {
     console.log(
       '🎯 Starting structured lesson generation for lesson:',
       lessonId
@@ -109,92 +279,62 @@ class StructuredLessonGenerator {
     const context = this.extractContext(courseData);
     console.log('📋 Extracted context:', context);
 
+    const maxImages = config.maxImages ?? 2;
+    const skipImages =
+      config.skipImages ||
+      config.includeImages === false ||
+      courseData.generationMode === 'QUICK' ||
+      maxImages === 0;
+    if (skipImages) {
+      console.log('⚡ Image generation skipped for speed');
+    }
+
     const blocks = [];
-    const totalBlocks = 8;
+    const totalBlocks = skipImages ? 6 : 6 + Math.min(maxImages, 2); // text set + images + divider
 
     try {
-      // Block 1: Master Heading
       onProgress?.({
         current: 1,
         total: totalBlocks,
-        message: 'Creating lesson title...',
+        message: 'Generating lesson content bundle...',
       });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateMasterHeading(context))
-      );
 
-      // Block 2: Paragraph
-      onProgress?.({
-        current: 2,
-        total: totalBlocks,
-        message: 'Writing introduction...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateParagraph(context))
-      );
+      // Single-call text bundle to reduce round-trips
+      const textBundle = await this.generateTextBundle(context);
+      const textBlocks = this.buildBlocksFromBundle(textBundle);
 
-      // Block 3: Statement (Elegant Quote)
-      onProgress?.({
-        current: 3,
-        total: totalBlocks,
-        message: 'Creating key insight...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateElegantQuote(context))
-      );
+      // Add text blocks first
+      blocks.push(...textBlocks);
 
-      // Block 4: Carousel Quotes
-      onProgress?.({
-        current: 4,
-        total: totalBlocks,
-        message: 'Generating expert quotes...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateCarouselQuotes(context))
-      );
+      // Generate images (optional) in parallel
+      if (!skipImages) {
+        const imagePromises = [];
+        if (maxImages >= 1) {
+          imagePromises.push(
+            this.generateWithRetry(() => this.generateImageLeft(context))
+          );
+        }
+        if (maxImages >= 2) {
+          imagePromises.push(
+            this.generateWithRetry(() => this.generateImageRight(context))
+          );
+        }
 
-      // Block 5: Image Left
-      onProgress?.({
-        current: 5,
-        total: totalBlocks,
-        message: 'Generating first image...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateImageLeft(context))
-      );
+        onProgress?.({
+          current: blocks.length,
+          total: totalBlocks,
+          message: 'Generating lesson visuals...',
+        });
 
-      // Block 6: Image Right
-      onProgress?.({
-        current: 6,
-        total: totalBlocks,
-        message: 'Generating second image...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateImageRight(context))
-      );
+        const generatedImages = await Promise.all(imagePromises);
+        blocks.splice(4, 0, ...generatedImages); // place images after carousel quotes
+      }
 
-      // Block 7: Numbered List
-      onProgress?.({
-        current: 7,
-        total: totalBlocks,
-        message: 'Creating key points...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateNumberedList(context))
-      );
-
-      // Block 8: Table
-      onProgress?.({
-        current: 8,
-        total: totalBlocks,
-        message: 'Building comparison table...',
-      });
-      blocks.push(
-        await this.generateWithRetry(() => this.generateTable(context))
-      );
-
-      // Block 9: Divider
+      // Re-order numbers to stay sequential
       blocks.push(this.generateDivider());
+      blocks.forEach((block, index) => {
+        block.order = index;
+      });
 
       // Convert blocks to HTML
       const processedBlocks = blocks.map(block => ({
@@ -257,7 +397,7 @@ Requirements:
 - Suitable for ${context.difficulty} level
 - Return ONLY the title text, no quotes or extra formatting`;
 
-    const content = await openAIService.generateText(prompt, {
+    const content = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 50,
       temperature: 0.8,
     });
@@ -299,7 +439,7 @@ Requirements:
 - Professional and informative tone
 - Return ONLY the paragraph text`;
 
-    const content = await openAIService.generateText(prompt, {
+    const content = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 200,
       temperature: 0.7,
     });
@@ -335,7 +475,7 @@ Requirements:
 - Should emphasize the value or impact of the topic
 - Return ONLY the quote text, no quotation marks`;
 
-    const content = await openAIService.generateText(prompt, {
+    const content = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 100,
       temperature: 0.8,
     });
@@ -372,7 +512,7 @@ Requirements:
 - Professional and insightful
 - Format as JSON array: [{"quote": "...", "author": "Name", "title": "Title"}]`;
 
-    const response = await openAIService.generateText(prompt, {
+    const response = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 300,
       temperature: 0.8,
     });
@@ -417,24 +557,22 @@ Requirements:
   }
 
   /**
-   * Block 5: Image Left + Content Right
+   * Block 5: Content Right + Image Left
    */
   async generateImageLeft(context) {
-    // Generate image prompt
-    const imagePromptText = `Create a professional, educational image prompt for "${context.topic}".
+    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing key concepts of "${context.topic}".
     
 Requirements:
-- Describe a clear, informative visual
-- Modern and professional style
-- Suitable for educational content
-- Return ONLY the image description, no extra text`;
+- Design a structured, organized visual with clear hierarchy
+- Show key concepts with flowchart or diagram elements
+- Use professional colors, icons, and typography
+- Include detailed information with proper spacing and layout
+- Display labels, annotations, and key points clearly visible
+- Modern, clean, professional style suitable for educational content
+- Ensure all text is readable and well-organized
+- Create a visually rich, information-dense design
+- Return ONLY the image description`;
 
-    const imagePrompt = await openAIService.generateText(imagePromptText, {
-      maxTokens: 100,
-      temperature: 0.7,
-    });
-
-    // Generate content text
     const contentPrompt = `Write 2-3 sentences explaining a key concept about "${context.topic}".
 
 Requirements:
@@ -443,33 +581,77 @@ Requirements:
 - Professional tone
 - Return ONLY the text`;
 
-    const contentText = await openAIService.generateText(contentPrompt, {
-      maxTokens: 150,
-      temperature: 0.7,
-    });
+    // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
+    const [imagePrompt, contentText] = await Promise.all([
+      optimizedOpenAIService.generateText(imagePromptText, {
+        maxTokens: 200,
+        temperature: 0.8,
+        systemPrompt:
+          'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
+      }),
+      optimizedOpenAIService.generateText(contentPrompt, {
+        maxTokens: 150,
+        temperature: 0.7,
+      }),
+    ]);
 
-    // Generate AI image with DALL-E
+    // Generate AI image with DALL-E - Enhanced with 7-layer premium quality
     let imageUrl = IMAGE_PLACEHOLDER;
+    let uploadedToS3 = false;
+    let imageError = null;
+
     try {
-      console.log('🎨 Generating AI image (left):', imagePrompt.trim());
-      const imageResult = await openAIService.generateImage(
-        imagePrompt.trim(),
+      // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
+      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
+
+      console.log(
+        '🎨 Generating AI image (left) with premium 7-layer enhancement:',
+        enhancedPrompt.substring(0, 100) + '...'
+      );
+      const imageResult = await optimizedOpenAIService.generateImage(
+        enhancedPrompt,
         {
           ...DEFAULT_IMAGE_OPTIONS,
           folder: IMAGE_FOLDERS.left,
         }
       );
+
+      // Validate response
+      if (!imageResult) {
+        throw new Error('Image generation returned null response');
+      }
+
       const resolved = resolveImageResponse(imageResult);
-      if (resolved.url) {
-        imageUrl = resolved.url;
-        if (!resolved.uploadedToS3) {
-          console.warn('⚠️ Left image not stored in S3, using fallback URL');
+
+      if (!resolved.url) {
+        throw new Error('Image generation returned no URL');
+      }
+
+      imageUrl = resolved.url;
+      uploadedToS3 = resolved.uploadedToS3;
+
+      // Validate URL is accessible
+      try {
+        const headResponse = await fetch(imageUrl, { method: 'HEAD' });
+        if (!headResponse.ok) {
+          console.warn(`⚠️ Image URL returned status ${headResponse.status}`);
+          imageError = `Image URL not accessible (${headResponse.status})`;
+          imageUrl = IMAGE_PLACEHOLDER;
         }
-      } else {
-        console.error('❌ Left image generation returned no URL:', imageResult);
+      } catch (urlError) {
+        console.warn('⚠️ Could not validate image URL:', urlError.message);
+        imageError = 'Image URL validation failed';
+        imageUrl = IMAGE_PLACEHOLDER;
+      }
+
+      if (!uploadedToS3) {
+        console.warn('⚠️ Left image not stored in S3, using OpenAI URL');
+        imageError = 'Image not uploaded to S3';
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error);
+      console.error('❌ Image generation failed:', error.message);
+      imageError = error.message;
+      imageUrl = IMAGE_PLACEHOLDER;
     }
 
     return {
@@ -486,7 +668,7 @@ Requirements:
       content: {
         imageUrl: imageUrl,
         text: contentText.trim(),
-        caption: `Visual guide for ${context.topic}`,
+        caption: `Real-world example illustrating key concepts of ${context.topic}. ${contentText.trim().substring(0, 100)}...`,
         imagePosition: 'left',
       },
       order: 4,
@@ -495,6 +677,8 @@ Requirements:
         variant: 'image-text-left',
         aiGenerated: true,
         imagePrompt: imagePrompt.trim(),
+        uploadedToS3: uploadedToS3,
+        imageError: imageError, // Track errors
       },
     };
   }
@@ -503,18 +687,18 @@ Requirements:
    * Block 6: Content Left + Image Right
    */
   async generateImageRight(context) {
-    const imagePromptText = `Create a professional image prompt showing practical application of "${context.topic}".
+    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing practical application of "${context.topic}".
     
 Requirements:
-- Show real-world usage or example
-- Modern and professional
-- Educational value
+- Design a structured, organized visual with clear hierarchy
+- Show practical applications with flowchart or process diagram elements
+- Use professional colors, icons, and typography
+- Include detailed information with proper spacing and layout
+- Display labels, annotations, and key points clearly visible
+- Modern, clean, professional style suitable for educational content
+- Ensure all text is readable and well-organized
+- Create a visually rich, information-dense design
 - Return ONLY the image description`;
-
-    const imagePrompt = await openAIService.generateText(imagePromptText, {
-      maxTokens: 100,
-      temperature: 0.7,
-    });
 
     const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".
 
@@ -524,35 +708,76 @@ Requirements:
 - Professional tone
 - Return ONLY the text`;
 
-    const contentText = await openAIService.generateText(contentPrompt, {
-      maxTokens: 150,
-      temperature: 0.7,
-    });
+    // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
+    const [imagePrompt, contentText] = await Promise.all([
+      optimizedOpenAIService.generateText(imagePromptText, {
+        maxTokens: 200,
+        temperature: 0.8,
+        systemPrompt:
+          'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
+      }),
+      optimizedOpenAIService.generateText(contentPrompt, {
+        maxTokens: 150,
+        temperature: 0.7,
+      }),
+    ]);
 
     let imageUrl = IMAGE_PLACEHOLDER;
+    let uploadedToS3 = false;
+    let imageError = null;
+
     try {
-      console.log('🎨 Generating AI image (right):', imagePrompt.trim());
-      const imageResult = await openAIService.generateImage(
-        imagePrompt.trim(),
+      // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
+      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
+
+      console.log(
+        '🎨 Generating AI image (right) with infographic enhancement:',
+        enhancedPrompt.substring(0, 100) + '...'
+      );
+      const imageResult = await optimizedOpenAIService.generateImage(
+        enhancedPrompt,
         {
           ...DEFAULT_IMAGE_OPTIONS,
           folder: IMAGE_FOLDERS.right,
         }
       );
+
+      // Validate response
+      if (!imageResult) {
+        throw new Error('Image generation returned null response');
+      }
+
       const resolved = resolveImageResponse(imageResult);
-      if (resolved.url) {
-        imageUrl = resolved.url;
-        if (!resolved.uploadedToS3) {
-          console.warn('⚠️ Right image not stored in S3, using fallback URL');
+
+      if (!resolved.url) {
+        throw new Error('Image generation returned no URL');
+      }
+
+      imageUrl = resolved.url;
+      uploadedToS3 = resolved.uploadedToS3;
+
+      // Validate URL is accessible
+      try {
+        const headResponse = await fetch(imageUrl, { method: 'HEAD' });
+        if (!headResponse.ok) {
+          console.warn(`⚠️ Image URL returned status ${headResponse.status}`);
+          imageError = `Image URL not accessible (${headResponse.status})`;
+          imageUrl = IMAGE_PLACEHOLDER;
         }
-      } else {
-        console.error(
-          '❌ Right image generation returned no URL:',
-          imageResult
-        );
+      } catch (urlError) {
+        console.warn('⚠️ Could not validate image URL:', urlError.message);
+        imageError = 'Image URL validation failed';
+        imageUrl = IMAGE_PLACEHOLDER;
+      }
+
+      if (!uploadedToS3) {
+        console.warn('⚠️ Right image not stored in S3, using OpenAI URL');
+        imageError = 'Image not uploaded to S3';
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error);
+      console.error('❌ Image generation failed:', error.message);
+      imageError = error.message;
+      imageUrl = IMAGE_PLACEHOLDER;
     }
 
     return {
@@ -569,7 +794,7 @@ Requirements:
       content: {
         imageUrl: imageUrl,
         text: contentText.trim(),
-        caption: `Practical application of ${context.topic}`,
+        caption: `Real-world application demonstrating practical usage of ${context.topic}. ${contentText.trim().substring(0, 100)}...`,
         imagePosition: 'right',
       },
       order: 5,
@@ -578,6 +803,8 @@ Requirements:
         variant: 'image-text-right',
         aiGenerated: true,
         imagePrompt: imagePrompt.trim(),
+        uploadedToS3: uploadedToS3,
+        imageError: imageError, // Track errors
       },
     };
   }
@@ -595,7 +822,7 @@ Requirements:
 - Professional tone
 - Format as JSON array: ["Point 1", "Point 2", ...]`;
 
-    const response = await openAIService.generateText(prompt, {
+    const response = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 300,
       temperature: 0.7,
     });
@@ -642,7 +869,7 @@ Requirements:
 - Clear and informative
 - Format as JSON: {"headers": ["Col1", "Col2", "Col3"], "rows": [["cell1", "cell2", "cell3"], ...]}`;
 
-    const response = await openAIService.generateText(prompt, {
+    const response = await optimizedOpenAIService.generateText(prompt, {
       maxTokens: 400,
       temperature: 0.7,
     });

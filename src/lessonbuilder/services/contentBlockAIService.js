@@ -299,6 +299,30 @@ Return ONLY valid JSON, no other text.`;
     const response = await this.callOpenAI(prompt, 600);
     const listData = this.safeParseJSON(response);
 
+    // Ensure items are always plain strings to avoid [object Object] in UI
+    const rawItems = Array.isArray(listData.items) ? listData.items : [];
+    const normalizedItems = rawItems.map(item => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        if (typeof item.text === 'string') return item.text;
+        if (
+          typeof item.title === 'string' &&
+          typeof item.description === 'string'
+        ) {
+          return `${item.title}: ${item.description}`;
+        }
+        if (typeof item.title === 'string') return item.title;
+        if (typeof item.description === 'string') return item.description;
+        // Fallback: stringify object
+        try {
+          return JSON.stringify(item);
+        } catch {
+          return String(item);
+        }
+      }
+      return String(item ?? '');
+    });
+
     return {
       type: 'list',
       listType:
@@ -308,7 +332,7 @@ Return ONLY valid JSON, no other text.`;
             ? 'checkbox'
             : 'bulleted',
       content: JSON.stringify({
-        items: listData.items,
+        items: normalizedItems,
         numberingStyle: 'decimal',
         bulletStyle: 'circle',
       }),

@@ -2014,7 +2014,13 @@ const useLessonBlocks = ({
       const [moved] = updatedBlocks.splice(sourceIndex, 1);
       updatedBlocks.splice(targetIndex, 0, moved);
 
-      setContentBlocks(updatedBlocks);
+      // Re-number orders so visual drag-and-drop order is preserved
+      const reOrderedBlocks = updatedBlocks.map((block, index) => ({
+        ...block,
+        order: index + 1,
+      }));
+
+      setContentBlocks(reOrderedBlocks);
     }
 
     setDraggedBlockId(null);

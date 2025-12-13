@@ -2,6 +2,35 @@ import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
 import api from './apiClient'; // Enhanced API client
 import axios from 'axios';
 
+/**
+ * Extract error message from various error response formats
+ * Handles multiple backend error response structures
+ */
+function extractErrorMessage(error) {
+  // Try all possible error message locations
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  if (error.response?.data?.errorMessage) {
+    return error.response.data.errorMessage;
+  }
+
+  if (error.response?.data?.error) {
+    return error.response.data.error;
+  }
+
+  if (error.response?.data?.data?.message) {
+    return error.response.data.data.message;
+  }
+
+  if (error.message) {
+    return error.message;
+  }
+
+  return `HTTP ${error.response?.status || 'Unknown'}: ${error.response?.statusText || 'Error'}`;
+}
+
 export async function fetchAllCourses() {
   try {
     // Use the enhanced API client
@@ -17,10 +46,7 @@ export async function fetchAllCourses() {
       message: error.message,
     });
 
-    const backendMessage =
-      error.response?.data?.errorMessage ||
-      error.response?.data?.message ||
-      error.message;
+    const backendMessage = extractErrorMessage(error);
     throw new Error(
       backendMessage ||
         `Failed to fetch courses (${error.response?.status || 'Unknown'})`
@@ -258,6 +284,7 @@ export async function updateLessonContent(lessonId, contentData) {
     console.log('Content data:', contentData);
 
     // Use the enhanced API client instead of raw fetch to avoid CORS issues
+    // Use the existing lessonContent endpoint
     const response = await api.put(
       `/api/lessoncontent/update/${lessonId}`,
       contentData,
@@ -276,10 +303,7 @@ export async function updateLessonContent(lessonId, contentData) {
       message: error.message,
     });
 
-    const backendMessage =
-      error.response?.data?.errorMessage ||
-      error.response?.data?.message ||
-      error.message;
+    const backendMessage = extractErrorMessage(error);
 
     throw new Error(
       backendMessage ||
