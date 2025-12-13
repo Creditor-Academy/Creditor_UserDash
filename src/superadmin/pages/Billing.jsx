@@ -23,30 +23,39 @@ import {
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     paid: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-800 dark:text-green-400',
+      bg: 'bg-emerald-100 dark:bg-emerald-900/60',
+      text: 'text-emerald-800 dark:text-emerald-100',
+      border: 'border border-emerald-500/60',
       label: 'Paid',
     },
     pending: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-      text: 'text-yellow-800 dark:text-yellow-400',
+      bg: 'bg-amber-100 dark:bg-amber-900/60',
+      text: 'text-amber-800 dark:text-amber-50',
+      border: 'border border-amber-500/60',
       label: 'Pending',
     },
     overdue: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-800 dark:text-red-400',
+      bg: 'bg-rose-100 dark:bg-rose-900/60',
+      text: 'text-rose-800 dark:text-rose-50',
+      border: 'border border-rose-500/60',
       label: 'Overdue',
     },
     cancelled: {
       bg: 'bg-gray-100 dark:bg-gray-800',
-      text: 'text-gray-800 dark:text-gray-300',
+      text: 'text-gray-800 dark:text-gray-200',
+      border: 'border border-gray-500/40',
       label: 'Cancelled',
     },
-  }[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
+  }[status] || {
+    bg: 'bg-gray-100',
+    text: 'text-gray-800',
+    border: 'border border-gray-400/40',
+    label: status,
+  };
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border || ''}`}
     >
       {statusConfig.label}
     </span>
@@ -361,6 +370,7 @@ export default function Billing() {
   const [selectedBill, setSelectedBill] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [revenueView, setRevenueView] = useState('month');
+  const [monthView, setMonthView] = useState('all');
 
   // Mock data
   useEffect(() => {
@@ -689,6 +699,39 @@ export default function Billing() {
     return sums;
   }, [periodBills]);
 
+  const monthlyTotals = useMemo(() => {
+    const map = new Map();
+
+    bills.forEach(bill => {
+      if (bill.status !== 'paid' || !bill.paidDate) return;
+      const paidDate = new Date(bill.paidDate);
+      const key = `${paidDate.getFullYear()}-${String(paidDate.getMonth() + 1).padStart(2, '0')}`;
+      const label = paidDate.toLocaleString('default', {
+        month: 'short',
+        year: 'numeric',
+      });
+
+      const existing = map.get(key) || { amount: 0, label };
+      map.set(key, { amount: existing.amount + bill.amount, label });
+    });
+
+    return Array.from(map.entries())
+      .map(([key, { amount, label }]) => ({ key, amount, label }))
+      .sort((a, b) => {
+        const [ay, am] = a.key.split('-').map(Number);
+        const [by, bm] = b.key.split('-').map(Number);
+        return new Date(by, bm - 1, 1) - new Date(ay, am - 1, 1);
+      });
+  }, [bills]);
+
+  const selectedMonthAmount = useMemo(() => {
+    if (monthView === 'all') {
+      return monthlyTotals.reduce((sum, m) => sum + m.amount, 0);
+    }
+    const match = monthlyTotals.find(m => m.key === monthView);
+    return match ? match.amount : 0;
+  }, [monthView, monthlyTotals]);
+
   const revenueLabel = {
     day: 'Today',
     week: 'Last 7 days',
@@ -709,41 +752,86 @@ export default function Billing() {
       style={{ backgroundColor: colors.bg.primary }}
     >
       <div className="w-full max-w-none mx-auto space-y-6 md:space-y-8 pb-8">
-        {/* Header */}
-        <div style={{ color: colors.text.primary }} className="mt-6">
-          <h1 className="text-4xl font-bold mb-2">Billing & Payments</h1>
-          <p className="text-lg" style={{ color: colors.text.secondary }}>
-            Manage invoices and track payments from all organizations
-          </p>
-        </div>
-
-        {/* Revenue window control */}
-        <div className="flex justify-end">
-          <div
-            className="flex items-center gap-3 px-3 py-2 rounded-full border shadow-sm"
-            style={{
-              backgroundColor: colors.bg.secondary,
-              borderColor: colors.border,
-            }}
-          >
-            <span className="text-sm" style={{ color: colors.text.secondary }}>
-              Revenue window
-            </span>
-            <select
-              value={revenueView}
-              onChange={e => setRevenueView(e.target.value)}
-              className="text-xs px-3 py-1.5 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+        {/* Header + Revenue filters */}
+        <div
+          className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+          style={{ color: colors.text.primary }}
+        >
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Billing & Payments</h1>
+            <p className="text-lg" style={{ color: colors.text.secondary }}>
+              Manage invoices and track payments from all organizations
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:justify-end">
+            <div
+              className="flex items-center gap-3 px-3 py-2 rounded-full border shadow-sm"
               style={{
-                backgroundColor: colors.bg.primary,
+                backgroundColor: colors.bg.secondary,
                 borderColor: colors.border,
-                color: colors.text.primary,
               }}
             >
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month">Month</option>
-              <option value="year">Year</option>
-            </select>
+              <span
+                className="text-sm"
+                style={{ color: colors.text.secondary }}
+              >
+                Revenue window
+              </span>
+              <select
+                value={revenueView}
+                onChange={e => setRevenueView(e.target.value)}
+                className="text-xs px-3 py-1.5 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                }}
+              >
+                <option value="day">Day</option>
+                <option value="week">Week</option>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
+            </div>
+            <div
+              className="flex items-center gap-3 px-3 py-2 rounded-full border shadow-sm"
+              style={{
+                backgroundColor: colors.bg.secondary,
+                borderColor: colors.border,
+              }}
+            >
+              <div className="flex flex-col leading-tight">
+                <span
+                  className="text-sm"
+                  style={{ color: colors.text.secondary }}
+                >
+                  Revenue by month
+                </span>
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: colors.text.primary }}
+                >
+                  ${selectedMonthAmount.toFixed(2)}
+                </span>
+              </div>
+              <select
+                value={monthView}
+                onChange={e => setMonthView(e.target.value)}
+                className="text-xs px-3 py-1.5 rounded-full border focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                }}
+              >
+                <option value="all">All paid</option>
+                {monthlyTotals.map(month => (
+                  <option key={month.key} value={month.key}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
