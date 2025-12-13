@@ -280,14 +280,22 @@ function SuperAdminDashboardContent() {
                   <ActiveUsersChart />
                 </div>
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-4"
+                    className="text-lg font-semibold mb-4 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Pending Bills
@@ -340,14 +348,22 @@ function SuperAdminDashboardContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-4"
+                    className="text-lg font-semibold mb-4 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Organization Growth
@@ -420,14 +436,22 @@ function SuperAdminDashboardContent() {
                 </div>
 
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-6"
+                    className="text-lg font-semibold mb-6 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Storage Used
@@ -517,14 +541,22 @@ function SuperAdminDashboardContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-6">
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-6"
+                    className="text-lg font-semibold mb-6 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Users Growth Trend
@@ -571,14 +603,22 @@ function SuperAdminDashboardContent() {
                 </div>
 
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-6"
+                    className="text-lg font-semibold mb-6 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Organizations Distribution
@@ -611,14 +651,22 @@ function SuperAdminDashboardContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-6"
+                    className="text-lg font-semibold mb-6 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Billing Summary
@@ -783,14 +831,22 @@ function SuperAdminDashboardContent() {
                 </div>
 
                 <div
-                  className="rounded-2xl p-6 transition-colors duration-300"
+                  className="rounded-3xl p-6 relative overflow-hidden transition-all duration-300"
                   style={{
-                    backgroundColor: colors.bg.secondary,
-                    border: `1px solid ${colors.border || 'rgba(255,255,255,0.1)'}`,
+                    backgroundColor:
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.04)'
+                        : 'rgba(255,255,255,0.7)',
+                    backdropFilter: 'blur(24px)',
+                    border: `1px solid ${colors.border}`,
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 12px 32px rgba(0,0,0,0.4)'
+                        : '0 4px 16px rgba(0,0,0,0.08)',
                   }}
                 >
                   <h3
-                    className="text-lg font-semibold mb-6"
+                    className="text-lg font-semibold mb-6 transition-colors duration-300"
                     style={{ color: colors.text.primary }}
                   >
                     Support Tickets
