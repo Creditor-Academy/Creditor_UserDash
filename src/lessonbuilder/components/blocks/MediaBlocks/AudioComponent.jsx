@@ -253,6 +253,19 @@ const AudioComponent = ({
             throw new Error('Upload failed');
           }
         } catch (uploadError) {
+          const isStorageLimitExceeded =
+            uploadError?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+            (uploadError?.message &&
+              (uploadError.message.toLowerCase().includes('limit exceeded') ||
+                uploadError.message.toLowerCase().includes('storage limit')));
+
+          if (isStorageLimitExceeded) {
+            toast.error(
+              'Storage limit exceeded. Please free up space or upgrade before uploading new audio.'
+            );
+            return;
+          }
+
           devLogger.warn(
             'Cloud upload failed, using local preview:',
             uploadError

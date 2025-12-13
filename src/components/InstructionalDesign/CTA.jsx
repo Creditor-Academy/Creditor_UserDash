@@ -46,7 +46,7 @@ const CTA = () => {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
-              href="tel:+1234567890"
+              href="tel:+91 9811773207"
               className="group inline-flex items-center gap-3 px-8 py-4 bg-transparent text-white font-semibold rounded-lg border-2 border-white hover:bg-white hover:text-blue-600 transform hover:-translate-y-1 transition-all duration-200"
             >
               <Phone className="w-5 h-5" />
@@ -89,11 +89,11 @@ const CTA = () => {
 
                 <div className="pt-4 border-t border-gray-200">
                   <a
-                    href="mailto:hello@athena.com"
+                    href="mailto:admin@lmsathena.com"
                     className="inline-flex items-center gap-2 text-yellow-600 hover:text-yellow-700 transition-colors text-sm font-semibold group/link"
                     style={{ fontFamily: 'Arial, sans-serif' }}
                   >
-                    hello@athena.com
+                    admin@lmsathena.com
                     <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
                   </a>
                 </div>
@@ -130,11 +130,11 @@ const CTA = () => {
 
                 <div className="pt-4 border-t border-gray-200">
                   <a
-                    href="tel:+1234567890"
+                    href="tel:+91 9811773207"
                     className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors text-sm font-semibold group/link"
                     style={{ fontFamily: 'Arial, sans-serif' }}
                   >
-                    +1 (234) 567-890
+                    +91 9811773207
                     <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
                   </a>
                 </div>

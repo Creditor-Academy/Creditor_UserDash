@@ -271,49 +271,49 @@
 
 ### Frontend Stack
 
-| Category | Technology | Version |
-|----------|-----------|---------|
-| **Framework** | React | 18.3.1 |
-| **Language** | TypeScript | 5.5.3 |
-| **Build Tool** | Vite | 5.4.1 |
-| **Styling** | TailwindCSS | 3.4.17 |
-| **UI Components** | Shadcn/UI + Radix UI | Latest |
-| **State Management** | React Context API | - |
-| **Data Fetching** | Axios | 1.11.0 |
-| **Routing** | React Router DOM | 6.26.2 |
-| **Forms** | React Hook Form + Zod | 7.53.0 / 3.23.8 |
-| **Real-time** | Socket.IO Client | 4.8.1 |
-| **Rich Text Editor** | TipTap | 3.1.0 |
-| **Charts** | Recharts | 2.15.4 |
-| **Animations** | Framer Motion | 12.23.12 |
-| **Icons** | Lucide React | 0.540.0 |
+| Category             | Technology            | Version         |
+| -------------------- | --------------------- | --------------- |
+| **Framework**        | React                 | 18.3.1          |
+| **Language**         | TypeScript            | 5.5.3           |
+| **Build Tool**       | Vite                  | 5.4.1           |
+| **Styling**          | TailwindCSS           | 3.4.17          |
+| **UI Components**    | Shadcn/UI + Radix UI  | Latest          |
+| **State Management** | React Context API     | -               |
+| **Data Fetching**    | Axios                 | 1.11.0          |
+| **Routing**          | React Router DOM      | 6.26.2          |
+| **Forms**            | React Hook Form + Zod | 7.53.0 / 3.23.8 |
+| **Real-time**        | Socket.IO Client      | 4.8.1           |
+| **Rich Text Editor** | TipTap                | 3.1.0           |
+| **Charts**           | Recharts              | 2.15.4          |
+| **Animations**       | Framer Motion         | 12.23.12        |
+| **Icons**            | Lucide React          | 0.540.0         |
 
 ### Backend Stack
 
-| Category | Technology | Version |
-|----------|-----------|---------|
-| **Runtime** | Node.js | Latest LTS |
-| **Framework** | Express.js | 4.21.2 |
-| **Database** | PostgreSQL | Latest |
-| **ORM** | Prisma | 6.13.0 |
-| **Real-time** | Socket.IO | 4.8.1 |
-| **Authentication** | JWT + Passport.js | 9.0.2 / 0.7.0 |
-| **File Upload** | Multer + Express-fileupload | 1.4.5 / 1.5.1 |
-| **Caching** | Redis | 5.6.0 |
-| **Validation** | Joi | 17.13.3 |
-| **Email** | SendGrid / AWS SES | 8.1.6 |
-| **Payment** | Stripe | 18.5.0 |
-| **Storage** | AWS S3 / Cloudinary | 3.883.0 / 1.21.0 |
+| Category           | Technology                  | Version          |
+| ------------------ | --------------------------- | ---------------- |
+| **Runtime**        | Node.js                     | Latest LTS       |
+| **Framework**      | Express.js                  | 4.21.2           |
+| **Database**       | PostgreSQL                  | Latest           |
+| **ORM**            | Prisma                      | 6.13.0           |
+| **Real-time**      | Socket.IO                   | 4.8.1            |
+| **Authentication** | JWT + Passport.js           | 9.0.2 / 0.7.0    |
+| **File Upload**    | Multer + Express-fileupload | 1.4.5 / 1.5.1    |
+| **Caching**        | Redis                       | 5.6.0            |
+| **Validation**     | Joi                         | 17.13.3          |
+| **Email**          | SendGrid / AWS SES          | 8.1.6            |
+| **Payment**        | Stripe                      | 18.5.0           |
+| **Storage**        | AWS S3 / Cloudinary         | 3.883.0 / 1.21.0 |
 
 ### AI & External Services
 
-| Service | Provider | Purpose |
-|---------|----------|---------|
-| **Text Generation** | OpenAI GPT-4o, HuggingFace | Course content, summaries |
+| Service              | Provider                                    | Purpose                    |
+| -------------------- | ------------------------------------------- | -------------------------- |
+| **Text Generation**  | OpenAI GPT-4o, HuggingFace                  | Course content, summaries  |
 | **Image Generation** | HuggingFace Stable Diffusion, OpenAI DALL-E | Course thumbnails, visuals |
-| **Storage** | AWS S3, Cloudinary | Media files |
-| **Email** | SendGrid, AWS SES | Notifications |
-| **Payment** | Stripe | Subscriptions |
+| **Storage**          | AWS S3, Cloudinary                          | Media files                |
+| **Email**            | SendGrid, AWS SES                           | Notifications              |
+| **Payment**          | Stripe                                      | Subscriptions              |
 
 ---
 
@@ -449,6 +449,7 @@ Development: http://localhost:9000
 ### Authentication
 
 All protected endpoints require a JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <token>
 ```
@@ -458,6 +459,7 @@ Authorization: Bearer <token>
 ### 🔐 Authentication APIs
 
 #### Register User
+
 ```http
 POST /api/auth/registerUser
 Content-Type: application/json
@@ -471,6 +473,7 @@ Content-Type: application/json
 ```
 
 #### Login
+
 ```http
 POST /api/auth/login
 Content-Type: application/json
@@ -482,6 +485,7 @@ Content-Type: application/json
 ```
 
 #### Verify OTP
+
 ```http
 POST /api/auth/verifyOtp
 Content-Type: application/json
@@ -493,6 +497,7 @@ Content-Type: application/json
 ```
 
 #### Forgot Password
+
 ```http
 POST /api/auth/forgotPassword
 Content-Type: application/json
@@ -503,6 +508,7 @@ Content-Type: application/json
 ```
 
 #### Reset Password
+
 ```http
 POST /api/auth/resetPassword
 Content-Type: application/json
@@ -514,6 +520,7 @@ Content-Type: application/json
 ```
 
 #### Logout
+
 ```http
 POST /api/auth/logout
 Authorization: Bearer <token>
@@ -524,12 +531,14 @@ Authorization: Bearer <token>
 ### 👤 User APIs
 
 #### Get User Profile
+
 ```http
 GET /api/user/getUserProfile
 Authorization: Bearer <token>
 ```
 
 #### Update User Profile
+
 ```http
 PUT /api/user/updateUserProfile
 Authorization: Bearer <token>
@@ -543,6 +552,7 @@ Content-Type: application/json
 ```
 
 #### Update Profile Image
+
 ```http
 PUT /api/user/updateProfileImage
 Authorization: Bearer <token>
@@ -552,12 +562,14 @@ file: <image-file>
 ```
 
 #### Get My Courses
+
 ```http
 GET /api/user/getMyCourses
 Authorization: Bearer <token>
 ```
 
 #### Get User Progress
+
 ```http
 GET /api/user/getUserProgress
 Authorization: Bearer <token>
@@ -568,12 +580,14 @@ Authorization: Bearer <token>
 ### 📚 Course APIs
 
 #### Get All Courses
+
 ```http
 GET /api/course/getAllCourses
 Authorization: Bearer <token>
 ```
 
 #### Create Course
+
 ```http
 POST /api/course/createCourse
 Authorization: Bearer <token>
@@ -588,12 +602,14 @@ Content-Type: application/json
 ```
 
 #### Get Course by ID
+
 ```http
 GET /api/course/:courseId
 Authorization: Bearer <token>
 ```
 
 #### Update Course
+
 ```http
 PUT /api/course/editCourse/:courseId
 Authorization: Bearer <token>
@@ -606,12 +622,14 @@ Content-Type: application/json
 ```
 
 #### Delete Course
+
 ```http
 DELETE /api/course/:courseId/delete
 Authorization: Bearer <token>
 ```
 
 #### Enroll in Course
+
 ```http
 POST /api/course/:courseId/enroll
 Authorization: Bearer <token>
@@ -622,12 +640,14 @@ Authorization: Bearer <token>
 ### 📖 Lesson APIs
 
 #### Get Lesson Content
+
 ```http
 GET /api/lessoncontent/get/:lessonId
 Authorization: Bearer <token>
 ```
 
 #### Create/Update Lesson Content
+
 ```http
 PUT /api/lessoncontent/update/:lessonId
 Authorization: Bearer <token>
@@ -640,12 +660,14 @@ Content-Type: application/json
 ```
 
 #### Get Lesson Resources
+
 ```http
 GET /api/resource/get/:lessonId
 Authorization: Bearer <token>
 ```
 
 #### Upload Lesson Resource
+
 ```http
 POST /api/resource/upload-resource
 Authorization: Bearer <token>
@@ -660,12 +682,14 @@ lessonId: <lesson-id>
 ### 📝 Module APIs
 
 #### Get Course Modules
+
 ```http
 GET /api/course/:courseId/modules
 Authorization: Bearer <token>
 ```
 
 #### Create Module
+
 ```http
 POST /api/course/:courseId/modules
 Authorization: Bearer <token>
@@ -679,6 +703,7 @@ Content-Type: application/json
 ```
 
 #### Update Module
+
 ```http
 PUT /api/modules/:moduleId
 Authorization: Bearer <token>
@@ -690,6 +715,7 @@ Content-Type: application/json
 ```
 
 #### Unlock Module
+
 ```http
 POST /api/modules/:moduleId/unlock
 Authorization: Bearer <token>
@@ -700,12 +726,14 @@ Authorization: Bearer <token>
 ### ✅ Quiz APIs
 
 #### Get Quiz
+
 ```http
 GET /api/quiz/get/:quizId
 Authorization: Bearer <token>
 ```
 
 #### Create Quiz
+
 ```http
 POST /api/quiz/create
 Authorization: Bearer <token>
@@ -719,6 +747,7 @@ Content-Type: application/json
 ```
 
 #### Submit Quiz
+
 ```http
 POST /api/quiz/submit/:quizId
 Authorization: Bearer <token>
@@ -732,6 +761,7 @@ Content-Type: application/json
 ```
 
 #### Get Quiz Results
+
 ```http
 GET /api/quiz/results/:quizId
 Authorization: Bearer <token>
@@ -742,12 +772,14 @@ Authorization: Bearer <token>
 ### 📄 Assignment APIs
 
 #### Get Assignment
+
 ```http
 GET /api/course/:courseId/modules/:moduleId/assessment/assignment/:assignmentId
 Authorization: Bearer <token>
 ```
 
 #### Create Assignment
+
 ```http
 POST /api/course/:courseId/modules/:moduleId/assessment/assignment
 Authorization: Bearer <token>
@@ -761,6 +793,7 @@ Content-Type: application/json
 ```
 
 #### Submit Assignment
+
 ```http
 POST /api/user/course/:courseId/modules/:moduleId/assessment/assignment/:assignmentId/submit
 Authorization: Bearer <token>
@@ -770,6 +803,7 @@ file: <submission-file>
 ```
 
 #### Get Submissions
+
 ```http
 GET /api/course/:courseId/modules/:moduleId/assessment/assignment/:assignmentId/submissions
 Authorization: Bearer <token>
@@ -780,12 +814,14 @@ Authorization: Bearer <token>
 ### 📝 Essay APIs
 
 #### Get Essay
+
 ```http
 GET /api/course/:courseId/modules/:moduleId/assessment/essay/:essayId
 Authorization: Bearer <token>
 ```
 
 #### Create Essay
+
 ```http
 POST /api/course/:courseId/modules/:moduleId/assessment/essay
 Authorization: Bearer <token>
@@ -799,6 +835,7 @@ Content-Type: application/json
 ```
 
 #### Submit Essay
+
 ```http
 POST /api/user/course/:courseId/modules/:moduleId/assessment/essay/:essayId/submit
 Authorization: Bearer <token>
@@ -814,6 +851,7 @@ Content-Type: application/json
 ### 🤖 AI APIs
 
 #### Generate Course Outline
+
 ```http
 POST /api/ai-proxy/generate-course-outline
 Authorization: Bearer <token>
@@ -827,6 +865,7 @@ Content-Type: application/json
 ```
 
 #### Generate Comprehensive Course
+
 ```http
 POST /api/ai-proxy/generate-comprehensive-course
 Authorization: Bearer <token>
@@ -840,6 +879,7 @@ Content-Type: application/json
 ```
 
 #### Generate Text Content
+
 ```http
 POST /api/ai-proxy/generate-text
 Authorization: Bearer <token>
@@ -852,6 +892,7 @@ Content-Type: application/json
 ```
 
 #### Generate Image
+
 ```http
 POST /api/ai-proxy/generate-image
 Authorization: Bearer <token>
@@ -864,6 +905,7 @@ Content-Type: application/json
 ```
 
 #### Generate Structured Content
+
 ```http
 POST /api/ai-proxy/generate-structured
 Authorization: Bearer <token>
@@ -880,12 +922,14 @@ Content-Type: application/json
 ### 💬 Chat & Messaging APIs
 
 #### Get Private Messages
+
 ```http
 GET /api/private-messaging/conversations
 Authorization: Bearer <token>
 ```
 
 #### Send Private Message
+
 ```http
 POST /api/private-messaging/send
 Authorization: Bearer <token>
@@ -898,12 +942,14 @@ Content-Type: application/json
 ```
 
 #### Get Group Messages
+
 ```http
 GET /api/groups/:groupId/messages
 Authorization: Bearer <token>
 ```
 
 #### Send Group Message
+
 ```http
 POST /api/groups/:groupId/messages
 Authorization: Bearer <token>
@@ -919,12 +965,14 @@ Content-Type: application/json
 ### 👥 Group APIs
 
 #### Get All Groups
+
 ```http
 GET /api/groups
 Authorization: Bearer <token>
 ```
 
 #### Create Group
+
 ```http
 POST /api/groups
 Authorization: Bearer <token>
@@ -938,12 +986,14 @@ Content-Type: application/json
 ```
 
 #### Join Group
+
 ```http
 POST /api/groups/:groupId/join
 Authorization: Bearer <token>
 ```
 
 #### Leave Group
+
 ```http
 POST /api/groups/:groupId/leave
 Authorization: Bearer <token>
@@ -954,18 +1004,21 @@ Authorization: Bearer <token>
 ### 🔔 Notification APIs
 
 #### Get Notifications
+
 ```http
 GET /api/notifications
 Authorization: Bearer <token>
 ```
 
 #### Mark Notification as Read
+
 ```http
 PUT /api/notifications/:notificationId/read
 Authorization: Bearer <token>
 ```
 
 #### Mark All as Read
+
 ```http
 PUT /api/notifications/read-all
 Authorization: Bearer <token>
@@ -976,6 +1029,7 @@ Authorization: Bearer <token>
 ### 🎫 Support Ticket APIs
 
 #### Create Ticket
+
 ```http
 POST /api/support-tickets
 Authorization: Bearer <token>
@@ -989,12 +1043,14 @@ Content-Type: application/json
 ```
 
 #### Get My Tickets
+
 ```http
 GET /api/support-tickets/my-tickets
 Authorization: Bearer <token>
 ```
 
 #### Get Ticket Details
+
 ```http
 GET /api/support-tickets/:ticketId
 Authorization: Bearer <token>
@@ -1005,6 +1061,7 @@ Authorization: Bearer <token>
 ### 💳 Payment APIs
 
 #### Create Payment Intent
+
 ```http
 POST /api/payment/create-intent
 Authorization: Bearer <token>
@@ -1018,6 +1075,7 @@ Content-Type: application/json
 ```
 
 #### Process Payment
+
 ```http
 POST /api/payment/process
 Authorization: Bearer <token>
@@ -1030,6 +1088,7 @@ Content-Type: application/json
 ```
 
 #### Get Payment History
+
 ```http
 GET /api/payment/history
 Authorization: Bearer <token>
@@ -1040,12 +1099,14 @@ Authorization: Bearer <token>
 ### 📅 Calendar APIs
 
 #### Get Events
+
 ```http
 GET /calendar/events
 Authorization: Bearer <token>
 ```
 
 #### Create Event
+
 ```http
 POST /calendar/events
 Authorization: Bearer <token>
@@ -1059,6 +1120,7 @@ Content-Type: application/json
 ```
 
 #### Get Event Participants
+
 ```http
 GET /calendar/participants/:eventId
 Authorization: Bearer <token>
@@ -1069,12 +1131,14 @@ Authorization: Bearer <token>
 ### 🔍 Search APIs
 
 #### Search Courses
+
 ```http
 GET /api/search/courses?q=keyword
 Authorization: Bearer <token>
 ```
 
 #### Search Users
+
 ```http
 GET /api/search/users?q=keyword
 Authorization: Bearer <token>
@@ -1085,12 +1149,14 @@ Authorization: Bearer <token>
 ### 📊 Catalog APIs
 
 #### Get Catalog Courses
+
 ```http
 GET /api/catalog/courses
 Authorization: Bearer <token>
 ```
 
 #### Get Course Catalog Details
+
 ```http
 GET /api/catalog/courses/:courseId
 Authorization: Bearer <token>
@@ -1101,6 +1167,7 @@ Authorization: Bearer <token>
 ### 🎤 Text-to-Speech APIs
 
 #### Generate Speech
+
 ```http
 POST /api/tts/generate
 Authorization: Bearer <token>
@@ -1117,6 +1184,7 @@ Content-Type: application/json
 ### 📦 SCORM APIs
 
 #### Upload SCORM Package
+
 ```http
 POST /api/scorm/upload
 Authorization: Bearer <token>
@@ -1126,6 +1194,7 @@ file: <scorm-package.zip>
 ```
 
 #### Get SCORM Content
+
 ```http
 GET /api/scorm/:scormId
 Authorization: Bearer <token>
@@ -1136,6 +1205,7 @@ Authorization: Bearer <token>
 ### 🗂️ Asset APIs
 
 #### Upload Asset
+
 ```http
 POST /api/assets/upload
 Authorization: Bearer <token>
@@ -1145,6 +1215,7 @@ file: <asset-file>
 ```
 
 #### Get Asset
+
 ```http
 GET /api/assets/:assetId
 Authorization: Bearer <token>
@@ -1256,6 +1327,7 @@ vercel --prod
 ## ✨ Features
 
 ### 🎓 Learning Management
+
 - ✅ Course Creation (Manual & AI-powered)
 - ✅ Rich Lesson Builder with Multimedia Support
 - ✅ Module Organization & Sequencing
@@ -1264,6 +1336,7 @@ vercel --prod
 - ✅ SCORM Package Support
 
 ### 🤖 AI-Powered Tools
+
 - ✅ AI Course Generator
 - ✅ AI Image Generation
 - ✅ Content Summarization
@@ -1271,6 +1344,7 @@ vercel --prod
 - ✅ Multi-model AI Support with Fallbacks
 
 ### 📝 Assessment Engine
+
 - ✅ Quiz Builder (Multiple Choice, True/False, etc.)
 - ✅ Assignment System with File Submissions
 - ✅ Essay Assessments
@@ -1279,6 +1353,7 @@ vercel --prod
 - ✅ Auto-grading & Manual Grading
 
 ### 👥 Collaboration
+
 - ✅ Group Management
 - ✅ Real-time Chat (Socket.IO)
 - ✅ Private Messaging
@@ -1287,24 +1362,28 @@ vercel --prod
 - ✅ Live Classes
 
 ### 💳 Payment & Subscriptions
+
 - ✅ Stripe Integration
 - ✅ Subscription Management
 - ✅ Payment History
 - ✅ Credit System
 
 ### 📅 Calendar & Events
+
 - ✅ Event Management
 - ✅ Calendar Integration
 - ✅ Reminders & Notifications
 - ✅ Attendance Tracking
 
 ### 🔔 Notifications
+
 - ✅ Real-time Notifications
 - ✅ Email Notifications
 - ✅ In-app Notifications
 - ✅ Push Notifications
 
 ### 🎨 User Experience
+
 - ✅ Responsive Design (Mobile-first)
 - ✅ Dark Mode Support
 - ✅ Accessibility (WCAG 2.1 AA)
@@ -1353,4 +1432,3 @@ For support, email support@creditoracademy.com or create a support ticket in the
 ---
 
 **Last Updated**: January 2025
-

@@ -1,29 +1,39 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { 
-  Bell, 
-  Search, 
-  Calendar, 
-  Download, 
-  Edit, 
-  Trash2, 
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import {
+  Bell,
+  Search,
+  Calendar,
+  Download,
+  Edit,
+  Trash2,
   AlertCircle,
   AlertTriangle,
   Info,
-  Loader2
-} from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import EditAnnouncementModal from "@/components/modals/EditAnnouncementModal";
-import { getAnnouncements, deleteAnnouncement, isUserGroupAdmin } from "@/services/groupService";
-import { } from "@/services/socketClient";
-import { useAnnouncementsSocket } from "@/hooks/useAnnouncementsSocket";
-import { useParams } from "react-router-dom";
-import { useUser } from "@/contexts/UserContext";
-import { isInstructorOrAdmin } from "@/services/userService";
+  Loader2,
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import EditAnnouncementModal from '@/components/modals/EditAnnouncementModal';
+import {
+  getAnnouncements,
+  deleteAnnouncement,
+  isUserGroupAdmin,
+} from '@/services/groupService';
+import {} from '@/services/socketClient';
+import { useAnnouncementsSocket } from '@/hooks/useAnnouncementsSocket';
+import { useParams } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
+import { isInstructorOrAdmin } from '@/services/userService';
 // Removed create announcement feature
 
 export function AnnouncementsPage() {
@@ -31,7 +41,7 @@ export function AnnouncementsPage() {
   const { userProfile } = useUser();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -48,10 +58,14 @@ export function AnnouncementsPage() {
 
   useAnnouncementsSocket({
     groupId,
-    onNew: (payload) => {
-      if (!payload || String(payload.group_id || payload.groupId) !== String(groupId)) return;
+    onNew: payload => {
+      if (
+        !payload ||
+        String(payload.group_id || payload.groupId) !== String(groupId)
+      )
+        return;
       setAnnouncements(prev => [payload, ...(prev || [])]);
-    }
+    },
   });
 
   // Lightweight auto-refresh every 2s without toggling the loading state
@@ -67,7 +81,10 @@ export function AnnouncementsPage() {
       } catch {}
     };
     const intervalId = setInterval(tick, 2000);
-    return () => { cancelled = true; clearInterval(intervalId); };
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, [groupId]);
 
   const checkGroupAdminStatus = async () => {
@@ -77,7 +94,7 @@ export function AnnouncementsPage() {
       const adminStatus = await isUserGroupAdmin(groupId);
       setIsGroupAdmin(adminStatus);
     } catch (error) {
-      console.error("Error checking group admin status:", error);
+      console.error('Error checking group admin status:', error);
       setIsGroupAdmin(false);
     } finally {
       setCheckingPermissions(false);
@@ -88,42 +105,49 @@ export function AnnouncementsPage() {
     if (!groupId) return;
     try {
       setLoading(true);
-      console.log("📥 AnnouncementsPage: Fetching announcements for group:", groupId);
+      console.log(
+        '📥 AnnouncementsPage: Fetching announcements for group:',
+        groupId
+      );
       const response = await getAnnouncements(groupId);
-      console.log("✅ AnnouncementsPage: Announcements response:", response);
-      
+      console.log('✅ AnnouncementsPage: Announcements response:', response);
+
       const announcementsData = response?.data || response || [];
       setAnnouncements(announcementsData);
     } catch (error) {
-      console.error("❌ AnnouncementsPage: Error loading announcements:", error);
-      toast({ 
-        title: "Failed to load announcements", 
-        description: error?.response?.data?.message || error.message, 
-        variant: "destructive" 
+      console.error(
+        '❌ AnnouncementsPage: Error loading announcements:',
+        error
+      );
+      toast({
+        title: 'Failed to load announcements',
+        description: error?.response?.data?.message || error.message,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteAnnouncement = async (announcementId) => {
+  const handleDeleteAnnouncement = async announcementId => {
     try {
       setDeletingId(announcementId);
       await deleteAnnouncement(announcementId);
-      
+
       // Remove from local state
       setAnnouncements(prev => prev.filter(ann => ann.id !== announcementId));
-      
+
       toast({
-        title: "Success",
-        description: "Announcement deleted successfully"
+        title: 'Success',
+        description: 'Announcement deleted successfully',
       });
     } catch (error) {
-      console.error("❌ Error deleting announcement:", error);
+      console.error('❌ Error deleting announcement:', error);
       toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to delete announcement",
-        variant: "destructive"
+        title: 'Error',
+        description:
+          error?.response?.data?.message || 'Failed to delete announcement',
+        variant: 'destructive',
       });
     } finally {
       setDeletingId(null);
@@ -132,7 +156,7 @@ export function AnnouncementsPage() {
 
   // Creation flow removed
 
-  const getPriorityIcon = (priority) => {
+  const getPriorityIcon = priority => {
     switch (priority?.toLowerCase()) {
       case 'high':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
@@ -145,45 +169,62 @@ export function AnnouncementsPage() {
     }
   };
 
-  const getPriorityBadge = (priority) => {
+  const getPriorityBadge = priority => {
     switch (priority?.toLowerCase()) {
       case 'high':
-        return <Badge variant="destructive" className="text-xs">High Priority</Badge>;
+        return (
+          <Badge variant="destructive" className="text-xs">
+            High Priority
+          </Badge>
+        );
       case 'medium':
-        return <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Medium Priority</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="text-xs bg-yellow-100 text-yellow-800"
+          >
+            Medium Priority
+          </Badge>
+        );
       case 'low':
-        return <Badge variant="outline" className="text-xs">Low Priority</Badge>;
+        return (
+          <Badge variant="outline" className="text-xs">
+            Low Priority
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return "1 day ago";
+
+    if (diffDays === 1) return '1 day ago';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
     return date.toLocaleDateString();
   };
 
-  const getAuthorName = (user) => {
-    if (!user) return "Unknown";
-    return `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Unknown";
+  const getAuthorName = user => {
+    if (!user) return 'Unknown';
+    return (
+      `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown'
+    );
   };
 
-  const getAuthorInitials = (user) => {
-    if (!user) return "U";
-    const first = user.first_name?.[0] || "";
-    const last = user.last_name?.[0] || "";
-    return (first + last).toUpperCase() || "U";
+  const getAuthorInitials = user => {
+    if (!user) return 'U';
+    const first = user.first_name?.[0] || '';
+    const last = user.last_name?.[0] || '';
+    return (first + last).toUpperCase() || 'U';
   };
 
   // Determine media type from url extension
-  const getMediaType = (url) => {
+  const getMediaType = url => {
     if (!url || typeof url !== 'string') return 'other';
     const lower = url.split('?')[0].toLowerCase();
     if (/(\.png|\.jpg|\.jpeg|\.gif|\.webp|\.bmp)$/.test(lower)) return 'image';
@@ -193,10 +234,13 @@ export function AnnouncementsPage() {
   };
 
   // Filter announcements based on search query
-  const filteredAnnouncements = announcements.filter(announcement => 
-    announcement.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    announcement.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    getAuthorName(announcement.user)?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAnnouncements = announcements.filter(
+    announcement =>
+      announcement.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      announcement.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getAuthorName(announcement.user)
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -213,18 +257,23 @@ export function AnnouncementsPage() {
                 <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
                   Group Announcements
                 </h1>
-                <p className="text-gray-600">Stay updated with important group information</p>
+                <p className="text-gray-600">
+                  Stay updated with important group information
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
-                <span>{announcements.length} announcement{announcements.length !== 1 ? 's' : ''}</span>
+                <span>
+                  {announcements.length} announcement
+                  {announcements.length !== 1 ? 's' : ''}
+                </span>
               </div>
             </div>
           </div>
-          
+
           {/* Create announcement button removed */}
         </div>
       </div>
@@ -235,7 +284,7 @@ export function AnnouncementsPage() {
         <Input
           placeholder="Search announcements..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={e => setSearchQuery(e.target.value)}
           className="h-9 w-full"
         />
       </div>
@@ -251,7 +300,10 @@ export function AnnouncementsPage() {
       ) : filteredAnnouncements.length > 0 ? (
         <div className="space-y-4">
           {filteredAnnouncements.map((announcement, index) => (
-            <Card key={announcement.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={announcement.id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -294,7 +346,9 @@ export function AnnouncementsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-gray-600 hover:text-red-600"
-                          onClick={() => handleDeleteAnnouncement(announcement.id)}
+                          onClick={() =>
+                            handleDeleteAnnouncement(announcement.id)
+                          }
                           disabled={deletingId === announcement.id}
                         >
                           {deletingId === announcement.id ? (
@@ -315,24 +369,29 @@ export function AnnouncementsPage() {
                   </p>
 
                   {/* Inline media rendering */}
-                  {announcement.media_url && (
+                  {announcement.media_url &&
                     (() => {
                       const mediaType = getMediaType(announcement.media_url);
                       if (mediaType === 'image') {
                         return (
                           <div className="rounded-lg overflow-hidden border">
-                            <img src={announcement.media_url} alt="Announcement media" className="w-full h-auto" />
+                            <img
+                              src={announcement.media_url}
+                              alt="Announcement media"
+                              className="w-full h-auto"
+                            />
                           </div>
                         );
                       }
                       if (mediaType === 'video') {
                         return (
-                          <div className="rounded-lg overflow-hidden border">
+                          <div className="rounded-lg border bg-black flex items-center justify-center">
                             <video
                               src={announcement.media_url}
                               controls
                               preload="metadata"
-                              className="w-full h-auto"
+                              playsInline
+                              className="w-full h-full max-h-[80vh] object-contain"
                             />
                           </div>
                         );
@@ -352,7 +411,9 @@ export function AnnouncementsPage() {
                         <div className="mt-2 p-3 bg-gray-50 rounded-lg border">
                           <div className="flex items-center gap-2">
                             <Download className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm text-gray-600">Attachment:</span>
+                            <span className="text-sm text-gray-600">
+                              Attachment:
+                            </span>
                             <a
                               href={announcement.media_url}
                               target="_blank"
@@ -364,8 +425,7 @@ export function AnnouncementsPage() {
                           </div>
                         </div>
                       );
-                    })()
-                  )}
+                    })()}
                 </div>
               </CardContent>
             </Card>
@@ -375,12 +435,13 @@ export function AnnouncementsPage() {
         <Card>
           <CardContent className="p-6 sm:p-8 text-center">
             <Bell className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No announcements yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No announcements yet
+            </h3>
             <p className="text-gray-600 mb-4">
-              {searchQuery 
-                ? "No announcements match your search criteria" 
-                : "Group admins can create announcements to share important information"
-              }
+              {searchQuery
+                ? 'No announcements match your search criteria'
+                : 'Group admins can create announcements to share important information'}
             </p>
             {/* Create first announcement button removed */}
           </CardContent>
@@ -394,8 +455,10 @@ export function AnnouncementsPage() {
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           announcement={editingAnnouncement}
-          onUpdated={(updated) => {
-            setAnnouncements(prev => prev.map(a => a.id === updated.id ? { ...a, ...updated } : a));
+          onUpdated={updated => {
+            setAnnouncements(prev =>
+              prev.map(a => (a.id === updated.id ? { ...a, ...updated } : a))
+            );
           }}
         />
       )}

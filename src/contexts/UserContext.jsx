@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   fetchUserProfile,
   setUserRole,
@@ -20,6 +27,7 @@ export const UserProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const loadingInProgressRef = useRef(false);
 
   // Fetch user profile on mount only if authenticated
   useEffect(() => {
@@ -55,26 +63,34 @@ export const UserProvider = ({ children }) => {
       }, 100);
     };
 
+    const handleUserLoggedOut = () => {
+      setUserProfile(null);
+      setIsLoading(false);
+    };
+
     // Listen for custom events
     window.addEventListener('userRoleChanged', handleAuthChange);
     window.addEventListener('userLoggedIn', handleUserLoggedIn);
-    window.addEventListener('userLoggedOut', () => {
-      setUserProfile(null);
-      setIsLoading(false);
-    });
+    window.addEventListener('userLoggedOut', handleUserLoggedOut);
 
     return () => {
       window.removeEventListener('userRoleChanged', handleAuthChange);
       window.removeEventListener('userLoggedIn', handleUserLoggedIn);
-      window.removeEventListener('userLoggedOut', () => {
-        setUserProfile(null);
-        setIsLoading(false);
-      });
+      window.removeEventListener('userLoggedOut', handleUserLoggedOut);
     };
-  }, [userProfile]);
+  }, []);
 
-  const loadUserProfile = async () => {
+  const loadUserProfile = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (loadingInProgressRef.current) {
+      console.log(
+        '[UserContext] Profile load already in progress, skipping duplicate call'
+      );
+      return;
+    }
+
     try {
+      loadingInProgressRef.current = true;
       setIsLoading(true);
       setError(null);
 
@@ -86,6 +102,7 @@ export const UserProvider = ({ children }) => {
       if (!token) {
         setUserProfile(null);
         setIsLoading(false);
+        loadingInProgressRef.current = false;
         return;
       }
 
@@ -96,17 +113,9 @@ export const UserProvider = ({ children }) => {
       // Set user role based on profile data
       if (Array.isArray(data.user_roles) && data.user_roles.length > 0) {
         const roles = data.user_roles.map(roleObj => roleObj.role);
-        const priorityRoles = ['admin', 'instructor', 'user'];
-        const highestRole =
-          priorityRoles.find(role => roles.includes(role)) || 'user';
 
-        console.log(
-          'UserContext: Setting user role to:',
-          highestRole,
-          'from roles:',
-          roles
-        );
-        setUserRole(highestRole);
+        console.log('UserContext: Setting user roles to:', roles);
+        setUserRoles(roles);
 
         // Dispatch event to notify other components about role change
         window.dispatchEvent(new Event('userRoleChanged'));
@@ -167,8 +176,9 @@ export const UserProvider = ({ children }) => {
       }
     } finally {
       setIsLoading(false);
+      loadingInProgressRef.current = false;
     }
-  };
+  }, []);
 
   const updateUserProfile = updatedProfile => {
     setUserProfile(updatedProfile);

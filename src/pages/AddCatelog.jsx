@@ -25,6 +25,7 @@ const AddCatelog = () => {
     name: '',
     description: '',
     thumbnail: '',
+    price: '',
     courses: [],
   });
   const [showModal, setShowModal] = useState(false);
@@ -186,6 +187,9 @@ const AddCatelog = () => {
       if (form.thumbnail && form.thumbnail.trim() !== '') {
         catalogData.thumbnail = form.thumbnail;
       }
+      if (form.price && form.price.trim() !== '') {
+        catalogData.price = form.price;
+      }
       setLastUpdateRequest({ editId, catalogData });
       let newCatalog;
       if (editId) {
@@ -194,6 +198,7 @@ const AddCatelog = () => {
           name: catalogData.name,
           description: catalogData.description,
           ...(catalogData.thumbnail && { thumbnail: catalogData.thumbnail }),
+          ...(catalogData.price && { price: catalogData.price }),
         };
         newCatalog = await updateCatalog(editId, essentialCatalogData);
 
@@ -331,7 +336,13 @@ const AddCatelog = () => {
       }
 
       // Reset form and close modal
-      setForm({ name: '', description: '', thumbnail: '', courses: [] });
+      setForm({
+        name: '',
+        description: '',
+        thumbnail: '',
+        price: '',
+        courses: [],
+      });
       setShowModal(false);
       setEditId(null);
 
@@ -481,8 +492,9 @@ const AddCatelog = () => {
         const coursesData = await getCatalogCourses(catalog.id);
         catalogCourses = Array.isArray(coursesData) ? coursesData : [];
       } catch (error) {
-        // Fallback to courses from catalog object if API fails
-        catalogCourses = catalog.courses || [];
+        // If API fails, show error and use empty array
+        console.error('Failed to fetch catalog courses:', error);
+        catalogCourses = [];
       }
 
       // Extract course IDs from the courses array - handle both object and string cases
@@ -547,6 +559,7 @@ const AddCatelog = () => {
         name: catalog.name || '',
         description: catalog.description || '',
         thumbnail: catalog.thumbnail || '',
+        price: catalog.price || '',
         courses: validCourseIds,
       });
       setEditId(catalog.id);
@@ -705,6 +718,7 @@ const AddCatelog = () => {
                     name: '',
                     description: '',
                     thumbnail: '',
+                    price: '',
                     courses: [],
                   });
                   setFormError('');
@@ -1267,6 +1281,25 @@ const AddCatelog = () => {
                     rows={3}
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={form.price}
+                    onChange={handleFormChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter catalog price (e.g., 99.99)"
+                    min="0"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the price for this catalog (optional)
+                  </p>
                 </div>
 
                 <div>

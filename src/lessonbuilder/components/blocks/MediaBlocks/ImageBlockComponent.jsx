@@ -634,6 +634,19 @@ const ImageBlockComponent = forwardRef(
           retryCount,
         });
 
+        const isStorageLimitExceeded =
+          error?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+          (error?.message &&
+            (error.message.toLowerCase().includes('limit exceeded') ||
+              error.message.toLowerCase().includes('storage limit')));
+
+        if (isStorageLimitExceeded) {
+          toast.error(
+            'Storage limit exceeded. Please free up space or upgrade before uploading new images.'
+          );
+          return;
+        }
+
         // Retry up to 2 times for network errors
         if (
           retryCount < 2 &&

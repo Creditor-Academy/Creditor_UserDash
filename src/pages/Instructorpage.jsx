@@ -14,6 +14,7 @@ import AdminPayments from '@/components/credits/AdminPayments';
 import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import InstructorFeedbackAnalysis from '@/pages/InstructorFeedbackAnalysis';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
+import StorageTokens from './StorageTokens';
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +23,6 @@ import {
   FaUsers,
   FaBookOpen,
   FaEdit,
-  FaFolder,
   FaCalendarAlt,
   FaTicketAlt,
   FaExclamationTriangle,
@@ -32,10 +32,11 @@ import {
   FaCreditCard,
   FaChartLine,
   FaStar,
+  FaCloud,
 } from 'react-icons/fa';
 
 const InstructorPage = () => {
-  const { isInstructorOrAdmin } = useAuth();
+  const { isInstructorOrAdmin, hasRole } = useAuth();
   const isAllowed = isInstructorOrAdmin();
   const [collapsed, setCollapsed] = useState(true); // Start with sidebar collapsed
   const [userManagementView, setUserManagementView] = useState(() => {
@@ -60,6 +61,7 @@ const InstructorPage = () => {
     if (path.includes('/assets')) return 'resources';
     if (path.includes('/payments')) return 'payments';
     if (path.includes('/feedback-analysis')) return 'feedback';
+    if (path.includes('/storage-tokens') && hasRole('admin')) return 'storage';
     return 'course'; // default
   };
 
@@ -73,6 +75,13 @@ const InstructorPage = () => {
   useEffect(() => {
     setActiveTab(getActiveTabFromPath());
   }, [location.pathname]);
+
+  useEffect(() => {
+    const isStorageRoute = location.pathname.includes('/storage-tokens');
+    if (isStorageRoute && !hasRole('admin')) {
+      navigate('/instructor/payments', { replace: true });
+    }
+  }, [location.pathname, hasRole, navigate]);
 
   // Redirect to default section if on base instructor path
   useEffect(() => {
@@ -121,19 +130,19 @@ const InstructorPage = () => {
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-gray-50 to-white">
       {/* Main Sidebar */}
-      <div className="fixed top-0 left-0 h-screen z-30">
+      <div className="fixed top-0 left-0 h-screen z-[1]">
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
       </div>
 
       {/* Sub Sidebar - Always show when on instructor page */}
       <div
-        className="fixed top-0 h-screen z-20 bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-52"
+        className="fixed top-0 h-screen z-[2] bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-52"
         style={{
           left: collapsed ? '4.5rem' : '17rem',
         }}
       >
         {/* Sub Sidebar Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
+        <div className="sticky top-0 z-[1] bg-white border-b border-gray-200 px-4 py-3">
           <h2 className="text-lg font-semibold text-gray-800">
             Instructor Tools
           </h2>
@@ -266,6 +275,20 @@ const InstructorPage = () => {
           >
             <FaStar /> Feedback Analysis
           </button>
+          {hasRole('admin') && (
+            <button
+              onClick={() =>
+                handleNavigation('storage', '/instructor/storage-tokens')
+              }
+              className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                activeTab === 'storage'
+                  ? 'bg-blue-100 text-blue-700 font-semibold'
+                  : 'hover:bg-gray-100 text-gray-700'
+              }`}
+            >
+              <FaCloud /> Storage & Tokens
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('analytics')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -299,7 +322,7 @@ const InstructorPage = () => {
         }}
       >
         <header
-          className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 h-16 transition-all duration-300"
+          className="fixed top-0 left-0 right-0 z-[3] bg-white border-b border-gray-200 h-16 transition-all duration-300"
           style={{
             marginLeft: collapsed
               ? 'calc(4.5rem + 13rem)'
@@ -313,7 +336,7 @@ const InstructorPage = () => {
 
         {/* Fixed Dashboard Header */}
         <div
-          className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-10 transition-all duration-300"
+          className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-[3] transition-all duration-300"
           style={{
             top: '4rem',
             left: collapsed ? 'calc(4.5rem + 13rem)' : 'calc(17rem + 13rem)',
@@ -431,6 +454,11 @@ const InstructorPage = () => {
             {activeTab === 'feedback' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <InstructorFeedbackAnalysis />
+              </section>
+            )}
+            {hasRole('admin') && activeTab === 'storage' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <StorageTokens />
               </section>
             )}
             {activeTab === 'analytics' && (

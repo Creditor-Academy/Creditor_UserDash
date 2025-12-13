@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText, X, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -26,6 +26,9 @@ const PDFComponent = ({
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfUploadMethod, setPdfUploadMethod] = useState('file');
   const [mainPdfUploading, setMainPdfUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [limitPopupVisible, setLimitPopupVisible] = useState(false);
+  const limitPopupTimeoutRef = useRef(null);
 
   // Reset form when dialog opens/closes or when editing a different block
   useEffect(() => {
@@ -62,6 +65,12 @@ const PDFComponent = ({
     setPdfPreview('');
     setPdfUrl('');
     setPdfUploadMethod('file');
+    setUploadError('');
+    setLimitPopupVisible(false);
+    if (limitPopupTimeoutRef.current) {
+      clearTimeout(limitPopupTimeoutRef.current);
+      limitPopupTimeoutRef.current = null;
+    }
   };
 
   const handlePdfDialogClose = () => {
@@ -116,6 +125,7 @@ const PDFComponent = ({
       }
     }
 
+    setUploadError('');
     setMainPdfUploading(true);
 
     try {
@@ -147,6 +157,30 @@ const PDFComponent = ({
               throw new Error('Upload failed - no URL returned');
             }
           } catch (err) {
+            const isStorageLimitExceeded =
+              err?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+              (err?.message &&
+                (err.message.toLowerCase().includes('limit exceeded') ||
+                  err.message.toLowerCase().includes('storage limit')));
+
+            if (isStorageLimitExceeded) {
+              setUploadError(
+                'Storage limit exceeded. Please free up space or upgrade before uploading new PDFs.'
+              );
+              toast.error(
+                'Storage limit exceeded. Please free up space or upgrade before uploading new PDFs.'
+              );
+              setLimitPopupVisible(true);
+              if (limitPopupTimeoutRef.current) {
+                clearTimeout(limitPopupTimeoutRef.current);
+              }
+              limitPopupTimeoutRef.current = setTimeout(() => {
+                setLimitPopupVisible(false);
+                handlePdfDialogClose();
+              }, 3000);
+              return;
+            }
+
             devLogger.error('PDF upload error:', err);
             toast.error(
               err.message || 'Failed to upload PDF. Using local preview.'
@@ -214,6 +248,12 @@ const PDFComponent = ({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {uploadError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {uploadError}
+              </div>
+            ) : null}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 PDF Title <span className="text-red-500">*</span>
@@ -430,6 +470,18 @@ const PDFComponent = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {limitPopupVisible ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40">
+          <div className="rounded-lg bg-white px-6 py-4 shadow-xl border border-red-200 text-center">
+            <div className="text-red-600 font-semibold mb-1">
+              Storage limit exceeded
+            </div>
+            <div className="text-sm text-gray-700">
+              Please free up space or upgrade before uploading new PDFs.
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 };

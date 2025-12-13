@@ -4,15 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hide scrollbar for slider */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -60,211 +51,22 @@
       'Segoe UI',
       sans-serif;
   }
+
+  #root {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 @layer utilities {
-  /* Line clamp utilities for text truncation */
-  .line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
+  /* Hide scrollbar for slider */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
-
-  .line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .line-clamp-3 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
-
-  /* Enhanced scrollbar styles */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 30) transparent;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--primary) / 30);
-    border-radius: 20px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--primary) / 50);
-  }
-
-  /* Table scrollbar styles */
-  .table-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
-  }
-
-  .table-scrollbar::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  .table-scrollbar::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 4px;
-  }
-
-  .table-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 4px;
-    border: 1px solid #f1f5f9;
-  }
-
-  .table-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8;
-  }
-
-  /* Custom sidebar scrollbar - only shows on hover */
-  .custom-scrollbar {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
-  }
-
-  .custom-scrollbar:hover {
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
-  }
-
-  .custom-scrollbar:hover::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .custom-scrollbar:hover::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.3);
-    border-radius: 10px;
-    transition: background-color 0.2s ease;
-  }
-
-  .custom-scrollbar:hover::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(156, 163, 175, 0.5);
-  }
-
-  /* Attendance table scrollbar - always visible */
-  .attendance-table-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-  }
-
-  .attendance-table-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  .attendance-table-scroll::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 10px;
-  }
-
-  .attendance-table-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 10px;
-  }
-
-  .attendance-table-scroll::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(156, 163, 175, 0.7);
-  }
-
-  /* Ensure sticky header works in attendance table */
-  .attendance-table-scroll thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: white;
-  }
-
-  .attendance-table-scroll thead th {
-    background: white !important;
-    position: relative;
-    z-index: 11;
-  }
-
-  /* Enhanced animations */
-  .animate-pulse-subtle {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .animate-gradient-shift {
-    animation: gradientShift 8s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-5px);
-    }
-  }
-
-  @keyframes gradientShift {
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  /* Professional card styles */
-  .card-hover {
-    transition: all 0.2s ease-in-out;
-  }
-
-  .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 10px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-
-  /* Toast animations */
-  .toast-enter {
-    animation: toast-enter 0.3s ease-out;
-  }
-
-  @keyframes toast-enter {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   /* Text shimmer effect */
@@ -313,19 +115,1038 @@
     }
   }
 
-  /* Lesson block enter animation */
-  .animate-block-enter {
-    animation: block-enter 0.22s ease-out;
+  :root {
+    --christmas-red: #b11226;
+    --christmas-red-dark: #8b0000;
+    --christmas-red-medium: #a00000;
+    --christmas-red-light: #c11226;
+    --christmas-red-lighter: #e8d4d6;
+    --christmas-red-lightest: #f5e8e9;
+    --christmas-snow: #1a0000;
   }
 
-  @keyframes block-enter {
+  .christmas-theme .dashboard-shell {
+    background: linear-gradient(
+      135deg,
+      #f5e8e9 0%,
+      #e8d4d6 25%,
+      #e0c4c7 50%,
+      #e8d4d6 75%,
+      #f5e8e9 100%
+    );
+  }
+
+  .christmas-surface {
+    background: linear-gradient(
+      135deg,
+      #f5e8e9 0%,
+      #e8d4d6 25%,
+      #e0c4c7 50%,
+      #e8d4d6 75%,
+      #f5e8e9 100%
+    );
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-surface > main {
+    position: relative;
+    z-index: 2;
+  }
+
+  .snowfall-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 20px,
+        rgba(255, 255, 255, 0.8),
+        transparent
+      ),
+      radial-gradient(
+        3px 3px at 0px 40px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 10px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      );
+    background-size: 80px 80px;
+    /* Slightly faster background snowfall for a more lively effect */
+    animation: snowfall 12s linear infinite;
+  }
+
+  @keyframes snowfall {
+    0% {
+      background-position:
+        0 0,
+        0 0,
+        0 0;
+    }
+    100% {
+      background-position:
+        0 80px,
+        0 120px,
+        0 60px;
+    }
+  }
+
+  /* Snowflake Animation Container */
+  .snowflakes-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 35; /* Above sidebar (z-30) but below modals */
+    pointer-events: none;
+  }
+
+  /* Individual Snowflake */
+  .snowflake {
+    position: absolute;
+    top: -10px;
+    background: white;
+    border-radius: 50%;
+    box-shadow:
+      0 0 10px rgba(255, 255, 255, 0.8),
+      0 0 20px rgba(255, 255, 255, 0.6),
+      0 0 30px rgba(255, 255, 255, 0.4);
+    animation: snowflake-fall linear infinite;
+  }
+
+  /* Snowflake Fall Animation */
+  @keyframes snowflake-fall {
+    0% {
+      transform: translateY(0) translateX(0) rotate(0deg);
+    }
+    100% {
+      transform: translateY(100vh) translateX(var(--snowflake-drift, 0px))
+        rotate(360deg);
+    }
+  }
+
+  .christmas-hero-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: linear-gradient(
+      135deg,
+      #8b0000 0%,
+      #a00000 25%,
+      #b11226 50%,
+      #a00000 75%,
+      #8b0000 100%
+    );
+    color: #fff;
+    box-shadow: 0 25px 45px rgba(139, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-hero-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.25),
+      transparent 45%
+    );
+    pointer-events: none;
+  }
+
+  .christmas-hero-content {
+    flex: 1 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .christmas-hero-content h1 {
+    font-size: clamp(1.5rem, 3vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+
+  .christmas-hero-content p {
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 36rem;
+  }
+
+  .christmas-hero-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .christmas-hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .gift-pill,
+  .snow-pill {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+  }
+
+  .christmas-hero-visual {
+    flex: 0 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .christmas-hero-visual img {
+    width: 100%;
+    max-width: 280px;
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .floating-snow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      3px 3px at 30px 30px,
+      rgba(255, 255, 255, 0.9),
+      transparent
+    );
+    animation: gentleSnow 12s linear infinite;
+  }
+
+  @keyframes gentleSnow {
+    0% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(20px);
+    }
+  }
+
+  /* Athena Hero Banner - Regular Theme */
+  .athena-hero-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    background: linear-gradient(
+      135deg,
+      #e0f2fe 0%,
+      #bae6fd 25%,
+      #7dd3fc 50%,
+      #bae6fd 75%,
+      #e0f2fe 100%
+    );
+    color: #0c4a6e;
+    box-shadow: 0 25px 45px rgba(14, 165, 233, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .athena-hero-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.4),
+      transparent 45%
+    );
+    pointer-events: none;
+  }
+
+  .athena-hero-content {
+    flex: 1 1 260px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .athena-hero-content h1 {
+    font-size: clamp(1.5rem, 3vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    color: #0c4a6e;
+  }
+
+  .athena-hero-content p {
+    color: rgba(12, 74, 110, 0.85);
+    max-width: 36rem;
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  }
+
+  .athena-hero-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    color: rgba(14, 165, 233, 0.9);
+    font-weight: 600;
+  }
+
+  .athena-hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .progress-pill,
+  .achievement-pill {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+    color: #0c4a6e;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .progress-pill:hover,
+  .achievement-pill:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(14, 165, 233, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  }
+
+  .athena-hero-visual {
+    flex: 0 1 260px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .athena-hero-visual img {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 1.25rem;
+    box-shadow: 0 15px 30px rgba(14, 165, 233, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.6);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    padding: 1.5rem;
+    object-fit: contain;
+  }
+
+  .floating-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at center,
+      rgba(14, 165, 233, 0.2),
+      transparent 70%
+    );
+    animation: gentleGlow 4s ease-in-out infinite;
+  }
+
+  @keyframes gentleGlow {
+    0%,
+    100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
+  .christmas-challenge-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1.75rem;
+    border-radius: 1.25rem;
+    background: var(--christmas-red);
+    color: #fff;
+    box-shadow: 0 20px 30px rgba(255, 77, 79, 0.2);
+  }
+
+  .christmas-challenge-card h2 {
+    font-size: 1.6rem;
+    margin: 0.25rem 0;
+  }
+
+  .challenge-badges {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .challenge-badges > div {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .challenge-badges .badge-icon {
+    font-size: 1.4rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  .sidebar-panel {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sidebar-lights {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(255, 65, 65, 0.967) 0 12px,
+      rgba(222, 27, 27, 0) 12px 16px
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-logo-mark {
+    display: inline-block;
+  }
+
+  .sidebar-logo-hat {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    pointer-events: none;
+  }
+
+  .christmas-theme .sidebar-panel {
+    background: linear-gradient(180deg, #f5e8e9 0%, #e8d4d6 50%, #f5e8e9 100%);
+    border-right-color: rgba(177, 18, 38, 0.2);
+  }
+
+  .christmas-theme .sidebar-header {
+    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 18px 35px rgba(139, 0, 0, 0.5);
+    color: #fff;
+  }
+
+  .christmas-theme .sidebar-header .text-blue-100,
+  .christmas-theme .sidebar-header .text-blue-600 {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .christmas-logo-icon {
+    color: #b11226 !important;
+    opacity: 0;
+  }
+
+  .christmas-theme .sidebar-lights {
+    opacity: 1;
+  }
+
+  .christmas-theme .sidebar-logo-hat {
+    opacity: 1;
+    animation: santaBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes santaBounce {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+  }
+
+  /* Profile Header Text in Christmas Theme */
+  .christmas-theme .profile-header-text .profile-name,
+  .christmas-theme .profile-header-text .profile-email {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .profile-header-text:hover .profile-name,
+  .christmas-theme .profile-header-text:hover .profile-email {
+    color: #8b0000 !important;
+  }
+
+  .sidebar-menu-item {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .sidebar-menu-item-active {
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.15);
+  }
+
+  .christmas-theme .sidebar-menu-item-active {
+    background: rgba(255, 255, 255, 0.15);
+    border-left-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+  }
+
+  .christmas-theme .sidebar-menu-label::after {
+    content: '❄️';
+    margin-left: 0.35rem;
+    font-size: 0.8rem;
+    opacity: 0.6;
+  }
+
+  .christmas-toggle-btn {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    transition:
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .christmas-theme .christmas-toggle-btn {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--christmas-red);
+  }
+
+  .christmas-theme .christmas-toggle-btn:hover {
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.25);
+  }
+
+  .christmas-theme .app-header {
+    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 15px 40px rgba(139, 0, 0, 0.5);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .christmas-theme .christmas-app-header::after {
+    content: none;
+  }
+
+  .christmas-theme .app-header .text-gray-600,
+  .christmas-theme .app-header .text-gray-700,
+  .christmas-theme .app-header .text-gray-900 {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  .christmas-theme .app-header .text-blue-600 {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .christmas-theme .app-header .bg-white,
+  .christmas-theme .app-header .bg-white\/80,
+  .christmas-theme .app-header .bg-white\/95 {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .christmas-theme .app-header .hover\:bg-gray-50:hover,
+  .christmas-theme .app-header .hover\:bg-gray-100:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .christmas-theme .app-header .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  .christmas-course-card {
+    border-color: rgba(255, 107, 107, 0.3);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .christmas-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px rgba(255, 107, 107, 0.18);
+  }
+
+  .course-holiday-label {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--christmas-red);
+    color: #fff;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 5px 10px rgba(255, 107, 107, 0.25);
+  }
+
+  .course-snowflake {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 1.1rem;
+    animation: twinkle 4s ease-in-out infinite;
+    opacity: 0.8;
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translateY(4px) rotate(10deg);
+      opacity: 1;
+    }
+  }
+
+  .christmas-theme button[class*='bg-blue-'],
+  .christmas-theme .bg-blue-600 {
+    background-color: var(--christmas-red) !important;
+    color: #fff !important;
+  }
+
+  .christmas-theme button[class*='bg-blue-']:hover,
+  .christmas-theme .bg-blue-600:hover {
+    background-color: #8b0000 !important;
+    box-shadow: 0 12px 18px rgba(139, 0, 0, 0.4);
+  }
+
+  /* Fix: Buttons with both bg-blue and border-blue should keep white text */
+  .christmas-theme button[class*='bg-blue-'][class*='border-blue-'],
+  .christmas-theme button.bg-blue-600.border-blue-600 {
+    color: #fff !important;
+  }
+
+  .christmas-theme button[class*='border-blue-']:not([class*='bg-blue-']),
+  .christmas-theme .border-blue-200:not([class*='bg-blue-']) {
+    border-color: var(--christmas-red) !important;
+    color: var(--christmas-red) !important;
+  }
+
+  .christmas-theme .progress-bar,
+  .christmas-theme .bg-gradient-to-r.from-blue-50 {
+    background-color: rgba(255, 107, 107, 0.2);
+  }
+
+  @media (max-width: 640px) {
+    .christmas-hero-banner,
+    .athena-hero-banner {
+      padding: 1.5rem;
+    }
+
+    .athena-hero-visual img,
+    .christmas-hero-visual img {
+      max-width: 200px;
+    }
+
+    .athena-hero-content h1,
+    .christmas-hero-content h1 {
+      font-size: clamp(1.25rem, 5vw, 1.75rem);
+    }
+
+    .athena-hero-cta,
+    .christmas-hero-cta {
+      gap: 0.5rem;
+    }
+
+    .progress-pill,
+    .achievement-pill,
+    .gift-pill,
+    .snow-pill {
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+    }
+
+    .challenge-badges {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .athena-hero-banner,
+    .christmas-hero-banner {
+      padding: 1rem;
+      gap: 1.5rem;
+    }
+
+    .athena-hero-visual,
+    .christmas-hero-visual {
+      flex: 1 1 100%;
+      text-align: center;
+    }
+
+    .athena-hero-visual img,
+    .christmas-hero-visual img {
+      max-width: 180px;
+      margin: 0 auto;
+    }
+
+    .athena-hero-content p,
+    .christmas-hero-content p {
+      font-size: 0.9rem;
+    }
+  }
+
+  /* Login Page Christmas Theme */
+  .login-christmas-theme {
+    background: linear-gradient(
+      135deg,
+      #8b0000 0%,
+      #a00000 25%,
+      #b11226 50%,
+      #a00000 75%,
+      #8b0000 100%
+    );
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-snowfall-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 20px,
+        rgba(255, 255, 255, 0.8),
+        transparent
+      ),
+      radial-gradient(
+        3px 3px at 0px 40px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 10px,
+        rgba(255, 255, 255, 0.6),
+        transparent
+      );
+    background-size: 80px 80px;
+    animation: snowfall 18s linear infinite;
+  }
+
+  .login-snowflakes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .login-snowflake {
+    position: absolute;
+    top: -20px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    animation: loginSnowfall linear infinite;
+    user-select: none;
+  }
+
+  @keyframes loginSnowfall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0.3;
+    }
+  }
+
+  .login-christmas-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+      0 25px 50px rgba(139, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  }
+
+  .login-christmas-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      135deg,
+      rgba(177, 18, 38, 0.3),
+      rgba(11, 107, 58, 0.3)
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .login-christmas-theme input[type='email'],
+  .login-christmas-theme input[type='password'] {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .login-christmas-theme input[type='email']:focus,
+  .login-christmas-theme input[type='password']:focus {
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  }
+
+  .login-christmas-theme .text-blue-600 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .login-christmas-theme .text-blue-600:hover {
+    color: #fff !important;
+  }
+
+  /* Offer Popup Styles */
+  .offer-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: offerFadeIn 0.4s ease-out;
+    padding: 1rem;
+  }
+
+  @keyframes offerFadeIn {
     from {
       opacity: 0;
-      transform: translateY(6px) scale(0.98);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+    }
+  }
+
+  .offer-popup-content {
+    position: relative;
+    max-width: 95vw;
+    max-height: 95vh;
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    animation: offerSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes offerSlideIn {
+    from {
+      transform: scale(0.8) translateY(-50px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .offer-popup-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 900px;
+    object-fit: contain;
+  }
+
+  .offer-popup-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .offer-popup-close:hover {
+    background: #ef4444;
+    color: white;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+  }
+
+  /* Offer Snowflakes Animation */
+  .offer-snowflakes-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .offer-snowflake {
+    position: absolute;
+    top: -10px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: offerSnowfall linear infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  }
+
+  @keyframes offerSnowfall {
+    0% {
+      transform: translateY(-10px) translateX(0);
+    }
+    100% {
+      transform: translateY(100vh) translateX(var(--snowflake-drift));
+    }
+  }
+
+  /* Offer Widget (Bottom-right chatbot style) */
+  .offer-widget {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    transition: all 0.3s ease;
+    animation: offerWidgetPulse 2s ease-in-out infinite;
+  }
+
+  .offer-widget:hover {
+    transform: scale(1.1) translateY(-4px);
+    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.5);
+  }
+
+  @keyframes offerWidgetPulse {
+    0%,
+    100% {
+      box-shadow:
+        0 8px 24px rgba(220, 38, 38, 0.4),
+        0 0 0 0 rgba(220, 38, 38, 0.7);
+    }
+    50% {
+      box-shadow:
+        0 8px 24px rgba(220, 38, 38, 0.4),
+        0 0 0 10px rgba(220, 38, 38, 0);
+    }
+  }
+
+  .offer-widget-icon {
+    color: white;
+    animation: offerWiggle 1s ease-in-out infinite;
+  }
+
+  @keyframes offerWiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(-15deg);
+    }
+    75% {
+      transform: rotate(15deg);
+    }
+  }
+
+  .offer-widget-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #fbbf24;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    animation: offerBadgeBounce 1.5s ease-in-out infinite;
+  }
+
+  @keyframes offerBadgeBounce {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .offer-popup-content {
+      max-width: 95vw;
+    }
+
+    .offer-popup-image {
+      max-width: 100%;
+    }
+
+    .offer-widget {
+      width: 3.5rem;
+      height: 3.5rem;
+      bottom: 1.5rem;
+      right: 1.5rem;
+    }
+
+    .offer-popup-close {
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 2rem;
+      height: 2rem;
     }
   }
 }
