@@ -1,4 +1,5 @@
 import enhancedAIService from './enhancedAIService';
+import advancedLessonAdapter from './advancedLessonAdapter';
 import { generateLessonFromPrompt } from './aiCourseService';
 import { updateLessonContent } from './courseService';
 import openAIService from './openAIService';
@@ -82,6 +83,31 @@ class UniversalAILessonService {
         );
       }
 
+      // ADDIE 7-phase aligned path (uses advanced lesson adapter)
+      const shouldUseAddiePhases =
+        mergedOptions.useAddiePhases !== false &&
+        (courseData?.designPhases ||
+          courseData?.addieDesignPhases ||
+          courseData?.addie);
+
+      if (shouldUseAddiePhases) {
+        const addieBlocks = await this.generateAddiePhaseLesson(
+          lessonData,
+          moduleData,
+          courseData,
+          mergedOptions
+        );
+
+        if (Array.isArray(addieBlocks) && addieBlocks.length > 0) {
+          console.log('✅ Generated lesson with ADDIE 7-phase alignment');
+          return addieBlocks;
+        }
+
+        console.log(
+          '⚠️ ADDIE 7-phase path returned no blocks, continuing with fallback'
+        );
+      }
+
       // Structured lesson plan path for premium mode
       if (mergedOptions.useStructuredLessonPlan) {
         const structuredBlocks = await this.generateLessonFromStructuredPlan(
@@ -135,6 +161,63 @@ class UniversalAILessonService {
         moduleData?.title || 'Module',
         courseData?.title || 'Course'
       );
+    }
+  }
+
+  async generateAddiePhaseLesson(
+    lessonData,
+    moduleData,
+    courseData,
+    options = {}
+  ) {
+    try {
+      const lessonId = lessonData?.id || `lesson-${Date.now()}`;
+      const courseContext = {
+        ...courseData,
+        courseId:
+          courseData?.courseId ||
+          courseData?.id ||
+          moduleData?.courseId ||
+          'default',
+        title:
+          courseData?.title ||
+          moduleData?.title ||
+          lessonData?.title ||
+          'Course',
+        description: courseData?.description || lessonData?.description,
+        difficulty:
+          courseData?.difficulty || options?.difficulty || 'intermediate',
+        designPhases:
+          courseData?.designPhases ||
+          courseData?.addieDesignPhases ||
+          courseData?.addie ||
+          options?.designPhases,
+      };
+
+      // Skip if we still don't have design phases to align to
+      if (!courseContext.designPhases) {
+        return null;
+      }
+
+      const result = await advancedLessonAdapter.generateLessonHybrid(
+        lessonId,
+        courseContext,
+        null,
+        options
+      );
+
+      if (
+        result?.success &&
+        Array.isArray(result.blocks) &&
+        result.blocks.length > 0
+      ) {
+        return result.blocks;
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('⚠️ ADDIE 7-phase generation failed, falling back:', error);
+      return null;
     }
   }
 
