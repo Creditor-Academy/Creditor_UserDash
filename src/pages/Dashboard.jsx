@@ -55,8 +55,8 @@ import {
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import CLogo from '@/assets/C-logo2.png';
-import OfferPopup from '@/components/offer/OfferPopup';
 
+import OfferPopup from '@/components/offer/OfferPopup';
 export function Dashboard() {
   const importantUpdateStyles = `
     .important-updates-wrapper {
@@ -103,12 +103,9 @@ export function Dashboard() {
       }
     }
     .important-updates-scroll {
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       scroll-behavior: smooth;
-    }
-    .important-updates-scroll::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
     }
     .important-updates-scroll::-webkit-scrollbar {
       height: 6px;
@@ -123,7 +120,21 @@ export function Dashboard() {
     .important-updates-scroll:hover::-webkit-scrollbar {
       opacity: 1;
     }
+    .vcm-video {
+      width: 100%;
+      height: auto;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .vcm-video {
+        max-height: 200px;
+      }
+    }
   `;
+
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
   const { isChristmasMode } = useContext(SeasonalThemeContext);
@@ -935,10 +946,14 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="christmas-hero-visual">
-                <img
-                  src="https://cdn.pixabay.com/animation/2024/10/16/09/27/09-27-15-148_512.gif"
-                  alt="Festive tree with gifts"
-                  loading="lazy"
+                <video
+                  src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/VCM.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover rounded-2xl"
+                  aria-label="Festive tree with gifts"
                 />
                 <div className="floating-snow" aria-hidden="true" />
               </div>
