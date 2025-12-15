@@ -1002,22 +1002,19 @@ export default function Organizations() {
                         </p>
                       </div>
 
-                      {/* Monthly Price */}
+                      {/* Plan */}
                       <div>
                         <label
                           className="text-xs font-semibold uppercase tracking-wider"
                           style={{ color: colors.text.secondary }}
                         >
-                          Monthly Price
+                          Plan
                         </label>
                         <p
                           className="text-sm font-medium mt-2"
                           style={{ color: colors.text.primary }}
                         >
-                          $
-                          {parseFloat(selectedOrg.monthly_price || 0).toFixed(
-                            2
-                          )}
+                          {selectedOrg.plan || 'N/A'}
                         </p>
                       </div>
 
@@ -1048,23 +1045,6 @@ export default function Organizations() {
 
                     {/* Right Column */}
                     <div className="space-y-6">
-                      {/* Annual Price */}
-                      <div>
-                        <label
-                          className="text-xs font-semibold uppercase tracking-wider"
-                          style={{ color: colors.text.secondary }}
-                        >
-                          Annual Price
-                        </label>
-                        <p
-                          className="text-sm font-medium mt-2"
-                          style={{ color: colors.text.primary }}
-                        >
-                          $
-                          {parseFloat(selectedOrg.annual_price || 0).toFixed(2)}
-                        </p>
-                      </div>
-
                       {/* Updated At */}
                       <div>
                         <label

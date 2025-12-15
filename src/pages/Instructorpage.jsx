@@ -17,6 +17,7 @@ import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import StorageTokens from './StorageTokens';
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FaBook,
@@ -344,7 +345,7 @@ const InstructorPage = () => {
           }}
         >
           <div className="max-w-7xl mx-auto w-full px-6 py-5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-blue-600/20">
@@ -360,6 +361,9 @@ const InstructorPage = () => {
                     Manage your courses, users, SCORM, lessons, and more.
                   </p>
                 </div>
+              </div>
+              <div className="flex-shrink-0">
+                <CompactTokenDisplay />
               </div>
             </div>
           </div>
