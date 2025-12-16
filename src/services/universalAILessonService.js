@@ -24,6 +24,64 @@ class UniversalAILessonService {
   }
 
   /**
+   * Provide a minimal ADDIE designPhases object when none is supplied.
+   * Keeps the 7-phase path usable even if upstream payloads are sparse.
+   */
+  buildDesignPhasesFallback(lessonTitle = 'Lesson', courseTitle = 'Course') {
+    return {
+      analysis: {
+        mainGoal: `Understand ${lessonTitle} within ${courseTitle}`,
+        flowPreference: 'linear',
+        moduleCount: 1,
+        lessonsPerModule: 1,
+      },
+      objectives: {
+        overallObjectives: [`Explain key ideas in ${lessonTitle}`],
+        bloomTargets: { course: 'apply' },
+        evidencePlan: [],
+      },
+      design: {
+        attentionStrategy: 'hook_with_question',
+        objectivesAnnouncement: 'state_goals',
+        priorKnowledgeActivation: 'short_prompt',
+        contentPresentation: [],
+        guidancePlan: [],
+        practicePlan: [],
+        feedbackPlan: [],
+        assessmentPlan: [],
+        retentionPlan: [],
+      },
+      experience: {
+        deliveryMode: 'self_paced',
+        practiceCadence: 'per_lesson',
+        feedbackChannels: [],
+        adaptivePaths: false,
+        learningFormats: [],
+      },
+      development: {
+        storyboardFormat: 'slide-by-slide',
+        autoAssessments: true,
+      },
+      implementation: {
+        deliveryChannels: [],
+        analyticsNeeds: [],
+        evaluationCriteria: [],
+        optimizationCadence: 'quarterly',
+        feedbackLoops: [],
+        assessmentDataNeeds: [],
+      },
+      quality: {
+        accuracyBenchmark: '99%',
+        referenceCheck: true,
+        humanValidation: true,
+        ambiguityHandling: 'ask',
+        autoTagging: true,
+        qualityChecklist: [],
+      },
+    };
+  }
+
+  /**
    * Generate comprehensive lesson content for any lesson
    * @param {Object} lessonData - Lesson information
    * @param {Object} moduleData - Module information
@@ -88,7 +146,8 @@ class UniversalAILessonService {
         mergedOptions.useAddiePhases !== false &&
         (courseData?.designPhases ||
           courseData?.addieDesignPhases ||
-          courseData?.addie);
+          courseData?.addie ||
+          mergedOptions.designPhases);
 
       if (shouldUseAddiePhases) {
         const addieBlocks = await this.generateAddiePhaseLesson(
@@ -172,6 +231,10 @@ class UniversalAILessonService {
   ) {
     try {
       const lessonId = lessonData?.id || `lesson-${Date.now()}`;
+      const lessonTitle = lessonData?.title || 'Lesson';
+      const courseTitle =
+        courseData?.title || moduleData?.title || lessonData?.title || 'Course';
+
       const courseContext = {
         ...courseData,
         courseId:
@@ -179,11 +242,7 @@ class UniversalAILessonService {
           courseData?.id ||
           moduleData?.courseId ||
           'default',
-        title:
-          courseData?.title ||
-          moduleData?.title ||
-          lessonData?.title ||
-          'Course',
+        title: courseTitle,
         description: courseData?.description || lessonData?.description,
         difficulty:
           courseData?.difficulty || options?.difficulty || 'intermediate',
@@ -191,7 +250,8 @@ class UniversalAILessonService {
           courseData?.designPhases ||
           courseData?.addieDesignPhases ||
           courseData?.addie ||
-          options?.designPhases,
+          options?.designPhases ||
+          this.buildDesignPhasesFallback(lessonTitle, courseTitle),
       };
 
       // Skip if we still don't have design phases to align to
