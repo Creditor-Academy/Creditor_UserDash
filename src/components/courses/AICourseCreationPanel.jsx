@@ -2636,6 +2636,8 @@ MOOD: Modern, inspiring, professional, engaging`;
         duration: courseData.duration?.trim() || '4 weeks',
         targetAudience: courseData.targetAudience,
         learningOutcomes: courseData.learningOutcomes,
+        // Preserve ADDIE phase inputs so lesson generation can align to all 7 phases
+        designPhases: courseData.designPhases,
         blueprint: {
           coursePurpose: safeBlueprintString(courseData.blueprintCoursePurpose),
           learnerProfile: safeBlueprintString(
@@ -2698,6 +2700,10 @@ MOOD: Modern, inspiring, professional, engaging`;
 
       // Attach assessment strategy so lesson generator can choose quiz vs reflection style
       generationOptions.assessmentStrategy = architectStrategyConfig;
+      // Ensure ADDIE-aware generation when phase data exists
+      if (courseData.designPhases) {
+        generationOptions.useAddiePhases = true;
+      }
 
       let firstLessonBlocks = null;
       let firstLessonTitle = null;
