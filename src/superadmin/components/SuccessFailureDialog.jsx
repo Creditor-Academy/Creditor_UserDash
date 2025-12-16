@@ -18,14 +18,17 @@ export default function SuccessFailureDialog({
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-          onClose?.();
-        }, 300); // Wait for animation to complete
-      }, autoCloseDuration);
+      // Only auto-close if autoCloseDuration is provided and greater than 0
+      if (autoCloseDuration && autoCloseDuration > 0) {
+        const timer = setTimeout(() => {
+          setIsVisible(false);
+          setTimeout(() => {
+            onClose?.();
+          }, 300); // Wait for animation to complete
+        }, autoCloseDuration);
 
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isOpen, autoCloseDuration, onClose]);
 
@@ -109,30 +112,43 @@ export default function SuccessFailureDialog({
             {message}
           </p>
 
-          {/* Progress bar */}
-          <div
-            className="mt-6 h-1 rounded-full overflow-hidden"
-            style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
-          >
+          {/* Progress bar - only show if auto-close is enabled */}
+          {autoCloseDuration && autoCloseDuration > 0 && (
             <div
-              className="h-full rounded-full animate-pulse"
-              style={{
-                backgroundColor: borderColor,
-                animation: `progress ${autoCloseDuration}ms linear forwards`,
-              }}
-            />
-          </div>
+              className="mt-6 h-1 rounded-full overflow-hidden"
+              style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+            >
+              <div
+                className="h-full rounded-full animate-pulse"
+                style={{
+                  backgroundColor: borderColor,
+                  animation: `progress ${autoCloseDuration}ms linear forwards`,
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Close button */}
         <button
-          onClick={() => {
+          onClick={e => {
+            e.stopPropagation();
             setIsVisible(false);
             setTimeout(() => onClose?.(), 300);
           }}
-          className="absolute top-4 right-4 p-1 rounded-lg hover:bg-opacity-10 transition-colors"
-          style={{ color: iconColor }}
+          className="absolute top-4 right-4 p-2 rounded-lg transition-colors z-10 cursor-pointer"
+          style={{
+            color: iconColor,
+            backgroundColor: 'transparent',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           aria-label="Close"
+          type="button"
         >
           <X size={24} />
         </button>

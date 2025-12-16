@@ -49,7 +49,7 @@ export default function AddOrganizationModal({
         plan: editingOrg.plan || 'MONTHLY',
         user_limit: editingOrg.user_limit ? String(editingOrg.user_limit) : '',
         storage_limit: editingOrg.storage_limit
-          ? bytesToGbString(editingOrg.storage_limit)
+          ? storageLimitToString(editingOrg.storage_limit)
           : '',
         credit: editingOrg.credit ? String(editingOrg.credit) : '',
         status: editingOrg.status || 'ACTIVE',
@@ -95,22 +95,65 @@ export default function AddOrganizationModal({
 
   const handleInputChange = e => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let normalizedValue = value;
+
+    // Normalize storage_limit input to handle precision issues
+    if (name === 'storage_limit' && value !== '') {
+      const numValue = parseFloat(value);
+      if (!Number.isNaN(numValue) && numValue >= 0) {
+        // Round to 2 decimal places to avoid floating point precision issues
+        let rounded = Math.round(numValue * 100) / 100;
+        // If it's very close to an integer (within 0.005), normalize to integer
+        const integerPart = Math.round(rounded);
+        if (Math.abs(rounded - integerPart) < 0.005) {
+          rounded = integerPart;
+        }
+        // Convert to string, removing unnecessary trailing zeros
+        normalizedValue = rounded.toString();
+      } else if (value === '') {
+        normalizedValue = '';
+      }
+    }
+
+    setFormData(prev => ({ ...prev, [name]: normalizedValue }));
     setError(null);
   };
 
-  // Helpers for storage limit (UI in GB, backend expects bytes)
-  const gbToBytes = value => {
-    const gb = parseFloat(value);
-    if (Number.isNaN(gb)) return undefined;
-    return Math.round(gb * 1024 * 1024 * 1024);
-  };
+  // Helper for storage limit - backend now expects GB directly (no conversion needed)
+  // When loading from backend, value might be in GB (small number) or bytes (large number)
+  const storageLimitToString = value => {
+    if (!value || value === '') return '';
+    const numValue = Number(value);
+    if (Number.isNaN(numValue) || numValue < 0) return '';
 
-  const bytesToGbString = value => {
-    const bytes = Number(value);
-    if (Number.isNaN(bytes)) return '';
-    const gb = bytes / (1024 * 1024 * 1024);
-    return Number.isInteger(gb) ? String(gb) : gb.toFixed(2);
+    // If value is small (< 10000), assume it's already in GB
+    if (numValue < 10000) {
+      // If it's a whole number, return as integer string
+      if (Number.isInteger(numValue)) {
+        return String(numValue);
+      }
+      // Otherwise return with 2 decimal places, removing trailing zeros
+      return parseFloat(numValue.toFixed(2)).toString();
+    }
+
+    // If value is large, it might be in bytes - convert to GB using binary conversion (1024^3)
+    // This handles legacy data that might still be in bytes
+    const gb = numValue / (1024 * 1024 * 1024);
+    // Round to 2 decimal places
+    let roundedGb = Math.round(gb * 100) / 100;
+
+    // Normalize values that are very close to integers (within 0.005)
+    const integerPart = Math.round(roundedGb);
+    if (Math.abs(roundedGb - integerPart) < 0.005) {
+      roundedGb = integerPart;
+    }
+
+    // If it's an integer, return as integer string
+    if (Number.isInteger(roundedGb)) {
+      return String(roundedGb);
+    }
+    // Otherwise return with 2 decimal places, removing trailing zeros
+    return parseFloat(roundedGb.toFixed(2)).toString();
   };
 
   const handleSubmit = async e => {
@@ -155,7 +198,7 @@ export default function AddOrganizationModal({
           : undefined,
         storage_limit:
           formData.storage_limit !== ''
-            ? gbToBytes(formData.storage_limit)
+            ? parseFloat(formData.storage_limit)
             : undefined,
         credit: formData.credit ? parseInt(formData.credit, 10) : undefined,
         status: formData.status,
@@ -414,7 +457,7 @@ export default function AddOrganizationModal({
               className="text-xs mt-1"
               style={{ color: colors.text.secondary }}
             >
-              Enter GB value; it will be sent to the backend in bytes.
+              Enter GB value; it will be sent to the backend in GB.
             </p>
           </div>
 
@@ -671,7 +714,7 @@ export default function AddOrganizationModal({
         title={dialogTitle}
         message={dialogMessage}
         onClose={() => setDialogOpen(false)}
-        autoCloseDuration={3000}
+        autoCloseDuration={0}
       />
       <div
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
