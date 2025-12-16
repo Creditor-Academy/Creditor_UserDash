@@ -289,6 +289,23 @@ export default function Organizations() {
     return `${gb.toFixed(2)} GB`;
   };
 
+  // Format storage used - handles both GB values (small numbers) and byte values (large numbers)
+  const formatStorage = value => {
+    if (value === null || value === undefined) return 'N/A';
+    const numValue = Number(value);
+    if (Number.isNaN(numValue) || numValue < 0) return 'N/A';
+
+    // If value is small (< 10000), assume it's already in GB
+    // This handles cases where API returns "0.09" meaning 0.09 GB
+    if (numValue < 10000) {
+      // Show with 2 decimal places for consistency
+      return `${numValue.toFixed(2)} GB`;
+    }
+
+    // If value is large, treat it as bytes and convert
+    return formatBytes(numValue);
+  };
+
   // Format storage limit - handles both GB values (small numbers) and byte values (large numbers)
   const formatStorageLimit = value => {
     if (value === null || value === undefined) return 'N/A';
@@ -955,7 +972,7 @@ export default function Organizations() {
                         className="text-2xl font-bold mt-2"
                         style={{ color: '#10B981' }}
                       >
-                        {formatBytes(selectedOrg.storage)} /{' '}
+                        {formatStorage(selectedOrg.storage)} /{' '}
                         {formatStorageLimit(selectedOrg.storage_limit)}
                       </p>
                       <p

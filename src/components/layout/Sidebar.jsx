@@ -43,8 +43,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
-import caTextLogo from '@/assets/CA_text_logo.png';
-import caManLogo from '@/assets/CA_man_logo.png';
 
 const SidebarItem = ({
   icon: Icon,
@@ -179,7 +177,48 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const { userRole, isInstructorOrAdmin } = useAuth();
   const { userProfile } = useUser();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [organizationName, setOrganizationName] = useState('Creditor Academy');
   const { isChristmasMode } = useContext(SeasonalThemeContext);
+
+  // Fetch organization name from user profile
+  useEffect(() => {
+    // First, try to get organization name from userProfile context
+    if (
+      userProfile &&
+      userProfile.organizations &&
+      userProfile.organizations.name
+    ) {
+      console.log(
+        'Organization name from context:',
+        userProfile.organizations.name
+      );
+      setOrganizationName(userProfile.organizations.name);
+      return;
+    }
+
+    // If not in context, fetch from API
+    const fetchOrganizationName = async () => {
+      try {
+        const response = await api.get('/api/user/getUserProfile');
+        console.log('UserProfile API Response:', response.data);
+
+        // Handle different response structures
+        const data = response.data?.data || response.data;
+
+        if (data && data.organizations && data.organizations.name) {
+          console.log('Organization name found:', data.organizations.name);
+          setOrganizationName(data.organizations.name);
+        } else {
+          console.warn('Organization name not found in response:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching organization name:', error);
+        // Keep default "Creditor Academy" on error
+      }
+    };
+
+    fetchOrganizationName();
+  }, [userProfile]);
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -290,20 +329,12 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="relative sidebar-logo-mark">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                <img
-                  src={caManLogo}
-                  alt="Creditor Academy Logo"
-                  className="w-full h-full object-contain p-1"
-                />
-              </div>
-            </div>
-            <img
-              src={caTextLogo}
-              alt="Creditor Academy"
-              className="h-8 w-auto object-contain"
-            />
+            <h1
+              className="font-bold"
+              style={{ color: 'white', fontSize: '1.3rem' }}
+            >
+              {organizationName}
+            </h1>
           </motion.button>
         )}
 
@@ -320,14 +351,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <div className="relative sidebar-logo-mark">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                      <img
-                        src={caManLogo}
-                        alt="Creditor Academy Logo"
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-blue-600 font-bold text-sm">CA</span>
                   </div>
                 </motion.button>
               </TooltipTrigger>
