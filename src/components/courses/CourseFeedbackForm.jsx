@@ -4,7 +4,7 @@
  * Tracks engagement, completion, and satisfaction metrics
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Star, Send, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -22,6 +22,8 @@ const CourseFeedbackForm = ({ courseId, userId, onSubmitSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [error, setError] = useState(null);
+  const [existingFeedback, setExistingFeedback] = useState(null);
+  const [loadingExisting, setLoadingExisting] = useState(false);
 
   const feedbackCategories = [
     { id: 'CONTENT_QUALITY', label: 'Content Quality' },
@@ -84,6 +86,7 @@ const CourseFeedbackForm = ({ courseId, userId, onSubmitSuccess }) => {
       );
 
       setSubmitStatus('success');
+      setExistingFeedback(response.data.data);
       setFormData({
         rating: 0,
         completion_rate: 100,
@@ -111,6 +114,115 @@ const CourseFeedbackForm = ({ courseId, userId, onSubmitSuccess }) => {
       setIsSubmitting(false);
     }
   };
+
+  // Prevent multiple submissions: load existing feedback for this course/user
+  useEffect(() => {
+    const fetchExisting = async () => {
+      if (!courseId) return;
+      setLoadingExisting(true);
+      try {
+        const res = await axios.get(`/api/feedback/course/${courseId}/my`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        if (res.data?.data) {
+          setExistingFeedback(res.data.data);
+        } else {
+          setExistingFeedback(null);
+        }
+      } catch (err) {
+        // 404 means no prior feedback; ignore
+        if (err.response?.status !== 404) {
+          console.error('Error loading existing feedback:', err);
+        }
+        setExistingFeedback(null);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    fetchExisting();
+  }, [courseId]);
+
+  if (loadingExisting) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+        <p className="text-sm text-gray-600">Loading your feedback...</p>
+      </div>
+    );
+  }
+
+  if (existingFeedback) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg space-y-4">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <h2 className="text-xl font-semibold text-gray-800">
+            Feedback already submitted
+          </h2>
+        </div>
+        <p className="text-sm text-gray-600">
+          You have already provided feedback for this course. Feedback is
+          read-only to keep results consistent.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm text-gray-500">Rating</p>
+            <div className="flex items-center gap-1 mt-1">
+              {[1, 2, 3, 4, 5].map(star => (
+                <Star
+                  key={star}
+                  className={`w-5 h-5 ${
+                    star <= existingFeedback.rating
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+              <span className="ml-2 text-sm text-gray-700">
+                {existingFeedback.rating} / 5
+              </span>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm text-gray-500">Completion</p>
+            <p className="text-lg font-semibold text-gray-800">
+              {existingFeedback.completion_rate || 0}%
+            </p>
+          </div>
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm text-gray-500">Engagement</p>
+            <p className="text-lg font-semibold text-gray-800">
+              {existingFeedback.engagement_score || 0}%
+            </p>
+          </div>
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm text-gray-500">Quiz Score</p>
+            <p className="text-lg font-semibold text-gray-800">
+              {existingFeedback.quiz_average_score ?? 'N/A'}
+            </p>
+          </div>
+        </div>
+        {existingFeedback.feedback_categories && (
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm text-gray-500">Categories</p>
+            <p className="text-sm text-gray-800 mt-1">
+              {Array.isArray(existingFeedback.feedback_categories)
+                ? existingFeedback.feedback_categories.join(', ')
+                : existingFeedback.feedback_categories}
+            </p>
+          </div>
+        )}
+        {existingFeedback.comment && (
+          <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-sm text-gray-500">Comments</p>
+            <p className="text-sm text-gray-800 mt-1">
+              {existingFeedback.comment}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">

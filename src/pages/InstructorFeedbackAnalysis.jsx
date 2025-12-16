@@ -105,6 +105,15 @@ export function InstructorFeedbackAnalysis() {
     fetchComparisonData();
   }, []);
 
+  // Precompute safe comparison metrics to avoid undefined access
+  const aiRating = comparisonData?.AI?.avg_rating ?? 0;
+  const manualRating = comparisonData?.MANUAL?.avg_rating ?? 0;
+  const ratingDelta = Math.abs(aiRating - manualRating).toFixed(1);
+  const ratingInsight =
+    aiRating >= manualRating
+      ? `AI-generated courses have ${ratingDelta} higher average rating`
+      : `Manual courses have ${ratingDelta} higher average rating`;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -331,12 +340,7 @@ export function InstructorFeedbackAnalysis() {
                   <p className="text-sm font-medium text-blue-900">
                     Performance Insight
                   </p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    {comparisonData.AI?.avg_rating >
-                    comparisonData.MANUAL?.avg_rating
-                      ? `AI-generated courses have ${(comparisonData.AI.avg_rating - comparisonData.MANUAL.avg_rating).toFixed(1)} higher average rating`
-                      : `Manual courses have ${(comparisonData.MANUAL.avg_rating - comparisonData.AI.avg_rating).toFixed(1)} higher average rating`}
-                  </p>
+                  <p className="text-sm text-blue-700 mt-1">{ratingInsight}</p>
                 </div>
               </div>
             </div>
