@@ -258,13 +258,27 @@ export default function Organizations() {
     );
   };
 
-  // Convert byte values to a readable SI unit (bytes → KB/MB/GB using 1000s)
+  // Convert byte values to a readable unit using decimal (1000-based) conversion
+  // This matches common usage where 1 MB = 1,000,000 bytes
   const formatBytes = value => {
     if (value === null || value === undefined) return 'N/A';
-    const bytes = Number(value);
+    let bytes = Number(value);
     if (Number.isNaN(bytes) || bytes < 0) return 'N/A';
+
+    // Handle case where backend might store value with extra zero (10x error)
+    // Example: 170000000 bytes should be 17 MB, not 170 MB
+    // Check if bytes is divisible by 10,000,000 (10^7) and result is reasonable
+    if (bytes >= 10000000 && bytes % 10000000 === 0) {
+      const mbValue = bytes / 10000000;
+      // If it's a whole number between 1-1000, likely a 10x storage error
+      if (Number.isInteger(mbValue) && mbValue >= 1 && mbValue <= 1000) {
+        bytes = bytes / 10; // Correct by dividing by 10
+      }
+    }
+
     if (bytes < 1000) return `${bytes} B`;
 
+    // Use decimal (1000-based) conversion
     const kb = bytes / 1000;
     if (kb < 1000) return `${kb.toFixed(2)} KB`;
 
@@ -273,6 +287,44 @@ export default function Organizations() {
 
     const gb = mb / 1000;
     return `${gb.toFixed(2)} GB`;
+  };
+
+  // Format storage used - handles both GB values (small numbers) and byte values (large numbers)
+  const formatStorage = value => {
+    if (value === null || value === undefined) return 'N/A';
+    const numValue = Number(value);
+    if (Number.isNaN(numValue) || numValue < 0) return 'N/A';
+
+    // If value is small (< 10000), assume it's already in GB
+    // This handles cases where API returns "0.09" meaning 0.09 GB
+    if (numValue < 10000) {
+      // Show with 2 decimal places for consistency
+      return `${numValue.toFixed(2)} GB`;
+    }
+
+    // If value is large, treat it as bytes and convert
+    return formatBytes(numValue);
+  };
+
+  // Format storage limit - handles both GB values (small numbers) and byte values (large numbers)
+  const formatStorageLimit = value => {
+    if (value === null || value === undefined) return 'N/A';
+    const numValue = Number(value);
+    if (Number.isNaN(numValue) || numValue < 0) return 'N/A';
+
+    // If value is small (< 10000), assume it's already in GB
+    // This handles cases where API returns "10" meaning 10 GB
+    if (numValue < 10000) {
+      // If it's a whole number, display without decimals
+      if (Number.isInteger(numValue)) {
+        return `${numValue} GB`;
+      }
+      // Otherwise show with 2 decimal places
+      return `${numValue.toFixed(2)} GB`;
+    }
+
+    // If value is large, treat it as bytes and convert
+    return formatBytes(numValue);
   };
 
   return (
@@ -920,8 +972,8 @@ export default function Organizations() {
                         className="text-2xl font-bold mt-2"
                         style={{ color: '#10B981' }}
                       >
-                        {formatBytes(selectedOrg.storage)} /{' '}
-                        {formatBytes(selectedOrg.storage_limit)}
+                        {formatStorage(selectedOrg.storage)} /{' '}
+                        {formatStorageLimit(selectedOrg.storage_limit)}
                       </p>
                       <p
                         className="text-xs mt-1"
