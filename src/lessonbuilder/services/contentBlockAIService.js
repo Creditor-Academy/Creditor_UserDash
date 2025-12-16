@@ -10,7 +10,7 @@ class ContentBlockAIService {
   constructor() {
     this.aiService = secureAIService;
     devLogger.debug(
-      '✅ ContentBlockAIService initialized (using secure backend APIs)'
+      'ContentBlockAIService initialized (using secure backend APIs)'
     );
   }
 
@@ -24,7 +24,7 @@ class ContentBlockAIService {
     instructions = '',
     courseContext = {},
   }) {
-    devLogger.debug(`🎯 Generating ${blockType} with template ${templateId}`);
+    devLogger.debug(`Generating ${blockType} with template ${templateId}`);
 
     const context = this.buildContextPrompt(courseContext);
 
@@ -498,7 +498,7 @@ Return ONLY valid JSON, no other text.`;
    */
   async callOpenAI(prompt, maxTokens = 500) {
     try {
-      devLogger.debug('🤖 Generating content via secure backend API...');
+      devLogger.debug('Generating content via secure backend API...');
 
       const response = await this.aiService.generateText(prompt, {
         model: 'gpt-4o-mini',
@@ -509,10 +509,10 @@ Return ONLY valid JSON, no other text.`;
         enhancePrompt: false, // No auto-enhancement for content blocks
       });
 
-      devLogger.debug('✅ Content generated via backend API');
+      devLogger.debug('Content generated via backend API');
       return response.trim();
     } catch (error) {
-      devLogger.error('❌ Backend AI API error:', error);
+      devLogger.error('Backend AI API error:', error);
       throw new Error(`AI generation failed: ${error.message}`);
     }
   }

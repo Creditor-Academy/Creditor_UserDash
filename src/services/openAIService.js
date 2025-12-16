@@ -30,7 +30,7 @@ class OpenAIService {
   constructor() {
     this.backend = secureAIService;
     clientLogger.debug(
-      '✅ OpenAI service initialized (using secure backend proxy)'
+      'OpenAI service initialized (using secure backend proxy)'
     );
   }
 
@@ -86,7 +86,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseOutline(courseData);
     } catch (error) {
-      clientLogger.error('❌ Course outline generation failed:', error);
+      clientLogger.error('Course outline generation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -104,7 +104,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseBlueprint(blueprintInput);
     } catch (error) {
-      clientLogger.error('❌ Course blueprint generation failed:', error);
+      clientLogger.error('Course blueprint generation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -122,7 +122,7 @@ class OpenAIService {
     try {
       return await this.backend.generateComprehensiveCourse(courseData);
     } catch (error) {
-      clientLogger.error('❌ Comprehensive course generation failed:', error);
+      clientLogger.error('Comprehensive course generation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -141,7 +141,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseImage(prompt, options);
     } catch (error) {
-      clientLogger.error('❌ Course image generation failed:', error);
+      clientLogger.error('Course image generation failed:', error);
       return {
         success: false,
         error: error.message,

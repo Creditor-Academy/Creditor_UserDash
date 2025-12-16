@@ -14,7 +14,7 @@ import { emitActiveOrgUsageRefresh } from '../utils/activeOrgUsageEvents';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 // Debug: Log the API base being used
-console.log('🔧 SecureAIService API_BASE:', API_BASE);
+console.log('SecureAIService API_BASE:', API_BASE);
 const isDevelopment = !!import.meta.env.DEV;
 
 const clientLogger = {
@@ -69,7 +69,7 @@ class SecureAIService {
    * @returns {Error} Formatted error with user-friendly message
    */
   handleError(error, operation, response = null) {
-    clientLogger.error(`❌ ${operation} failed:`, {
+    clientLogger.error(`${operation} failed:`, {
       error,
       message: error.message,
       response,
@@ -205,7 +205,7 @@ class SecureAIService {
       };
       return status;
     } catch (error) {
-      clientLogger.warn('⚠️ Could not check backend status:', error.message);
+      clientLogger.warn('Could not check backend status:', error.message);
       return {
         available: false,
         openai: { available: false },
@@ -251,7 +251,7 @@ class SecureAIService {
         ) {
           const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
           clientLogger.warn(
-            `⚠️ Request failed (${response.status}), retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+            `Request failed (${response.status}), retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
           );
           await new Promise(resolve => setTimeout(resolve, delay));
           return this.makeRequestWithRetry(
@@ -283,7 +283,7 @@ class SecureAIService {
       ) {
         const delay = Math.pow(2, retryCount) * 1000;
         clientLogger.warn(
-          `⚠️ Network error, retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+          `Network error, retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
         );
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.makeRequestWithRetry(
@@ -326,7 +326,7 @@ class SecureAIService {
         }
       }
 
-      clientLogger.debug(`🤖 Generating text via secure backend (${model})...`);
+      clientLogger.debug(`Generating text via secure backend (${model})...`);
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateText,
@@ -351,7 +351,7 @@ class SecureAIService {
       }
 
       clientLogger.debug(
-        `✅ Text generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Text generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       this.notifyUsageRefresh();
@@ -394,7 +394,7 @@ class SecureAIService {
       }
 
       clientLogger.debug(
-        `🤖 Generating structured JSON via secure backend (${model})...`
+        `Generating structured JSON via secure backend (${model})...`
       );
 
       const response = await this.makeRequestWithRetry(
@@ -419,7 +419,7 @@ class SecureAIService {
       }
 
       clientLogger.debug(
-        `✅ Structured JSON generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Structured JSON generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       this.notifyUsageRefresh();
@@ -464,9 +464,7 @@ class SecureAIService {
         }
       }
 
-      clientLogger.debug(
-        `🎨 Generating image via secure backend (${model})...`
-      );
+      clientLogger.debug(`Generating image via secure backend (${model})...`);
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateImage,
@@ -489,7 +487,7 @@ class SecureAIService {
       const result = await response.json();
 
       // Debug: Log the full backend response
-      clientLogger.debug('🔍 Backend image generation response:', {
+      clientLogger.debug('Backend image generation response:', {
         success: result.success,
         hasData: !!result.data,
         imageUrl: result.data?.imageUrl,
@@ -504,7 +502,7 @@ class SecureAIService {
       }
 
       clientLogger.debug(
-        `✅ Image generated and uploaded to S3 ($${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Image generated and uploaded to S3 ($${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       const imageData = {
@@ -523,7 +521,7 @@ class SecureAIService {
 
       // Fallback: if S3 URL missing, reuse original OpenAI URL
       if (!imageData.url && imageData.originalUrl) {
-        clientLogger.warn('⚠️ S3 URL missing, using original OpenAI URL');
+        clientLogger.warn('S3 URL missing, using original OpenAI URL');
         imageData.url = imageData.originalUrl;
         imageData.uploadedToS3 = false;
       }
@@ -531,9 +529,9 @@ class SecureAIService {
       // Error: if both URLs are missing, throw error
       if (!imageData.url) {
         clientLogger.error(
-          '❌ Both S3 and OpenAI URLs are missing from backend response'
+          'Both S3 and OpenAI URLs are missing from backend response'
         );
-        clientLogger.error('🔍 Full backend response for debugging:', result);
+        clientLogger.error('Full backend response for debugging:', result);
         throw new Error(
           'Image generation succeeded but no URL returned from backend'
         );
@@ -590,7 +588,7 @@ class SecureAIService {
    */
   async generateCourseOutline(courseData) {
     try {
-      clientLogger.debug(`📋 Generating course outline via secure backend...`);
+      clientLogger.debug('Generating course outline via secure backend...');
 
       // Check backend availability
       const status = await this.checkBackendStatus();
@@ -627,7 +625,7 @@ class SecureAIService {
       }
 
       clientLogger.debug(
-        `✅ Course outline generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Course outline generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       this.notifyUsageRefresh();
@@ -657,7 +655,7 @@ class SecureAIService {
   async generateComprehensiveCourse(courseData) {
     try {
       clientLogger.debug(
-        `📚 Generating comprehensive course via secure backend...`
+        'Generating comprehensive course via secure backend...'
       );
 
       // Check backend availability
@@ -699,7 +697,7 @@ class SecureAIService {
       this.notifyUsageRefresh();
 
       clientLogger.debug(
-        `✅ Comprehensive course generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Comprehensive course generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       return {
@@ -722,7 +720,7 @@ class SecureAIService {
   async generateCourseBlueprint(blueprintInput) {
     try {
       clientLogger.debug(
-        '📘 Generating course blueprint via secure backend endpoint...'
+        'Generating course blueprint via secure backend endpoint...'
       );
 
       const status = await this.checkBackendStatus();
@@ -781,7 +779,7 @@ class SecureAIService {
       }
 
       clientLogger.debug(
-        `✅ Course blueprint generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Course blueprint generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
       );
 
       this.notifyUsageRefresh();
@@ -799,7 +797,7 @@ class SecureAIService {
       // to exist on older backends.
       if (error?.response?.status === 404) {
         clientLogger.warn(
-          '⚠️ Course blueprint endpoint not found on backend, falling back to structured generation'
+          'Course blueprint endpoint not found on backend, falling back to structured generation'
         );
 
         try {
@@ -867,7 +865,7 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
   async generateCourseImage(prompt, options = {}) {
     try {
       clientLogger.debug(
-        '🎨 Generating course image with prompt:',
+        'Generating course image with prompt:',
         prompt.substring(0, 100) + '...'
       );
 
@@ -915,7 +913,7 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
       };
     } catch (error) {
       clientLogger.error(
-        '❌ Course image generation failed, creating fallback response'
+        'Course image generation failed, creating fallback response'
       );
 
       // Create a placeholder SVG image as fallback
@@ -1132,7 +1130,7 @@ Return ONLY valid JSON.`;
 
       return result.data;
     } catch (error) {
-      clientLogger.error('❌ Failed to get AI status:', error);
+      clientLogger.error('Failed to get AI status:', error);
       return {
         available: false,
         error: error.message,
