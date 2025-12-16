@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import CreateCourse from './CreateCourse';
 import CourseLessonsPage from './CourseLessonsPage';
 import AddEvent from './AddEvent';
 import AddCatelog from './AddCatelog';
@@ -15,8 +14,11 @@ import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import InstructorFeedbackAnalysis from '@/pages/InstructorFeedbackAnalysis';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import StorageTokens from './StorageTokens';
+import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import { api } from '@/services/apiClient';
+import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FaBook,
@@ -37,12 +39,15 @@ import {
 
 const InstructorPage = () => {
   const { isInstructorOrAdmin, hasRole } = useAuth();
+  const { userProfile } = useUser();
   const isAllowed = isInstructorOrAdmin();
   const [collapsed, setCollapsed] = useState(true); // Start with sidebar collapsed
   const [userManagementView, setUserManagementView] = useState(() => {
     const saved = localStorage.getItem('userManagementView');
     return saved || 'add';
   });
+  const [storageUsage, setStorageUsage] = useState({ used: null, total: null });
+  const [isStorageLoading, setIsStorageLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,11 +55,11 @@ const InstructorPage = () => {
   // Determine active tab from URL
   const getActiveTabFromPath = () => {
     const path = location.pathname;
-    if (path.includes('/course-management')) return 'course';
+    if (path.includes('/course-old')) return 'lessons';
     if (path.includes('/user-management')) return 'users';
     if (path.includes('/course-catalog')) return 'catalog';
     if (path.includes('/create-quiz')) return 'quiz';
-    if (path.includes('/course-lessons')) return 'lessons';
+    if (path.includes('/course-management')) return 'lessons';
     if (path.includes('/group-management')) return 'groups';
     if (path.includes('/event-management')) return 'events';
     if (path.includes('/support-tickets')) return 'tickets';
@@ -62,7 +67,7 @@ const InstructorPage = () => {
     if (path.includes('/payments')) return 'payments';
     if (path.includes('/feedback-analysis')) return 'feedback';
     if (path.includes('/storage-tokens') && hasRole('admin')) return 'storage';
-    return 'course'; // default
+    return 'lessons'; // default
   };
 
   const [activeTab, setActiveTab] = useState(getActiveTabFromPath());
@@ -89,6 +94,42 @@ const InstructorPage = () => {
       navigate('/instructor/course-management', { replace: true });
     }
   }, [location.pathname, navigate]);
+
+  // Fetch storage usage for compact display in header
+  useEffect(() => {
+    const orgId =
+      userProfile?.organization_id ||
+      userProfile?.org_id ||
+      userProfile?.organizationId ||
+      userProfile?.organization?.id ||
+      localStorage.getItem('orgId');
+
+    if (!orgId) return;
+
+    const fetchStorage = async () => {
+      try {
+        setIsStorageLoading(true);
+        const resp = await api.get(`/api/org/SingleOrg/${orgId}`);
+        const data = resp?.data?.data || resp?.data;
+        if (!data) return;
+        const used = Number(data.storage) || 0;
+        const total = Number(data.storage_limit) || 0;
+        setStorageUsage({ used, total });
+      } catch (error) {
+        console.error('Failed to fetch storage usage for header', error);
+      } finally {
+        setIsStorageLoading(false);
+      }
+    };
+
+    fetchStorage();
+  }, [userProfile]);
+
+  const formatGb = bytes => {
+    if (bytes === null || bytes === undefined) return null;
+    const gb = bytes / Math.pow(1024, 3);
+    return `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
+  };
 
   // Navigation handlers
   const handleNavigation = (tab, path) => {
@@ -153,7 +194,19 @@ const InstructorPage = () => {
         <div className="flex flex-col p-4 gap-3 text-sm">
           <button
             onClick={() =>
-              handleNavigation('course', '/instructor/course-management')
+              handleNavigation('lessons', '/instructor/course-management')
+            }
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === 'lessons'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <FaFileAlt /> Course Management
+          </button>
+          {/* <button
+            onClick={() =>
+              handleNavigation('course', '/instructor/course-old')
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'course'
@@ -161,8 +214,8 @@ const InstructorPage = () => {
                 : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
-            <FaBook /> Course Management
-          </button>
+            <FaBook /> Course old
+          </button> */}
           <button
             onClick={() =>
               handleNavigation('users', '/instructor/user-management')
@@ -197,18 +250,7 @@ const InstructorPage = () => {
           >
             <FaEdit /> Manage Assessments
           </button>
-          <button
-            onClick={() =>
-              handleNavigation('lessons', '/instructor/course-lessons')
-            }
-            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'lessons'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
-            }`}
-          >
-            <FaFileAlt /> Course Lessons
-          </button>
+
           <button
             onClick={() =>
               handleNavigation('groups', '/instructor/group-management')
@@ -344,7 +386,7 @@ const InstructorPage = () => {
           }}
         >
           <div className="max-w-7xl mx-auto w-full px-6 py-5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-blue-600/20">
@@ -361,6 +403,36 @@ const InstructorPage = () => {
                   </p>
                 </div>
               </div>
+              {/* AI token box (CompactTokenDisplay) retained for reference */}
+
+              <div className="flex-shrink-0">
+                <CompactTokenDisplay />
+              </div>
+
+              <div className="flex-shrink-0">
+                {/* AI token chip temporarily replaced with storage usage */}
+                <div className="px-4 py-2 rounded-xl border border-gray-200 bg-white shadow-sm flex items-center gap-2">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold">
+                    <FaCloud />
+                  </span>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-xs text-gray-500 font-semibold">
+                      Storage
+                    </span>
+                    {isStorageLoading ? (
+                      <span className="text-sm text-gray-600">Loading…</span>
+                    ) : formatGb(storageUsage.used) &&
+                      formatGb(storageUsage.total) ? (
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatGb(storageUsage.used)} /{' '}
+                        {formatGb(storageUsage.total)}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-600">Unavailable</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -369,11 +441,12 @@ const InstructorPage = () => {
         <div className="flex-1 overflow-y-auto" style={{ paddingTop: '8rem' }}>
           <div className="max-w-7xl mx-auto w-full px-6 pb-14 pt-6">
             {/* Tabs Content */}
-            {activeTab === 'course' && (
+            {/* Course Management temporarily disabled */}
+            {/* {activeTab === 'course' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CreateCourse />
               </section>
-            )}
+            )} */}
 
             {activeTab === 'users' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

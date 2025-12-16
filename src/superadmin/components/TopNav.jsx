@@ -117,22 +117,32 @@ export default function TopNav() {
             : '0 4px 12px rgba(0,0,0,0.08)',
       }}
     >
-      <div className="flex-1 max-w-2xl mx-auto">
-        <div
-          className="relative flex items-center rounded-2xl px-5 py-3 transition-colors duration-300"
-          style={{
-            backgroundColor:
-              theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-            border: `1px solid ${colors.border}`,
-          }}
+      <div className="flex items-center gap-3 flex-1">
+        <span
+          className="text-xl md:text-2xl font-bold whitespace-nowrap -ml-1"
+          style={{ color: theme === 'dark' ? '#ffffff' : 'rgb(81, 55, 82)' }}
         >
-          <Search size={20} style={{ color: colors.text.tertiary }} />
-          <input
-            type="text"
-            placeholder="Search analytics, reports, users..."
-            className="flex-1 bg-transparent border-none outline-none ml-3 text-sm transition-colors duration-300"
-            style={{ color: colors.text.primary }}
-          />
+          Athena LMS
+        </span>
+        <div className="flex-1 max-w-2xl">
+          <div
+            className="relative flex items-center rounded-2xl px-5 py-3 transition-colors duration-300"
+            style={{
+              backgroundColor:
+                theme === 'dark'
+                  ? 'rgba(255,255,255,0.06)'
+                  : 'rgba(0,0,0,0.05)',
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <Search size={20} style={{ color: colors.text.tertiary }} />
+            <input
+              type="text"
+              placeholder="Search analytics, reports, users..."
+              className="flex-1 bg-transparent border-none outline-none ml-3 text-sm transition-colors duration-300"
+              style={{ color: colors.text.primary }}
+            />
+          </div>
         </div>
       </div>
 

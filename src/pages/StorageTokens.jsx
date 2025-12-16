@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FaCloud,
-  FaKey,
   FaCheckCircle,
   FaShoppingCart,
   FaArrowUp,
@@ -155,20 +154,6 @@ const StorageTokens = () => {
     };
   }, [orgData]);
 
-  const tokens = useMemo(() => {
-    const used = Number(orgData?.ai_tokens_used) || 0;
-    const total = Number(orgData?.ai_token_limit) || 0;
-    return {
-      used,
-      total,
-      unit: 'tokens',
-      resetDate: orgData?.ai_tokens_reset_date,
-      billingMode: orgData?.ai_billing_mode,
-      costLimit: orgData?.ai_cost_limit,
-      costUsed: orgData?.ai_cost_used,
-    };
-  }, [orgData]);
-
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl text-white p-6 shadow-lg">
@@ -186,10 +171,10 @@ const StorageTokens = () => {
           </div>
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-blue-700 font-semibold shadow-sm hover:shadow transition">
-              <FaShoppingCart /> Buy More
+              <FaShoppingCart /> Buy Storage
             </button>
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/50 text-white border border-white/30 font-semibold hover:bg-white/15 transition">
-              <FaArrowUp /> Upgrade Plan
+              <FaArrowUp /> My Plan
             </button>
           </div>
         </div>
@@ -220,19 +205,30 @@ const StorageTokens = () => {
               tag="Media, files, resources"
               description="Includes courses, media uploads, and shared assets."
             />
-            <StatCard
-              icon={FaKey}
-              title="AI Tokens"
-              used={tokens.used}
-              total={tokens.total}
-              unit={tokens.unit}
-              accent="bg-indigo-500"
-              tag={tokens.billingMode || 'AI usage'}
-              description="Tokens consumed by AI course tools and assistants."
-            />
+            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                Usage Health
+              </p>
+              <h3 className="text-xl font-bold text-gray-900 mt-1 mb-3">
+                {storage.total
+                  ? `${Math.round((storage.used / storage.total) * 100)}% used`
+                  : '—'}
+              </h3>
+              <ProgressBar
+                percent={
+                  storage.total
+                    ? Math.round((storage.used / storage.total) * 100)
+                    : 0
+                }
+              />
+              <p className="mt-3 text-sm text-gray-600">
+                Keep usage below 80% for best performance. Offload old media or
+                upgrade when you approach the limit.
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
@@ -266,43 +262,9 @@ const StorageTokens = () => {
             </div>
 
             <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                  <FaKey />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">AI Tokens</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {tokens.used.toLocaleString()} /{' '}
-                    {tokens.total.toLocaleString()} tokens
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Billing: {tokens.billingMode || '—'}{' '}
-                {tokens.costLimit
-                  ? `(limit: ${tokens.costLimit}, used: ${tokens.costUsed})`
-                  : ''}
-              </p>
-              {tokens.resetDate && (
-                <div className="flex items-center justify-between mt-4">
-                  <div>
-                    <p className="text-xs text-gray-500">Next reset</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {new Date(tokens.resetDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-700 transition">
-                    Buy AI Tokens
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
               <p className="text-sm text-gray-500 mb-1">Quick Actions</p>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Add capacity
+                Keep storage healthy
               </h3>
               <div className="space-y-3">
                 <button className="w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-800 font-semibold hover:border-blue-500 hover:text-blue-700 transition flex items-center justify-between">
@@ -310,11 +272,11 @@ const StorageTokens = () => {
                   <FaShoppingCart />
                 </button>
                 <button className="w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-800 font-semibold hover:border-indigo-500 hover:text-indigo-700 transition flex items-center justify-between">
-                  <span>Buy AI tokens</span>
-                  <FaShoppingCart />
+                  <span>Archive old assets</span>
+                  <FaArrowUp />
                 </button>
                 <button className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-sm hover:shadow transition flex items-center justify-between">
-                  <span>Upgrade to next plan</span>
+                  <span>Upgrade storage plan</span>
                   <FaArrowUp />
                 </button>
               </div>

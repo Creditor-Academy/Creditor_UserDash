@@ -4,15 +4,25 @@ import {
   Building2,
   Headset,
   CreditCard,
+  Database,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { darkTheme, lightTheme } from '../theme/colors';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export default function Sidebar() {
   const { theme } = useTheme();
   const colors = theme === 'dark' ? darkTheme : lightTheme;
   const [activePage, setActivePage] = useState('dashboard');
+  const location = useLocation();
+
+  useEffect(() => {
+    // Sync the active button with the current route
+    const segments = location.pathname.split('/').filter(Boolean);
+    const page = segments[1] || 'dashboard'; // e.g., /superadmin/users -> users
+    setActivePage(page);
+  }, [location.pathname]);
 
   const navItems = [
     {
@@ -32,6 +42,11 @@ export default function Sidebar() {
       path: 'supportticket',
     },
     { icon: <CreditCard size={22} />, label: 'Billing', path: 'billing' },
+    {
+      icon: <Database size={22} />,
+      label: 'Tokens & Space',
+      path: 'tokens-space',
+    },
   ];
 
   const handleNavClick = path => {
@@ -43,14 +58,14 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-20 h-screen fixed left-0 top-0 flex flex-col items-center py-8 gap-6 transition-colors duration-300 overflow-visible"
+      className="w-20 h-screen fixed left-0 top-0 flex flex-col items-center py-4 gap-6 transition-colors duration-300 overflow-visible"
       style={{ backgroundColor: colors.bg.secondary, zIndex: 1000 }}
     >
       <div className="mb-4">
         <img
           src="/logoathena.webp"
           alt="Athena Logo"
-          className="w-15 h-15 object-contain drop-shadow-lg"
+          className="w-[3.75rem] h-[3.75rem] object-contain drop-shadow-lg"
           style={{
             filter: 'drop-shadow(0 4px 6px rgba(197, 21, 21, 0.15))',
           }}

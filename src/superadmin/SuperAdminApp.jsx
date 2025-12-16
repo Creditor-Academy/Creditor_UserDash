@@ -6,6 +6,7 @@ import Organizations from './pages/Organizations';
 import Users from './pages/Users';
 import SupportTicket from './pages/SupportTicket';
 import Billing from './pages/Billing';
+import TokensSpace from './pages/tokens-space';
 import UserProfile from './pages/UserProfile';
 import AdminLayout from './components/AdminLayout';
 import './superadmin.css';
@@ -34,6 +35,7 @@ export default function SuperAdminApp() {
             <Route path="/users" element={<Users />} />
             <Route path="/supportticket" element={<SupportTicket />} />
             <Route path="/billing" element={<Billing />} />
+            <Route path="/tokens-space" element={<TokensSpace />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/" element={<SuperAdminDashboard />} />
           </Routes>

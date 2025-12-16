@@ -19,8 +19,7 @@ export default function AddOrganizationModal({
     name: '',
     description: '',
     logo_url: '',
-    monthly_price: '',
-    annual_price: '',
+    plan: 'MONTHLY',
     user_limit: '',
     storage_limit: '',
     credit: '',
@@ -47,12 +46,7 @@ export default function AddOrganizationModal({
         name: editingOrg.name || '',
         description: editingOrg.description || '',
         logo_url: editingOrg.logo_url || '',
-        monthly_price: editingOrg.monthly_price
-          ? String(editingOrg.monthly_price)
-          : '',
-        annual_price: editingOrg.annual_price
-          ? String(editingOrg.annual_price)
-          : '',
+        plan: editingOrg.plan || 'MONTHLY',
         user_limit: editingOrg.user_limit ? String(editingOrg.user_limit) : '',
         storage_limit: editingOrg.storage_limit
           ? bytesToGbString(editingOrg.storage_limit)
@@ -69,8 +63,7 @@ export default function AddOrganizationModal({
         name: '',
         description: '',
         logo_url: '',
-        monthly_price: '',
-        annual_price: '',
+        plan: 'MONTHLY',
         user_limit: '',
         storage_limit: '',
         credit: '',
@@ -156,12 +149,7 @@ export default function AddOrganizationModal({
         name: formData.name,
         description: formData.description,
         logo_url: formData.logo_url || null,
-        monthly_price: formData.monthly_price
-          ? parseFloat(formData.monthly_price)
-          : undefined,
-        annual_price: formData.annual_price
-          ? parseFloat(formData.annual_price)
-          : undefined,
+        plan: formData.plan,
         user_limit: formData.user_limit
           ? parseInt(formData.user_limit, 10)
           : undefined,
@@ -227,10 +215,15 @@ export default function AddOrganizationModal({
           name: '',
           description: '',
           logo_url: '',
+          plan: 'MONTHLY',
           admin_email: '',
           admin_password: '',
           admin_name: '',
           admin_phone: '',
+          user_limit: '',
+          storage_limit: '',
+          credit: '',
+          status: 'ACTIVE',
         });
         setSuccess(false);
         onSuccess?.();
@@ -341,21 +334,18 @@ export default function AddOrganizationModal({
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Monthly Price */}
+          {/* Plan */}
           <div>
             <label
               className="block text-sm font-semibold mb-2 uppercase tracking-wider"
               style={{ color: colors.text.secondary }}
             >
-              Monthly Price (optional)
+              Plan
             </label>
-            <input
-              type="number"
-              name="monthly_price"
-              value={formData.monthly_price}
+            <select
+              name="plan"
+              value={formData.plan}
               onChange={handleInputChange}
-              step="0.01"
-              min="0"
               className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
               style={{
                 backgroundColor: colors.bg.primary,
@@ -364,33 +354,11 @@ export default function AddOrganizationModal({
               }}
               onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
               onBlur={e => (e.currentTarget.style.borderColor = colors.border)}
-            />
-          </div>
-
-          {/* Annual Price */}
-          <div>
-            <label
-              className="block text-sm font-semibold mb-2 uppercase tracking-wider"
-              style={{ color: colors.text.secondary }}
+              required
             >
-              Annual Price (optional)
-            </label>
-            <input
-              type="number"
-              name="annual_price"
-              value={formData.annual_price}
-              onChange={handleInputChange}
-              step="0.01"
-              min="0"
-              className="w-full px-4 py-3 rounded-lg border font-medium transition-all focus:ring-2 focus:ring-offset-0"
-              style={{
-                backgroundColor: colors.bg.primary,
-                borderColor: colors.border,
-                color: colors.text.primary,
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = '#3B82F6')}
-              onBlur={e => (e.currentTarget.style.borderColor = colors.border)}
-            />
+              <option value="MONTHLY">Monthly</option>
+              <option value="YEARLY">Yearly</option>
+            </select>
           </div>
 
           {/* User Limit */}
