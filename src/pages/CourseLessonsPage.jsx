@@ -5,6 +5,7 @@ import {
   fetchAllCourses,
   deleteCourse,
 } from '@/services/courseService';
+import { useAuth } from '@/contexts/AuthContext';
 import { CreateModuleDialog } from '@/components/courses/CreateModuleDialog';
 import { CreateLessonDialog } from '@/components/courses/CreateLessonDialog';
 import CourseFeedbackForm from '@/components/courses/CourseFeedbackForm';
@@ -33,6 +34,7 @@ import { Input } from '@/components/ui/input';
 const COURSES_PER_PAGE = 6;
 
 const CourseLessonsPage = () => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +60,7 @@ const CourseLessonsPage = () => {
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [optionsOpenForCourse, setOptionsOpenForCourse] = useState(null);
   const navigate = useNavigate();
+  const currentUserId = user?.id || user?._id || null;
 
   const isAllowed = true;
 
