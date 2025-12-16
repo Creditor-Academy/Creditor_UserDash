@@ -4646,7 +4646,15 @@ Generate ONLY the caption text, no additional explanation.`;
                   }
                 );
 
-                if (imageResult && (imageResult.url || imageResult.imageUrl)) {
+                if (imageResult?.success === false) {
+                  console.warn(
+                    '⚠️ Image generation skipped:',
+                    imageResult.error || 'Unknown reason'
+                  );
+                } else if (
+                  imageResult &&
+                  (imageResult.url || imageResult.imageUrl)
+                ) {
                   const tempImageUrl = imageResult.url || imageResult.imageUrl;
                   console.log('✅ Image generated:', tempImageUrl);
 
@@ -5726,7 +5734,12 @@ Format: One visual description per line. Return 1-3 descriptions.`;
             quality: 'standard',
           });
 
-          if (imageResult && (imageResult.url || imageResult.imageUrl)) {
+          if (imageResult?.success === false) {
+            console.warn(
+              '⚠️ Visual image generation skipped:',
+              imageResult.error || 'Unknown reason'
+            );
+          } else if (imageResult && (imageResult.url || imageResult.imageUrl)) {
             const tempImageUrl = imageResult.url || imageResult.imageUrl;
 
             // Upload to S3

@@ -186,6 +186,54 @@
   border: 1px solid #c084fc;
 }
 
+.ai-usage-header .billing-badge.neutral {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.ai-usage-header .org-id-text {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.ai-usage-header .token-management-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  padding: 0;
+  font-size: 0;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.ai-usage-header .token-management-btn:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #9333ea 100%);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+  transform: translateY(-2px);
+}
+
+.ai-usage-header .token-management-btn:active {
+  transform: translateY(0);
+}
+
+.ai-usage-header .token-management-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .ai-usage-header .expand-btn {
   display: flex;
   align-items: center;

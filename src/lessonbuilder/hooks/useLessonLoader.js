@@ -17,6 +17,20 @@ const useLessonLoader = ({
   const [loading, setLoading] = useState(true);
   const [fetchingContent, setFetchingContent] = useState(false);
 
+  const buildEmptyContent = lessonId => ({
+    success: true,
+    data: {
+      content: [],
+      lesson_id: lessonId,
+      html_css: '',
+      css: '',
+      script: '',
+      scorm_url: null,
+      scormUrl: null,
+    },
+    message: 'No lesson content found - using empty defaults',
+  });
+
   useEffect(() => {
     const loadLessonData = async () => {
       try {
@@ -45,6 +59,16 @@ const useLessonLoader = ({
                 },
               }
             );
+
+            if (response.status === 404) {
+              devLogger.info(
+                'No lesson content found yet, initializing empty content'
+              );
+              setLessonContent(buildEmptyContent(lessonId));
+              setFetchingContent(false);
+              setLoading(false);
+              return;
+            }
 
             if (!response.ok) {
               throw new Error(
@@ -551,6 +575,15 @@ const useLessonLoader = ({
               }
             );
 
+            if (contentResponse.status === 404) {
+              devLogger.info(
+                'No lesson content found yet, initializing empty content'
+              );
+              setLessonContent(buildEmptyContent(lessonId));
+              setFetchingContent(false);
+              return;
+            }
+
             if (contentResponse.ok) {
               const contentResponseData = await contentResponse.json();
               devLogger.debug('Fetched lesson content:', contentResponseData);
@@ -952,6 +985,8 @@ const useLessonLoader = ({
             }
           } catch (contentError) {
             devLogger.error('Error fetching lesson content:', contentError);
+          } finally {
+            setFetchingContent(false);
           }
         } else {
           setLessonTitle('New Lesson');

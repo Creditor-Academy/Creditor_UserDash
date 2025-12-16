@@ -1,20 +1,40 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Zap, TrendingUp, AlertCircle, BarChart3, Clock } from 'lucide-react';
+import {
+  Zap,
+  TrendingUp,
+  AlertCircle,
+  BarChart3,
+  Clock,
+  Plus,
+} from 'lucide-react';
 import './AIUsageHeader.css';
 import { subscribeActiveOrgUsageRefresh } from '../../utils/activeOrgUsageEvents';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * AIUsageHeader Component
  * Premium AI usage display for top of page
  * Shows organization token usage with detailed breakdown
+ * Only visible to admin and instructor roles
  */
 export const AIUsageHeader = () => {
+  const { userRoles } = useAuth();
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [noOrg, setNoOrg] = useState(false);
+
+  // Check if user is admin or instructor
+  const isAdminOrInstructor = userRoles?.some(
+    role => role === 'admin' || role === 'instructor'
+  );
+
+  // Hide component for regular users
+  if (!isAdminOrInstructor) {
+    return null;
+  }
 
   const fetchTokenStats = useCallback(async () => {
     try {
@@ -145,6 +165,13 @@ export const AIUsageHeader = () => {
         <div className="header-right">
           <span className="billing-badge neutral">Active Org</span>
           <span className="org-id-text">{organization.id}</span>
+          <button
+            className="token-management-btn"
+            onClick={() => (window.location.href = '/storage-and-tokens')}
+            title="Manage tokens and storage"
+          >
+            <Plus size={18} />
+          </button>
           <button
             className="expand-btn"
             onClick={() => setExpanded(!expanded)}

@@ -563,6 +563,22 @@ class SecureAIService {
         'Image generation',
         error.response
       );
+
+      // Gracefully skip on quota/permission issues so downstream logic can
+      // continue without throwing (e.g., when storage/usage is exhausted).
+      const status =
+        error?.response?.status || error?.status || formattedError?.status;
+      if (status === 402 || status === 403) {
+        clientLogger.warn(
+          `⚠️ Skipping image generation due to ${status}: ${formattedError.message}`
+        );
+        return {
+          success: false,
+          error: formattedError.message,
+          status,
+        };
+      }
+
       throw formattedError;
     }
   }

@@ -4,6 +4,7 @@ import { currentUserId } from '@/data/currentUser';
 import { createModule, fetchAllCourses } from '@/services/courseService';
 import { CreateModuleDialog } from '@/components/courses/CreateModuleDialog';
 import { CreateLessonDialog } from '@/components/courses/CreateLessonDialog';
+import CourseFeedbackForm from '@/components/courses/CourseFeedbackForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,7 @@ const CourseLessonsPage = () => {
   const [showCreateLessonDialog, setShowCreateLessonDialog] = useState(false);
   const [selectedCourseForLesson, setSelectedCourseForLesson] = useState(null);
   const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
+  const [showFeedbackCourseId, setShowFeedbackCourseId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const exportInProgressRef = useRef(false);
@@ -486,6 +488,13 @@ const CourseLessonsPage = () => {
                   >
                     View Modules
                   </Button>
+                  <Button
+                    onClick={() => setShowFeedbackCourseId(course.id)}
+                    variant="outline"
+                    className="w-full mt-3"
+                  >
+                    Give Feedback
+                  </Button>
                 </div>
               </Card>
 
@@ -685,6 +694,35 @@ const CourseLessonsPage = () => {
         }
         courseId={selectedCourseForLesson}
       />
+
+      {showFeedbackCourseId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Give Feedback
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Share your experience to help improve this course.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFeedbackCourseId(null)}
+                className="text-gray-500 hover:text-gray-700 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <CourseFeedbackForm
+              courseId={showFeedbackCourseId}
+              userId={currentUserId}
+              onSubmitSuccess={() => setShowFeedbackCourseId(null)}
+            />
+          </div>
+        </div>
+      )}
 
       {showDeleteDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
