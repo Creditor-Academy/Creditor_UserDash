@@ -89,6 +89,18 @@ const normalizeApplication = app => {
     sponsorName: app.sponsor_name || '',
     adTitle: app.title || '',
     description: app.description || '',
+    detailedDescription:
+      app.offer_details ||
+      app.detailed_description ||
+      app.detailedDescription ||
+      '',
+    websiteDescription: app.website_description || app.websiteDescription || '',
+    websiteOverview: app.website_overview || app.websiteOverview || '',
+    websiteFeatures:
+      app.website_features_highlights ||
+      app.website_features ||
+      app.websiteFeatures ||
+      '',
     placement:
       POSITION_TO_PLACEMENT[app.preferred_position] || 'dashboard_banner',
     tier: 'Gold', // Not in backend response, defaulting
@@ -108,6 +120,7 @@ const normalizeApplication = app => {
     contactEmail: app.contact_email || '',
     contactPhone: app.contact_phone || '',
     companyName: app.company_name || '',
+    websiteMedia: app.website_media || [],
   };
 };
 
@@ -598,8 +611,33 @@ export const SponsorAdRequests = () => {
                     {viewingRequest.adTitle}
                   </h3>
                   <p className="text-gray-600">{viewingRequest.description}</p>
+
+                  {/* Detailed Description */}
+                  {viewingRequest.detailedDescription && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        Detailed Description
+                      </h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line">
+                        {viewingRequest.detailedDescription}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Website Description */}
+                  {viewingRequest.websiteDescription && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        About the Website
+                      </h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line">
+                        {viewingRequest.websiteDescription}
+                      </p>
+                    </div>
+                  )}
+
                   {viewingRequest.ctaText && viewingRequest.ctaUrl && (
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 mt-4">
                       {viewingRequest.ctaText}
                     </Button>
                   )}
@@ -656,12 +694,104 @@ export const SponsorAdRequests = () => {
                 </div>
               </div>
 
+              {/* Offer Details */}
+              {viewingRequest.detailedDescription && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 font-semibold">
+                    Offer Details
+                  </Label>
+                  <p className="text-sm p-3 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-line">
+                    {viewingRequest.detailedDescription}
+                  </p>
+                </div>
+              )}
+
+              {/* Website Overview */}
+              {viewingRequest.websiteOverview && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 font-semibold">
+                    Website Overview
+                  </Label>
+                  <p className="text-sm p-3 bg-indigo-50 rounded-xl border border-indigo-200 whitespace-pre-line">
+                    {viewingRequest.websiteOverview}
+                  </p>
+                </div>
+              )}
+
+              {/* Website Description */}
+              {viewingRequest.websiteDescription && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 font-semibold">
+                    Website Description
+                  </Label>
+                  <p className="text-sm p-3 bg-blue-50 rounded-xl border border-blue-200 whitespace-pre-line">
+                    {viewingRequest.websiteDescription}
+                  </p>
+                </div>
+              )}
+
+              {/* Website Features */}
+              {viewingRequest.websiteFeatures && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 font-semibold">
+                    Website Features & Highlights
+                  </Label>
+                  <p className="text-sm p-3 bg-green-50 rounded-xl border border-green-200 whitespace-pre-line">
+                    {viewingRequest.websiteFeatures}
+                  </p>
+                </div>
+              )}
+
+              {/* Website Media */}
+              {viewingRequest.websiteMedia &&
+                Array.isArray(viewingRequest.websiteMedia) &&
+                viewingRequest.websiteMedia.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-500 font-semibold">
+                      Website Media
+                    </Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {viewingRequest.websiteMedia.map((media, index) => (
+                        <div
+                          key={index}
+                          className="relative rounded-lg overflow-hidden border border-gray-200"
+                        >
+                          {media.type === 'image' ? (
+                            <img
+                              src={media.url}
+                              alt={
+                                media.caption || `Website image ${index + 1}`
+                              }
+                              className="w-full h-32 object-cover"
+                              onError={e => {
+                                e.target.src =
+                                  'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                              }}
+                            />
+                          ) : (
+                            <video
+                              src={media.url}
+                              className="w-full h-32 object-cover"
+                              controls
+                            />
+                          )}
+                          {media.caption && (
+                            <p className="text-xs text-gray-600 p-2 bg-white/80 absolute bottom-0 left-0 right-0 truncate">
+                              {media.caption}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
               {viewingRequest.notes && (
                 <div className="space-y-2">
                   <Label className="text-xs text-gray-500">
-                    Requester Notes
+                    Additional Notes
                   </Label>
-                  <p className="text-sm p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <p className="text-sm p-3 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-line">
                     {viewingRequest.notes}
                   </p>
                 </div>

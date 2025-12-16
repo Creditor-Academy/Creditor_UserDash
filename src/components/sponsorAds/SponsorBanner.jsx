@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { trackSponsorAdClick } from '@/services/sponsorAdsService';
 
 export const SponsorBanner = ({ ad, className, isActive = false }) => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [hasAudio, setHasAudio] = useState(false);
@@ -100,12 +102,14 @@ export const SponsorBanner = ({ ad, className, isActive = false }) => {
   };
 
   const handleClick = async e => {
-    if (id && ctaUrl) {
+    if (id) {
       try {
         await trackSponsorAdClick(id);
       } catch (error) {
         console.warn('Failed to track sponsor ad click:', error);
       }
+      // Navigate to ad details page instead of opening website
+      navigate(`/dashboard/sponsor-ad/${id}`);
     }
   };
 
@@ -182,16 +186,13 @@ export const SponsorBanner = ({ ad, className, isActive = false }) => {
           </p>
         </div>
 
-        {ctaText && ctaUrl && (
+        {ctaText && (
           <Button
             size="sm"
             className="bg-white text-blue-700 hover:bg-blue-50 shadow-xl text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 flex-shrink-0 whitespace-nowrap"
             onClick={handleClick}
-            asChild
           >
-            <a href={ctaUrl} target="_blank" rel="noreferrer">
-              {ctaText}
-            </a>
+            {ctaText}
           </Button>
         )}
       </div>

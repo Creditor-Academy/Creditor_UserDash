@@ -363,7 +363,7 @@ const SponsorRequestForm = ({
           className="bg-blue-600 px-6 sm:px-8 text-white hover:bg-blue-700 rounded-xl text-sm sm:text-base w-full sm:w-auto"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Request'}
+          {isSubmitting ? 'Loading...' : 'Continue to Step 2'}
         </Button>
       </div>
     </form>

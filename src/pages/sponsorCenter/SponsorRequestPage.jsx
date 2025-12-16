@@ -1,12 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import SponsorRequestForm from '@/components/sponsorCenter/SponsorRequestForm';
 import SponsorAdCard from '@/components/sponsorCenter/SponsorAdCard';
-import SponsorRequestSuccessBanner from '@/components/sponsorCenter/SponsorRequestSuccessBanner';
-import { useUserSponsor } from '@/contexts/UserSponsorContext';
 import { useUser } from '@/contexts/UserContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { submitSponsorAdRequest } from '@/services/sponsorAdsService';
+import { CheckCircle2 } from 'lucide-react';
 
 const initialForm = {
   sponsorName: '',
@@ -27,13 +26,12 @@ const initialForm = {
 };
 
 const SponsorRequestPage = () => {
-  const { addRequest, refreshApplications } = useUserSponsor();
+  const navigate = useNavigate();
   const { userProfile } = useUser();
   const [formState, setFormState] = useState(initialForm);
   const [mediaPreview, setMediaPreview] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -128,58 +126,30 @@ const SponsorRequestPage = () => {
   const handleSubmit = async e => {
     e.preventDefault();
     if (!validate()) return;
-    setIsSubmitting(true);
 
-    try {
-      // Prepare request data
-      const requestData = {
-        title: formState.adTitle,
-        description: formState.description,
-        sponsor_name: formState.sponsorName,
-        company_name: formState.companyName,
-        contact_email: formState.contactEmail,
-        contact_phone: formState.contactPhone,
-        mediaFile: formState.mediaFile || formState.mediaUrl,
-        link_url: formState.website,
-        placement: formState.placement,
-        preferred_start_date: formState.startDate,
-        preferred_end_date: formState.endDate,
-        budget: formState.budget || '0',
-        additional_notes: formState.notes,
-      };
+    // Navigate to step 2 (description page) with step 1 data
+    const step1Data = {
+      title: formState.adTitle,
+      description: formState.description,
+      sponsor_name: formState.sponsorName,
+      company_name: formState.companyName,
+      contact_email: formState.contactEmail,
+      contact_phone: formState.contactPhone,
+      mediaFile: formState.mediaFile,
+      mediaUrl: mediaPreview || formState.mediaUrl,
+      placement: formState.placement,
+      preferred_start_date: formState.startDate,
+      preferred_end_date: formState.endDate,
+      budget: formState.budget || '0',
+      additional_notes: formState.notes,
+      website: formState.website,
+      adType: formState.adType,
+    };
 
-      // Submit to backend
-      const result = await submitSponsorAdRequest(requestData);
-
-      // Refresh applications list
-      if (refreshApplications) {
-        await refreshApplications();
-      }
-
-      setIsSubmitting(false);
-      setShowSuccess(true);
-      toast.success(
-        result.message ||
-          'Ad application submitted successfully. Admin will review your request.'
-      );
-      // Clean up preview URL before resetting
-      if (mediaPreview) {
-        URL.revokeObjectURL(mediaPreview);
-      }
-
-      setFormState(initialForm);
-      setMediaPreview('');
-      setFormState(prev => ({
-        ...prev,
-        contactEmail: userProfile?.email || '',
-      }));
-    } catch (error) {
-      console.error('Failed to submit sponsor ad request:', error);
-      setIsSubmitting(false);
-      toast.error(
-        error.message || 'Failed to submit ad request. Please try again.'
-      );
-    }
+    // Navigate to description page
+    navigate('/dashboard/sponsor-center/submit/description', {
+      state: { step1Data },
+    });
   };
 
   const previewData = useMemo(() => {
@@ -212,24 +182,40 @@ const SponsorRequestPage = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] gap-4 sm:gap-6">
-      <div className="space-y-4 sm:space-y-5">
-        {showSuccess && <SponsorRequestSuccessBanner />}
-        <SponsorRequestForm
-          formState={formState}
-          errors={errors}
-          onInputChange={handleInputChange}
-          onPlacementChange={handlePlacementChange}
-          onFileChange={handleFileChange}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-        />
+    <div className="space-y-6">
+      {/* Step Indicator */}
+      <div className="flex items-center gap-4">
+        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+          1
+        </div>
+        <div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+            Step 1: Ad Details
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Provide basic information about your ad
+          </p>
+        </div>
       </div>
-      <div className="space-y-2 sm:space-y-3 order-first xl:order-last">
-        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-          Live Preview
-        </p>
-        <SponsorAdCard ad={previewData} isPreview hideActions />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] gap-4 sm:gap-6">
+        <div className="space-y-4 sm:space-y-5">
+          <SponsorRequestForm
+            formState={formState}
+            errors={errors}
+            onInputChange={handleInputChange}
+            onPlacementChange={handlePlacementChange}
+            onFileChange={handleFileChange}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        </div>
+        <div className="space-y-2 sm:space-y-3 order-first xl:order-last">
+          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+            Live Preview
+          </p>
+          <SponsorAdCard ad={previewData} isPreview hideActions />
+        </div>
       </div>
     </div>
   );

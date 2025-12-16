@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export const SponsorCoursePlayerAd = ({ ad, className }) => {
+  const navigate = useNavigate();
+
   if (!ad) return null;
   const {
     sponsorName,
@@ -16,6 +19,7 @@ export const SponsorCoursePlayerAd = ({ ad, className }) => {
     ctaText,
     ctaUrl,
     tier,
+    id,
   } = ad;
 
   return (
@@ -65,15 +69,23 @@ export const SponsorCoursePlayerAd = ({ ad, className }) => {
           <p className="text-sm text-gray-600">{description}</p>
         </div>
 
-        {ctaText && ctaUrl && (
+        {ctaText && id && (
           <Button
-            asChild
             className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+            onClick={async () => {
+              try {
+                const { trackSponsorAdClick } = await import(
+                  '@/services/sponsorAdsService'
+                );
+                await trackSponsorAdClick(id);
+              } catch (error) {
+                console.warn('Failed to track sponsor ad click:', error);
+              }
+              navigate(`/dashboard/sponsor-ad/${id}`);
+            }}
           >
-            <a href={ctaUrl} target="_blank" rel="noreferrer">
-              <Play className="w-4 h-4" />
-              {ctaText}
-            </a>
+            <Play className="w-4 h-4" />
+            {ctaText}
           </Button>
         )}
       </CardContent>

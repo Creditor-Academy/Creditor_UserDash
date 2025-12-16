@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -30,6 +31,7 @@ const resolveLink = url => {
 };
 
 const SponsorDashboardAds = () => {
+  const navigate = useNavigate();
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,7 +63,7 @@ const SponsorDashboardAds = () => {
   const hasAds = useMemo(() => ads && ads.length > 0, [ads]);
 
   const handleAdClick = async ad => {
-    if (!ad?.link_url) return;
+    if (!ad?.id) return;
     try {
       setClickingId(ad.id);
       await trackSponsorAdClick(ad.id);
@@ -69,7 +71,8 @@ const SponsorDashboardAds = () => {
       console.warn('Failed to track sponsor ad click:', err);
     } finally {
       setClickingId(null);
-      window.open(resolveLink(ad.link_url), '_blank', 'noopener,noreferrer');
+      // Navigate to ad details page instead of opening website
+      navigate(`/dashboard/sponsor-ad/${ad.id}`);
     }
   };
 

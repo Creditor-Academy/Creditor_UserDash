@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Volume2, VolumeX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { trackSponsorAdClick } from '@/services/sponsorAdsService';
 
 export const SponsorSidebarAd = ({ ad, className, isActive = true }) => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
   const [hasAudio, setHasAudio] = useState(false);
@@ -102,12 +104,14 @@ export const SponsorSidebarAd = ({ ad, className, isActive = true }) => {
   };
 
   const handleClick = async e => {
-    if (id && ctaUrl) {
+    if (id) {
       try {
         await trackSponsorAdClick(id);
       } catch (error) {
         console.warn('Failed to track sponsor ad click:', error);
       }
+      // Navigate to ad details page instead of opening website
+      navigate(`/dashboard/sponsor-ad/${id}`);
     }
   };
 
@@ -190,17 +194,14 @@ export const SponsorSidebarAd = ({ ad, className, isActive = true }) => {
         </div>
 
         {/* Learn More Button */}
-        {ctaText && ctaUrl && (
+        {ctaText && (
           <Button
             size="sm"
             className="w-full bg-white text-blue-700 hover:bg-blue-50 shadow-xl text-[10px] sm:text-xs px-2 py-1 mt-1.5 flex items-center justify-center gap-1"
             onClick={handleClick}
-            asChild
           >
-            <a href={ctaUrl} target="_blank" rel="noreferrer">
-              {ctaText}
-              <ArrowUpRight className="w-2.5 h-2.5" />
-            </a>
+            {ctaText}
+            <ArrowUpRight className="w-2.5 h-2.5" />
           </Button>
         )}
       </CardContent>

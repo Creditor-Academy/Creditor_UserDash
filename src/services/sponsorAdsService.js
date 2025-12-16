@@ -413,6 +413,65 @@ export async function submitSponsorAdRequest(requestData) {
     const preferredPosition =
       PLACEMENT_TO_POSITION[requestData.placement] || 'DASHBOARD';
 
+    // Upload website media (images and videos)
+    const websiteMedia = [];
+
+    if (requestData.websiteImages && Array.isArray(requestData.websiteImages)) {
+      for (const imageFile of requestData.websiteImages) {
+        if (imageFile instanceof File) {
+          try {
+            const uploadResult = await uploadImage(imageFile, {
+              folder: 'sponsor-ads/website-media',
+              public: true,
+              type: 'image',
+            });
+            websiteMedia.push({
+              type: 'image',
+              url: uploadResult.imageUrl,
+              caption: imageFile.name || '',
+            });
+          } catch (error) {
+            console.error('Failed to upload website image:', error);
+          }
+        } else if (typeof imageFile === 'string') {
+          // If it's already a URL
+          websiteMedia.push({
+            type: 'image',
+            url: imageFile,
+            caption: '',
+          });
+        }
+      }
+    }
+
+    if (requestData.websiteVideos && Array.isArray(requestData.websiteVideos)) {
+      for (const videoFile of requestData.websiteVideos) {
+        if (videoFile instanceof File) {
+          try {
+            const uploadResult = await uploadVideo(videoFile, {
+              folder: 'sponsor-ads/website-media',
+              public: true,
+              type: 'video',
+            });
+            websiteMedia.push({
+              type: 'video',
+              url: uploadResult.videoUrl,
+              caption: videoFile.name || '',
+            });
+          } catch (error) {
+            console.error('Failed to upload website video:', error);
+          }
+        } else if (typeof videoFile === 'string') {
+          // If it's already a URL
+          websiteMedia.push({
+            type: 'video',
+            url: videoFile,
+            caption: '',
+          });
+        }
+      }
+    }
+
     // Prepare payload
     const payload = {
       title: requestData.title?.trim() || '',
@@ -423,12 +482,18 @@ export async function submitSponsorAdRequest(requestData) {
       contact_phone: requestData.contact_phone?.trim() || '',
       image_url: imageUrl || '',
       video_url: videoUrl || null,
-      link_url: requestData.link_url?.trim() || '',
+      link_url:
+        requestData.link_url?.trim() || requestData.websiteUrl?.trim() || '',
       preferred_position: preferredPosition,
       preferred_start_date: formatDate(requestData.preferred_start_date),
       preferred_end_date: formatDate(requestData.preferred_end_date),
       budget: parseFloat(requestData.budget) || 0,
       additional_notes: requestData.additional_notes?.trim() || '',
+      website_overview: requestData.website_overview?.trim() || '',
+      offer_details: requestData.offer_details?.trim() || '',
+      website_features_highlights:
+        requestData.website_features_highlights?.trim() || '',
+      website_media: websiteMedia,
     };
 
     console.log('📤 Sending request to backend:', payload);

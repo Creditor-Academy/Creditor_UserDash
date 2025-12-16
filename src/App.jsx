@@ -42,8 +42,10 @@ import AnnouncementsPage from '@/pages/group/AnnouncementsPage';
 import ChatPage from '@/pages/group/ChatPage';
 import SponsorCenterLayout from '@/pages/sponsorCenter/SponsorCenterLayout';
 import SponsorRequestPage from '@/pages/sponsorCenter/SponsorRequestPage';
+import SponsorRequestDescriptionPage from '@/pages/sponsorCenter/SponsorRequestDescriptionPage';
 import MySponsorAdsPage from '@/pages/sponsorCenter/MySponsorAdsPage';
 import SponsorAnalyticsPage from '@/pages/sponsorCenter/SponsorAnalyticsPage';
+import SponsorAdDetailsPage from '@/pages/sponsorCenter/SponsorAdDetailsPage';
 import SpeechifyReaderView from '@/pages/SpeechifyReaderView';
 import AvatarPickerPage from '@/pages/AvatarPickerPage';
 import FAQs from '@/pages/FAQs';
@@ -570,12 +572,24 @@ function App() {
                     >
                       <Route index element={<SponsorRequestPage />} />
                       <Route path="submit" element={<SponsorRequestPage />} />
+                      <Route
+                        path="submit/description"
+                        element={<SponsorRequestDescriptionPage />}
+                      />
                       <Route path="my-ads" element={<MySponsorAdsPage />} />
                       <Route
                         path="analytics"
                         element={<SponsorAnalyticsPage />}
                       />
                     </Route>
+                    <Route
+                      path="sponsor-ad/:adId"
+                      element={
+                        <ProtectedRoute>
+                          <SponsorAdDetailsPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Catalog and enrollment */}
                     <Route path="catalog">
