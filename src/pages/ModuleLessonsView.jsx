@@ -68,6 +68,12 @@ import {
 import ImageEditor from '@lessonbuilder/components/blocks/MediaBlocks/ImageEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { uploadImage } from '@/services/imageUploadService';
+import {
+  getLessonResources,
+  uploadLessonResource,
+  deleteLessonResource,
+  updateLessonResource,
+} from '@/services/lessonResourceService';
 
 const ModuleLessonsView = () => {
   const { courseId, moduleId } = useParams();
@@ -998,33 +1004,6 @@ const ModuleLessonsView = () => {
     }
   };
 
-  // Dummy resources data
-  const getDummyResources = lessonId => {
-    // Return dummy resources based on lesson ID
-    return [
-      {
-        id: '1',
-        title: 'Sample PDF Document',
-        description: 'A sample PDF resource for this lesson',
-        fileName: 'sample-document.pdf',
-        fileType: 'application/pdf',
-        fileSize: 1024000, // 1MB
-        url: 'https://example.com/resources/sample-document.pdf',
-        uploadDate: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        title: 'Video Tutorial',
-        description: 'Instructional video for this lesson',
-        fileName: 'tutorial-video.mp4',
-        fileType: 'video/mp4',
-        fileSize: 5242880, // 5MB
-        url: 'https://example.com/resources/tutorial-video.mp4',
-        uploadDate: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ];
-  };
-
   // Lesson Resources Handlers
   const handleOpenResourcesDialog = async lesson => {
     setSelectedLessonForResources(lesson);
@@ -1032,13 +1011,7 @@ const ModuleLessonsView = () => {
     setResourceFile(null);
     setResourceTitle('');
     setResourceDescription('');
-    // Use dummy data instead of API call
-    setLoadingResources(true);
-    setTimeout(() => {
-      const dummyResources = getDummyResources(lesson.id);
-      setLessonResources(dummyResources);
-      setLoadingResources(false);
-    }, 300);
+    await fetchLessonResources(lesson.id);
   };
 
   const handleCloseResourcesDialog = () => {
@@ -1050,15 +1023,34 @@ const ModuleLessonsView = () => {
     setResourceDescription('');
   };
 
+  const fetchLessonResources = async lessonId => {
+    try {
+      setLoadingResources(true);
+      const resources = await getLessonResources(lessonId);
+      setLessonResources(Array.isArray(resources) ? resources : []);
+    } catch (error) {
+      console.error('Error fetching lesson resources:', error);
+      // Set empty array on error
+      setLessonResources([]);
+      toast({
+        title: 'Error',
+        description: 'Failed to load resources.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingResources(false);
+    }
+  };
+
   const handleResourceFileChange = e => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 500 * 1024 * 1024; // 500MB
+    const maxSize = 1024 * 1024 * 1024; // 1GB (backend limit)
     if (file.size > maxSize) {
       toast({
         title: 'File Too Large',
-        description: 'Please select a file under 500MB.',
+        description: 'Please select a file under 1GB.',
         variant: 'destructive',
       });
       return;
@@ -1089,31 +1081,30 @@ const ModuleLessonsView = () => {
       return;
     }
 
+    if (!resourceTitle.trim()) {
+      toast({
+        title: 'Title Required',
+        description: 'Please enter a title for the resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setUploadingResource(true);
 
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Create dummy resource object
-      const newResource = {
-        id: Date.now().toString(),
-        title: resourceTitle || resourceFile.name,
+      await uploadLessonResource(selectedLessonForResources.id, resourceFile, {
+        title: resourceTitle,
         description: resourceDescription,
-        fileName: resourceFile.name,
-        fileType: resourceFile.type,
-        fileSize: resourceFile.size,
-        url: URL.createObjectURL(resourceFile),
-        uploadDate: new Date().toISOString(),
-      };
-
-      // Add to resources list (dummy data)
-      setLessonResources(prev => [newResource, ...prev]);
+      });
 
       toast({
         title: 'Success',
         description: 'Resource uploaded successfully!',
       });
+
+      // Refresh resources list
+      await fetchLessonResources(selectedLessonForResources.id);
 
       // Reset form
       setResourceFile(null);
@@ -1124,9 +1115,19 @@ const ModuleLessonsView = () => {
       }
     } catch (error) {
       console.error('Error uploading resource:', error);
+      let errorMessage = 'Failed to upload resource. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: 'Error',
-        description: 'Failed to upload resource. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -1139,22 +1140,28 @@ const ModuleLessonsView = () => {
 
     try {
       setDeletingResourceId(resourceId);
-
-      // Simulate delete delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Remove from resources list (dummy data)
-      setLessonResources(prev => prev.filter(r => r.id !== resourceId));
+      await deleteLessonResource(selectedLessonForResources.id, resourceId);
 
       toast({
         title: 'Success',
         description: 'Resource deleted successfully!',
       });
+
+      // Refresh resources list
+      await fetchLessonResources(selectedLessonForResources.id);
     } catch (error) {
       console.error('Error deleting resource:', error);
+      let errorMessage = 'Failed to delete resource. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
       toast({
         title: 'Error',
-        description: 'Failed to delete resource. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -2080,7 +2087,7 @@ const ModuleLessonsView = () => {
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Maximum file size: 500MB. Supported formats: PDF, Images,
+                  Maximum file size: 1GB. Supported formats: PDF, Images,
                   Videos, Documents.
                 </p>
               </div>
@@ -2138,25 +2145,16 @@ const ModuleLessonsView = () => {
               ) : lessonResources.length > 0 ? (
                 <div className="space-y-2">
                   {lessonResources.map((resource, index) => {
-                    const resourceUrl =
-                      resource.url ||
-                      resource.fileUrl ||
-                      resource.assetUrl ||
-                      resource.asset_url ||
-                      resource.Location;
-                    const fileName =
-                      resource.fileName ||
-                      resource.filename ||
-                      resource.title ||
-                      `Resource ${index + 1}`;
+                    // Backend response fields: id, title, description, url, resource_type
+                    const resourceUrl = resource.url;
 
                     return (
-                      <Card key={resource.id || resource._id || index}>
+                      <Card key={resource.id || index}>
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium text-sm mb-1 line-clamp-1">
-                                {resource.title || fileName}
+                                {resource.title || 'Untitled Resource'}
                               </h4>
                               {resource.description && (
                                 <p className="text-xs text-gray-600 line-clamp-2 mb-2">
@@ -2164,14 +2162,17 @@ const ModuleLessonsView = () => {
                                 </p>
                               )}
                               <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <span>{fileName}</span>
-                                {resource.fileSize && (
+                                <span className="capitalize">
+                                  {resource.resource_type
+                                    ?.replace('_', ' ')
+                                    .toLowerCase() || 'File'}
+                                </span>
+                                {(resource.created_at ||
+                                  resource.updated_at) && (
                                   <span>
-                                    {(
-                                      resource.fileSize /
-                                      (1024 * 1024)
-                                    ).toFixed(2)}{' '}
-                                    MB
+                                    {new Date(
+                                      resource.created_at || resource.updated_at
+                                    ).toLocaleDateString()}
                                   </span>
                                 )}
                               </div>
@@ -2196,18 +2197,12 @@ const ModuleLessonsView = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() =>
-                                  handleDeleteResource(
-                                    resource.id || resource._id
-                                  )
+                                  handleDeleteResource(resource.id)
                                 }
-                                disabled={
-                                  deletingResourceId ===
-                                  (resource.id || resource._id)
-                                }
+                                disabled={deletingResourceId === resource.id}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
-                                {deletingResourceId ===
-                                (resource.id || resource._id) ? (
+                                {deletingResourceId === resource.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Trash2Icon className="h-4 w-4" />

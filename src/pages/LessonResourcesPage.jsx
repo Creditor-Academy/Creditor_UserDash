@@ -15,54 +15,9 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// Dummy data for resources
-const DUMMY_RESOURCES = [
-  {
-    id: '1',
-    title: 'Introduction to Business Credit PDF',
-    description:
-      'A comprehensive guide covering the basics of business credit and why it matters.',
-    fileName: 'business-credit-intro.pdf',
-    fileType: 'application/pdf',
-    fileSize: 2048576, // 2MB
-    url: 'https://example.com/resources/business-credit-intro.pdf',
-    uploadDate: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: 'Credit Bureau Overview Video',
-    description:
-      'Video tutorial explaining the major business credit bureaus and how they work.',
-    fileName: 'credit-bureaus-overview.mp4',
-    fileType: 'video/mp4',
-    fileSize: 15728640, // 15MB
-    url: 'https://example.com/resources/credit-bureaus-overview.mp4',
-    uploadDate: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Credit Score Calculation Guide',
-    description:
-      'Detailed infographic showing how business credit scores are calculated.',
-    fileName: 'credit-score-guide.png',
-    fileType: 'image/png',
-    fileSize: 1048576, // 1MB
-    url: 'https://example.com/resources/credit-score-guide.png',
-    uploadDate: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: '4',
-    title: 'Sample Credit Report',
-    description:
-      'Example business credit report with annotations explaining each section.',
-    fileName: 'sample-credit-report.pdf',
-    fileType: 'application/pdf',
-    fileSize: 3145728, // 3MB
-    url: 'https://example.com/resources/sample-credit-report.pdf',
-    uploadDate: new Date(Date.now() - 259200000).toISOString(),
-  },
-];
+import { getLessonResources } from '@/services/lessonResourceService';
+import axios from 'axios';
+import { getAuthHeader } from '@/services/authHeader';
 
 const LessonResourcesPage = () => {
   const { courseId, moduleId, lessonId } = useParams();
@@ -76,12 +31,7 @@ const LessonResourcesPage = () => {
 
   useEffect(() => {
     if (courseId && moduleId && lessonId) {
-      // Simulate loading delay
-      setTimeout(() => {
-        setResources(DUMMY_RESOURCES);
-        setLessonTitle('Introduction: Why Business Credit Matters');
-        setLoading(false);
-      }, 500);
+      fetchLessonData();
     } else {
       console.error('Missing route parameters:', {
         courseId,
@@ -93,61 +43,103 @@ const LessonResourcesPage = () => {
     }
   }, [courseId, moduleId, lessonId]);
 
-  const getFileIcon = (fileType, fileName) => {
-    if (!fileType && fileName) {
-      const ext = fileName.split('.').pop()?.toLowerCase();
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
-        return <Image className="h-8 w-8 text-blue-500" />;
-      }
-      if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) {
-        return <Video className="h-8 w-8 text-purple-500" />;
-      }
-      if (['pdf'].includes(ext)) {
-        return <FileText className="h-8 w-8 text-red-500" />;
-      }
-    }
+  const fetchLessonData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    if (fileType?.startsWith('image/')) {
+      // Fetch lesson details and resources in parallel
+      const [lessonResponse, resourcesData] = await Promise.all([
+        axios
+          .get(
+            `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
+            {
+              headers: getAuthHeader(),
+              withCredentials: true,
+            }
+          )
+          .catch(err => {
+            console.error('Error fetching lessons:', err);
+            return { data: [] };
+          }),
+        getLessonResources(lessonId).catch(err => {
+          console.warn('Lesson resources endpoint error:', err);
+          return [];
+        }),
+      ]);
+
+      // Find the specific lesson
+      let lessonsData = [];
+      if (Array.isArray(lessonResponse.data)) {
+        lessonsData = lessonResponse.data;
+      } else if (lessonResponse.data?.data) {
+        lessonsData = Array.isArray(lessonResponse.data.data)
+          ? lessonResponse.data.data
+          : [lessonResponse.data.data];
+      } else if (lessonResponse.data?.lessons) {
+        lessonsData = Array.isArray(lessonResponse.data.lessons)
+          ? lessonResponse.data.lessons
+          : [lessonResponse.data.lessons];
+      }
+
+      const lesson = lessonsData.find(
+        l =>
+          l.id?.toString() === lessonId?.toString() ||
+          l.lesson_id?.toString() === lessonId?.toString()
+      );
+
+      if (lesson) {
+        setLessonTitle(lesson.title || lesson.lesson_title || 'Lesson');
+      }
+
+      setResources(Array.isArray(resourcesData) ? resourcesData : []);
+    } catch (err) {
+      console.error('Error fetching lesson data:', err);
+      setError('Failed to load lesson resources. Please try again.');
+      toast({
+        title: 'Error',
+        description: err.response?.data?.message || 'Failed to load resources.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFileIcon = resourceType => {
+    // Backend returns resource_type: IMAGE, VIDEO, TEXT_FILE, PDF
+    const type = resourceType?.toUpperCase();
+
+    if (type === 'IMAGE') {
       return <Image className="h-8 w-8 text-blue-500" />;
     }
-    if (fileType?.startsWith('video/')) {
+    if (type === 'VIDEO') {
       return <Video className="h-8 w-8 text-purple-500" />;
     }
-    if (fileType === 'application/pdf' || fileName?.endsWith('.pdf')) {
+    if (type === 'PDF') {
       return <FileText className="h-8 w-8 text-red-500" />;
+    }
+    if (type === 'TEXT_FILE') {
+      return <File className="h-8 w-8 text-gray-500" />;
     }
     return <File className="h-8 w-8 text-gray-500" />;
   };
 
-  const getFileTypeBadge = (fileType, fileName) => {
-    if (!fileType && fileName) {
-      const ext = fileName.split('.').pop()?.toLowerCase();
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
-        return 'Image';
-      }
-      if (['mp4', 'webm', 'mov', 'avi'].includes(ext)) {
-        return 'Video';
-      }
-      if (['pdf'].includes(ext)) {
-        return 'PDF';
-      }
-      return 'File';
-    }
+  const getFileTypeBadge = resourceType => {
+    const type = resourceType?.toUpperCase();
 
-    if (fileType?.startsWith('image/')) return 'Image';
-    if (fileType?.startsWith('video/')) return 'Video';
-    if (fileType === 'application/pdf') return 'PDF';
+    if (type === 'IMAGE') return 'Image';
+    if (type === 'VIDEO') return 'Video';
+    if (type === 'PDF') return 'PDF';
+    if (type === 'TEXT_FILE') return 'Document';
     return 'File';
   };
 
   const handleDownload = resource => {
-    const url =
-      resource.url ||
-      resource.fileUrl ||
-      resource.assetUrl ||
-      resource.asset_url;
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+    // Backend returns 'url' field with S3 URL
+    const resourceUrl = resource.url;
+    if (resourceUrl) {
+      window.open(resourceUrl, '_blank', 'noopener,noreferrer');
     } else {
       toast({
         title: 'Error',
@@ -158,12 +150,21 @@ const LessonResourcesPage = () => {
   };
 
   const formatFileSize = bytes => {
-    if (!bytes) return 'Unknown size';
+    if (!bytes) return '';
     const mb = bytes / (1024 * 1024);
     if (mb < 1) {
       return `${(bytes / 1024).toFixed(2)} KB`;
     }
     return `${mb.toFixed(2)} MB`;
+  };
+
+  const formatDate = dateString => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return '';
+    }
   };
 
   if (loading) {
@@ -235,35 +236,24 @@ const LessonResourcesPage = () => {
       {resources.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {resources.map((resource, index) => {
-            const resourceUrl =
-              resource.url ||
-              resource.fileUrl ||
-              resource.assetUrl ||
-              resource.asset_url ||
-              resource.Location;
-            const fileName =
-              resource.fileName ||
-              resource.filename ||
-              resource.title ||
-              `Resource ${index + 1}`;
-            const fileType =
-              resource.fileType || resource.file_type || resource.mimetype;
+            // Backend response fields: id, title, description, url, resource_type, created_at
+            const resourceType = resource.resource_type;
 
             return (
               <Card
-                key={resource.id || resource._id || index}
+                key={resource.id || index}
                 className="hover:shadow-lg transition-shadow"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3 flex-1">
-                      {getFileIcon(fileType, fileName)}
+                      {getFileIcon(resourceType)}
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg line-clamp-2">
-                          {resource.title || fileName}
+                          {resource.title || 'Untitled Resource'}
                         </CardTitle>
                         <Badge variant="outline" className="mt-2">
-                          {getFileTypeBadge(fileType, fileName)}
+                          {getFileTypeBadge(resourceType)}
                         </Badge>
                       </div>
                     </div>
@@ -275,22 +265,19 @@ const LessonResourcesPage = () => {
                       {resource.description}
                     </p>
                   )}
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                    {resource.fileSize && (
-                      <span>{formatFileSize(resource.fileSize)}</span>
-                    )}
-                    {resource.uploadDate && (
+                  {(resource.created_at || resource.updated_at) && (
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
                       <span>
-                        {new Date(resource.uploadDate).toLocaleDateString()}
+                        {formatDate(resource.created_at || resource.updated_at)}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <Button
                     className="w-full"
                     onClick={() => handleDownload(resource)}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    {fileType?.startsWith('video/') ? 'Watch' : 'Download'}
+                    {resourceType === 'VIDEO' ? 'Watch' : 'Download'}
                   </Button>
                 </CardContent>
               </Card>

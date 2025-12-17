@@ -1,10 +1,29 @@
 // Lesson Resources Service
-import api from './apiClient';
+import axios from 'axios';
 import { getAuthHeader } from './authHeader';
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   'https://creditor-backend-ceds.onrender.com';
+
+/**
+ * Determine resource type based on file
+ * @param {File} file - The file to check
+ * @returns {string} Resource type (IMAGE, VIDEO, TEXT_FILE, PDF)
+ */
+function determineResourceType(file) {
+  const mimeType = file.type.toLowerCase();
+
+  if (mimeType.startsWith('image/')) {
+    return 'IMAGE';
+  } else if (mimeType.startsWith('video/')) {
+    return 'VIDEO';
+  } else if (mimeType === 'application/pdf') {
+    return 'PDF';
+  } else {
+    return 'TEXT_FILE';
+  }
+}
 
 /**
  * Get all resources for a specific lesson
@@ -13,8 +32,8 @@ const API_BASE =
  */
 export async function getLessonResources(lessonId) {
   try {
-    const response = await api.get(
-      `${API_BASE}/api/lesson/${lessonId}/resources`,
+    const response = await axios.get(
+      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/view-all`,
       {
         headers: getAuthHeader(),
         withCredentials: true,
@@ -43,9 +62,10 @@ export async function getLessonResources(lessonId) {
 export async function uploadLessonResource(lessonId, file, metadata = {}) {
   try {
     const formData = new FormData();
-    formData.append('resource', file);
-    formData.append('lesson_id', lessonId);
+    // Backend expects field name 'lesson-resource'
+    formData.append('lesson-resource', file);
 
+    // Required fields
     if (metadata.title) {
       formData.append('title', metadata.title);
     }
@@ -53,8 +73,12 @@ export async function uploadLessonResource(lessonId, file, metadata = {}) {
       formData.append('description', metadata.description);
     }
 
-    const response = await api.post(
-      `${API_BASE}/api/lesson/${lessonId}/resources/upload`,
+    // Determine resource type from file
+    const resourceType = metadata.resource_type || determineResourceType(file);
+    formData.append('resource_type', resourceType);
+
+    const response = await axios.post(
+      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/add`,
       formData,
       {
         headers: {
@@ -62,7 +86,7 @@ export async function uploadLessonResource(lessonId, file, metadata = {}) {
           'Content-Type': 'multipart/form-data',
         },
         withCredentials: true,
-        timeout: 600000, // 10 minutes for large files
+        timeout: 600000, // 10 minutes for large files (1GB limit on backend)
       }
     );
 
@@ -74,39 +98,16 @@ export async function uploadLessonResource(lessonId, file, metadata = {}) {
 }
 
 /**
- * Delete a resource from a lesson
- * @param {string} lessonId - The ID of the lesson
- * @param {string} resourceId - The ID of the resource to delete
- * @returns {Promise<Object>} Delete response
- */
-export async function deleteLessonResource(lessonId, resourceId) {
-  try {
-    const response = await api.delete(
-      `${API_BASE}/api/lesson/${lessonId}/resources/${resourceId}`,
-      {
-        headers: getAuthHeader(),
-        withCredentials: true,
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting lesson resource:', error);
-    throw error;
-  }
-}
-
-/**
  * Update a lesson resource metadata
  * @param {string} lessonId - The ID of the lesson
  * @param {string} resourceId - The ID of the resource
- * @param {Object} updates - Updates to apply (title, description)
+ * @param {Object} updates - Updates to apply (title, description, resource_type)
  * @returns {Promise<Object>} Update response
  */
 export async function updateLessonResource(lessonId, resourceId, updates) {
   try {
-    const response = await api.patch(
-      `${API_BASE}/api/lesson/${lessonId}/resources/${resourceId}`,
+    const response = await axios.put(
+      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/${resourceId}/edit`,
       updates,
       {
         headers: {
@@ -120,6 +121,29 @@ export async function updateLessonResource(lessonId, resourceId, updates) {
     return response.data?.data || response.data;
   } catch (error) {
     console.error('Error updating lesson resource:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a resource from a lesson
+ * @param {string} lessonId - The ID of the lesson
+ * @param {string} resourceId - The ID of the resource to delete
+ * @returns {Promise<Object>} Delete response
+ */
+export async function deleteLessonResource(lessonId, resourceId) {
+  try {
+    const response = await axios.delete(
+      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/${resourceId}/delete`,
+      {
+        headers: getAuthHeader(),
+        withCredentials: true,
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting lesson resource:', error);
     throw error;
   }
 }
