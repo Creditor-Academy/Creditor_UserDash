@@ -14,7 +14,7 @@ import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import InstructorFeedbackAnalysis from '@/pages/InstructorFeedbackAnalysis';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import StorageTokens from './StorageTokens';
-import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
+// import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { api } from '@/services/apiClient';
@@ -125,10 +125,31 @@ const InstructorPage = () => {
     fetchStorage();
   }, [userProfile]);
 
-  const formatGb = bytes => {
-    if (bytes === null || bytes === undefined) return null;
-    const gb = bytes / Math.pow(1024, 3);
-    return `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
+  const formatStorageDisplay = (usedBytes, totalRaw) => {
+    if (
+      usedBytes === null ||
+      usedBytes === undefined ||
+      totalRaw === null ||
+      totalRaw === undefined
+    ) {
+      return null;
+    }
+
+    const usedGb = usedBytes / Math.pow(1024, 3);
+    // storage_limit from API can be sent either as GB or bytes; if it's a small number, treat as GB
+    const totalGb =
+      totalRaw > 1024 * 1024 * 1024 ? totalRaw / Math.pow(1024, 3) : totalRaw;
+
+    const fmt = val => {
+      if (Number.isNaN(val)) return null;
+      return `${val.toFixed(val >= 10 ? 0 : 1)} GB`;
+    };
+
+    const usedText = fmt(usedGb);
+    const totalText = fmt(totalGb);
+
+    if (!usedText || !totalText) return null;
+    return `${usedText} / ${totalText}`;
   };
 
   // Navigation handlers
@@ -405,9 +426,9 @@ const InstructorPage = () => {
               </div>
               {/* AI token box (CompactTokenDisplay) retained for reference */}
 
-              <div className="flex-shrink-0">
+              {/* <div className="flex-shrink-0">
                 <CompactTokenDisplay />
-              </div>
+              </div> */}
 
               <div className="flex-shrink-0">
                 {/* AI token chip temporarily replaced with storage usage */}
@@ -421,11 +442,15 @@ const InstructorPage = () => {
                     </span>
                     {isStorageLoading ? (
                       <span className="text-sm text-gray-600">Loading…</span>
-                    ) : formatGb(storageUsage.used) &&
-                      formatGb(storageUsage.total) ? (
+                    ) : formatStorageDisplay(
+                        storageUsage.used,
+                        storageUsage.total
+                      ) ? (
                       <span className="text-sm font-semibold text-gray-900">
-                        {formatGb(storageUsage.used)} /{' '}
-                        {formatGb(storageUsage.total)}
+                        {formatStorageDisplay(
+                          storageUsage.used,
+                          storageUsage.total
+                        )}
                       </span>
                     ) : (
                       <span className="text-sm text-gray-600">Unavailable</span>

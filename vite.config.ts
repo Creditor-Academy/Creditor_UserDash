@@ -80,7 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'http://localhost:9000'
+      'https://creditor-backend-n9yg.onrender.com'
     ),
     // AI Service API Keys - Injected at build time
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
@@ -107,3 +107,6 @@ export default defineConfig(({ mode }) => ({
 
 // #(Main Backend)
 // # VITE_API_BASE_URL= https://creditor-backend-lfre.onrender.com
+
+// #(Saas Backend)
+// # VITE_API_BASE_URL= https://creditor-backend-n9yg.onrender.com
