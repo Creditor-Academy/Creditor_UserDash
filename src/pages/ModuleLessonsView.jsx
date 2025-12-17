@@ -141,6 +141,7 @@ const ModuleLessonsView = () => {
   const [resourceFile, setResourceFile] = useState(null);
   const [resourceTitle, setResourceTitle] = useState('');
   const [resourceDescription, setResourceDescription] = useState('');
+  const [resourceType, setResourceType] = useState('');
   const [deletingResourceId, setDeletingResourceId] = useState(null);
 
   // Fetch module and lessons data
@@ -1026,7 +1027,7 @@ const ModuleLessonsView = () => {
   const fetchLessonResources = async lessonId => {
     try {
       setLoadingResources(true);
-      const resources = await getLessonResources(lessonId);
+      const resources = await getLessonResources(courseId, moduleId, lessonId);
       setLessonResources(Array.isArray(resources) ? resources : []);
     } catch (error) {
       console.error('Error fetching lesson resources:', error);
@@ -1046,11 +1047,47 @@ const ModuleLessonsView = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!resourceType) {
+      toast({
+        title: 'Select Type First',
+        description: 'Please choose the resource type before selecting a file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const maxSize = 1024 * 1024 * 1024; // 1GB (backend limit)
     if (file.size > maxSize) {
       toast({
         title: 'File Too Large',
         description: 'Please select a file under 1GB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Basic MIME validation based on selected type
+    const mime = file.type.toLowerCase();
+    if (resourceType === 'IMAGE' && !mime.startsWith('image/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Selected type is Image, but the file is not an image.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (resourceType === 'VIDEO' && !mime.startsWith('video/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Selected type is Video, but the file is not a video.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (resourceType === 'PDF' && mime !== 'application/pdf') {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Selected type is PDF, but the file is not a PDF.',
         variant: 'destructive',
       });
       return;
@@ -1090,13 +1127,29 @@ const ModuleLessonsView = () => {
       return;
     }
 
+    if (!resourceType) {
+      toast({
+        title: 'Resource Type Required',
+        description: 'Please select the type of resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setUploadingResource(true);
 
-      await uploadLessonResource(selectedLessonForResources.id, resourceFile, {
-        title: resourceTitle,
-        description: resourceDescription,
-      });
+      await uploadLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        resourceFile,
+        {
+          title: resourceTitle,
+          description: resourceDescription,
+          resource_type: resourceType,
+        }
+      );
 
       toast({
         title: 'Success',
@@ -1110,6 +1163,7 @@ const ModuleLessonsView = () => {
       setResourceFile(null);
       setResourceTitle('');
       setResourceDescription('');
+      setResourceType('');
       if (document.getElementById('resource-file-input')) {
         document.getElementById('resource-file-input').value = '';
       }
@@ -1140,7 +1194,12 @@ const ModuleLessonsView = () => {
 
     try {
       setDeletingResourceId(resourceId);
-      await deleteLessonResource(selectedLessonForResources.id, resourceId);
+      await deleteLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        resourceId
+      );
 
       toast({
         title: 'Success',
@@ -2070,6 +2129,38 @@ const ModuleLessonsView = () => {
             {/* Upload Section */}
             <div className="space-y-4 border-b pb-4">
               <h3 className="text-lg font-semibold">Upload New Resource</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-type">Resource Type *</Label>
+                <Select
+                  value={resourceType}
+                  onValueChange={value => {
+                    setResourceType(value);
+                    // Clear any previously selected file when changing type
+                    setResourceFile(null);
+                    if (document.getElementById('resource-file-input')) {
+                      document.getElementById('resource-file-input').value = '';
+                    }
+                  }}
+                  disabled={uploadingResource}
+                >
+                  <SelectTrigger id="resource-type">
+                    <SelectValue placeholder="Select resource type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IMAGE">Image</SelectItem>
+                    <SelectItem value="VIDEO">Video</SelectItem>
+                    <SelectItem value="PDF">PDF</SelectItem>
+                    <SelectItem value="TEXT_FILE">
+                      Document (Text / Other)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Choose the type that best matches this file. This controls how
+                  it is validated and displayed to students.
+                </p>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="resource-file-input">File *</Label>

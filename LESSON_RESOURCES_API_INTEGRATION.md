@@ -2,12 +2,12 @@
 
 ## Backend API Endpoints
 
-All endpoints are prefixed with: `/api/lesson/:lessonid/external-lesson-resources/`
+All endpoints are prefixed with: `/api/course/:courseid/modules/:moduleid/lesson/:lessonid/external-lesson-resources/`
 
-1. **POST** `/:lessonid/external-lesson-resources/add` - Upload resource
-2. **GET** `/:lessonid/external-lesson-resources/view-all` - Get all resources
-3. **PUT** `/:lessonid/external-lesson-resources/:resourceid/edit` - Edit resource
-4. **DELETE** `/:lessonid/external-lesson-resources/:resourceid/delete` - Delete resource
+1. **POST** `/api/course/:courseid/modules/:moduleid/lesson/:lessonid/external-lesson-resources/add` - Upload resource
+2. **GET** `/api/course/:courseid/modules/:moduleid/lesson/:lessonid/external-lesson-resources/view-all` - Get all resources
+3. **PUT** `/api/course/:courseid/modules/:moduleid/lesson/:lessonid/external-lesson-resources/:resourceid/edit` - Edit resource
+4. **DELETE** `/api/course/:courseid/modules/:moduleid/lesson/:lessonid/external-lesson-resources/:resourceid/delete` - Delete resource
 
 ## Request/Response Format
 
@@ -87,10 +87,10 @@ All endpoints are prefixed with: `/api/lesson/:lessonid/external-lesson-resource
 ### Files Modified:
 
 1. **`src/services/lessonResourceService.js`**
-   - `getLessonResources(lessonId)` - Fetches all resources
-   - `uploadLessonResource(lessonId, file, metadata)` - Uploads file with metadata
-   - `updateLessonResource(lessonId, resourceId, updates)` - Updates resource metadata
-   - `deleteLessonResource(lessonId, resourceId)` - Deletes resource
+   - `getLessonResources(courseId, moduleId, lessonId)` - Fetches all resources
+   - `uploadLessonResource(courseId, moduleId, lessonId, file, metadata)` - Uploads file with metadata
+   - `updateLessonResource(courseId, moduleId, lessonId, resourceId, updates)` - Updates resource metadata
+   - `deleteLessonResource(courseId, moduleId, lessonId, resourceId)` - Deletes resource
    - Auto-detects resource_type from file MIME type
 
 2. **`src/pages/LessonResourcesPage.jsx`** (User View)

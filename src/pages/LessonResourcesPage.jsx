@@ -62,7 +62,7 @@ const LessonResourcesPage = () => {
             console.error('Error fetching lessons:', err);
             return { data: [] };
           }),
-        getLessonResources(lessonId).catch(err => {
+        getLessonResources(courseId, moduleId, lessonId).catch(err => {
           console.warn('Lesson resources endpoint error:', err);
           return [];
         }),
@@ -135,17 +135,41 @@ const LessonResourcesPage = () => {
     return 'File';
   };
 
-  const handleDownload = resource => {
+  const getResourceUrl = resource => {
     // Backend returns 'url' field with S3 URL
-    const resourceUrl = resource.url;
-    if (resourceUrl) {
-      window.open(resourceUrl, '_blank', 'noopener,noreferrer');
-    } else {
+    return resource.url;
+  };
+
+  const handleDownload = resource => {
+    const resourceUrl = getResourceUrl(resource);
+    if (!resourceUrl) {
       toast({
         title: 'Error',
         description: 'Resource URL not available.',
         variant: 'destructive',
       });
+      return;
+    }
+
+    try {
+      const urlParts = resourceUrl.split('/');
+      const urlFileName = urlParts[urlParts.length - 1] || 'resource';
+      const safeTitle =
+        (resource.title || 'resource')
+          .toString()
+          .replace(/[^a-z0-9_\-]/gi, '_') || 'resource';
+      const fileName = `${safeTitle}-${urlFileName}`;
+
+      const link = document.createElement('a');
+      link.href = resourceUrl;
+      link.setAttribute('download', fileName);
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Download error:', err);
+      window.open(resourceUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -200,101 +224,198 @@ const LessonResourcesPage = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2"
-        >
-          <ChevronLeft className="h-4 w-4" /> Back
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Resources: {lessonTitle || 'Lesson Resources'}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Download and access all resources for this lesson
-          </p>
-        </div>
-      </div>
+  const handleView = resource => {
+    const resourceUrl = getResourceUrl(resource);
+    if (resourceUrl) {
+      window.open(resourceUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Resource URL not available.',
+        variant: 'destructive',
+      });
+    }
+  };
 
-      {/* Error State */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center gap-2 text-red-800">
-            <AlertCircle className="h-5 w-5" />
-            <p>{error}</p>
+  const renderPreview = (resourceType, resource) => {
+    const url = getResourceUrl(resource);
+    const type = resourceType?.toUpperCase();
+
+    if (type === 'IMAGE' && url) {
+      return (
+        <div className="w-full h-40 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 mb-4">
+          <img
+            src={url}
+            alt={resource.title || 'Resource preview'}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      );
+    }
+
+    if (type === 'VIDEO') {
+      return (
+        <div className="w-full h-40 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white mb-4">
+          <div className="flex flex-col items-center gap-2">
+            <Video className="h-8 w-8" />
+            <span className="text-sm font-medium">Video Resource</span>
           </div>
         </div>
-      )}
+      );
+    }
 
-      {/* Resources Grid */}
-      {resources.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {resources.map((resource, index) => {
-            // Backend response fields: id, title, description, url, resource_type, created_at
-            const resourceType = resource.resource_type;
+    if (type === 'PDF') {
+      return (
+        <div className="w-full h-40 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white mb-4">
+          <div className="flex flex-col items-center gap-2">
+            <FileText className="h-8 w-8" />
+            <span className="text-sm font-medium">PDF Document</span>
+          </div>
+        </div>
+      );
+    }
 
-            return (
-              <Card
-                key={resource.id || index}
-                className="hover:shadow-lg transition-shadow"
+    // TEXT_FILE or unknown
+    return (
+      <div className="w-full h-40 rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white mb-4">
+        <div className="flex flex-col items-center gap-2">
+          <File className="h-8 w-8" />
+          <span className="text-sm font-medium">Document</span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8">
+        <div className="relative">
+          {/* Header */}
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2"
               >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      {getFileIcon(resourceType)}
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg line-clamp-2">
-                          {resource.title || 'Untitled Resource'}
-                        </CardTitle>
-                        <Badge variant="outline" className="mt-2">
-                          {getFileTypeBadge(resourceType)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {resource.description && (
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                      {resource.description}
-                    </p>
-                  )}
-                  {(resource.created_at || resource.updated_at) && (
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                      <span>
-                        {formatDate(resource.created_at || resource.updated_at)}
-                      </span>
-                    </div>
-                  )}
-                  <Button
-                    className="w-full"
-                    onClick={() => handleDownload(resource)}
+                <ChevronLeft className="h-4 w-4" /> Back
+              </Button>
+              <div className="px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-sm font-medium border border-purple-100">
+                {resources.length} Resources
+              </div>
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Resources: {lessonTitle || 'Lesson Resources'}
+              </h1>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">
+                Download, preview, and access supporting materials for this
+                lesson
+              </p>
+            </div>
+          </div>
+
+          {/* Error State */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="h-5 w-5" />
+                <p>{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Resources Grid */}
+          {resources.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {resources.map((resource, index) => {
+                // Backend response fields: id, title, description, url, resource_type, created_at
+                const resourceType = resource.resource_type;
+
+                return (
+                  <Card
+                    key={resource.id || index}
+                    className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all overflow-hidden rounded-xl"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    {resourceType === 'VIDEO' ? 'Watch' : 'Download'}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    <CardHeader className="pb-0">
+                      {renderPreview(resourceType, resource)}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-base md:text-lg text-gray-900 line-clamp-2">
+                            {resource.title || 'Untitled Resource'}
+                          </CardTitle>
+                          <div className="mt-2 flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className="border-transparent bg-purple-50 text-purple-700"
+                            >
+                              {getFileTypeBadge(resourceType)}
+                            </Badge>
+                            {resource.resource_type && (
+                              <Badge
+                                variant="outline"
+                                className="border-gray-200 text-gray-600 bg-gray-50"
+                              >
+                                {formatFileSize(resource.file_size)}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-3">
+                      {resource.description && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+                          {resource.description}
+                        </p>
+                      )}
+                      {(resource.created_at || resource.updated_at) && (
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-4">
+                          <span>
+                            Added:{' '}
+                            {formatDate(
+                              resource.created_at || resource.updated_at
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => handleView(resource)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                        <Button
+                          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                          onClick={() => handleDownload(resource)}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+              <FileText className="h-14 w-14 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Resources Available
+              </h3>
+              <p className="text-gray-500 max-w-md mx-auto text-sm">
+                There are no resources available for this lesson yet. Check back
+                later or ask your instructor to upload supporting materials.
+              </p>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Resources Available
-          </h3>
-          <p className="text-gray-600">
-            There are no resources available for this lesson yet.
-          </p>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

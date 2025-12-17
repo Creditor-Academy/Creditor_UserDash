@@ -27,13 +27,15 @@ function determineResourceType(file) {
 
 /**
  * Get all resources for a specific lesson
+ * @param {string} courseId - The ID of the course
+ * @param {string} moduleId - The ID of the module
  * @param {string} lessonId - The ID of the lesson
  * @returns {Promise<Array>} Array of lesson resources
  */
-export async function getLessonResources(lessonId) {
+export async function getLessonResources(courseId, moduleId, lessonId) {
   try {
     const response = await axios.get(
-      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/view-all`,
+      `${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}/external-lesson-resources/view-all`,
       {
         headers: getAuthHeader(),
         withCredentials: true,
@@ -54,12 +56,20 @@ export async function getLessonResources(lessonId) {
 
 /**
  * Upload a resource for a specific lesson
+ * @param {string} courseId - The ID of the course
+ * @param {string} moduleId - The ID of the module
  * @param {string} lessonId - The ID of the lesson
  * @param {File} file - The file to upload
  * @param {Object} metadata - Additional metadata (title, description)
  * @returns {Promise<Object>} Upload response with resource details
  */
-export async function uploadLessonResource(lessonId, file, metadata = {}) {
+export async function uploadLessonResource(
+  courseId,
+  moduleId,
+  lessonId,
+  file,
+  metadata = {}
+) {
   try {
     const formData = new FormData();
     // Backend expects field name 'lesson-resource'
@@ -78,7 +88,7 @@ export async function uploadLessonResource(lessonId, file, metadata = {}) {
     formData.append('resource_type', resourceType);
 
     const response = await axios.post(
-      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/add`,
+      `${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}/external-lesson-resources/add`,
       formData,
       {
         headers: {
@@ -99,15 +109,23 @@ export async function uploadLessonResource(lessonId, file, metadata = {}) {
 
 /**
  * Update a lesson resource metadata
+ * @param {string} courseId - The ID of the course
+ * @param {string} moduleId - The ID of the module
  * @param {string} lessonId - The ID of the lesson
  * @param {string} resourceId - The ID of the resource
  * @param {Object} updates - Updates to apply (title, description, resource_type)
  * @returns {Promise<Object>} Update response
  */
-export async function updateLessonResource(lessonId, resourceId, updates) {
+export async function updateLessonResource(
+  courseId,
+  moduleId,
+  lessonId,
+  resourceId,
+  updates
+) {
   try {
     const response = await axios.put(
-      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/${resourceId}/edit`,
+      `${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}/external-lesson-resources/${resourceId}/edit`,
       updates,
       {
         headers: {
@@ -127,14 +145,21 @@ export async function updateLessonResource(lessonId, resourceId, updates) {
 
 /**
  * Delete a resource from a lesson
+ * @param {string} courseId - The ID of the course
+ * @param {string} moduleId - The ID of the module
  * @param {string} lessonId - The ID of the lesson
  * @param {string} resourceId - The ID of the resource to delete
  * @returns {Promise<Object>} Delete response
  */
-export async function deleteLessonResource(lessonId, resourceId) {
+export async function deleteLessonResource(
+  courseId,
+  moduleId,
+  lessonId,
+  resourceId
+) {
   try {
     const response = await axios.delete(
-      `${API_BASE}/api/lesson/${lessonId}/external-lesson-resources/${resourceId}/delete`,
+      `${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}/external-lesson-resources/${resourceId}/delete`,
       {
         headers: getAuthHeader(),
         withCredentials: true,
