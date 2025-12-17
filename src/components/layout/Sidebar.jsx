@@ -178,26 +178,32 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const { userProfile } = useUser();
   const [moreOpen, setMoreOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState('Creditor Academy');
+  const [logoUrl, setLogoUrl] = useState(null);
   const { isChristmasMode } = useContext(SeasonalThemeContext);
 
-  // Fetch organization name from user profile
+  // Fetch organization name and logo from user profile
   useEffect(() => {
-    // First, try to get organization name from userProfile context
-    if (
-      userProfile &&
-      userProfile.organizations &&
-      userProfile.organizations.name
-    ) {
-      console.log(
-        'Organization name from context:',
-        userProfile.organizations.name
-      );
-      setOrganizationName(userProfile.organizations.name);
+    // First, try to get organization data from userProfile context
+    if (userProfile && userProfile.organizations) {
+      if (userProfile.organizations.name) {
+        console.log(
+          'Organization name from context:',
+          userProfile.organizations.name
+        );
+        setOrganizationName(userProfile.organizations.name);
+      }
+      if (userProfile.organizations.logo_url) {
+        console.log(
+          'Organization logo from context:',
+          userProfile.organizations.logo_url
+        );
+        setLogoUrl(userProfile.organizations.logo_url);
+      }
       return;
     }
 
     // If not in context, fetch from API
-    const fetchOrganizationName = async () => {
+    const fetchOrganizationData = async () => {
       try {
         const response = await api.get('/api/user/getUserProfile');
         console.log('UserProfile API Response:', response.data);
@@ -205,19 +211,28 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
         // Handle different response structures
         const data = response.data?.data || response.data;
 
-        if (data && data.organizations && data.organizations.name) {
-          console.log('Organization name found:', data.organizations.name);
-          setOrganizationName(data.organizations.name);
+        if (data && data.organizations) {
+          if (data.organizations.name) {
+            console.log('Organization name found:', data.organizations.name);
+            setOrganizationName(data.organizations.name);
+          }
+          if (data.organizations.logo_url) {
+            console.log(
+              'Organization logo found:',
+              data.organizations.logo_url
+            );
+            setLogoUrl(data.organizations.logo_url);
+          }
         } else {
-          console.warn('Organization name not found in response:', data);
+          console.warn('Organization data not found in response:', data);
         }
       } catch (error) {
-        console.error('Error fetching organization name:', error);
+        console.error('Error fetching organization data:', error);
         // Keep default "Creditor Academy" on error
       }
     };
 
-    fetchOrganizationName();
+    fetchOrganizationData();
   }, [userProfile]);
 
   const isActive = path => {
@@ -329,6 +344,23 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt={`${organizationName} Logo`}
+                className="object-cover"
+                style={{
+                  height: '4rem',
+                  width: '4rem',
+                  borderRadius: '50%',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+                }}
+                onError={e => {
+                  // Hide image if it fails to load
+                  e.target.style.display = 'none';
+                }}
+              />
+            )}
             <h1
               className="font-bold"
               style={{ color: 'white', fontSize: '1.3rem' }}
