@@ -62,6 +62,7 @@ import OfferPopup from '@/components/offer/OfferPopup';
 import { useSponsorAds } from '@/contexts/SponsorAdsContext';
 import { useAuth } from '@/contexts/AuthContext';
 
+import OfferPopup from '@/components/offer/OfferPopup';
 export function Dashboard() {
   const importantUpdateStyles = `
     .important-updates-wrapper {
@@ -108,12 +109,9 @@ export function Dashboard() {
       }
     }
     .important-updates-scroll {
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       scroll-behavior: smooth;
-    }
-    .important-updates-scroll::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
     }
     .important-updates-scroll::-webkit-scrollbar {
       height: 6px;
@@ -128,7 +126,21 @@ export function Dashboard() {
     .important-updates-scroll:hover::-webkit-scrollbar {
       opacity: 1;
     }
+    .vcm-video {
+      width: 100%;
+      height: auto;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .vcm-video {
+        max-height: 200px;
+      }
+    }
   `;
+
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
   const { isChristmasMode } = useContext(SeasonalThemeContext);
@@ -610,59 +622,66 @@ export function Dashboard() {
     const scrollContainer = importantUpdatesScrollRef.current;
     if (!scrollContainer) return;
 
-    let scrollTimeout;
+    let scrollTimeout = null;
     let currentIndex = 0;
 
-    const scrollToNext = () => {
+    const stopScroll = () => {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = null;
+      }
+    };
+
+    const startScroll = () => {
+      if (scrollTimeout) return;
+
       const cards = scrollContainer.querySelectorAll('.important-update-card');
-      if (cards.length === 0) return;
+      if (cards.length <= 1) {
+        // No need to scroll if only one card
+        return;
+      }
 
-      // Move to next card
-      currentIndex++;
-
-      // If we've reached the last card, reset to first
-      if (currentIndex >= cards.length) {
-        currentIndex = 0;
-        // Smoothly scroll back to beginning
-        scrollContainer.scrollTo({
-          left: 0,
-          behavior: 'smooth',
-        });
-      } else {
-        // Get the next card element
+      scrollTimeout = setTimeout(() => {
+        // Use modulo to loop back to the start
+        currentIndex = (currentIndex + 1) % cards.length;
         const nextCard = cards[currentIndex];
-        if (nextCard) {
-          // Calculate scroll position: card's left position relative to container
-          const cardLeft = nextCard.offsetLeft;
-          const containerPadding = 16; // p-4 = 16px
 
-          // Smoothly scroll to the card's position
+        if (nextCard) {
+          let scrollLeft;
+          // When looping to the first card, scroll to the absolute beginning.
+          if (currentIndex === 0) {
+            scrollLeft = 0;
+          } else {
+            // Otherwise, calculate the position of the next card.
+            const parentRect = scrollContainer.getBoundingClientRect();
+            const childRect = nextCard.getBoundingClientRect();
+            scrollLeft =
+              childRect.left - parentRect.left + scrollContainer.scrollLeft;
+          }
+
           scrollContainer.scrollTo({
-            left: cardLeft - containerPadding,
+            left: scrollLeft,
             behavior: 'smooth',
           });
         }
-      }
 
-      // Schedule next scroll after 4 seconds
-      scrollTimeout = setTimeout(scrollToNext, 4000);
+        // Reset and schedule the next scroll
+        scrollTimeout = null;
+        startScroll();
+      }, 6000);
     };
 
-    // Initialize scroll position
-    scrollContainer.scrollLeft = 0;
+    scrollContainer.addEventListener('mouseenter', stopScroll);
+    scrollContainer.addEventListener('mouseleave', startScroll);
 
-    // Start auto-scrolling after a short delay to ensure container is rendered
-    const startDelay = setTimeout(() => {
-      scrollToNext();
-    }, 4000); // Wait 4 seconds before first scroll
+    // Start the initial scroll
+    startScroll();
 
-    // Cleanup on unmount
     return () => {
-      if (startDelay) {
-        clearTimeout(startDelay);
-      }
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
+      stopScroll();
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('mouseenter', stopScroll);
+        scrollContainer.removeEventListener('mouseleave', startScroll);
       }
     };
   }, []);
@@ -1062,10 +1081,14 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="christmas-hero-visual">
-                <img
-                  src="https://cdn.pixabay.com/animation/2024/10/16/09/27/09-27-15-148_512.gif"
-                  alt="Festive tree with gifts"
-                  loading="lazy"
+                <video
+                  src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/VCM.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover rounded-2xl"
+                  aria-label="Festive tree with gifts"
                 />
                 <div className="floating-snow" aria-hidden="true" />
               </div>
@@ -1495,6 +1518,25 @@ export function Dashboard() {
                         >
                           Schedule Now
                         </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress tracker maintenance */}
+                  <div className="rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white transition-all duration-300 hover:shadow-md hover:border-amber-200 flex-shrink-0 snap-center important-update-card h-full">
+                    <div className="flex items-start gap-3 h-full">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <Clock className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-2 h-full">
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900">
+                          Progress Tracker Under maintenance
+                        </h4>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          Progress tracker is under maintenance. You can track
+                          Book Smart; Street Smart tracking is temporarily
+                          unavailable.
+                        </p>
                       </div>
                     </div>
                   </div>

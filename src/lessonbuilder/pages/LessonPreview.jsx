@@ -26,6 +26,14 @@ import { toast } from '@/hooks/use-toast';
 import ImmersiveReader from '@/components/courses/ImmersiveReader';
 import { getTtsToken } from '@/services/speechify';
 
+// Helper function to decode HTML entities
+const decodeHtmlEntities = text => {
+  if (!text) return '';
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
 const getImageCaptionHtml = block => {
   const captionHtml = (
     block.captionHtml ||
@@ -585,12 +593,16 @@ const LessonPreview = () => {
 
           // First try to get text from html_css field (where master heading content is stored)
           if (block.html_css) {
-            headingText = block.html_css.replace(/<[^>]*>/g, '').trim();
+            // Strip HTML tags first, then decode HTML entities
+            const stripped = block.html_css.replace(/<[^>]*>/g, '').trim();
+            headingText = decodeHtmlEntities(stripped);
           }
 
           // Fallback to content field if html_css doesn't have text
           if (!headingText && content) {
-            headingText = content.replace(/<[^>]*>/g, '').trim();
+            // Strip HTML tags first, then decode HTML entities
+            const stripped = content.replace(/<[^>]*>/g, '').trim();
+            headingText = decodeHtmlEntities(stripped);
           }
 
           // Final fallback to section number
