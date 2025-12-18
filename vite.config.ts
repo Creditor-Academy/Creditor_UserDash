@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:9000',
+        target: 'https://saas-backend-coki.onrender.com',
         changeOrigin: true,
         secure: false,
         rewrite: path => path.replace(/^\/api/, ''),
@@ -61,7 +61,7 @@ export default defineConfig(({ mode }) => ({
       'lmsathena.com',
       'api.lmsathena.com',
       '54.198.69.32',
-      'https://creditor.onrender.com',
+      'https://saas-backend-coki.onrender.com',
       'https://creditor-frontend-p6lt.onrender.com',
     ],
     cors: true,
@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://creditor.onrender.com'
+      'http://localhost:9000'
     ),
     // AI Service API Keys - Injected at build time
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
@@ -101,7 +101,7 @@ export default defineConfig(({ mode }) => ({
 // # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
 // #(development Backend)
-// VITE_API_BASE_URL=https://creditor.onrender.com
+// VITE_API_BASE_URL=https://saas-backend-coki.onrender.com
 
 // #(AWS Backend)
 // # VITE_API_BASE_URL= http://3.212.62.124
@@ -110,4 +110,4 @@ export default defineConfig(({ mode }) => ({
 // # VITE_API_BASE_URL= http://localhost:9000
 
 // #(Main Backend)
-// # VITE_API_BASE_URL= https://creditor-backend-lfre.onrender.com
+// # VITE_API_BASE_URL= https://saas-backend-coki.onrender.com

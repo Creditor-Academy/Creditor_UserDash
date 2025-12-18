@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { getAuthHeader } from '@/services/authHeader';
 
+// Base API URL (fallback to production backend if env not set)
+const API_BASE =
+  import.meta.env?.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+
 /*
 BACKEND ROUTES THAT NEED TO BE ENABLED:
 In your router file, uncomment these routes for full notification functionality:

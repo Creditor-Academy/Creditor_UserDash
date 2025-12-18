@@ -1,7 +1,7 @@
 import api from './apiClient';
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+  import.meta.env.VITE_API_BASE_URL || 'https://saas-backend-coki.onrender.com';
 
 /**
  * Mark attendance for a specific event
