@@ -144,10 +144,25 @@ const SponsorAdDetailsPage = () => {
         let additionalDetails = {};
         try {
           const applications = await getUserAdApplications();
-          const relatedApp = applications.find(
-            app => app.sponsor_ad_id === ad.id
-          );
+          // Try multiple matching strategies
+          const relatedApp = applications.find(app => {
+            // First try: match by sponsor_ad_id
+            if (app.sponsor_ad_id === ad.id) return true;
+            // Second try: match by nested sponsor_ad.id
+            if (app.sponsor_ad?.id === ad.id) return true;
+            // Third try: match by title and sponsor name (fuzzy match)
+            if (
+              app.title?.toLowerCase() === ad.title?.toLowerCase() &&
+              app.sponsor_name?.toLowerCase() === ad.sponsor_name?.toLowerCase()
+            ) {
+              return true;
+            }
+            return false;
+          });
+
           if (relatedApp) {
+            console.log('✅ Found related application:', relatedApp);
+
             // Extract website media from application
             const websiteImages = [];
             const websiteVideos = [];
@@ -164,14 +179,88 @@ const SponsorAdDetailsPage = () => {
               });
             }
 
+            // Parse additional_notes if website details are stored there
+            let parsedWebsiteOverview = relatedApp.website_overview || '';
+            let parsedOfferDetails = relatedApp.offer_details || '';
+            let parsedWebsiteFeatures =
+              relatedApp.website_features_highlights || '';
+            let parsedWebsiteDescription = relatedApp.website_description || '';
+
+            // If fields are empty but additional_notes exists, try to parse it
+            if (
+              relatedApp.additional_notes &&
+              (!parsedWebsiteOverview ||
+                !parsedOfferDetails ||
+                !parsedWebsiteFeatures)
+            ) {
+              const notes = relatedApp.additional_notes;
+              console.log(
+                '📝 Parsing additional_notes for website details:',
+                notes.substring(0, 200)
+              );
+
+              // Try to extract website overview
+              const overviewMatch = notes.match(
+                /Website overview:\s*([\s\S]*?)(?=\n\n---|\n\nOffer details:|$)/i
+              );
+              if (overviewMatch) {
+                parsedWebsiteOverview = overviewMatch[1].trim();
+                console.log(
+                  '✅ Extracted website overview:',
+                  parsedWebsiteOverview.substring(0, 100)
+                );
+              }
+
+              // Try to extract offer details
+              const offerMatch = notes.match(
+                /Offer details:\s*([\s\S]*?)(?=\n\n---|\n\nWebsite features|$)/i
+              );
+              if (offerMatch) {
+                parsedOfferDetails = offerMatch[1].trim();
+                console.log(
+                  '✅ Extracted offer details:',
+                  parsedOfferDetails.substring(0, 100)
+                );
+              }
+
+              // Try to extract website features
+              const featuresMatch = notes.match(
+                /Website features[^:]*:\s*([\s\S]*?)(?=\n\n---|\n\nWebsite media|$)/i
+              );
+              if (featuresMatch) {
+                parsedWebsiteFeatures = featuresMatch[1].trim();
+                console.log(
+                  '✅ Extracted website features:',
+                  parsedWebsiteFeatures.substring(0, 100)
+                );
+              }
+            }
+
             additionalDetails = {
-              websiteDescription: relatedApp.website_description || '',
-              websiteOverview: relatedApp.website_overview || '',
-              websiteFeatures: relatedApp.website_features_highlights || '',
+              websiteDescription: parsedWebsiteDescription,
+              websiteOverview: parsedWebsiteOverview,
+              websiteFeatures: parsedWebsiteFeatures,
               websiteImages: websiteImages,
               websiteVideos: websiteVideos,
-              offerDetails: relatedApp.offer_details || '',
+              offerDetails: parsedOfferDetails,
             };
+
+            console.log('📦 Final additionalDetails:', additionalDetails);
+          } else {
+            console.warn(
+              '⚠️ No related application found for ad:',
+              ad.id,
+              ad.title
+            );
+            console.log(
+              'Available applications:',
+              applications.map(app => ({
+                id: app.id,
+                sponsor_ad_id: app.sponsor_ad_id,
+                title: app.title,
+                sponsor_name: app.sponsor_name,
+              }))
+            );
           }
         } catch (appError) {
           console.warn(

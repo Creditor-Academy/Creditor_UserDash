@@ -61,8 +61,6 @@ import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
 import { useSponsorAds } from '@/contexts/SponsorAdsContext';
 import { useAuth } from '@/contexts/AuthContext';
-
-import OfferPopup from '@/components/offer/OfferPopup';
 export function Dashboard() {
   const importantUpdateStyles = `
     .important-updates-wrapper {
