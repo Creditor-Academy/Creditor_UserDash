@@ -107,7 +107,7 @@ const LessonResourcesPage = () => {
   };
 
   const getFileIcon = resourceType => {
-    // Backend returns resource_type: IMAGE, VIDEO, TEXT_FILE, PDF
+    // Backend returns resource_type: IMAGE, VIDEO, TEXT, PDF
     const type = resourceType?.toUpperCase();
 
     if (type === 'IMAGE') {
@@ -119,7 +119,7 @@ const LessonResourcesPage = () => {
     if (type === 'PDF') {
       return <FileText className="h-8 w-8 text-red-500" />;
     }
-    if (type === 'TEXT_FILE') {
+    if (type === 'TEXT') {
       return <File className="h-8 w-8 text-gray-500" />;
     }
     return <File className="h-8 w-8 text-gray-500" />;
@@ -131,7 +131,7 @@ const LessonResourcesPage = () => {
     if (type === 'IMAGE') return 'Image';
     if (type === 'VIDEO') return 'Video';
     if (type === 'PDF') return 'PDF';
-    if (type === 'TEXT_FILE') return 'Document';
+    if (type === 'TEXT') return 'Document';
     return 'File';
   };
 
@@ -275,7 +275,7 @@ const LessonResourcesPage = () => {
       );
     }
 
-    // TEXT_FILE or unknown
+    // TEXT or unknown
     return (
       <div className="w-full h-40 rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white mb-4">
         <div className="flex flex-col items-center gap-2">

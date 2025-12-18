@@ -2151,7 +2151,7 @@ const ModuleLessonsView = () => {
                     <SelectItem value="IMAGE">Image</SelectItem>
                     <SelectItem value="VIDEO">Video</SelectItem>
                     <SelectItem value="PDF">PDF</SelectItem>
-                    <SelectItem value="TEXT_FILE">
+                    <SelectItem value="TEXT">
                       Document (Text / Other)
                     </SelectItem>
                   </SelectContent>

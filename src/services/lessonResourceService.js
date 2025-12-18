@@ -21,7 +21,7 @@ function determineResourceType(file) {
   } else if (mimeType === 'application/pdf') {
     return 'PDF';
   } else {
-    return 'TEXT_FILE';
+    return 'TEXT';
   }
 }
 
