@@ -135,20 +135,22 @@ const InstructorPage = () => {
       return null;
     }
 
-    const usedGb = usedBytes / Math.pow(1024, 3);
-    // storage_limit from API can be sent either as GB or bytes; if it's a small number, treat as GB
-    const totalGb =
-      totalRaw > 1024 * 1024 * 1024 ? totalRaw / Math.pow(1024, 3) : totalRaw;
+    // API returns storage and storage_limit already in GB
+    // If values are small (< 10000), they're already in GB, not bytes
+    // Otherwise, convert from bytes to GB
+    let usedGB = Number(usedBytes) || 0;
+    let totalGB = Number(totalRaw) || 0;
 
-    const fmt = val => {
-      if (Number.isNaN(val)) return null;
-      return `${val.toFixed(val >= 10 ? 0 : 1)} GB`;
-    };
+    if (usedGB >= 10000 || totalGB >= 10000) {
+      // Values are in bytes, convert to GB
+      usedGB = usedGB / Math.pow(1024, 3);
+      totalGB = totalGB / Math.pow(1024, 3);
+    }
 
-    const usedText = fmt(usedGb);
-    const totalText = fmt(totalGb);
+    // Format: used with 2 decimal places, total as whole number
+    const usedText = `${usedGB.toFixed(2)} GB`;
+    const totalText = `${totalGB.toFixed(0)} GB`;
 
-    if (!usedText || !totalText) return null;
     return `${usedText} / ${totalText}`;
   };
 
