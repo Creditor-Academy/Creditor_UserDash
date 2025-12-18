@@ -340,20 +340,6 @@ const SponsorRequestForm = ({
               )}
             </div>
           </div>
-          <div>
-            <Label htmlFor="notes" className="text-sm font-medium">
-              Additional Notes (Optional)
-            </Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              rows={3}
-              placeholder="Any additional requirements or notes..."
-              value={formState.notes}
-              onChange={onInputChange}
-              className="mt-1.5"
-            />
-          </div>
         </CardContent>
       </Card>
 

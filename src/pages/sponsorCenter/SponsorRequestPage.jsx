@@ -141,7 +141,6 @@ const SponsorRequestPage = () => {
       preferred_start_date: formState.startDate,
       preferred_end_date: formState.endDate,
       budget: formState.budget || '0',
-      additional_notes: formState.notes,
       website: formState.website,
       adType: formState.adType,
     };

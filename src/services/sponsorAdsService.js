@@ -472,59 +472,9 @@ export async function submitSponsorAdRequest(requestData) {
       }
     }
 
-    /**
-     * NOTE:
-     * The current backend validation for /api/user/ads/apply does not yet
-     * allow the new fields like "website_overview", "offer_details",
-     * "website_features_highlights", or "website_media". Sending them
-     * results in errors such as `"website_overview" is not allowed`.
-     *
-     * To keep the client compatible while preserving these details for
-     * reviewers, we:
-     * - Only send the original, whitelisted fields in the payload
-     * - Fold the extra website information into `additional_notes`
-     *   in a structured way so admins can still read it.
-     */
-
-    const extraSections = [];
-
-    if (requestData.website_overview) {
-      extraSections.push(
-        `Website overview:\n${requestData.website_overview.trim()}`
-      );
-    }
-
-    if (requestData.offer_details) {
-      extraSections.push(`Offer details:\n${requestData.offer_details.trim()}`);
-    }
-
-    if (requestData.website_features_highlights) {
-      extraSections.push(
-        `Website features & highlights:\n${requestData.website_features_highlights.trim()}`
-      );
-    }
-
-    if (websiteMedia.length > 0) {
-      const mediaLines = websiteMedia.map(
-        (m, idx) =>
-          `  ${idx + 1}. [${m.type}] ${m.url}${
-            m.caption ? ` - ${m.caption}` : ''
-          }`
-      );
-      extraSections.push(`Website media:\n${mediaLines.join('\n')}`);
-    }
-
-    const notesParts = [];
-    if (requestData.additional_notes) {
-      notesParts.push(requestData.additional_notes.trim());
-    }
-    if (extraSections.length > 0) {
-      notesParts.push(extraSections.join('\n\n'));
-    }
-
-    const combinedAdditionalNotes = notesParts.join('\n\n---\n\n');
-
-    // Prepare payload with only fields currently accepted by backend
+    // Prepare payload with only fields currently accepted by backend.
+    // Backend also enforces a max length of 1000 characters for additional_notes,
+    // so we keep it empty for now (field is optional and not required).
     const payload = {
       title: requestData.title?.trim() || '',
       description: requestData.description?.trim() || '',
@@ -540,10 +490,10 @@ export async function submitSponsorAdRequest(requestData) {
       preferred_start_date: formatDate(requestData.preferred_start_date),
       preferred_end_date: formatDate(requestData.preferred_end_date),
       budget: parseFloat(requestData.budget) || 0,
-      additional_notes: combinedAdditionalNotes,
+      additional_notes: '',
       // Intentionally NOT sending website_overview / offer_details /
-      // website_features_highlights / website_media until backend
-      // schema is updated to accept them.
+      // website_features_highlights / website_media or long
+      // additional_notes until backend schema is updated to accept them.
     };
 
     console.log('📤 Sending request to backend:', payload);
