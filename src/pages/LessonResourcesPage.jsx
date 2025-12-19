@@ -389,13 +389,13 @@ const LessonResourcesPage = () => {
                           <ExternalLink className="h-4 w-4 mr-2" />
                           View
                         </Button>
-                        <Button
+                        {/* <Button
                           className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
                           onClick={() => handleDownload(resource)}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Download
-                        </Button>
+                        </Button> */}
                       </div>
                     </CardContent>
                   </Card>
