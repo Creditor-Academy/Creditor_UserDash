@@ -44,6 +44,8 @@ class SecureAIService {
       generateImage: '/api/ai-proxy/generate-image',
       generateCourseOutline: '/api/ai-proxy/generate-course-outline',
       generateCourseBlueprint: '/api/ai-proxy/generate-course-blueprint',
+      logAIGeneration: '/api/ai-learning/log-generation',
+      logAIGenerationBatch: '/api/ai-learning/log-generation/batch',
       status: '/api/ai-proxy/status',
     };
     this.statusCache = {
@@ -360,6 +362,62 @@ class SecureAIService {
       const formattedError = this.handleError(
         error,
         'Text generation',
+        error.response
+      );
+      throw formattedError;
+    }
+  }
+
+  async logAIGeneration(payload) {
+    try {
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.logAIGeneration,
+        {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'AI generation logging failed');
+      }
+
+      return result.data;
+    } catch (error) {
+      const formattedError = this.handleError(
+        error,
+        'AI generation logging',
+        error.response
+      );
+      throw formattedError;
+    }
+  }
+
+  async logAIGenerationBatch(payload) {
+    try {
+      const response = await this.makeRequestWithRetry(
+        this.endpoints.logAIGenerationBatch,
+        {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'AI generation batch logging failed');
+      }
+
+      return result.data;
+    } catch (error) {
+      const formattedError = this.handleError(
+        error,
+        'AI generation batch logging',
         error.response
       );
       throw formattedError;

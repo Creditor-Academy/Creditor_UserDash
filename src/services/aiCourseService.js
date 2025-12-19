@@ -11,6 +11,7 @@ import { uploadAIGeneratedImage, uploadAICourseMedia } from './aiUploadService';
 import universalAILessonService from './universalAILessonService.js';
 import structuredLessonGenerator from './structuredLessonGenerator.js';
 import openAIService from './openAIService.js';
+import secureAIService from './secureAIService.js';
 
 // API configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -827,6 +828,32 @@ export async function createCompleteAICourse(courseData) {
               );
 
               if (result.success) {
+                try {
+                  await secureAIService.logAIGenerationBatch({
+                    courseId,
+                    logs: (result.blocks || []).map(block => ({
+                      lesson_id: lessonId,
+                      block_id: block.id,
+                      block_type: block.type,
+                      variant:
+                        block?.metadata?.variant ||
+                        block?.variant ||
+                        block?.textType ||
+                        null,
+                      topic: courseData.title,
+                      difficulty_level: courseData.difficulty || null,
+                      ai_model:
+                        courseData.ai_model_used || courseData.aiModel || null,
+                      generated_content: block,
+                    })),
+                  });
+                } catch (logError) {
+                  console.warn(
+                    '⚠️ Failed to log AI generation batch (non-blocking):',
+                    logError.message
+                  );
+                }
+
                 return {
                   success: true,
                   lessonId,
