@@ -143,6 +143,12 @@ const ModuleLessonsView = () => {
   const [resourceDescription, setResourceDescription] = useState('');
   const [resourceType, setResourceType] = useState('');
   const [deletingResourceId, setDeletingResourceId] = useState(null);
+  const [showEditResourceDialog, setShowEditResourceDialog] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
+  const [editResourceTitle, setEditResourceTitle] = useState('');
+  const [editResourceDescription, setEditResourceDescription] = useState('');
+  const [editResourceType, setEditResourceType] = useState('');
+  const [updatingResourceId, setUpdatingResourceId] = useState(null);
 
   // Fetch module and lessons data
   useEffect(() => {
@@ -1228,6 +1234,80 @@ const ModuleLessonsView = () => {
     }
   };
 
+  const openEditResourceDialog = resource => {
+    setEditingResource(resource);
+    setEditResourceTitle(resource.title || '');
+    setEditResourceDescription(resource.description || '');
+    setEditResourceType(resource.resource_type || 'TEXT_FILE');
+    setShowEditResourceDialog(true);
+  };
+
+  const handleUpdateResource = async () => {
+    if (!selectedLessonForResources || !editingResource) return;
+
+    if (!editResourceTitle.trim()) {
+      toast({
+        title: 'Title Required',
+        description: 'Please enter a title for the resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!editResourceType) {
+      toast({
+        title: 'Resource Type Required',
+        description: 'Please select the type of resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUpdatingResourceId(editingResource.id);
+
+      await updateLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        editingResource.id,
+        {
+          title: editResourceTitle,
+          description: editResourceDescription,
+          resource_type: editResourceType,
+        }
+      );
+
+      toast({
+        title: 'Updated',
+        description: 'Resource updated successfully!',
+      });
+
+      await fetchLessonResources(selectedLessonForResources.id);
+      setShowEditResourceDialog(false);
+      setEditingResource(null);
+    } catch (error) {
+      console.error('Error updating resource:', error);
+      let errorMessage = 'Failed to update resource. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingResourceId(null);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6 flex items-center gap-4">
@@ -2151,7 +2231,7 @@ const ModuleLessonsView = () => {
                     <SelectItem value="IMAGE">Image</SelectItem>
                     <SelectItem value="VIDEO">Video</SelectItem>
                     <SelectItem value="PDF">PDF</SelectItem>
-                    <SelectItem value="TEXT">
+                    <SelectItem value="TEXT_FILE">
                       Document (Text / Other)
                     </SelectItem>
                   </SelectContent>
@@ -2287,6 +2367,14 @@ const ModuleLessonsView = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                onClick={() => openEditResourceDialog(resource)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() =>
                                   handleDeleteResource(resource.id)
                                 }
@@ -2322,6 +2410,104 @@ const ModuleLessonsView = () => {
               disabled={uploadingResource}
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Resource Dialog */}
+      <Dialog
+        open={showEditResourceDialog}
+        onOpenChange={open => {
+          if (!open) {
+            setShowEditResourceDialog(false);
+            setEditingResource(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingResource
+                ? `Edit Resource "${editingResource.title || 'Resource'}"`
+                : 'Edit Resource'}
+            </DialogTitle>
+            <DialogDescription>
+              Update the title, description, or type of this resource.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-title">Title *</Label>
+              <Input
+                id="edit-resource-title"
+                value={editResourceTitle}
+                onChange={e => setEditResourceTitle(e.target.value)}
+                placeholder="Enter resource title"
+                disabled={!!updatingResourceId}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-type">Resource Type *</Label>
+              <Select
+                value={editResourceType}
+                onValueChange={value => setEditResourceType(value)}
+                disabled={!!updatingResourceId}
+              >
+                <SelectTrigger id="edit-resource-type">
+                  <SelectValue placeholder="Select resource type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IMAGE">Image</SelectItem>
+                  <SelectItem value="VIDEO">Video</SelectItem>
+                  <SelectItem value="PDF">PDF</SelectItem>
+                  <SelectItem value="TEXT_FILE">
+                    Document (Text / Other)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-description">Description</Label>
+              <Textarea
+                id="edit-resource-description"
+                value={editResourceDescription}
+                onChange={e => setEditResourceDescription(e.target.value)}
+                placeholder="Enter resource description (optional)"
+                rows={3}
+                disabled={!!updatingResourceId}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditResourceDialog(false);
+                setEditingResource(null);
+              }}
+              disabled={!!updatingResourceId}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateResource}
+              disabled={
+                !!updatingResourceId || !editResourceTitle || !editResourceType
+              }
+            >
+              {updatingResourceId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
