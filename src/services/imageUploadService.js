@@ -70,7 +70,10 @@ export async function uploadImage(file, options = {}) {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 60000, // 60 second timeout for large files
+      // Allow large uploads (align with video/audio services)
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 600000, // 10 minute timeout for large files
     });
 
     console.log('✅ S3 upload successful:', response.data);
