@@ -116,7 +116,7 @@ All endpoints are prefixed with: `/api/course/:courseid/modules/:moduleid/lesson
 | IMAGE         | Image         | 📷 Image |
 | VIDEO         | Video         | 🎥 Video |
 | PDF           | PDF           | 📄 PDF   |
-| TEXT_FILE     | Document      | 📁 File  |
+| TEXT          | Document      | 📁 File  |
 
 ## Features Implemented
 

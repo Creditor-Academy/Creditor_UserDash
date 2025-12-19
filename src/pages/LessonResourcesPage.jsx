@@ -119,7 +119,7 @@ const LessonResourcesPage = () => {
     if (type === 'PDF') {
       return <FileText className="h-8 w-8 text-red-500" />;
     }
-    if (type === 'TEXT_FILE') {
+    if (type === 'TEXT') {
       return <File className="h-8 w-8 text-gray-500" />;
     }
     return <File className="h-8 w-8 text-gray-500" />;
@@ -131,7 +131,7 @@ const LessonResourcesPage = () => {
     if (type === 'IMAGE') return 'Image';
     if (type === 'VIDEO') return 'Video';
     if (type === 'PDF') return 'PDF';
-    if (type === 'TEXT_FILE') return 'Document';
+    if (type === 'TEXT') return 'Document';
     return 'File';
   };
 

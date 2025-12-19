@@ -1238,7 +1238,7 @@ const ModuleLessonsView = () => {
     setEditingResource(resource);
     setEditResourceTitle(resource.title || '');
     setEditResourceDescription(resource.description || '');
-    setEditResourceType(resource.resource_type || 'TEXT_FILE');
+    setEditResourceType(resource.resource_type || 'TEXT');
     setShowEditResourceDialog(true);
   };
 
@@ -2231,7 +2231,7 @@ const ModuleLessonsView = () => {
                     <SelectItem value="IMAGE">Image</SelectItem>
                     <SelectItem value="VIDEO">Video</SelectItem>
                     <SelectItem value="PDF">PDF</SelectItem>
-                    <SelectItem value="TEXT_FILE">
+                    <SelectItem value="TEXT">
                       Document (Text / Other)
                     </SelectItem>
                   </SelectContent>
@@ -2463,9 +2463,7 @@ const ModuleLessonsView = () => {
                   <SelectItem value="IMAGE">Image</SelectItem>
                   <SelectItem value="VIDEO">Video</SelectItem>
                   <SelectItem value="PDF">PDF</SelectItem>
-                  <SelectItem value="TEXT_FILE">
-                    Document (Text / Other)
-                  </SelectItem>
+                  <SelectItem value="TEXT">Document (Text / Other)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
