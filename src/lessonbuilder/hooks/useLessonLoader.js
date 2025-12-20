@@ -33,7 +33,8 @@ const useLessonLoader = ({
             console.log('Fetching lesson content for:', lessonId);
 
             const baseUrl =
-              import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+              import.meta.env.VITE_API_BASE_URL ||
+              'https://saas-backend-coki.onrender.com';
             const response = await fetch(
               `${baseUrl}/api/lessoncontent/${lessonId}`,
               {
@@ -445,7 +446,8 @@ const useLessonLoader = ({
           });
 
           const baseUrl =
-            import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+            import.meta.env.VITE_API_BASE_URL ||
+            'https://saas-backend-coki.onrender.com';
           const lessonResponse = await fetch(
             `${baseUrl}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
             {

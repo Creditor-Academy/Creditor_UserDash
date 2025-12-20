@@ -409,7 +409,8 @@ function LessonBuilder() {
       }
 
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        import.meta.env.VITE_API_BASE_URL ||
+        'https://saas-backend-coki.onrender.com';
       const token = localStorage.getItem('token');
 
       if (!token) {

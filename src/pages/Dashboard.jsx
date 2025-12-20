@@ -56,8 +56,11 @@ import {
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
+import { BotWidget } from '@/components/bot';
 
 export function Dashboard() {
+  const [isBotOpen, setIsBotOpen] = useState(false);
+
   const importantUpdateStyles = `
     .important-updates-wrapper {
       width: 100%;
@@ -2516,7 +2519,8 @@ export function Dashboard() {
       </Dialog>
 
       {/* Offer Popup */}
-      <OfferPopup />
+      <OfferPopup isBotOpen={isBotOpen} />
+      <BotWidget onToggle={setIsBotOpen} />
     </div>
   );
 }

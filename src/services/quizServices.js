@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { getAuthHeader } from './authHeader';
 
-const QUIZ_API_URL = 'http://localhost:9000/api/quiz/Quiz';
+const QUIZ_API_URL = 'https://saas-backend-coki.onrender.com/api/quiz/Quiz';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -15,30 +15,43 @@ const getAuthHeaders = () => {
 };
 
 export async function createQuiz(quizData) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/Quiz`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(quizData),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/Quiz`,
+    {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(quizData),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to create quiz (${response.status})`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Unknown error' }));
+    throw new Error(
+      errorData.message || `Failed to create quiz (${response.status})`
+    );
   }
   return await response.json();
 }
 
 export async function bulkUploadQuestions(quizId, questionsPayload) {
-  console.log('Sending request to:', `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/bulk-upload`);
+  console.log(
+    'Sending request to:',
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/bulk-upload`
+  );
   console.log('Payload:', JSON.stringify(questionsPayload, null, 2));
-  
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/bulk-upload`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(questionsPayload),
-    credentials: 'include',
-  });
-  
+
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/bulk-upload`,
+    {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(questionsPayload),
+      credentials: 'include',
+    }
+  );
+
   if (!response.ok) {
     let errorMessage = `Failed to bulk upload questions (${response.status})`;
     try {
@@ -50,7 +63,7 @@ export async function bulkUploadQuestions(quizId, questionsPayload) {
     }
     throw new Error(errorMessage);
   }
-  
+
   const result = await response.json();
   console.log('API Success Response:', result);
   return result;
@@ -78,20 +91,22 @@ export async function fetchQuizzesByModule(moduleId) {
     );
 
     const responseData = await response.json().catch(() => ({}));
-    
+
     if (!response.ok) {
-      const errorMessage = responseData.message || `Failed to fetch quizzes for module (${response.status})`;
+      const errorMessage =
+        responseData.message ||
+        `Failed to fetch quizzes for module (${response.status})`;
       console.error('Error fetching quizzes:', {
         status: response.status,
         statusText: response.statusText,
-        error: responseData
+        error: responseData,
       });
       throw new Error(errorMessage);
     }
 
     // Normalize to consistent shape with id and module_id
     if (Array.isArray(responseData.data)) {
-      return responseData.data.map((q) => ({
+      return responseData.data.map(q => ({
         ...q,
         id: q.id || q.quizId,
         quizId: q.quizId || q.id,
@@ -106,11 +121,14 @@ export async function fetchQuizzesByModule(moduleId) {
 }
 
 export async function fetchAllQuizzes() {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/quizzes`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/quizzes`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch all quizzes');
   }
@@ -119,11 +137,14 @@ export async function fetchAllQuizzes() {
 }
 
 export async function getQuizById(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/quizzes/${quizId}`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/quizzes/${quizId}`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch quiz by ID');
   }
@@ -133,11 +154,14 @@ export async function getQuizById(quizId) {
 
 // New functions for quiz scores and user attempts
 export async function fetchQuizScores(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/scores`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/scores`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch quiz scores');
   }
@@ -146,11 +170,14 @@ export async function fetchQuizScores(quizId) {
 }
 
 export async function fetchUserQuizAttempts(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/attempts`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/attempts`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch user quiz attempts');
   }
@@ -159,11 +186,14 @@ export async function fetchUserQuizAttempts(quizId) {
 }
 
 export async function fetchQuizAnalytics(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/analytics`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/analytics`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch quiz analytics');
   }
@@ -172,11 +202,14 @@ export async function fetchQuizAnalytics(quizId) {
 }
 
 export async function fetchQuizAdminAnalytics(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/analytics`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/analytics`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch quiz admin analytics');
   }
@@ -185,11 +218,14 @@ export async function fetchQuizAdminAnalytics(quizId) {
 }
 
 export async function fetchQuizAdminScores(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/scores`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/scores`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch quiz admin scores');
   }
@@ -199,11 +235,14 @@ export async function fetchQuizAdminScores(quizId) {
 
 // Fetch all questions (with options/answers) for a quiz (admin endpoint)
 export async function fetchQuizAdminQuestions(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
     throw new Error('Failed to fetch quiz admin questions');
   }
@@ -212,82 +251,116 @@ export async function fetchQuizAdminQuestions(quizId) {
 }
 
 export async function deleteQuiz(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}`,
+    {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to delete quiz (${response.status})`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Unknown error' }));
+    throw new Error(
+      errorData.message || `Failed to delete quiz (${response.status})`
+    );
   }
   return await response.json();
 }
 
 export async function updateQuiz(quizId, quizData) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/updateQuizz`, {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(quizData),
-    credentials: 'include',
-  });
-  
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/updateQuizz`,
+    {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(quizData),
+      credentials: 'include',
+    }
+  );
+
   const responseData = await response.json();
-  
+
   // Check if the response indicates success despite HTTP status
   if (responseData.success === true && responseData.code === 200) {
     return responseData;
   }
-  
+
   // If not successful, throw error
   if (!response.ok) {
     const errorData = responseData || { message: 'Unknown error' };
-    throw new Error(errorData.message || `Failed to update quiz (${response.status})`);
+    throw new Error(
+      errorData.message || `Failed to update quiz (${response.status})`
+    );
   }
-  
+
   return responseData;
 }
 
 export async function updateQuestion(quizId, questionId, questionData) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/${questionId}`, {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(questionData),
-    credentials: 'include',
-  });
-  
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/${questionId}`,
+    {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(questionData),
+      credentials: 'include',
+    }
+  );
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to update question (${response.status})`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Unknown error' }));
+    throw new Error(
+      errorData.message || `Failed to update question (${response.status})`
+    );
   }
-  
+
   return await response.json();
 }
 
 // Delete a question by ID (admin)
 export async function deleteQuestion(quizId, questionId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/${questionId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/${questionId}`,
+    {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to delete question (${response.status})`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Unknown error' }));
+    throw new Error(
+      errorData.message || `Failed to delete question (${response.status})`
+    );
   }
   return await response.json();
 }
 
 // Fetch correct answers for a quiz (admin endpoint)
 export async function fetchQuizCorrectAnswers(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions`, {
-    method: 'GET',
-    headers: getAuthHeaders(),
-    credentials: 'include',
-  });
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions`,
+    {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    }
+  );
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to fetch quiz correct answers (${response.status})`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Unknown error' }));
+    throw new Error(
+      errorData.message ||
+        `Failed to fetch quiz correct answers (${response.status})`
+    );
   }
   const data = await response.json();
   return data.data || data;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Gift } from 'lucide-react';
 
-const OfferPopup = () => {
+const OfferPopup = ({ isBotOpen = false }) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [showWidget, setShowWidget] = useState(false);
   const [hasShownOnLogin, setHasShownOnLogin] = useState(false);
@@ -99,7 +99,7 @@ const OfferPopup = () => {
       )}
 
       {/* Bottom-right Widget */}
-      {showWidget && !isPopupOpen && (
+      {showWidget && !isPopupOpen && !isBotOpen && (
         <button
           className="offer-widget"
           onClick={handleWidgetClick}

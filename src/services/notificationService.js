@@ -3,7 +3,8 @@ import { getAuthHeader } from '@/services/authHeader';
 
 // Base API URL (fallback to production backend if env not set)
 const API_BASE =
-  import.meta.env?.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+  import.meta.env?.VITE_API_BASE_URL ||
+  'https://saas-backend-coki.onrender.com';
 
 /*
 BACKEND ROUTES THAT NEED TO BE ENABLED:

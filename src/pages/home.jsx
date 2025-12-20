@@ -19,8 +19,12 @@ import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
 import MonetizeSection from '../components/homepage/MonetizeSection.jsx';
 import LearningPathways from '../components/homepage/LearningPathways.jsx';
 import CTA from '../components/homepage/cta.jsx';
+import { BotWidget } from '@/components/bot';
+import OfferPopup from '@/components/offer/OfferPopup';
 
 const Home = () => {
+  const [isBotOpen, setIsBotOpen] = useState(false);
+
   return (
     <>
       <Navbar />
@@ -41,6 +45,8 @@ const Home = () => {
       <CTA /> */}
       <Ready />
       <Footer />
+      <OfferPopup isBotOpen={isBotOpen} />
+      <BotWidget onToggle={setIsBotOpen} />
     </>
   );
 };

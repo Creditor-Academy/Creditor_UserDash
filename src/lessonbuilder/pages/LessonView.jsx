@@ -309,7 +309,8 @@ const LessonView = () => {
 
       // Fetch lesson content to check for SCORM URL
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        import.meta.env.VITE_API_BASE_URL ||
+        'https://saas-backend-coki.onrender.com';
       const response = await fetch(
         `${baseUrl}/api/lessoncontent/${lesson.id}`,
         {
