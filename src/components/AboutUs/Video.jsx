@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import CreditorImage from '../../assets/creditor.png';
-
 const Video = () => {
   return (
     <section
@@ -85,7 +84,7 @@ const Video = () => {
               {/* Add your video source link in the src attribute below */}
               {/* Example: src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview" */}
               <iframe
-                src="/public/LMS.mp4"
+                src="/LMS.mp4"
                 className="absolute top-0 left-0 w-full h-full"
                 title="Athena LMS Product Overview"
                 frameBorder="0"
