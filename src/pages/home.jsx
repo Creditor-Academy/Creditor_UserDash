@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '../components/navbar.jsx';
 import Footer from '../components/Footer.jsx';
 import Hero from '../components/homepage/herosection.jsx';
