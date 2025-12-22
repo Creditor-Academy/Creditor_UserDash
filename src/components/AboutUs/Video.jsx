@@ -85,7 +85,7 @@ const Video = () => {
               {/* Add your video source link in the src attribute below */}
               {/* Example: src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview" */}
               <iframe
-                src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview"
+                src="/public/LMS.mp4"
                 className="absolute top-0 left-0 w-full h-full"
                 title="Athena LMS Product Overview"
                 frameBorder="0"
