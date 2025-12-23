@@ -30,6 +30,7 @@ import {
   Award,
   Video,
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 import DashboardCarousel from '@/components/dashboard/DashboardCarousel';
 import DashboardGroup from '@/components/dashboard/DashboardGroup';
@@ -1059,6 +1060,7 @@ export function Dashboard() {
           aria-hidden="true"
         />
       )}
+
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
           {isChristmasMode ? (

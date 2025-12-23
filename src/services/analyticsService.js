@@ -1,7 +1,7 @@
 import { getAuthHeader } from './authHeader';
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+  import.meta.env.VITE_API_BASE_URL || 'https://testbackend-hcoy.onrender.com';
 
 /**
  * Fetch top and least active courses based on last 30 days enrollment

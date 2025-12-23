@@ -10,7 +10,8 @@ import { api } from './apiClient';
 class UrlShortenerService {
   constructor() {
     this.baseUrl =
-      import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+      import.meta.env.VITE_API_BASE_URL ||
+      'https://testbackend-hcoy.onrender.com';
     this.shortDomain = import.meta.env.VITE_SHORT_DOMAIN || 'cred.ly'; // Custom short domain
   }
 

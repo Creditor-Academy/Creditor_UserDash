@@ -61,7 +61,7 @@ export default defineConfig(({ mode }) => ({
       'lmsathena.com',
       'api.lmsathena.com',
       '54.198.69.32',
-      'https://creditor.onrender.com',
+      'https://testbackend-hcoy.onrender.com',
       'https://creditor-frontend-p6lt.onrender.com',
     ],
     cors: true,
@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://creditor.onrender.com'
+      'https://testbackend-hcoy.onrender.com'
     ),
     // AI Service API Keys - Injected at build time
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
