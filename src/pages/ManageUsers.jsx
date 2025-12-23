@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
 import UserDetailsModal from '@/components/UserDetailsModal';
 import { getAuthHeader } from '../services/authHeader';
+import { FaUsers } from 'react-icons/fa';
+import { X } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -11,12 +14,18 @@ const API_BASE =
 
 const ManageUsers = () => {
   const { userRole, hasRole } = useAuth();
+  const { userProfile } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('user');
   const [apiCallTime, setApiCallTime] = useState(null);
+  const [orgData, setOrgData] = useState(null);
+  const [orgDataLoading, setOrgDataLoading] = useState(true);
+  const [isBuyUsersModalOpen, setIsBuyUsersModalOpen] = useState(false);
+  const [userAmount, setUserAmount] = useState('');
+  const [buyingUsers, setBuyingUsers] = useState(false);
 
   // Clear selected users when filter role changes
   useEffect(() => {
@@ -286,6 +295,131 @@ const ManageUsers = () => {
       fetchUsers();
     }
   }, [forceUpdate]);
+
+  // Fetch organization data for user limit
+  useEffect(() => {
+    const fetchOrgData = async () => {
+      try {
+        setOrgDataLoading(true);
+        const orgId =
+          userProfile?.organization_id ||
+          userProfile?.org_id ||
+          userProfile?.organizationId ||
+          userProfile?.organization?.id ||
+          localStorage.getItem('orgId');
+
+        if (!orgId) {
+          setOrgDataLoading(false);
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE}/api/org/SingleOrg/${orgId}`,
+          getAuthConfig()
+        );
+        const orgDataResult = response?.data?.data || response?.data;
+        setOrgData(orgDataResult);
+      } catch (err) {
+        console.error('Error fetching organization data:', err);
+      } finally {
+        setOrgDataLoading(false);
+      }
+    };
+
+    if (userProfile) {
+      fetchOrgData();
+    }
+  }, [userProfile]);
+
+  // Handle buy users payment
+  const handleBuyUsers = async () => {
+    if (!userAmount || Number(userAmount) <= 0) {
+      setError('Please enter a valid number of users');
+      return;
+    }
+
+    try {
+      setBuyingUsers(true);
+      setError('');
+
+      const orgId =
+        userProfile?.organization_id ||
+        userProfile?.org_id ||
+        userProfile?.organizationId ||
+        userProfile?.organization?.id ||
+        localStorage.getItem('orgId');
+
+      if (!orgId) {
+        setError('Organization not found. Please log in again.');
+        setBuyingUsers(false);
+        return;
+      }
+
+      const numberOfUsers = Number(userAmount);
+      const totalCost = numberOfUsers * 14; // $14 per user
+
+      // Here you would integrate with your payment gateway
+      // For now, we'll simulate the payment and then update the user limit
+      console.log('Processing payment for', numberOfUsers, 'users');
+      console.log('Total cost: $', totalCost);
+
+      // Simulate payment processing
+      // In production, integrate with Stripe, PayPal, or your payment gateway
+      const paymentSuccess = true; // Replace with actual payment processing
+
+      if (paymentSuccess) {
+        // Update organization user limit
+        const currentLimit = orgData?.user_limit || 0;
+        const newLimit = currentLimit + numberOfUsers;
+
+        const updateResponse = await axios.put(
+          `${API_BASE}/api/org/orgUpdate/${orgId}`,
+          {
+            user_limit: newLimit,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(getAuthHeader() || {}),
+            },
+            credentials: 'include',
+            withCredentials: true,
+          }
+        );
+
+        if (updateResponse.data) {
+          // Refresh organization data
+          const orgResponse = await axios.get(
+            `${API_BASE}/api/org/SingleOrg/${orgId}`,
+            getAuthConfig()
+          );
+          const orgDataResult = orgResponse?.data?.data || orgResponse?.data;
+          setOrgData(orgDataResult);
+
+          // Refresh users list
+          fetchUsers();
+
+          setSuccessMessage(
+            `Successfully purchased ${numberOfUsers} user(s) for $${totalCost.toLocaleString()}. Your user limit has been updated to ${newLimit.toLocaleString()}.`
+          );
+          setIsBuyUsersModalOpen(false);
+          setUserAmount('');
+        } else {
+          setError('Failed to update user limit. Please contact support.');
+        }
+      } else {
+        setError('Payment processing failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error purchasing users:', err);
+      setError(
+        err.response?.data?.message ||
+          'Failed to purchase users. Please try again.'
+      );
+    } finally {
+      setBuyingUsers(false);
+    }
+  };
 
   const getAuthConfig = () => ({
     method: 'GET',
@@ -1617,8 +1751,106 @@ const ManageUsers = () => {
     );
   }
 
+  // Calculate user counts
+  const totalUsers = users.length;
+  const filteredUsersCount = getTotalFilteredUsersCount();
+  const userLimit = orgData?.user_limit || null;
+
   return (
     <div className="space-y-6">
+      {/* User Count Display */}
+      <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white bg-purple-500">
+              <FaUsers />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                User Statistics
+              </p>
+              <div className="flex items-center gap-4 mt-1">
+                <div>
+                  <span className="text-lg font-bold text-gray-900">
+                    {totalUsers.toLocaleString()}
+                  </span>
+                  <span className="text-sm text-gray-600 ml-1">
+                    Total Users
+                  </span>
+                </div>
+                {(searchTerm || filterRole !== 'user') && (
+                  <div className="text-gray-400">|</div>
+                )}
+                {(searchTerm || filterRole !== 'user') && (
+                  <div>
+                    <span className="text-lg font-bold text-purple-600">
+                      {filteredUsersCount.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-gray-600 ml-1">Filtered</span>
+                  </div>
+                )}
+                {userLimit && (
+                  <>
+                    <div className="text-gray-400">|</div>
+                    <div>
+                      <span className="text-lg font-bold text-gray-900">
+                        {totalUsers.toLocaleString()} /{' '}
+                        {userLimit.toLocaleString()}
+                      </span>
+                      <span className="text-sm text-gray-600 ml-1">Limit</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {userLimit && (
+              <div className="text-right mr-4">
+                <div className="text-xs text-gray-500 mb-1">Usage</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {Math.round((totalUsers / userLimit) * 100)}%
+                </div>
+                <div className="w-32 h-2 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      (totalUsers / userLimit) * 100 >= 100
+                        ? 'bg-gradient-to-r from-red-500 to-red-600'
+                        : (totalUsers / userLimit) * 100 >= 80
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                          : 'bg-gradient-to-r from-purple-500 to-indigo-500'
+                    }`}
+                    style={{
+                      width: `${Math.min((totalUsers / userLimit) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setIsBuyUsersModalOpen(true)}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Add on users
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -3005,6 +3237,172 @@ const ManageUsers = () => {
                   Save Note
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add on Users Modal */}
+      {isBuyUsersModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4"
+          onClick={() => {
+            setIsBuyUsersModalOpen(false);
+            setUserAmount('');
+          }}
+        >
+          <div
+            className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-white"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Add on Users</h2>
+              <button
+                onClick={() => {
+                  setIsBuyUsersModalOpen(false);
+                  setUserAmount('');
+                }}
+                className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Close"
+              >
+                <X size={24} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Current User Info */}
+              {orgData && (
+                <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-1">
+                    Current User Limit
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {totalUsers.toLocaleString()} /{' '}
+                    {orgData.user_limit
+                      ? orgData.user_limit.toLocaleString()
+                      : '∞'}{' '}
+                    users
+                  </p>
+                </div>
+              )}
+
+              {/* Number of Users Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Number of Users to Purchase
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={userAmount}
+                  onChange={e => setUserAmount(e.target.value)}
+                  placeholder="Enter number of users (e.g., 10, 20, 50)"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the number of users you want to add to your limit
+                </p>
+              </div>
+
+              {/* Price Calculation */}
+              {userAmount && Number(userAmount) > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Number of Users:
+                    </span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {userAmount} users
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Price per User:
+                    </span>
+                    <span className="text-lg font-bold text-gray-900">
+                      $14/user
+                    </span>
+                  </div>
+                  <div className="border-t border-green-200 pt-2 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-bold text-gray-900">
+                        Total Amount:
+                      </span>
+                      <span className="text-2xl font-bold text-green-700">
+                        ${(Number(userAmount) * 14).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Button */}
+              <div className="pt-2">
+                <button
+                  onClick={handleBuyUsers}
+                  disabled={
+                    !userAmount || Number(userAmount) <= 0 || buyingUsers
+                  }
+                  className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {buyingUsers ? (
+                    <>
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                        />
+                      </svg>
+                      Proceed to Payment
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsBuyUsersModalOpen(false);
+                  setUserAmount('');
+                }}
+                className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
