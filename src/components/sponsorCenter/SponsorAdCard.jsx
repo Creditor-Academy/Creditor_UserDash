@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -11,6 +11,17 @@ import SponsorStatusBadge from './SponsorStatusBadge';
 import { CalendarDays, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Helper function to check if URL is a placeholder/invalid
+const isPlaceholderUrl = url => {
+  if (!url || url === '') return true;
+  return (
+    url.includes('example.com') ||
+    url.includes('placeholder') ||
+    url === null ||
+    url === undefined
+  );
+};
+
 const SponsorAdCard = ({
   ad,
   onView,
@@ -21,59 +32,25 @@ const SponsorAdCard = ({
   hideActions,
   isPreview,
 }) => {
+  const [imageError, setImageError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
   if (!ad) return null;
 
+  const hasValidMedia =
+    ad.mediaUrl && !isPlaceholderUrl(ad.mediaUrl) && !imageError && !videoError;
+  const showFallback = !hasValidMedia;
+
   const actionButtons = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex justify-center">
       {onView && (
         <Button
           variant="outline"
           size="sm"
           onClick={() => onView(ad)}
-          className="rounded-full"
+          className="rounded-full w-full"
         >
           View
-        </Button>
-      )}
-      {onEdit && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onEdit(ad)}
-          className="rounded-full"
-        >
-          Edit
-        </Button>
-      )}
-      {onToggleStatus &&
-        ad.status !== 'Pending' &&
-        ad.status !== 'Rejected' && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onToggleStatus(ad)}
-            className="rounded-full"
-          >
-            {ad.status === 'Approved' ? 'Pause' : 'Resume'}
-          </Button>
-        )}
-      {onResubmit && ad.status === 'Rejected' && (
-        <Button
-          size="sm"
-          className="rounded-full bg-blue-600 text-white"
-          onClick={() => onResubmit(ad)}
-        >
-          Resubmit
-        </Button>
-      )}
-      {onDelete && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full text-red-600 border-red-200 hover:bg-red-50"
-          onClick={() => onDelete(ad)}
-        >
-          Delete
         </Button>
       )}
     </div>
@@ -82,68 +59,100 @@ const SponsorAdCard = ({
   return (
     <Card
       className={cn(
-        'rounded-3xl border border-gray-100 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md',
+        'rounded-xl sm:rounded-2xl border border-gray-100 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md',
         isPreview && 'border-dashed border-blue-200'
       )}
     >
-      <CardHeader className="space-y-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">
-            {ad.adTitle || 'Untitled Placement'}
+      <CardHeader className="space-y-2 pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+        <div className="flex items-start sm:items-center justify-between gap-2">
+          <CardTitle className="text-base sm:text-lg flex-1 min-w-0">
+            <span className="truncate block">
+              {ad.adTitle || 'Untitled Placement'}
+            </span>
           </CardTitle>
           {!isPreview && <SponsorStatusBadge status={ad.status || 'Pending'} />}
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-xs sm:text-sm text-gray-500 truncate">
           {ad.sponsorName || 'Sponsor TBD'}
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="w-full h-44 rounded-2xl bg-gray-100 overflow-hidden">
-          {ad.mediaUrl ? (
+      <CardContent className="space-y-3 sm:space-y-4 pb-3 sm:pb-4 px-4 sm:px-6">
+        <div className="w-full h-36 sm:h-44 rounded-xl sm:rounded-2xl bg-gray-100 overflow-hidden relative">
+          {hasValidMedia && ad.mediaType === 'video' ? (
+            <video
+              src={ad.mediaUrl}
+              className="h-full w-full object-cover"
+              controls
+              muted
+              onError={() => setVideoError(true)}
+            />
+          ) : hasValidMedia && ad.mediaType === 'image' ? (
             <img
               src={ad.mediaUrl}
-              alt={ad.adTitle}
+              alt={ad.adTitle || 'Sponsor ad'}
               className="h-full w-full object-cover"
+              onError={() => setImageError(true)}
             />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+          ) : null}
+          {showFallback && (
+            <div className="absolute inset-0 h-full flex items-center justify-center text-gray-400 text-sm bg-gray-50">
               {isPreview ? 'Preview updates as you type' : 'No media uploaded'}
             </div>
           )}
         </div>
-        <p className="text-sm text-gray-600 line-clamp-2">{ad.description}</p>
-        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+        {ad.description && (
+          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">
+            {ad.description}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2 sm:gap-3 text-xs text-gray-500 min-h-[1.75rem]">
           {ad.placement && (
-            <span className="rounded-full bg-gray-100 px-3 py-1 capitalize">
+            <span className="rounded-full bg-gray-100 px-2 sm:px-3 py-1 capitalize text-xs">
               {ad.placement.replace(/_/g, ' ')}
             </span>
           )}
           {ad.type && (
-            <span className="rounded-full bg-gray-100 px-3 py-1">
+            <span className="rounded-full bg-gray-100 px-2 sm:px-3 py-1 text-xs">
               {ad.type}
             </span>
           )}
           {ad.website && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1">
+            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 sm:px-3 py-1 text-xs">
               <Globe className="w-3 h-3" />
               Link ready
             </span>
           )}
         </div>
         {!isPreview && (
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs text-gray-500 min-h-[1.25rem]">
             <span className="inline-flex items-center gap-1">
-              <CalendarDays className="w-3 h-3" />
-              {ad.startDate} - {ad.endDate}
+              <CalendarDays className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">
+                {ad.startDate &&
+                  new Date(ad.startDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}{' '}
+                -{' '}
+                {ad.endDate &&
+                  new Date(ad.endDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+              </span>
             </span>
             {typeof ad.budget !== 'undefined' && (
-              <span>Budget: ${Number(ad.budget).toLocaleString()}</span>
+              <span className="flex-shrink-0">
+                Budget: ${Number(ad.budget).toLocaleString()}
+              </span>
             )}
           </div>
         )}
       </CardContent>
       {!hideActions && !isPreview && (
-        <CardFooter className="flex flex-wrap gap-2">
+        <CardFooter className="pt-3 sm:pt-4 pb-3 sm:pb-4 px-4 sm:px-6">
           {actionButtons}
         </CardFooter>
       )}

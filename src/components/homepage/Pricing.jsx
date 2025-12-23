@@ -32,7 +32,7 @@
 //       ],
 //       sectionHeader: "Starter Includes:",
 //       cta: "Join Now",
-//       link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8",  
+//       link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8",
 //       popular: false,
 //       buttonStyle: 'white',
 //     },
@@ -56,7 +56,7 @@
 //       sectionHeader: 'Growth Includes:',
 //       cta: 'Join Now',
 //       popular: true,
-//       link: "https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2",  
+//       link: "https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2",
 //       featured: "Most Popular!",
 //       buttonStyle: "blue"
 //     },
@@ -514,8 +514,7 @@
 
 // export default Pricing;
 
-
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 
@@ -531,8 +530,10 @@ const Pricing = () => {
       name: 'Basic',
       target: 'Ideal for individuals, small teams, and educators getting started.',
       price: '$99',
-      period: 'per month',
-      billingNote: 'Billed monthly · cancel anytime',
+      originalPrice: '$99',
+      savings: '',
+      period: ' per user/month',
+      billingNote: 'monthly billing',
       features: [
         { text: '2 users + 1 admin included', info: false },
         { text: '3 GB cloud storage', info: false },
@@ -541,8 +542,8 @@ const Pricing = () => {
         { text: 'Essential LMS features & analytics', info: false },
         { text: 'Standard support', info: false },
       ],
-      sectionHeader: 'Basic Plan Includes:',
-      cta: 'Start Basic',
+      sectionHeader: 'Starter Includes:',
+      cta: 'Join Now',
       link: 'https://quickclick.com/r/0zx71t3oqnqkfdcmjd2gxuefe7it3i',
       popular: false,
       buttonStyle: 'outline',
@@ -604,96 +605,82 @@ const Pricing = () => {
     ],
   };
 
-  const PlanCard = ({ plan }) => {
-    const isFeatured = plan.popular;
-    const ctaStyles = {
-      solid:
-        'bg-sky-500 text-white hover:bg-sky-400 focus-visible:ring-sky-300',
-      outline:
-        'border border-sky-200 text-white/90 hover:bg-white/10 hover:border-white/60 focus-visible:ring-white/30',
-      ghost:
-        'border border-slate-800/60 text-white/90 bg-slate-900/70 hover:border-sky-500/60 hover:bg-slate-900/90 focus-visible:ring-sky-400/40',
-    };
-
-    return (
-      <div className="max-w-sm w-full mx-auto">
+  // Reusable Card UI (for both mobile + desktop)
+  const PlanCard = ({ plan }) => (
+    <div
+      className={`overflow-hidden h-full flex flex-col border shadow-lg rounded-lg bg-white transition-all duration-300 ${
+        plan.popular
+          ? 'border-yellow-400 border-4 shadow-2xl'
+          : 'border-gray-300'
+      }`}
+    >
+      {/* Most Popular Label */}
+      {plan.popular ? (
         <div
-          className={`relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20 ${
-            isFeatured ? 'ring-2 ring-sky-400/70' : 'ring-1 ring-white/5'
-          }`}
+          className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
+          style={{
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+          }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-sky-500/10 to-transparent opacity-70" />
-          {isFeatured && (
-            <div className="absolute top-4 right-4 rounded-full px-3 py-1 text-xs font-semibold bg-sky-500/20 text-sky-100 border border-sky-300/40">
-              Most popular
-            </div>
-          )}
-          <div className="relative px-7 py-6 text-left space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-sky-200" />
-              <p className="text-[0.7rem] uppercase tracking-[0.22em] text-sky-100/80">
-                {plan.sectionHeader}
-              </p>
-            </div>
-            <h3 className="text-2xl font-semibold text-white">
-              {plan.name}{' '}
-              {plan.nameHighlight && (
-                <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-white/10 border border-white/10 text-slate-50">
-                  {plan.nameHighlight}
-                </span>
-              )}
-            </h3>
-            <p className="text-sm text-slate-200/90 leading-relaxed">
-              {plan.target}
-            </p>
-          </div>
+          {plan.featured}
+        </div>
+      ) : (
+        <div className="h-14" />
+      )}
 
-          {!plan.isPlusCard ? (
-            <div className="relative px-7 pb-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-white">{plan.price}</span>
-                <span className="text-sm text-slate-200/80">{plan.period}</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1">{plan.billingNote}</p>
-              <div className="mt-6">
-                <a
-                  href={plan.link}
-                  className={`inline-flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${ctaStyles[plan.buttonStyle]}`}
-                >
-                  {plan.cta}
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div className="relative px-7 pb-2">
-              <p className="text-sm text-slate-200/90 leading-relaxed">
-                Bespoke support, infrastructure, and onboarding for complex teams.
-              </p>
-              <div className="mt-6">
-                <a
-                  href={plan.link}
-                  className={`inline-flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${ctaStyles.ghost}`}
-                >
-                  {plan.cta}
-                </a>
-              </div>
-            </div>
-          )}
+      <div className="p-6 flex-1 flex flex-col">
+        {/* Title + Target */}
+        <div className="mb-3 h-[160px] overflow-hidden">
+          <h3 className="text-3xl font-bold text-gray-900 mb-2">
+            {plan.name}{' '}
+            {plan.nameHighlight && (
+              <span className="ml-2 px-3 py-1 bg-black text-white text-lg font-bold rounded">
+                {plan.nameHighlight}
+              </span>
+            )}
+          </h3>
+          <p className="text-sm text-gray-700">{plan.target}</p>
+        </div>
 
-          <div className="relative px-7 pt-5 pb-7 border-t border-white/10 bg-slate-900/60">
-            <ul className="space-y-3 text-sm text-slate-100/90">
-              {plan.features.map((f, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-4 h-4 text-sky-300 mt-0.5" />
-                  <span>{f.text}</span>
-                </li>
-              ))}
-            </ul>
+        {/* Pricing */}
+        {!plan.isPlusCard && (
+          <div className="mb-4">
+            <div className="flex items-baseline gap-1">
+              <span className="text-5xl font-bold text-gray-900">
+                {plan.price}
+              </span>
+              <span className="text-gray-600 text-lg">{plan.period}</span>
+            </div>
+            <p className="text-sm text-gray-600">{plan.billingNote}</p>
           </div>
+        )}
+
+        {/* CTA Button */}
+        <a
+          href={plan.link}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full py-3 px-6 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition text-center mb-6"
+        >
+          {plan.cta} →
+        </a>
+
+        {/* Features */}
+        <div className="pt-6 border-t border-gray-200">
+          <h4 className="font-bold text-gray-900 mb-4">{plan.sectionHeader}</h4>
+
+          <ul className="space-y-3">
+            {plan.features.map((f, idx) => (
+              <li key={idx} className="flex gap-3">
+                <span className="text-sm text-gray-800 flex-1">{f.text}</span>
+                {f.info && <Info className="w-4 h-4 text-gray-900" />}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   return (
     <section

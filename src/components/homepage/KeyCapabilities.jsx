@@ -486,7 +486,7 @@
 //                 </svg>
 //               </button>
 
-//               {/* <button 
+//               {/* <button
 //                 onClick={() => navigate('/trial')}
 //                 className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2"
 //                 style={{ fontFamily: 'Arial, sans-serif' }}
@@ -710,23 +710,23 @@ const KeyCapabilities = () => {
   };
 
   return (
-     <section
-    className="py-20 px-4 relative overflow-hidden"
-    style={{
-      // 🌸 Light red / warm festive background
-      background:
-        'linear-gradient(180deg, #ffffff 0%, #fef2f2 45%, #fee2e2 70%, #ffffff 100%)',
-    }}
-  >
-    {/* Decorative background elements */}
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* change these two from blue to red/pink tones */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-300/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-rose-300/10 rounded-full blur-3xl" />
+    <section
+      className="py-20 px-4 relative overflow-hidden"
+      style={{
+        // 🌸 Light red / warm festive background
+        background:
+          'linear-gradient(180deg, #ffffff 0%, #fef2f2 45%, #fee2e2 70%, #ffffff 100%)',
+      }}
+    >
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* change these two from blue to red/pink tones */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-300/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-rose-300/10 rounded-full blur-3xl" />
 
-      {/* Grid pattern can stay the same */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]" />
-    </div>
+        {/* Grid pattern can stay the same */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]" />
+      </div>
 
       {/* Christmas Tree Decoration */}
       <motion.img
