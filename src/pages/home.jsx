@@ -19,7 +19,7 @@ import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
 import MonetizeSection from '../components/homepage/MonetizeSection.jsx';
 import LearningPathways from '../components/homepage/LearningPathways.jsx';
 import CTA from '../components/homepage/cta.jsx';
-import AthenaStandsout from '../components/homepage/AthenaStandsout.jsx';
+// import AthenaStandsout from '../components/homepage/AthenaStandsout.jsx';
 
 const Home = () => {
   return (
@@ -28,7 +28,7 @@ const Home = () => {
       <Hero />
       {/* <About/> */}
       <KeyCapabilities />
-      <AthenaStandsout />
+      {/* <AthenaStandsout /> */}
       <MonetizeSection />
       <Buildfeature />
       <Pricing />
