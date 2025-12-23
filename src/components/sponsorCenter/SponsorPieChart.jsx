@@ -6,9 +6,9 @@ const COLORS = ['#2563eb', '#f97316', '#10b981', '#ec4899', '#6366f1'];
 
 const SponsorPieChart = ({ data }) => {
   return (
-    <Card className="rounded-3xl border border-gray-100 shadow-sm">
-      <CardHeader>
-        <CardTitle>Ad type distribution</CardTitle>
+    <Card className="rounded-xl border border-gray-100 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Ad Type Distribution</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
         <ResponsiveContainer width="100%" height="100%">

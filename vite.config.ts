@@ -96,12 +96,15 @@ export default defineConfig(({ mode }) => ({
     ),
   },
 }));
-
+// Public Resouce Section
 // #(Testing Backend)
 // # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
 // #(development Backend)
 // VITE_API_BASE_URL=https://creditor.onrender.com
+
+// #(AWS Backend)
+// # VITE_API_BASE_URL= http://3.212.62.124
 
 // #(local Backend)
 // # VITE_API_BASE_URL= http://localhost:9000

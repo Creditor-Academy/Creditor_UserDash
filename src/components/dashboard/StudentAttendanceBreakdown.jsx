@@ -1,5 +1,11 @@
-import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState, useMemo } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -7,29 +13,29 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Search, 
-  ArrowUpDown, 
-  ArrowUp, 
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Search,
+  ArrowUpDown,
+  ArrowUp,
   ArrowDown,
   CheckCircle2,
   XCircle,
   AlertCircle,
   TrendingUp,
   TrendingDown,
-  Award
-} from "lucide-react";
-import { format, parseISO } from "date-fns";
+  Award,
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 const StudentAttendanceBreakdown = ({ students = [] }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState("attendancePercentage");
-  const [sortDirection, setSortDirection] = useState("desc");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState('attendancePercentage');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [minAttendanceFilter, setMinAttendanceFilter] = useState(0);
 
   // Filter and sort students
@@ -39,15 +45,17 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
     // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(
-        (student) =>
-          student.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student =>
+          student.studentName
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
           student.studentId?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Apply minimum attendance filter
     filtered = filtered.filter(
-      (student) => student.attendancePercentage >= minAttendanceFilter
+      student => student.attendancePercentage >= minAttendanceFilter
     );
 
     // Apply sorting
@@ -55,19 +63,19 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
       let aValue, bValue;
 
       switch (sortField) {
-        case "studentName":
-          aValue = a.studentName?.toLowerCase() || "";
-          bValue = b.studentName?.toLowerCase() || "";
+        case 'studentName':
+          aValue = a.studentName?.toLowerCase() || '';
+          bValue = b.studentName?.toLowerCase() || '';
           break;
-        case "attendancePercentage":
+        case 'attendancePercentage':
           aValue = a.attendancePercentage || 0;
           bValue = b.attendancePercentage || 0;
           break;
-        case "attended":
+        case 'attended':
           aValue = a.attended || 0;
           bValue = b.attended || 0;
           break;
-        case "absent":
+        case 'absent':
           aValue = a.absent || 0;
           bValue = b.absent || 0;
           break;
@@ -75,20 +83,20 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
           return 0;
       }
 
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
     return filtered;
   }, [students, searchQuery, sortField, sortDirection, minAttendanceFilter]);
 
-  const handleSort = (field) => {
+  const handleSort = field => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
@@ -96,23 +104,23 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 ml-1 opacity-50" />;
     }
-    return sortDirection === "asc" ? (
+    return sortDirection === 'asc' ? (
       <ArrowUp className="h-4 w-4 ml-1" />
     ) : (
       <ArrowDown className="h-4 w-4 ml-1" />
     );
   };
 
-  const getInitials = (name) => {
+  const getInitials = name => {
     return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
+      .split(' ')
+      .map(n => n[0])
+      .join('')
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const getAttendanceBadge = (percentage) => {
+  const getAttendanceBadge = percentage => {
     if (percentage >= 75) {
       return (
         <Badge className="bg-green-500 hover:bg-green-600 text-white">
@@ -127,28 +135,26 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
         </Badge>
       );
     } else {
-      return (
-        <Badge variant="destructive">
-          Needs Improvement
-        </Badge>
-      );
+      return <Badge variant="destructive">Needs Improvement</Badge>;
     }
   };
 
-  const getProgressColor = (percentage) => {
-    if (percentage >= 75) return "bg-green-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-red-500";
+  const getProgressColor = percentage => {
+    if (percentage >= 75) return 'bg-green-500';
+    if (percentage >= 60) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   // Calculate statistics
   const stats = useMemo(() => {
     const total = students.length;
-    const excellent = students.filter((s) => s.attendancePercentage >= 75).length;
+    const excellent = students.filter(s => s.attendancePercentage >= 75).length;
     const good = students.filter(
-      (s) => s.attendancePercentage >= 60 && s.attendancePercentage < 75
+      s => s.attendancePercentage >= 60 && s.attendancePercentage < 75
     ).length;
-    const needsImprovement = students.filter((s) => s.attendancePercentage < 60).length;
+    const needsImprovement = students.filter(
+      s => s.attendancePercentage < 60
+    ).length;
     const averageAttendance =
       students.reduce((sum, s) => sum + s.attendancePercentage, 0) / total || 0;
 
@@ -157,7 +163,7 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
       excellent,
       good,
       needsImprovement,
-      averageAttendance
+      averageAttendance,
     };
   }, [students]);
 
@@ -167,7 +173,9 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -176,12 +184,19 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Excellent (75%+)</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Excellent (75%+)
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.excellent}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.excellent}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.total > 0 ? ((stats.excellent / stats.total) * 100).toFixed(1) : 0}% of total
+              {stats.total > 0
+                ? ((stats.excellent / stats.total) * 100).toFixed(1)
+                : 0}
+              % of total
             </p>
           </CardContent>
         </Card>
@@ -191,19 +206,28 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
             <CardTitle className="text-sm font-medium">Good (60-74%)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.good}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.good}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.total > 0 ? ((stats.good / stats.total) * 100).toFixed(1) : 0}% of total
+              {stats.total > 0
+                ? ((stats.good / stats.total) * 100).toFixed(1)
+                : 0}
+              % of total
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Average Attendance</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Average Attendance
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.averageAttendance.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">
+              {stats.averageAttendance.toFixed(1)}%
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               Across all students
             </p>
@@ -231,7 +255,7 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
               <Input
                 placeholder="Search by name or student ID..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -244,7 +268,7 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                 min="0"
                 max="100"
                 value={minAttendanceFilter}
-                onChange={(e) => setMinAttendanceFilter(Number(e.target.value))}
+                onChange={e => setMinAttendanceFilter(Number(e.target.value))}
                 className="w-24"
               />
               <span className="text-sm text-muted-foreground">%</span>
@@ -263,7 +287,7 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                         variant="ghost"
                         size="sm"
                         className="h-8 -ml-3"
-                        onClick={() => handleSort("studentName")}
+                        onClick={() => handleSort('studentName')}
                       >
                         Student
                         <SortIcon field="studentName" />
@@ -275,7 +299,7 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                         variant="ghost"
                         size="sm"
                         className="h-8 -ml-3"
-                        onClick={() => handleSort("attended")}
+                        onClick={() => handleSort('attended')}
                       >
                         Attended
                         <SortIcon field="attended" />
@@ -288,7 +312,7 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                         variant="ghost"
                         size="sm"
                         className="h-8 -ml-3"
-                        onClick={() => handleSort("attendancePercentage")}
+                        onClick={() => handleSort('attendancePercentage')}
                       >
                         Attendance %
                         <SortIcon field="attendancePercentage" />
@@ -309,7 +333,9 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                               {getInitials(student.studentName)}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="font-medium">{student.studentName}</span>
+                          <span className="font-medium">
+                            {student.studentName}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -318,7 +344,9 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1 text-green-600">
                           <CheckCircle2 className="h-4 w-4" />
-                          <span className="font-medium">{student.attended}</span>
+                          <span className="font-medium">
+                            {student.attended}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -341,7 +369,9 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                                 className={`h-2 rounded-full transition-all ${getProgressColor(
                                   student.attendancePercentage
                                 )}`}
-                                style={{ width: `${student.attendancePercentage}%` }}
+                                style={{
+                                  width: `${student.attendancePercentage}%`,
+                                }}
                               />
                             </div>
                           </div>
@@ -350,11 +380,16 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{getAttendanceBadge(student.attendancePercentage)}</TableCell>
+                      <TableCell>
+                        {getAttendanceBadge(student.attendancePercentage)}
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {student.lastAttendance
-                          ? format(parseISO(student.lastAttendance), "MMM d, yyyy")
-                          : "N/A"}
+                          ? format(
+                              parseISO(student.lastAttendance),
+                              'MMM d, yyyy'
+                            )
+                          : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -369,8 +404,8 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {searchQuery || minAttendanceFilter > 0
-                  ? "Try adjusting your filters"
-                  : "No student data available"}
+                  ? 'Try adjusting your filters'
+                  : 'No student data available'}
               </p>
             </div>
           )}
@@ -378,7 +413,8 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
           {/* Results count */}
           {filteredAndSortedStudents.length > 0 && (
             <div className="mt-4 text-sm text-muted-foreground">
-              Showing {filteredAndSortedStudents.length} of {students.length} students
+              Showing {filteredAndSortedStudents.length} of {students.length}{' '}
+              students
             </div>
           )}
         </CardContent>
@@ -388,4 +424,3 @@ const StudentAttendanceBreakdown = ({ students = [] }) => {
 };
 
 export default StudentAttendanceBreakdown;
-
