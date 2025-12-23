@@ -389,27 +389,31 @@ const StorageTokens = () => {
               </div>
             )}
 
-            {/* Upgrade Plan Section - Only show if current plan is MONTHLY */}
-            {orgData && orgData.plan === 'MONTHLY' && (
+            {/* Renew Plan Section */}
+            {orgData && orgData.plan && (
               <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 col-span-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-gray-700">
-                      Upgrade to Yearly Plan
+                      Renew your plan
                     </p>
                     <p className="text-xl font-bold text-gray-900">
-                      $1,999/year
+                      {orgData.plan === 'YEARLY'
+                        ? '$1,999/year'
+                        : orgData.plan === 'MONTHLY'
+                          ? '$99/month'
+                          : 'N/A'}
                     </p>
                   </div>
                   <button
                     onClick={() => {
-                      // Handle upgrade plan action here
-                      console.log('Upgrade to yearly plan');
+                      // Handle renew plan action here
+                      console.log('Renew plan');
                       // You can add navigation or API call here
                     }}
                     className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
                   >
-                    Upgrade Plan
+                    Renew Plan
                   </button>
                 </div>
               </div>
