@@ -119,7 +119,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
     <div className="space-y-6">
       <div className="text-center">
         <h3 className="text-xl font-semibold text-slate-800 mb-2">
-          Forgot Password?
+          Forgot Pasword?
         </h3>
         <p className="text-slate-600">
           Enter your email address and we'll send you a link to reset your
@@ -617,7 +617,11 @@ export function Login() {
                         <button
                           type="button"
                           onClick={() => setShowForgotPassword(true)}
-                          className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                          className={`text-xs font-medium transition-colors ${
+                            isChristmasMode
+                              ? 'text-red-600 hover:text-red-700'
+                              : 'text-blue-600 hover:text-blue-700'
+                          }`}
                           disabled={isLoading}
                         >
                           Forgot password?
