@@ -338,8 +338,8 @@ export default function Hero() {
         <div className="hero-right">
           <div className="hero-video-container">
             <video
-              // src="https://websiteathena.s3.eu-north-1.amazonaws.com/Athena+LMS++website+video+2nd.mp4"
-              src="/LMS.mp4"
+              src="https://websiteathena.s3.eu-north-1.amazonaws.com/Athena+LMS++website+video+2nd.mp4"
+              // src="/LMS.mp4"
               controls
               autoPlay
               muted
