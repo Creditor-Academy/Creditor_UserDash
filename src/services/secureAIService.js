@@ -1,25 +1,11 @@
 import { emitActiveOrgUsageRefresh } from '../utils/activeOrgUsageEvents';
 import { getAccessToken } from './tokenService';
 
-/**
- * Secure AI Service - Backend-Only Implementation
- * Replaces all direct OpenAI calls with secure backend API calls
- *
- * This service ensures:
- * - No API keys exposed in frontend
- * - All AI operations go through backend
- * - Proper authentication and rate limiting
- * - Cost tracking and usage monitoring
- * - Enhanced security and scalability
- */
-
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV
     ? 'http://localhost:9000'
     : 'https://creditor.onrender.com');
-// Debug: Log the API base being used
-console.log('SecureAIService API_BASE:', API_BASE);
 const isDevelopment = !!import.meta.env.DEV;
 
 const clientLogger = {
@@ -94,7 +80,7 @@ class SecureAIService {
 
       if (response.data?.error?.code === 'content_policy_violation') {
         return new Error(
-          'OpenAI rejected the image prompt due to safety filters. Please adjust the wording and try again.'
+          'The image prompt was rejected due to safety filters. Please adjust the wording and try again.'
         );
       }
 
@@ -140,7 +126,7 @@ class SecureAIService {
 
       if (error.response.data?.error?.code === 'content_policy_violation') {
         return new Error(
-          'OpenAI rejected the image prompt due to safety filters. Please adjust the wording and try again.'
+          'The image prompt was rejected due to safety filters. Please adjust the wording and try again.'
         );
       }
 
@@ -215,7 +201,6 @@ class SecureAIService {
       clientLogger.warn('Could not check backend status:', error.message);
       return {
         available: false,
-        openai: { available: false },
         error: error.message,
       };
     }
@@ -314,7 +299,7 @@ class SecureAIService {
   async generateText(prompt, options = {}) {
     try {
       const {
-        model = 'gpt-4o-mini',
+        tier = 'standard',
         maxTokens = 1000,
         temperature = 0.7,
         systemPrompt = 'You are a helpful AI assistant for educational content creation.',
@@ -325,7 +310,7 @@ class SecureAIService {
       // Check backend availability before making request
       if (!skipStatusCheck) {
         const status = await this.checkBackendStatus();
-        if (!status.openai?.available) {
+        if (!status.available) {
           throw new Error(
             status.error ||
               'AI service is currently unavailable. Please try again later.'
@@ -333,7 +318,7 @@ class SecureAIService {
         }
       }
 
-      clientLogger.debug(`Generating text via secure backend (${model})...`);
+      clientLogger.debug('Generating text via secure backend...');
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateText,
@@ -342,7 +327,7 @@ class SecureAIService {
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             prompt,
-            model,
+            tier,
             maxTokens,
             temperature,
             systemPrompt,
@@ -451,7 +436,7 @@ ${safeChunk}`;
     const partialSummaries = [];
     for (const chunk of chunks) {
       const summary = await this.generateText(buildPrompt(chunk), {
-        model: options?.model || 'gpt-4o-mini',
+        tier: options?.tier || 'standard',
         maxTokens: lengthConfig.maxTokens,
         temperature: 0.3,
         systemPrompt,
@@ -468,7 +453,7 @@ ${safeChunk}`;
           `Combine the partial summaries below into one unified summary.\n\n${finalSummary}`
         ),
         {
-          model: options?.model || 'gpt-4o-mini',
+          tier: options?.tier || 'standard',
           maxTokens: lengthConfig.maxTokens,
           temperature: 0.3,
           systemPrompt,
@@ -482,7 +467,6 @@ ${safeChunk}`;
       success: true,
       summary: finalSummary,
       generated_text: finalSummary,
-      model: options?.model || 'gpt-4o-mini',
       chunked: chunks.length > 1,
       chunkCount: chunks.length,
       originalLength: cleanedContent.length,
@@ -519,7 +503,7 @@ ${safeChunk}`;
       : `${basePrompt}\n\nConstraints:\n- Be direct and avoid fluff.`;
 
     const answer = await this.generateText(prompt.slice(0, 4000), {
-      model: options?.model || 'gpt-4o-mini',
+      tier: options?.tier || 'standard',
       maxTokens: options?.maxTokens || 500,
       temperature: 0.3,
       systemPrompt,
@@ -529,7 +513,6 @@ ${safeChunk}`;
     return {
       success: true,
       answer,
-      model: options?.model || 'gpt-4o-mini',
       question: q,
       context: ctx,
     };
@@ -601,7 +584,7 @@ ${safeChunk}`;
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
       const {
-        model = 'gpt-4o-mini',
+        tier = 'standard',
         maxTokens = 2000,
         temperature = 0.7,
         skipStatusCheck = false,
@@ -610,7 +593,7 @@ ${safeChunk}`;
       // Check backend availability before making request
       if (!skipStatusCheck) {
         const status = await this.checkBackendStatus();
-        if (!status.openai?.available) {
+        if (!status.available) {
           throw new Error(
             status.error ||
               'AI service is currently unavailable. Please try again later.'
@@ -618,9 +601,7 @@ ${safeChunk}`;
         }
       }
 
-      clientLogger.debug(
-        `Generating structured JSON via secure backend (${model})...`
-      );
+      clientLogger.debug('Generating structured JSON via secure backend...');
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateStructured,
@@ -630,7 +611,7 @@ ${safeChunk}`;
           body: JSON.stringify({
             systemPrompt,
             userPrompt,
-            model,
+            tier,
             maxTokens,
             temperature,
           }),
@@ -660,7 +641,7 @@ ${safeChunk}`;
   }
 
   /**
-   * Generate image using DALL-E via backend (with automatic S3 upload)
+   * Generate image via backend (with automatic S3 upload)
    * @param {string} prompt - Image generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<Object>} Generated image data with S3 URL
@@ -668,7 +649,7 @@ ${safeChunk}`;
   async generateImage(prompt, options = {}) {
     try {
       const {
-        model = 'dall-e-3',
+        tier = 'standard',
         size = '1024x1024',
         quality = 'standard',
         style = 'vivid',
@@ -681,7 +662,7 @@ ${safeChunk}`;
       // Check backend availability before making request
       if (!skipStatusCheck) {
         const status = await this.checkBackendStatus();
-        if (!status.openai?.available) {
+        if (!status.available) {
           throw new Error(
             status.error ||
               'AI service is currently unavailable. Please try again later.'
@@ -689,7 +670,7 @@ ${safeChunk}`;
         }
       }
 
-      clientLogger.debug(`Generating image via secure backend (${model})...`);
+      clientLogger.debug('Generating image via secure backend...');
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateImage,
@@ -698,7 +679,7 @@ ${safeChunk}`;
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             prompt,
-            model,
+            tier,
             size,
             quality,
             style,
@@ -716,7 +697,6 @@ ${safeChunk}`;
         success: result.success,
         hasData: !!result.data,
         imageUrl: result.data?.imageUrl,
-        originalUrl: result.data?.originalUrl,
         uploadedToS3: result.data?.uploadedToS3,
         error: result.error,
         message: result.message,
@@ -732,30 +712,15 @@ ${safeChunk}`;
 
       const imageData = {
         url: result.data.imageUrl,
-        originalUrl: result.data.originalUrl,
-        model: result.data.model,
-        size: result.data.size,
-        quality: result.data.quality,
-        style: result.data.style,
         uploadedToS3: result.data.uploadedToS3,
-        provider: 'backend',
         createdAt: result.data.createdAt,
         folder: result.data.folder || folder,
         uploadSkippedReason: result.data.uploadSkippedReason,
       };
 
-      // Fallback: if S3 URL missing, reuse original OpenAI URL
-      if (!imageData.url && imageData.originalUrl) {
-        clientLogger.warn('S3 URL missing, using original OpenAI URL');
-        imageData.url = imageData.originalUrl;
-        imageData.uploadedToS3 = false;
-      }
-
       // Error: if both URLs are missing, throw error
       if (!imageData.url) {
-        clientLogger.error(
-          'Both S3 and OpenAI URLs are missing from backend response'
-        );
+        clientLogger.error('No image URL returned from backend response');
         clientLogger.error('Full backend response for debugging:', result);
         throw new Error(
           'Image generation succeeded but no URL returned from backend'
@@ -768,12 +733,6 @@ ${safeChunk}`;
         success: true,
         data: imageData,
         url: imageData.url,
-        originalUrl: imageData.originalUrl,
-        model: imageData.model,
-        size: imageData.size,
-        quality: imageData.quality,
-        style: imageData.style,
-        provider: imageData.provider,
         createdAt: imageData.createdAt,
         uploadedToS3: imageData.uploadedToS3,
         folder: imageData.folder,
@@ -817,7 +776,7 @@ ${safeChunk}`;
 
       // Check backend availability
       const status = await this.checkBackendStatus();
-      if (!status.openai?.available) {
+      if (!status.available) {
         throw new Error(
           status.error ||
             'AI service is currently unavailable. Please try again later.'
@@ -858,7 +817,6 @@ ${safeChunk}`;
       return {
         success: true,
         data: result.data.course,
-        provider: 'backend',
         tokensUsed: result.data?.tokensUsed || 0,
         cost: result.data?.cost,
       };
@@ -885,7 +843,7 @@ ${safeChunk}`;
 
       // Check backend availability
       const status = await this.checkBackendStatus();
-      if (!status.openai?.available) {
+      if (!status.available) {
         throw new Error(
           status.error ||
             'AI service is currently unavailable. Please try again later.'
@@ -928,7 +886,6 @@ ${safeChunk}`;
       return {
         success: true,
         data: result.data.course,
-        provider: 'backend',
         tokensUsed: result.data?.tokensUsed || 0,
         cost: result.data?.cost,
       };
@@ -949,7 +906,7 @@ ${safeChunk}`;
       );
 
       const status = await this.checkBackendStatus();
-      if (!status.openai?.available) {
+      if (!status.available) {
         throw new Error(
           status.error ||
             'AI service is currently unavailable. Please try again later.'
@@ -1012,7 +969,6 @@ ${safeChunk}`;
       return {
         success: true,
         data: result.data.blueprint,
-        provider: result.data?.provider || 'backend',
         tokensUsed: result.data?.tokensUsed,
         cost: result.data?.cost,
       };
@@ -1048,7 +1004,7 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
             systemPrompt,
             userPrompt,
             {
-              model: 'gpt-4o-mini',
+              tier: 'standard',
               maxTokens: 4000,
               temperature: 0.7,
               skipStatusCheck: true,
@@ -1060,7 +1016,6 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
           return {
             success: true,
             data: jsonData,
-            provider: 'backend',
           };
         } catch (fallbackError) {
           const formattedFallbackError = this.handleError(
@@ -1095,7 +1050,7 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
       );
 
       const result = await this.generateImage(prompt, {
-        model: 'dall-e-3',
+        tier: 'standard',
         size: options.size || '1024x1024',
         quality: options.quality || 'standard',
         style: options.style || 'vivid',
@@ -1106,12 +1061,6 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
 
       const imageData = result.data || {
         url: result.url,
-        originalUrl: result.originalUrl,
-        model: result.model,
-        size: result.size,
-        quality: result.quality,
-        style: result.style,
-        provider: result.provider,
         uploadedToS3: result.uploadedToS3,
       };
 
@@ -1119,18 +1068,11 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
         success: true,
         data: {
           url: imageData.url,
-          originalUrl: imageData.originalUrl,
-          model: imageData.model,
-          size: imageData.size,
-          quality: imageData.quality,
-          style: imageData.style,
-          provider: imageData.provider || 'backend',
           uploadedToS3: imageData.uploadedToS3,
           folder: imageData.folder || options.folder || 'course-thumbnails',
           uploadSkippedReason: imageData.uploadSkippedReason,
         },
         url: imageData.url,
-        originalUrl: imageData.originalUrl,
         uploadedToS3: imageData.uploadedToS3,
         folder: imageData.folder || options.folder || 'course-thumbnails',
         uploadSkippedReason: imageData.uploadSkippedReason,
@@ -1165,19 +1107,15 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
         error: error.message || 'Course image generation failed',
         data: {
           url: placeholderSvg,
-          originalUrl: null,
-          model: 'dall-e-3',
           size: options.size || '1024x1024',
           quality: options.quality || 'standard',
           style: options.style || 'vivid',
-          provider: 'fallback',
           uploadedToS3: false,
           folder: options.folder || 'course-thumbnails',
           uploadSkippedReason:
             'Generation failed - ' + (error.message || 'Unknown error'),
         },
         url: placeholderSvg,
-        originalUrl: null,
         uploadedToS3: false,
         folder: options.folder || 'course-thumbnails',
         uploadSkippedReason:
@@ -1218,7 +1156,7 @@ Generate comprehensive, engaging educational content that includes:
 Format the content in clear, structured paragraphs.`;
 
       const content = await this.generateText(prompt, {
-        model: 'gpt-4o-mini',
+        tier: options?.tier || 'standard',
         maxTokens: options.maxTokens || 1500,
         temperature: 0.7,
         systemPrompt:
@@ -1261,7 +1199,7 @@ Please improve the content by:
 Return the enhanced version maintaining the same general structure.`;
 
       const enhancedContent = await this.generateText(prompt, {
-        model: 'gpt-4o-mini',
+        tier: options?.tier || 'standard',
         maxTokens: 2000,
         temperature: 0.7,
         systemPrompt:
@@ -1313,7 +1251,7 @@ Return ONLY valid JSON.`;
         'You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.',
         prompt,
         {
-          model: 'gpt-4o-mini',
+          tier: options?.tier || 'standard',
           maxTokens: 1500,
           temperature: 0.7,
         }
@@ -1370,7 +1308,7 @@ Return ONLY valid JSON.`;
   async isAvailable() {
     try {
       const status = await this.getStatus();
-      return status.openai?.available || false;
+      return status.available || false;
     } catch (error) {
       return false;
     }

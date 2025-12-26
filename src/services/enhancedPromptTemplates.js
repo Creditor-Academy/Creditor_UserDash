@@ -1,7 +1,7 @@
 /**
  * Enhanced Prompt Templates
  * Model-agnostic prompt engineering system with best practices
- * Optimized for gpt-4o-mini, ready for future models
+ * Optimized for production-grade AI output, ready for future models
  */
 
 /**

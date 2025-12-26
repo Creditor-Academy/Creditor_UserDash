@@ -1,5 +1,4 @@
 // Backend AI Service - Proxy all AI requests through backend
-// Replaces direct OpenAI calls with backend API calls
 // DEPRECATED: Use secureAIService.js instead for new implementations
 import secureAIService from './secureAIService';
 
@@ -67,40 +66,19 @@ class BackendAIService {
   async generateText(prompt, options = {}) {
     try {
       const {
-        model = 'gpt-4o-mini',
+        tier = 'standard',
         maxTokens = 1000,
         temperature = 0.7,
         systemPrompt = 'You are a helpful AI assistant for educational content creation.',
       } = options;
 
-      console.log(`🤖 Generating text via backend (${model})...`);
-
-      const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-text`,
-        {
-          method: 'POST',
-          headers: this.getHeaders(),
-          body: JSON.stringify({
-            prompt,
-            model,
-            maxTokens,
-            temperature,
-            systemPrompt,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Text generation failed');
-      }
-
-      console.log(
-        `✅ Text generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
-      );
-
-      return result.data.text;
+      console.log('🤖 Generating text via backend...');
+      return await secureAIService.generateText(prompt, {
+        tier,
+        maxTokens,
+        temperature,
+        systemPrompt,
+      });
     } catch (error) {
       this.handleError(error, 'Text generation');
     }
@@ -116,59 +94,28 @@ class BackendAIService {
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
       const {
-        model = 'gpt-4o-mini',
+        tier = 'standard',
         maxTokens = 2000,
         temperature = 0.7,
       } = options;
 
-      console.log(`🤖 Generating structured JSON via backend (${model})...`);
-
-      const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-structured`,
+      console.log('🤖 Generating structured JSON via backend...');
+      return await secureAIService.generateStructured(
+        systemPrompt,
+        userPrompt,
         {
-          method: 'POST',
-          headers: this.getHeaders(),
-          body: JSON.stringify({
-            systemPrompt,
-            userPrompt,
-            model,
-            maxTokens,
-            temperature,
-          }),
+          tier,
+          maxTokens,
+          temperature,
         }
       );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Structured generation failed');
-      }
-
-      console.log(
-        `✅ Structured JSON generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
-      );
-
-      return result.data.jsonData;
     } catch (error) {
-      console.warn('⚠️ Backend unavailable, falling back to direct OpenAI...');
-      try {
-        return await directOpenAIService.generateStructured(
-          systemPrompt,
-          userPrompt,
-          options
-        );
-      } catch (fallbackError) {
-        console.error(
-          '❌ Both backend and direct OpenAI failed:',
-          fallbackError
-        );
-        throw new Error(`AI generation failed: ${fallbackError.message}`);
-      }
+      this.handleError(error, 'Structured generation');
     }
   }
 
   /**
-   * Generate image using DALL-E via backend
+   * Generate image via backend
    * @param {string} prompt - Image generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<Object>} Generated image data
@@ -176,108 +123,26 @@ class BackendAIService {
   async generateImage(prompt, options = {}) {
     try {
       const {
-        model = 'dall-e-3',
+        tier = 'standard',
         size = '1024x1024',
         quality = 'standard',
         style = 'vivid',
       } = options;
 
-      console.log(`🎨 Generating image via backend (${model})...`);
-
-      const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-image`,
-        {
-          method: 'POST',
-          headers: this.getHeaders(),
-          body: JSON.stringify({
-            prompt,
-            model,
-            size,
-            quality,
-            style,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Image generation failed');
-      }
-
-      console.log(`✅ Image generated ($${result.data.cost?.finalCost || 0})`);
-
-      const imageData = {
-        url: result.data.imageUrl,
-        originalUrl: result.data.originalUrl,
-        model: result.data.model,
-        size: result.data.size,
-        quality: result.data.quality,
-        style: result.data.style,
-        uploadedToS3: result.data.uploadedToS3,
-        provider: 'backend',
-        createdAt: result.data.createdAt,
-      };
-
-      if (!imageData.url && imageData.originalUrl) {
-        imageData.url = imageData.originalUrl;
-        imageData.uploadedToS3 = false;
-      }
-
-      return {
-        success: true,
-        data: imageData,
-        url: imageData.url,
-        originalUrl: imageData.originalUrl,
-        model: imageData.model,
-        size: imageData.size,
-        quality: imageData.quality,
-        style: imageData.style,
-        provider: imageData.provider,
-        createdAt: imageData.createdAt,
-        uploadedToS3: imageData.uploadedToS3,
-        cost: result.data.cost,
-      };
+      console.log('🎨 Generating image via backend...');
+      return await secureAIService.generateImage(prompt, {
+        tier,
+        size,
+        quality,
+        style,
+      });
     } catch (error) {
-      console.warn(
-        '⚠️ Backend unavailable, falling back to direct OpenAI for image generation...'
+      const formattedError = this.handleError(
+        error,
+        'Image generation',
+        error.response
       );
-      try {
-        const fallbackResult = await directOpenAIService.generateImage(
-          prompt,
-          options
-        );
-
-        if (
-          fallbackResult &&
-          fallbackResult.success &&
-          !fallbackResult.data &&
-          fallbackResult.url
-        ) {
-          return {
-            ...fallbackResult,
-            data: {
-              url: fallbackResult.url,
-              originalUrl: fallbackResult.originalUrl,
-              model: fallbackResult.model,
-              size: fallbackResult.size,
-              quality: fallbackResult.quality,
-              style: fallbackResult.style,
-              uploadedToS3: false,
-              provider: fallbackResult.provider || 'openai',
-              createdAt: fallbackResult.createdAt || new Date().toISOString(),
-            },
-          };
-        }
-
-        return fallbackResult;
-      } catch (fallbackError) {
-        console.error(
-          '❌ Both backend and direct OpenAI failed for image generation:',
-          fallbackError
-        );
-        throw new Error(`Image generation failed: ${fallbackError.message}`);
-      }
+      throw formattedError;
     }
   }
 
@@ -290,35 +155,7 @@ class BackendAIService {
     try {
       console.log(`🤖 Generating course outline via backend...`);
 
-      const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-course-outline`,
-        {
-          method: 'POST',
-          headers: this.getHeaders(),
-          body: JSON.stringify({
-            courseData,
-            generateType: 'outline',
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Course outline generation failed');
-      }
-
-      console.log(
-        `✅ Course outline generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
-      );
-
-      return {
-        success: true,
-        data: result.data.course,
-        provider: 'backend',
-        tokensUsed: result.data.tokensUsed,
-        cost: result.data.cost,
-      };
+      return await secureAIService.generateCourseOutline(courseData);
     } catch (error) {
       this.handleError(error, 'Course outline generation');
     }
@@ -333,42 +170,7 @@ class BackendAIService {
     try {
       console.log(`🤖 Generating comprehensive course via backend...`);
 
-      const response = await fetch(
-        `${this.apiBase}/api/ai-proxy/generate-course-outline`,
-        {
-          method: 'POST',
-          headers: this.getHeaders(),
-          body: JSON.stringify({
-            courseTitle: courseData.courseTitle,
-            subjectDomain: courseData.subjectDomain,
-            courseDescription: courseData.courseDescription,
-            duration: courseData.duration,
-            difficulty: courseData.difficulty,
-            learningObjectives: courseData.learningObjectives,
-            generateType: 'comprehensive',
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(
-          result.message || 'Comprehensive course generation failed'
-        );
-      }
-
-      console.log(
-        `✅ Comprehensive course generated (${result.data.tokensUsed} tokens, $${result.data.cost?.finalCost || 0})`
-      );
-
-      return {
-        success: true,
-        data: result.data.course,
-        provider: 'backend',
-        tokensUsed: result.data.tokensUsed,
-        cost: result.data.cost,
-      };
+      return await secureAIService.generateComprehensiveCourse(courseData);
     } catch (error) {
       this.handleError(error, 'Comprehensive course generation');
     }
@@ -382,41 +184,7 @@ class BackendAIService {
    */
   async generateCourseImage(prompt, options = {}) {
     try {
-      const result = await this.generateImage(prompt, {
-        model: 'dall-e-3',
-        size: options.size || '1024x1024',
-        quality: options.quality || 'standard',
-        style: options.style || 'vivid',
-      });
-
-      const imageData = result.data || {
-        url: result.url,
-        originalUrl: result.originalUrl,
-        model: result.model,
-        size: result.size,
-        quality: result.quality,
-        style: result.style,
-        provider: result.provider,
-        uploadedToS3: result.uploadedToS3,
-      };
-
-      return {
-        success: true,
-        data: {
-          url: imageData.url,
-          originalUrl: imageData.originalUrl,
-          model: imageData.model,
-          size: imageData.size,
-          quality: imageData.quality,
-          style: imageData.style,
-          provider: imageData.provider || 'backend',
-          uploadedToS3: imageData.uploadedToS3,
-        },
-        url: imageData.url,
-        originalUrl: imageData.originalUrl,
-        uploadedToS3: imageData.uploadedToS3,
-        cost: result.cost,
-      };
+      return await secureAIService.generateCourseImage(prompt, options);
     } catch (error) {
       const formattedError = this.handleError(
         error,
@@ -458,7 +226,7 @@ Generate comprehensive, engaging educational content that includes:
 Format the content in clear, structured paragraphs.`;
 
       const content = await this.generateText(prompt, {
-        model: 'gpt-4o-mini',
+        tier: options?.tier || 'standard',
         maxTokens: options.maxTokens || 1500,
         temperature: 0.7,
         systemPrompt:
@@ -482,6 +250,7 @@ Format the content in clear, structured paragraphs.`;
       const {
         enhancementType = 'clarity',
         targetAudience = 'general learners',
+        tier = 'standard',
       } = options;
 
       const prompt = `Enhance the following educational content for ${enhancementType}:
@@ -500,7 +269,7 @@ Please improve the content by:
 Return the enhanced version maintaining the same general structure.`;
 
       const enhancedContent = await this.generateText(prompt, {
-        model: 'gpt-4o-mini',
+        tier,
         maxTokens: 2000,
         temperature: 0.7,
         systemPrompt:
@@ -525,6 +294,7 @@ Return the enhanced version maintaining the same general structure.`;
         numberOfQuestions = 5,
         difficulty = 'medium',
         questionType = 'multiple-choice',
+        tier = 'standard',
       } = options;
 
       const prompt = `Generate ${numberOfQuestions} ${difficulty} ${questionType} quiz questions about: ${topic}
@@ -551,7 +321,7 @@ Return ONLY valid JSON.`;
         'You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.',
         prompt,
         {
-          model: 'gpt-4o-mini',
+          tier,
           maxTokens: 1500,
           temperature: 0.7,
         }

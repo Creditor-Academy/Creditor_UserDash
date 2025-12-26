@@ -645,7 +645,7 @@ Requirements:
       }
 
       if (!uploadedToS3) {
-        console.warn('⚠️ Left image not stored in S3, using OpenAI URL');
+        console.warn('⚠️ Left image not stored in S3, using source URL');
         imageError = 'Image not uploaded to S3';
       }
     } catch (error) {
@@ -771,7 +771,7 @@ Requirements:
       }
 
       if (!uploadedToS3) {
-        console.warn('⚠️ Right image not stored in S3, using OpenAI URL');
+        console.warn('⚠️ Right image not stored in S3, using source URL');
         imageError = 'Image not uploaded to S3';
       }
     } catch (error) {

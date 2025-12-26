@@ -1,9 +1,9 @@
-// AI Service - OpenAI Only Solution
-// Simplified service using only OpenAI (no DeepAI, HuggingFace, or Bytez)
+// AI Service - Compatibility Wrapper
+// Proxies all AI operations through backend
 import openAIService from './openAIService';
 
 /**
- * AI Service class - Simplified to use only OpenAI
+ * AI Service class - Proxies calls through backend
  * This is a compatibility layer for backward compatibility
  */
 class AIService {
@@ -13,7 +13,7 @@ class AIService {
   }
 
   /**
-   * Generate course outline using OpenAI
+   * Generate course outline
    * @param {Object} courseData - Course creation data
    * @returns {Promise<Object>} Generated course structure
    */
@@ -22,7 +22,7 @@ class AIService {
   }
 
   /**
-   * Generate course image using OpenAI DALL-E
+   * Generate course image
    * @param {string} prompt - Image generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<Object>} Generated image data
@@ -32,7 +32,7 @@ class AIService {
   }
 
   /**
-   * Generate text using OpenAI GPT
+   * Generate text
    * @param {string} prompt - Text generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<string>} Generated text
@@ -42,7 +42,7 @@ class AIService {
   }
 
   /**
-   * Generate structured JSON using OpenAI
+   * Generate structured JSON
    * @param {string} systemPrompt - System prompt
    * @param {string} userPrompt - User prompt
    * @param {Object} options - Generation options

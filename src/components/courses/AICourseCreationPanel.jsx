@@ -35,7 +35,6 @@ import {
   uploadAICourseThumbnail,
   uploadAICourseReferences,
 } from '@/services/aiUploadService';
-import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
 import AIStreamingGeneration from './AIStreamingGeneration';
 import {
@@ -265,7 +264,6 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [sourceContent, setSourceContent] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  const [showLessonCreator, setShowLessonCreator] = useState(false);
   const [enableContentModeration, setEnableContentModeration] = useState(true);
   const [creationProgress, setCreationProgress] = useState('');
   const [moderationResults, setModerationResults] = useState(null);
@@ -322,11 +320,10 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     try {
       // Call backend image prompt enhancement (already has proper system prompt)
       const enhancedPrompt = await secureAIService.generateText(aiImagePrompt, {
-        model: 'gpt-4o-mini',
         maxTokens: 100,
         temperature: 0.5,
         systemPrompt:
-          'You are a DALL-E prompt engineer. Output ONLY the prompt text. Maximum 300 characters. NO headings. Start directly with the description.',
+          'You are an image prompt engineer. Output ONLY the prompt text. Maximum 300 characters. NO headings. Start directly with the description.',
         enhancePrompt: true, // Use backend prompt enhancement
       });
 
@@ -397,7 +394,6 @@ ${JSON.stringify(userPayload, null, 2)}`;
         systemPrompt,
         userPrompt,
         {
-          model: 'gpt-4o-mini',
           maxTokens: 1800,
           temperature: 0.4,
         }
@@ -733,8 +729,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
         </div>
 
         <p className="mt-2 text-xs text-gray-500">
-          AI-generated thumbnails will be created using DALL-E 3 for visual
-          appeal
+          AI-generated thumbnails will be created using the AI image generator
+          for visual appeal
         </p>
       </div>
 
@@ -2054,7 +2050,7 @@ MOOD: Modern, inspiring, professional, engaging`;
       }
 
       console.log(
-        '🎨 Generating AI thumbnail with OpenAI DALL-E (Premium Quality):',
+        '🎨 Generating AI thumbnail (Premium Quality):',
         prompt.substring(0, 100) + '...'
       );
 
@@ -2844,159 +2840,6 @@ MOOD: Modern, inspiring, professional, engaging`;
     }
   };
 
-  // Handle lessons created - NOW SAVES TO DATABASE
-  const handleLessonsCreated = async lessonData => {
-    console.log('🔄 Processing lessons created:', lessonData);
-
-    try {
-      // Check if we have a course ID to save to
-      if (!courseData.id && !lessonData.courseId) {
-        console.warn('⚠️ No course ID available - creating course first');
-
-        // Create the course first if it doesn't exist
-        const courseResult = await createCompleteAICourse({
-          title: courseData.title,
-          description: courseData.description,
-          subject: courseData.subject,
-          difficulty: courseData.difficulty,
-          modules: [], // Will add modules separately
-        });
-
-        if (courseResult.success) {
-          setCourseData(prev => ({ ...prev, id: courseResult.data.courseId }));
-          lessonData.courseId = courseResult.data.courseId;
-          console.log('✅ Course created with ID:', courseResult.data.courseId);
-        } else {
-          throw new Error('Failed to create course: ' + courseResult.error);
-        }
-      }
-
-      const targetCourseId = courseData.id || lessonData.courseId;
-
-      // Group lessons by module
-      const moduleGroups = {};
-      lessonData.lessons.forEach(lesson => {
-        const moduleId = lesson.moduleId || 'default';
-        if (!moduleGroups[moduleId]) {
-          moduleGroups[moduleId] = [];
-        }
-        moduleGroups[moduleId].push(lesson);
-      });
-
-      // Create modules and lessons in database
-      const createdModules = [];
-      const createdLessons = [];
-
-      for (const [moduleId, moduleLessons] of Object.entries(moduleGroups)) {
-        try {
-          // Create module
-          const moduleData = {
-            title: moduleLessons[0]?.moduleTitle || `Module for ${moduleId}`,
-            description: `Generated module containing ${moduleLessons.length} lessons`,
-            order: createdModules.length + 1,
-            price: 0, // Required field
-            module_status: 'PUBLISHED',
-            thumbnail:
-              moduleLessons[0]?.moduleThumbnail ||
-              moduleLessons[0]?.module_thumbnail_url ||
-              '',
-          };
-
-          console.log('🔄 Creating module:', moduleData.title);
-          const createdModule = await createModule(targetCourseId, moduleData);
-          createdModules.push(createdModule);
-
-          // Create lessons in this module
-          for (const lesson of moduleLessons) {
-            try {
-              const lessonPayload = {
-                title: lesson.title,
-                description:
-                  lesson.description || 'AI-generated lesson content',
-                content: lesson.content || '',
-                duration: lesson.duration || '15 min',
-                order: createdLessons.length + 1,
-                thumbnail:
-                  lesson.thumbnail || lesson.lesson_thumbnail_url || '',
-              };
-
-              console.log('🔄 Creating lesson:', lessonPayload.title);
-              const createdLesson = await createLesson(
-                targetCourseId,
-                createdModule.id,
-                lessonPayload
-              );
-              createdLessons.push(createdLesson);
-
-              // Update lesson content with blocks if available
-              if (lesson.blocks && lesson.blocks.length > 0) {
-                const contentData = {
-                  content: lesson.structuredContent || lesson.blocks,
-                  blocks: lesson.blocks,
-                  metadata: {
-                    aiGenerated: true,
-                    generatedAt: new Date().toISOString(),
-                    blockCount: lesson.blocks.length,
-                  },
-                };
-
-                console.log(
-                  '🔄 Updating lesson content for:',
-                  lessonPayload.title
-                );
-                await updateLessonContent(createdLesson.id, contentData);
-              }
-            } catch (lessonError) {
-              console.error(
-                '❌ Failed to create lesson:',
-                lesson.title,
-                lessonError
-              );
-            }
-          }
-        } catch (moduleError) {
-          console.error('❌ Failed to create module:', moduleId, moduleError);
-        }
-      }
-
-      // Show success message
-      setShowLessonCreator(false);
-      console.log(`✅ Successfully saved to database:`, {
-        courseId: targetCourseId,
-        modules: createdModules.length,
-        lessons: createdLessons.length,
-        totalBlocks: lessonData.lessons.reduce(
-          (acc, lesson) => acc + (lesson.blocks?.length || 0),
-          0
-        ),
-      });
-
-      // Show user notification
-      if (window.showNotification) {
-        window.showNotification(
-          `Successfully created ${createdModules.length} modules and ${createdLessons.length} lessons!`,
-          'success'
-        );
-      } else {
-        alert(
-          `Successfully created ${createdModules.length} modules and ${createdLessons.length} lessons!`
-        );
-      }
-    } catch (error) {
-      console.error('❌ Failed to save lessons to database:', error);
-
-      // Show error notification
-      if (window.showNotification) {
-        window.showNotification(
-          `Failed to save lessons: ${error.message}`,
-          'error'
-        );
-      } else {
-        alert(`Failed to save lessons: ${error.message}`);
-      }
-    }
-  };
-
   // Reset form when panel is closed
   useEffect(() => {
     if (!isOpen) {
@@ -3769,7 +3612,8 @@ MOOD: Modern, inspiring, professional, engaging`;
 
                                     <p className="mt-2 text-xs text-gray-500">
                                       AI-generated thumbnails will be created
-                                      using DALL-E 3 for visual appeal
+                                      using the AI image generator for visual
+                                      appeal
                                     </p>
                                   </div>
 
@@ -5832,18 +5676,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     </Button>
                                   )}
 
-                                  {/* Show Course Editor button when outline exists */}
                                   {aiOutline && (
                                     <>
-                                      <Button
-                                        onClick={() =>
-                                          setShowLessonCreator(true)
-                                        }
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 mt-3"
-                                      >
-                                        <Book className="w-4 h-4" />
-                                        Course Editor
-                                      </Button>
                                       <Button
                                         onClick={handleSaveCourse}
                                         disabled={isCreatingCourse}
@@ -6005,18 +5839,6 @@ MOOD: Modern, inspiring, professional, engaging`;
               </div>
             )}
           </motion.div>
-
-          {/* Enhanced AI Lesson Creator Modal */}
-          {showLessonCreator && (
-            <EnhancedAILessonCreator
-              isOpen={showLessonCreator}
-              onClose={() => setShowLessonCreator(false)}
-              courseTitle={courseData.title}
-              courseData={courseData}
-              aiOutline={aiOutline}
-              onLessonsCreated={handleLessonsCreated}
-            />
-          )}
 
           {/* AI Text Editor Modal */}
           {showTextEditor && (

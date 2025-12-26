@@ -307,7 +307,6 @@ Create specific, measurable objectives for this lesson.`;
 
     try {
       const response = await optimizedOpenAIService.generateText(userPrompt, {
-        model: 'gpt-4o-mini',
         maxTokens: 300,
         temperature: 0.6,
         systemPrompt: systemPrompt,

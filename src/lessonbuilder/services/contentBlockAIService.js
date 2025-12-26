@@ -501,7 +501,6 @@ Return ONLY valid JSON, no other text.`;
       devLogger.debug('Generating content via secure backend API...');
 
       const response = await this.aiService.generateText(prompt, {
-        model: 'gpt-4o-mini',
         maxTokens: maxTokens,
         temperature: 0.7,
         systemPrompt:

@@ -724,7 +724,6 @@ class AdvancedLessonContentEngine {
 
     try {
       const content = await optimizedOpenAIService.generateText(userPrompt, {
-        model: 'gpt-4o-mini',
         maxTokens: 500,
         temperature: 0.7,
         systemPrompt: systemPrompt,

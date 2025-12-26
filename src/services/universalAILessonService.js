@@ -329,7 +329,6 @@ ${JSON.stringify(inputSummary, null, 2)}`;
         systemPrompt,
         userPrompt,
         {
-          model: 'gpt-4o-mini',
           maxTokens: 3200,
           temperature: 0.7,
         }
@@ -1439,7 +1438,6 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
 
       // Generate image using OpenAI DALL-E
       const imageResult = await openAIService.generateImage(imagePrompt, {
-        model: 'dall-e-3',
         size: '1024x1024',
         quality: 'standard',
         style: 'vivid',
@@ -1532,7 +1530,6 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       const imageQuality = isPortrait ? 'hd' : 'standard';
 
       const imageResult = await openAIService.generateImage(imagePrompt, {
-        model: 'dall-e-3',
         size: '1024x1024',
         quality: imageQuality,
         style: 'vivid',
@@ -4404,11 +4401,6 @@ Generate ONLY the caption text, no additional explanation.`;
     };
 
     const result = params[sectionType] || { temperature: 0.7, maxTokens: 300 };
-
-    // Ensure model is set (for compatibility)
-    if (!result.model) {
-      result.model = 'gpt-4o-mini'; // Default model
-    }
 
     return result;
   }

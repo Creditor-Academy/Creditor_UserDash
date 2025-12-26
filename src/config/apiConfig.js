@@ -20,19 +20,6 @@ const API_CONFIG = {
       usageDashboard: '/api/usage/dashboard',
     },
   },
-
-  // Legacy OpenAI Configuration (deprecated - use backend instead)
-  openai: {
-    deprecated: true,
-    message: 'OpenAI now accessed via backend API for security',
-    baseURL: 'https://api.openai.com/v1',
-    apiKey: '', // Not used - backend handles this
-    models: {
-      text: 'gpt-4o-mini',
-      textAdvanced: 'gpt-4',
-      image: 'dall-e-3',
-    },
-  },
 };
 
 /**
@@ -43,21 +30,6 @@ export const getBackendConfig = () => {
   return {
     baseURL: API_CONFIG.backend.baseURL,
     endpoints: API_CONFIG.backend.endpoints,
-  };
-};
-
-/**
- * Get OpenAI configuration (deprecated)
- * @deprecated Use getBackendConfig() instead - all AI operations go through backend
- * @returns {Object} OpenAI config (models only, no API key)
- */
-export const getOpenAIConfig = () => {
-  console.warn('⚠️ getOpenAIConfig() is deprecated. Use backend API instead.');
-  return {
-    apiKey: '', // Not used - backend handles authentication
-    baseURL: API_CONFIG.openai.baseURL,
-    models: API_CONFIG.openai.models,
-    deprecated: true,
   };
 };
 
@@ -93,12 +65,6 @@ export const getServiceStatus = () => {
       baseURL: API_CONFIG.backend.baseURL,
       endpoints: API_CONFIG.backend.endpoints,
       message: 'All AI operations proxied through backend for security',
-    },
-    openai: {
-      deprecated: true,
-      available: false,
-      message: 'Use backend API instead - no client-side OpenAI key needed',
-      models: API_CONFIG.openai.models,
     },
   };
 };

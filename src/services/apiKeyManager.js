@@ -27,7 +27,7 @@ class ApiKeyManager {
     console.warn(
       '⚠️ apiKeyManager.getApiKey() is deprecated.\n' +
         'All AI operations now go through backend API.\n' +
-        'No client-side OpenAI keys are needed or used.'
+        'No client-side AI provider keys are needed or used.'
     );
     return null; // Always return null - backend handles authentication
     // DEPRECATED: Old implementation disabled
@@ -96,7 +96,7 @@ class ApiKeyManager {
     throw new Error(
       'Setting client-side API keys is no longer supported.\n' +
         'All AI operations go through backend API.\n' +
-        'Configure OpenAI keys on your backend server instead.'
+        'Configure provider keys on your backend server instead.'
     );
   }
 
@@ -113,14 +113,14 @@ class ApiKeyManager {
    */
   async promptForApiKey() {
     return new Promise(resolve => {
-      const key = prompt('Please enter your OpenAI API key:');
+      const key = prompt('Please enter your AI provider API key:');
 
       if (key && this.isValidKey(key)) {
         try {
           this.setApiKey(key);
           resolve(key);
         } catch (error) {
-          console.warn('Failed to save OpenAI API key:', error.message);
+          console.warn('Failed to save API key:', error.message);
           resolve(null);
         }
       } else {

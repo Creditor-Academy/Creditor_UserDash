@@ -20,9 +20,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
     );
 
     if (imageResult.success && imageResult.data?.url) {
-      console.log(
-        `✅ Image generated successfully with ${imageResult.data.provider}`
-      );
+      console.log('✅ Image generated successfully');
 
       // Try to upload the generated image to S3 (works for both blob and URL images)
       try {
@@ -66,8 +64,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
                 s3Url: uploadResult.imageUrl,
                 fileName: uploadResult.fileName,
                 fileSize: uploadResult.fileSize,
-                provider: imageResult.data.provider,
-                model: imageResult.data.model,
                 prompt: prompt,
                 uploaded: true,
                 uploadedToS3: true,
@@ -88,8 +84,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
         success: true,
         data: {
           url: imageResult.data.url,
-          provider: imageResult.data.provider,
-          model: imageResult.data.model,
           prompt: prompt,
           uploaded: false,
           uploadedToS3: false,
@@ -132,7 +126,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
                   s3Url: uploadResult.imageUrl,
                   fileName: uploadResult.fileName,
                   fileSize: uploadResult.fileSize,
-                  provider: 'openai-legacy',
                   uploaded: true,
                   uploadedToS3: true,
                   createdAt: new Date().toISOString(),
@@ -149,7 +142,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           success: true,
           data: {
             ...legacyResult.data,
-            provider: 'deepai-legacy',
             uploaded: false,
             uploadedToS3: false,
           },

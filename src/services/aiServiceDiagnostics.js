@@ -162,15 +162,15 @@ async function checkBackendStatus() {
     check.duration = Date.now() - startTime;
     check.details.status = status;
 
-    if (status && status.openai?.available) {
+    if (status && status.available) {
       check.passed = true;
       check.message = `Backend is available (${check.duration}ms)`;
-      check.details.openaiAvailable = true;
+      check.details.aiAvailable = true;
     } else {
-      check.message = 'Backend status indicates OpenAI is not available';
-      check.details.openaiAvailable = false;
+      check.message = 'Backend status indicates AI service is not available';
+      check.details.aiAvailable = false;
       check.recommendation =
-        'Check backend configuration and OpenAI API key setup';
+        'Check backend AI configuration and service credentials';
     }
   } catch (error) {
     check.message = `Backend status check failed: ${error.message}`;
@@ -226,7 +226,7 @@ async function checkTextGeneration() {
       check.recommendation =
         'Network error. Check internet connection and backend URL.';
     } else {
-      check.recommendation = 'Check backend configuration and OpenAI API key.';
+      check.recommendation = 'Check backend AI configuration and credentials.';
     }
   }
 
@@ -259,7 +259,6 @@ async function checkImageGeneration() {
       check.message = `Image generation works (${check.duration}ms)`;
       check.details.hasUrl = true;
       check.details.hasS3Url = result.uploadedToS3 || false;
-      check.details.provider = result.provider || 'unknown';
     } else {
       check.message = 'Image generation returned invalid response';
       check.details.result = result;
@@ -278,9 +277,9 @@ async function checkImageGeneration() {
         'Network error. Check internet connection and backend URL.';
     } else if (error.message.includes('unavailable')) {
       check.recommendation =
-        'AI service unavailable. Check backend OpenAI configuration.';
+        'AI service unavailable. Check backend configuration.';
     } else {
-      check.recommendation = 'Check backend configuration and OpenAI API key.';
+      check.recommendation = 'Check backend AI configuration and credentials.';
     }
   }
 
@@ -329,8 +328,7 @@ function generateRecommendations(checks) {
     recommendations.push({
       priority: 'medium',
       issue: 'Text generation not working',
-      solution:
-        textCheck.recommendation || 'Check backend OpenAI configuration',
+      solution: textCheck.recommendation || 'Check backend AI configuration',
     });
   }
 
@@ -341,7 +339,7 @@ function generateRecommendations(checks) {
       issue: 'Image generation not working',
       solution:
         imageCheck.recommendation ||
-        'Check backend OpenAI DALL-E configuration',
+        'Check backend image generation configuration',
     });
   }
 
@@ -398,8 +396,8 @@ export async function quickHealthCheck() {
   try {
     const status = await secureAIService.getStatus();
     return {
-      healthy: status?.openai?.available || false,
-      message: status?.openai?.available
+      healthy: status?.available || false,
+      message: status?.available
         ? 'AI service is available'
         : 'AI service is unavailable',
     };

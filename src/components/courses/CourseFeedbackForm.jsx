@@ -76,7 +76,6 @@ const CourseFeedbackForm = ({ courseId, userId, onSubmitSuccess }) => {
         {
           ...formData,
           ai_generated: true,
-          generation_model: 'gpt-4',
         },
         {
           headers: {

@@ -331,8 +331,8 @@ const SimpleAICourseCreator = () => {
               PDF
             </li>
             <li>
-              • <strong>AI Images:</strong> DALL-E 3 generates contextual
-              illustrations for each section
+              • <strong>AI Images:</strong> AI image generation creates
+              contextual illustrations for each section
             </li>
             <li>
               • <strong>Advanced Layouts:</strong> Side-by-side images, centered
@@ -359,9 +359,9 @@ const SimpleAICourseCreator = () => {
         </div>
 
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-          <strong>Note:</strong> This uses your existing AI services (OpenAI
-          GPT-4) with intelligent fallbacks. All generated content is compatible
-          with your LessonBuilder editor and can be further customized.
+          <strong>Note:</strong> This uses your existing AI services with
+          intelligent fallbacks. All generated content is compatible with your
+          LessonBuilder editor and can be further customized.
         </div>
       </CardContent>
     </Card>

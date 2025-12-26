@@ -20,7 +20,7 @@ class EnhancedAIService {
    */
   async generateText(prompt, options = {}) {
     try {
-      console.log('🤖 Generating text with OpenAI...');
+      console.log('🤖 Generating text with AI...');
       const text = await this.openai.generateText(prompt, options);
       console.log(`✅ Text generated successfully`);
       return text;
@@ -39,7 +39,7 @@ class EnhancedAIService {
    */
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
-      console.log('🤖 Generating structured response with OpenAI...');
+      console.log('🤖 Generating structured response with AI...');
       const data = await this.openai.generateStructured(
         systemPrompt,
         userPrompt,
@@ -60,7 +60,7 @@ class EnhancedAIService {
    */
   async generateCourseOutline(courseData) {
     try {
-      console.log('📋 Generating course outline with OpenAI...');
+      console.log('📋 Generating course outline with AI...');
       const result = await this.openai.generateCourseOutline(courseData);
 
       if (result.success) {
@@ -87,7 +87,7 @@ class EnhancedAIService {
    */
   async generateCourseImage(prompt, options = {}) {
     try {
-      console.log('🎨 Generating image with OpenAI DALL-E...');
+      console.log('🎨 Generating image with AI...');
       const result = await this.openai.generateCourseImage(prompt, options);
 
       if (result.success) {
@@ -121,7 +121,7 @@ class EnhancedAIService {
     options = {}
   ) {
     try {
-      console.log('📝 Generating lesson content with OpenAI...');
+      console.log('📝 Generating lesson content with AI...');
       const content = await this.openai.generateLessonContent(
         lessonData,
         moduleData,

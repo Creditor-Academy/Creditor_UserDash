@@ -10,7 +10,6 @@ import { uploadImage } from './imageUploadService';
 import { uploadAIGeneratedImage, uploadAICourseMedia } from './aiUploadService';
 import universalAILessonService from './universalAILessonService.js';
 import structuredLessonGenerator from './structuredLessonGenerator.js';
-import openAIService from './openAIService.js';
 import secureAIService from './secureAIService.js';
 
 // API configuration
@@ -26,7 +25,7 @@ function getAuthHeaders() {
 }
 
 /**
- * Generate AI course outline (Qwen moderation removed - OpenAI only)
+ * Generate AI course outline
  * @param {Object} courseData - Course creation data
  * @param {Object} options - Generation options
  * @returns {Promise<Object>} Generated course structure
@@ -37,7 +36,7 @@ export async function generateSafeCourseOutline(courseData, options = {}) {
 }
 
 /**
- * Generate AI course outline with modules and lessons using OpenAI
+ * Generate AI course outline with modules and lessons
  * @param {Object} courseData - Course creation data
  * @returns {Promise<Object>} Generated course structure
  */
@@ -45,11 +44,10 @@ export async function generateAICourseOutline(courseData) {
   try {
     console.log('🤖 Generating AI course outline for:', courseData.title);
 
-    // Use OpenAI service directly
-    const aiResult = await openAIService.generateCourseOutline(courseData);
+    const aiResult = await secureAIService.generateCourseOutline(courseData);
 
     if (aiResult.success && aiResult.data) {
-      console.log('✅ Course outline generation successful with OpenAI');
+      console.log('✅ Course outline generation successful');
 
       // Transform the data to match expected format
       const courseStructure = {
@@ -57,16 +55,14 @@ export async function generateAICourseOutline(courseData) {
         title: aiResult.data.course_title || courseData.title,
         subject: courseData.subject || courseData.title,
         modules: aiResult.data.modules || [],
-        generatedBy: 'openai',
       };
 
       return {
         success: true,
         data: courseStructure,
-        provider: 'openai',
       };
     } else {
-      console.warn('OpenAI generation failed, using fallback:', aiResult.error);
+      console.warn('AI generation failed, using fallback:', aiResult.error);
 
       // Fallback to structured generation
       const courseStructure = {
@@ -74,13 +70,11 @@ export async function generateAICourseOutline(courseData) {
         title: courseData.title,
         subject: courseData.subject || courseData.title,
         modules: generateFallbackModules(courseData),
-        generatedBy: 'fallback',
       };
 
       return {
         success: true,
         data: courseStructure,
-        provider: 'fallback',
       };
     }
   } catch (error) {
@@ -313,7 +307,6 @@ export async function createCompleteAICourse(courseData) {
               subject: courseData.subject || courseData.title,
               modules: generateFallbackModules(courseData),
               metadata: {
-                generatedBy: 'fallback',
                 reason: 'AI generation failed after all retries',
                 originalError: outlineError.message,
               },
@@ -842,8 +835,6 @@ export async function createCompleteAICourse(courseData) {
                         null,
                       topic: courseData.title,
                       difficulty_level: courseData.difficulty || null,
-                      ai_model:
-                        courseData.ai_model_used || courseData.aiModel || null,
                       generated_content: block,
                     })),
                   });
@@ -1027,23 +1018,26 @@ export async function createCompleteAICourse(courseData) {
 }
 
 /**
- * Generate and upload AI course image to S3 using OpenAI DALL-E
+ * Generate and upload AI course image to S3
  * @param {string} prompt - Image generation prompt
  * @param {Object} options - Generation options
  * @returns {Promise<Object>} Uploaded image data with S3 URL
  */
 export async function generateAndUploadCourseImage(prompt, options = {}) {
   try {
-    console.log('🎨 Generating course image with OpenAI DALL-E:', prompt);
+    console.log('🎨 Generating course image:', prompt);
 
-    // Use OpenAI service directly
-    const result = await openAIService.generateCourseImage(prompt, options);
+    const tier = options?.tier || 'standard';
+    const result = await secureAIService.generateCourseImage(prompt, {
+      ...options,
+      tier,
+    });
 
     if (result.success) {
-      console.log('✅ Image generation successful with OpenAI DALL-E');
+      console.log('✅ Image generation successful');
       return result;
     } else {
-      console.warn('🔄 OpenAI image generation failed:', result.error);
+      console.warn('🔄 Image generation failed:', result.error);
 
       // Fallback to placeholder
       let imageUrl = null;
@@ -1153,8 +1147,8 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
       return {
         success: true,
         data: {
-          originalUrl: imageUrl,
           s3Url: s3Url,
+          url: s3Url,
           fileName: `ai-course-image-${Date.now()}.png`,
           fileSize: uploadSuccess ? 'unknown' : 'placeholder',
           prompt: prompt,
@@ -1194,8 +1188,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
     return {
       success: false,
       data: {
-        originalUrl: placeholderDataUrl,
-        s3Url: placeholderDataUrl,
+        url: placeholderDataUrl,
         fileName: 'placeholder-image.png',
         fileSize: 'placeholder',
         prompt: prompt,
@@ -1210,23 +1203,25 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
 }
 
 /**
- * Generate AI images for course content using OpenAI DALL-E
+ * Generate AI images for course content
  * @param {string} prompt - Image generation prompt
  * @param {Object} options - Generation options
  * @returns {Promise<Object>} Generated image data
  */
 export async function generateCourseImage(prompt, options = {}) {
   try {
-    console.log('🎨 Generating course image with OpenAI DALL-E:', prompt);
-
-    // Use OpenAI service
-    const aiResult = await openAIService.generateCourseImage(prompt, options);
+    console.log('🎨 Generating course image:', prompt);
+    const tier = options?.tier || 'standard';
+    const aiResult = await secureAIService.generateCourseImage(prompt, {
+      ...options,
+      tier,
+    });
 
     if (aiResult.success && aiResult.data) {
-      console.log('✅ OpenAI DALL-E image generation successful');
+      console.log('✅ Image generation successful');
       return aiResult;
     } else {
-      console.warn('OpenAI generation failed:', aiResult.error);
+      console.warn('AI generation failed:', aiResult.error);
       return aiResult; // Still return the result with fallback image
     }
   } catch (error) {
@@ -1268,7 +1263,7 @@ export async function generateCourseImage(prompt, options = {}) {
 }
 
 /**
- * Summarize content for course lessons using OpenAI
+ * Summarize content for course lessons
  * @param {string} content - Content to summarize
  * @param {Object} options - Summarization options
  * @returns {Promise<Object>} Summary data
@@ -1283,14 +1278,14 @@ ${content}`;
 
     let summary;
     try {
-      summary = await openAIService.generateText(prompt, {
-        model: 'gpt-4o-mini',
+      summary = await secureAIService.generateText(prompt, {
+        tier: options?.tier || 'standard',
         maxTokens: 300,
         temperature: 0.3,
       });
     } catch (summarizeError) {
       console.warn(
-        'OpenAI summarization failed, using fallback:',
+        'AI summarization failed, using fallback:',
         summarizeError.message
       );
 
@@ -1321,7 +1316,7 @@ ${content}`;
 }
 
 /**
- * Search and answer questions for course content using OpenAI
+ * Search and answer questions for course content
  * @param {string} question - Question to answer
  * @param {string} context - Optional context
  * @returns {Promise<Object>} Answer data
@@ -1340,13 +1335,13 @@ Provide a clear, educational answer that would be helpful for a student learning
 
     let answer;
     try {
-      answer = await openAIService.generateText(prompt, {
-        model: 'gpt-4o-mini',
+      answer = await secureAIService.generateText(prompt, {
+        tier: 'standard',
         maxTokens: 500,
         temperature: 0.5,
       });
     } catch (qaError) {
-      console.warn('OpenAI QA failed, using fallback:', qaError.message);
+      console.warn('AI QA failed, using fallback:', qaError.message);
 
       // Simple fallback answer
       answer = `This is an educational topic related to ${question}. Please refer to course materials for detailed information.`;
@@ -1373,7 +1368,7 @@ Provide a clear, educational answer that would be helpful for a student learning
 }
 
 /**
- * Generate a small set of Q&A pairs for a lesson/topic using OpenAI
+ * Generate a small set of Q&A pairs for a lesson/topic
  * @param {string} topic - Topic or lesson title
  * @param {number} count - Number of Q&A pairs
  * @param {string} context - Optional extra context
@@ -1393,8 +1388,8 @@ Return valid JSON only in this format:
 
     let qa = [];
     try {
-      const response = await openAIService.generateText(prompt, {
-        model: 'gpt-4o-mini',
+      const response = await secureAIService.generateText(prompt, {
+        tier: 'standard',
         maxTokens: 600,
         temperature: 0.5,
       });
@@ -1428,7 +1423,7 @@ Return valid JSON only in this format:
 }
 
 /**
- * Generate safe lesson content using OpenAI (Qwen moderation removed)
+ * Generate safe lesson content
  * @param {string} prompt - Lesson topic or prompt
  * @param {Object} options - { context?: string, level?: string }
  * @returns {Promise<{success:boolean, data:Object}>}
@@ -1439,7 +1434,7 @@ export async function generateSafeLessonContent(prompt, options = {}) {
 }
 
 /**
- * Generate a structured lesson from a topic/prompt using OpenAI
+ * Generate a structured lesson from a topic/prompt
  * @param {string} prompt - Lesson topic or prompt
  * @param {Object} options - { context?: string, level?: string }
  * @returns {Promise<{success:boolean, data:Object}>}
@@ -1451,15 +1446,15 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
 
     let lesson;
     try {
-      const response = await openAIService.generateStructured(
+      const response = await secureAIService.generateStructured(
         sysPrompt,
         userPrompt
       );
       lesson = response;
     } catch {
-      const text = await openAIService.generateText(
+      const text = await secureAIService.generateText(
         `${sysPrompt}\n\n${userPrompt}`,
-        { model: 'gpt-4o-mini', maxTokens: 800, temperature: 0.6 }
+        { tier: 'standard', maxTokens: 800, temperature: 0.6 }
       );
       const jsonMatch =
         typeof text === 'string' ? text.match(/\{[\s\S]*\}/) : null;
@@ -1499,7 +1494,7 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
 }
 
 /**
- * Generate MCQ assessments for a topic using OpenAI
+ * Generate MCQ assessments for a topic
  * Returns normalized questions for bulk upload API
  */
 export async function generateAssessmentQuestions(
@@ -1511,8 +1506,8 @@ export async function generateAssessmentQuestions(
     const prompt = `Create ${count} multiple-choice questions (MCQs) for the topic "${topic}"${context ? ` with context: ${context}` : ''}. Return JSON {"questions": [{"question": "...", "options": ["A","B","C","D"], "answerIndex": 0}]}`;
     let questions = [];
     try {
-      const text = await openAIService.generateText(prompt, {
-        model: 'gpt-4o-mini',
+      const text = await secureAIService.generateText(prompt, {
+        tier: 'standard',
         maxTokens: 1000,
         temperature: 0.6,
       });
@@ -1568,7 +1563,6 @@ export async function saveAICourse(courseData) {
         isAIGenerated: true,
         aiMetadata: {
           generatedAt: new Date().toISOString(),
-          modelsUsed: ['course-outline', 'image-generation', 'summarization'],
           generationMethod: 'ai-service',
         },
       }),

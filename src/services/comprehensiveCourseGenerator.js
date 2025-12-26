@@ -1,4 +1,4 @@
-import openAIService from './openAIService.js';
+import secureAIService from './secureAIService.js';
 import structuredLessonGenerator from './structuredLessonGenerator.js';
 import {
   generateComprehensiveShowcaseLesson,
@@ -25,10 +25,8 @@ function pickImageUrl(result) {
   const data = result?.data || {};
   const primary =
     data.url || data.imageUrl || result?.url || result?.imageUrl || null;
-  const fallback = data.originalUrl || result?.originalUrl || null;
   return {
-    url: primary || fallback,
-    originalUrl: fallback,
+    url: primary,
     uploadedToS3: data.uploadedToS3 ?? result?.uploadedToS3 ?? false,
   };
 }
@@ -182,26 +180,26 @@ Return JSON with this structure:
 }`;
 
   try {
-    const response = await openAIService.generateStructured(
+    const response = await secureAIService.generateStructured(
       'You are an expert course architect creating a comprehensive showcase lesson.',
       prompt,
       {
-        model: 'gpt-4',
+        tier: 'standard',
         temperature: 0.7,
-        max_tokens: 2000,
+        maxTokens: 2000,
       }
     );
 
-    // Handle both string and object responses from OpenAI
+    // Handle both string and object responses
     if (typeof response === 'string') {
       return JSON.parse(response);
     } else if (typeof response === 'object') {
       return response;
     } else {
-      throw new Error('Invalid response format from OpenAI');
+      throw new Error('Invalid response format from AI service');
     }
   } catch (error) {
-    console.error('OpenAI structure generation failed:', error);
+    console.error('Structure generation failed:', error);
     // Return fallback structure
     return generateFallbackShowcaseStructure(config);
   }
@@ -254,7 +252,7 @@ async function enhanceWithAllVariants(
   const module = courseStructure.modules[0];
   const lesson = module.lessons[0];
 
-  // Generate actual thumbnail images using DALL-E only if enabled
+  // Generate actual thumbnail images only if enabled
   let moduleThumbnailUrl = '';
   let lessonThumbnailUrl = '';
   let moduleThumbnailPrompt = '';
@@ -283,10 +281,11 @@ async function enhanceWithAllVariants(
     try {
       // Generate module thumbnail image
       console.log('🎨 Generating module thumbnail image...');
-      const moduleImageResult = await openAIService.generateImage(
+      const moduleImageResult = await secureAIService.generateImage(
         moduleThumbnailPrompt,
         {
           ...DEFAULT_IMAGE_OPTIONS,
+          tier: 'standard',
           folder: 'ai-thumbnails/modules',
         }
       );
@@ -316,10 +315,11 @@ async function enhanceWithAllVariants(
 
       // Generate lesson thumbnail image
       console.log('🎨 Generating lesson thumbnail image...');
-      const lessonImageResult = await openAIService.generateImage(
+      const lessonImageResult = await secureAIService.generateImage(
         lessonThumbnailPrompt,
         {
           ...DEFAULT_IMAGE_OPTIONS,
+          tier: 'standard',
           folder: 'ai-thumbnails/lessons',
         }
       );
@@ -466,12 +466,12 @@ ASPECT RATIO: 16:9 thumbnail format
 MOOD: Modern, professional, educational, inspiring`;
 
   try {
-    const response = await openAIService.generateText(premiumPrompt, {
-      model: 'gpt-4o-mini',
-      max_tokens: 180, // Increased for better quality prompts
+    const response = await secureAIService.generateText(premiumPrompt, {
+      tier: 'standard',
+      maxTokens: 180,
       temperature: 0.8, // Slightly higher for more creative variations
       systemPrompt:
-        'You are a premium prompt engineer for DALL-E 3. Create stunning, photorealistic image prompts that emphasize: cinematic lighting, ultra-detail, professional composition, premium colors, realistic shadows, material textures, and clean execution. Always include specific visual quality descriptors. NO infographics, NO diagrams, NO text overlays.',
+        'You are a premium prompt engineer. Create stunning, photorealistic image prompts that emphasize: cinematic lighting, ultra-detail, professional composition, premium colors, realistic shadows, material textures, and clean execution. Always include specific visual quality descriptors. NO infographics, NO diagrams, NO text overlays.',
     });
 
     let generatedPrompt = response.trim();
@@ -538,12 +538,12 @@ ASPECT RATIO: 16:9 thumbnail format
 MOOD: Modern, professional, educational, inspiring`;
 
   try {
-    const response = await openAIService.generateText(premiumPrompt, {
-      model: 'gpt-4o-mini',
-      max_tokens: 180, // Increased for better quality prompts
+    const response = await secureAIService.generateText(premiumPrompt, {
+      tier: 'standard',
+      maxTokens: 180,
       temperature: 0.8, // Slightly higher for more creative variations
       systemPrompt:
-        'You are a premium prompt engineer for DALL-E 3. Create stunning, photorealistic image prompts that emphasize: cinematic lighting, ultra-detail, professional composition, premium colors, realistic shadows, material textures, and clean execution. Always include specific visual quality descriptors. NO infographics, NO diagrams, NO text overlays.',
+        'You are a premium prompt engineer. Create stunning, photorealistic image prompts that emphasize: cinematic lighting, ultra-detail, professional composition, premium colors, realistic shadows, material textures, and clean execution. Always include specific visual quality descriptors. NO infographics, NO diagrams, NO text overlays.',
     });
 
     let generatedPrompt = response.trim();
