@@ -112,62 +112,56 @@ const EventAttendanceModal = ({
   const handleExportCSV = async () => {
     if (
       !attendanceData ||
-      !eventTitle ||
-      !eventDate ||
-      !attendanceData.eventAttendaceList
-    )
+      !attendanceData.eventAttendanceList ||
+      attendanceData.eventAttendanceList.length === 0
+    ) {
       return;
+    }
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Attendance');
 
-    // Add title row
-    worksheet.addRow(['Event Attendance Report']);
-    worksheet.addRow(['Event:', eventTitle]);
-    worksheet.addRow(['Date:', formatDate(eventDate)]);
-    worksheet.addRow([]); // Empty row for spacing
+    // ✅ Proper CSV headers (single header row)
+    worksheet.addRow([
+      'Event Title',
+      'Attendance Date',
+      'Attendance Time',
+      'Name',
+      'Email',
+      'Status',
+    ]);
 
-    // Add headers
-    worksheet.addRow(['Name', 'Email', 'Status', 'Time']);
-
-    // Add data
-    attendanceData.eventAttendaceList.forEach(attendee => {
-      const attendanceTime = attendee.created_at
-        ? new Date(attendee.created_at).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-            timeZone: 'UTC',
-          })
-        : 'N/A';
-
+    // ✅ Flat data rows (no report-style rows)
+    attendanceData.eventAttendanceList.forEach(attendee => {
       worksheet.addRow([
-        `${attendee.user.first_name} ${attendee.user.last_name}`,
-        attendee.user.email,
+        eventTitle,
+        attendee.attendanceDate ?? '',
+        attendee.attendanceTime ?? '',
+        `${attendee.user?.firstName ?? ''} ${attendee.user?.lastName ?? ''}`.trim(),
+        attendee.user?.email ?? '',
         attendee.isPresent ? 'Present' : 'Absent',
-        attendanceTime,
       ]);
     });
 
-    // Style the header
-    worksheet.getRow(1).font = { bold: true, size: 14 };
-    worksheet.getRow(5).font = { bold: true };
-
-    // Auto-fit columns
-    worksheet.columns.forEach(column => {
-      column.width = 50;
+    // Auto column width
+    worksheet.columns.forEach(col => {
+      col.width = 30;
     });
 
-    // Generate the file
+    // Generate CSV
     const buffer = await workbook.csv.writeBuffer();
-    const blob = new Blob([buffer], { type: 'text/csv' });
+    const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `attendance_${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date(eventDate).toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `attendance_${eventTitle
+      .replace(/[^a-z0-9]/gi, '_')
+      .toLowerCase()}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   };
 
@@ -307,8 +301,8 @@ const EventAttendanceModal = ({
                   className="bg-green-600 hover:bg-green-700 text-white px-6 flex items-center gap-2"
                   disabled={
                     !attendanceData ||
-                    !attendanceData.eventAttendaceList ||
-                    attendanceData.eventAttendaceList.length === 0
+                    !attendanceData.eventAttendanceList ||
+                    attendanceData.eventAttendanceList.length === 0
                   }
                 >
                   <svg
@@ -340,16 +334,19 @@ const EventAttendanceModal = ({
                         key={index}
                         className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                       >
+                        {/* Left section: User info */}
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm">
-                            {attendee.user.first_name[0]}
-                            {attendee.user.last_name[0]}
+                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm uppercase">
+                            {attendee.user?.firstName?.[0]}
+                            {attendee.user?.lastName?.[0]}
                           </div>
+
                           <div>
                             <p className="font-medium text-gray-900">
-                              {attendee.user.first_name}{' '}
-                              {attendee.user.last_name}
+                              {attendee.user?.firstName}{' '}
+                              {attendee.user?.lastName}
                             </p>
+
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -365,36 +362,31 @@ const EventAttendanceModal = ({
                                   d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                                 />
                               </svg>
-                              {attendee.user.email}
+                              {attendee.user?.email}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          {attendee.created_at
-                            ? new Date(attendee.created_at).toLocaleTimeString(
-                                'en-US',
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: true,
-                                  timeZone: 'UTC',
-                                }
-                              )
-                            : 'Invalid Date'}
+
+                        {/* Right section: Attendance date & time */}
+                        <div className="text-right text-sm text-gray-500">
+                          <p>{attendee.attendanceDate}</p>
+                          <div className="flex items-center gap-1 justify-end">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            {attendee.attendanceTime}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -415,6 +407,7 @@ const EventAttendanceModal = ({
                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                       />
                     </svg>
+
                     <p className="text-gray-500 text-center">
                       No attendance records found
                     </p>
