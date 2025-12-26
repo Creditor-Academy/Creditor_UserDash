@@ -28,24 +28,15 @@ const carouselItems = [
     id: 2,
     type: 'image',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/creDITOR+ACADEMY+(2)+(1).png',
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/1.png',
     title: 'Upcoming Event',
     course: 'Banner 2',
   },
-  // Christmas Banner
   {
     id: 3,
     type: 'image',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Rename+Chirstmas+Bonananza+Special.png',
-    title: 'Upcoming Event',
-    course: 'Banner 3',
-  },
-  {
-    id: 3,
-    type: 'image',
-    image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/www.creditoracademy.com+(3).png',
+      'https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/2.png',
     title: 'Upcoming Event',
     course: 'Banner 3',
   },
