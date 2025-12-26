@@ -21,7 +21,7 @@ import {
   FileText,
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import aiProxyService from '../../services/aiProxyService';
+import secureAIService from '../../services/secureAIService';
 import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
 
 const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
@@ -52,7 +52,7 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
 
     try {
       // Use Bytez API for real content search
-      const response = await aiProxyService.answerQuestion(query, '', {
+      const response = await secureAIService.answerQuestion(query, '', {
         max_answer_length: 300,
       });
 

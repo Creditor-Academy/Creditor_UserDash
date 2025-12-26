@@ -16,7 +16,7 @@ import {
   File,
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import aiProxyService from '../../services/aiProxyService';
+import secureAIService from '../../services/secureAIService';
 import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
 
 const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
@@ -114,7 +114,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
         contentLength: content.length,
       });
 
-      const result = await aiProxyService.summarizeContent(content, {
+      const result = await secureAIService.summarizeContent(content, {
         length: summaryLength,
         type: summaryType,
       });

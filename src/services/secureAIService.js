@@ -1,4 +1,5 @@
 import { emitActiveOrgUsageRefresh } from '../utils/activeOrgUsageEvents';
+import { getAccessToken } from './tokenService';
 
 /**
  * Secure AI Service - Backend-Only Implementation
@@ -12,7 +13,11 @@ import { emitActiveOrgUsageRefresh } from '../utils/activeOrgUsageEvents';
  * - Enhanced security and scalability
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV
+    ? 'http://localhost:9000'
+    : 'https://creditor.onrender.com');
 // Debug: Log the API base being used
 console.log('SecureAIService API_BASE:', API_BASE);
 const isDevelopment = !!import.meta.env.DEV;
@@ -59,7 +64,7 @@ class SecureAIService {
    * Get authentication headers
    */
   getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     return {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -366,6 +371,168 @@ class SecureAIService {
       );
       throw formattedError;
     }
+  }
+
+  async summarizeContent(content, options = {}) {
+    const length = options?.length || 'medium';
+    const type = options?.type || 'bullet';
+
+    const lengthConfigMap = {
+      short: { minWords: 50, maxWords: 100, maxTokens: 300 },
+      medium: { minWords: 100, maxWords: 200, maxTokens: 500 },
+      long: { minWords: 150, maxWords: 300, maxTokens: 800 },
+      detailed: { minWords: 200, maxWords: 400, maxTokens: 1100 },
+    };
+
+    const lengthConfig = lengthConfigMap[length] || lengthConfigMap.medium;
+
+    const formatInstructionMap = {
+      bullet:
+        'Return the summary as bullet points. Use short, information-dense bullets.',
+      paragraph:
+        'Return the summary as a single well-structured paragraph. Avoid bullet points.',
+      outline:
+        'Return the summary as an outline with headings and sub-bullets. Use a clear hierarchy.',
+    };
+
+    const formatInstruction =
+      formatInstructionMap[type] || formatInstructionMap.bullet;
+
+    const cleanedContent = (content || '').trim();
+    if (!cleanedContent) {
+      throw new Error('Content is required for summarization');
+    }
+
+    const systemPrompt =
+      'You are an expert summarizer. Produce accurate summaries without adding new facts.';
+
+    const buildPrompt = chunk => {
+      const base = `Summarize the content below.
+
+Constraints:
+- Target length: ${lengthConfig.minWords}-${lengthConfig.maxWords} words.
+- ${formatInstruction}
+- Preserve key facts, definitions, and steps.
+- Do not fabricate information.
+
+Content:
+${chunk}`;
+
+      if (base.length <= 4000) return base;
+
+      const safeChunk = chunk.slice(
+        0,
+        Math.max(0, chunk.length - (base.length - 4000))
+      );
+      return `Summarize the content below.
+
+Constraints:
+- Target length: ${lengthConfig.minWords}-${lengthConfig.maxWords} words.
+- ${formatInstruction}
+- Preserve key facts, definitions, and steps.
+- Do not fabricate information.
+
+Content:
+${safeChunk}`;
+    };
+
+    const maxPromptChars = 3800;
+    const maxChunkChars = Math.max(800, maxPromptChars - 1000);
+
+    const chunks = [];
+    if (cleanedContent.length <= maxChunkChars) {
+      chunks.push(cleanedContent);
+    } else {
+      for (let i = 0; i < cleanedContent.length; i += maxChunkChars) {
+        chunks.push(cleanedContent.slice(i, i + maxChunkChars));
+      }
+    }
+
+    const partialSummaries = [];
+    for (const chunk of chunks) {
+      const summary = await this.generateText(buildPrompt(chunk), {
+        model: options?.model || 'gpt-4o-mini',
+        maxTokens: lengthConfig.maxTokens,
+        temperature: 0.3,
+        systemPrompt,
+        enhancePrompt: false,
+        skipStatusCheck: partialSummaries.length > 0,
+      });
+      partialSummaries.push(summary);
+    }
+
+    let finalSummary = partialSummaries.join('\n\n');
+    if (chunks.length > 1) {
+      finalSummary = await this.generateText(
+        buildPrompt(
+          `Combine the partial summaries below into one unified summary.\n\n${finalSummary}`
+        ),
+        {
+          model: options?.model || 'gpt-4o-mini',
+          maxTokens: lengthConfig.maxTokens,
+          temperature: 0.3,
+          systemPrompt,
+          enhancePrompt: false,
+          skipStatusCheck: true,
+        }
+      );
+    }
+
+    return {
+      success: true,
+      summary: finalSummary,
+      generated_text: finalSummary,
+      model: options?.model || 'gpt-4o-mini',
+      chunked: chunks.length > 1,
+      chunkCount: chunks.length,
+      originalLength: cleanedContent.length,
+      summaryLength: finalSummary.length,
+      lengthConfig,
+    };
+  }
+
+  async answerQuestion(question, context = '', options = {}) {
+    const q = (question || '').trim();
+    const ctx = (context || '').trim();
+
+    if (!q) {
+      throw new Error('Question is required');
+    }
+
+    const maxAnswerLength =
+      options?.max_answer_length || options?.maxAnswerLength;
+    const maxAnswerWords =
+      typeof maxAnswerLength === 'number' && maxAnswerLength > 0
+        ? maxAnswerLength
+        : null;
+
+    const systemPrompt =
+      'You are a helpful assistant. Answer accurately and concisely. If you do not know, say so.';
+
+    const clippedContext = ctx ? ctx.slice(0, 1500) : '';
+    const basePrompt = clippedContext
+      ? `Question: ${q}\n\nContext: ${clippedContext}`
+      : `Question: ${q}`;
+
+    const prompt = maxAnswerWords
+      ? `${basePrompt}\n\nConstraints:\n- Max ${maxAnswerWords} words.\n- Be direct and avoid fluff.`
+      : `${basePrompt}\n\nConstraints:\n- Be direct and avoid fluff.`;
+
+    const answer = await this.generateText(prompt.slice(0, 4000), {
+      model: options?.model || 'gpt-4o-mini',
+      maxTokens: options?.maxTokens || 500,
+      temperature: 0.3,
+      systemPrompt,
+      enhancePrompt: false,
+    });
+
+    return {
+      success: true,
+      answer,
+      model: options?.model || 'gpt-4o-mini',
+      question: q,
+      context: ctx,
+    };
   }
 
   async logAIGeneration(payload) {
