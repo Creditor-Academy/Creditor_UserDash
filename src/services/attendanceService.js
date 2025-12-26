@@ -104,6 +104,7 @@ export async function getEventAttendance(eventId) {
     if (!response.data) {
       throw new Error('No data received from server');
     }
+    console.log('Event Attendance Response:', response.data);
 
     return response.data;
   } catch (error) {

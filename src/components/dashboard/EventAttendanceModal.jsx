@@ -47,7 +47,35 @@ const EventAttendanceModal = ({
         }
 
         const data = await response.json();
-        setAttendanceData(data.data);
+        const raw = data?.data || {};
+        const rawList = raw.eventAttendanceList || raw.eventAttendaceList || [];
+
+        // Normalize attendee user fields and list name so rest of component works
+        const normalizedList = Array.isArray(rawList)
+          ? rawList.map(attendee => {
+              const user = attendee.user || {};
+              const name = user.name || '';
+              const [firstFromName, ...restName] = name.split(' ');
+
+              return {
+                ...attendee,
+                user: {
+                  ...user,
+                  first_name:
+                    user.first_name || user.firstName || firstFromName || '',
+                  last_name:
+                    user.last_name || user.lastName || restName.join(' ') || '',
+                },
+              };
+            })
+          : [];
+
+        setAttendanceData({
+          ...raw,
+          // keep both keys for compatibility
+          eventAttendaceList: normalizedList,
+          eventAttendanceList: normalizedList,
+        });
       } catch (err) {
         setError(err.message);
         console.error('Error fetching attendance:', err);
@@ -82,7 +110,13 @@ const EventAttendanceModal = ({
   };
 
   const handleExportCSV = async () => {
-    if (!attendanceData || !eventTitle || !eventDate) return;
+    if (
+      !attendanceData ||
+      !eventTitle ||
+      !eventDate ||
+      !attendanceData.eventAttendaceList
+    )
+      return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Attendance');
@@ -273,6 +307,7 @@ const EventAttendanceModal = ({
                   className="bg-green-600 hover:bg-green-700 text-white px-6 flex items-center gap-2"
                   disabled={
                     !attendanceData ||
+                    !attendanceData.eventAttendaceList ||
                     attendanceData.eventAttendaceList.length === 0
                   }
                 >
