@@ -642,7 +642,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             {showDropdown && searchResults && (
               <div
                 ref={dropdownRef}
-                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
+                className="absolute top-full left-0 right-0 mt-2 bg-white solid-surface rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
               >
                 {/* Total Results Header */}
                 {(searchResults.results?.courses?.length > 0 ||
@@ -654,7 +654,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                         ? 's'
                         : ''}
                       {searchResults.results?.users?.length > 0 && (
-                        <span>
+                        <span className="text-gray-700">
                           {' '}
                           and {searchResults.results.users.length} user
                           {searchResults.results.users.length !== 1 ? 's' : ''}
