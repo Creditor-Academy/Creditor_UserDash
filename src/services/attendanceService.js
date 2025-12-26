@@ -1,7 +1,7 @@
 import api from './apiClient';
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+  import.meta.env.VITE_API_BASE_URL || 'https://testbackend-hcoy.onrender.com';
 
 /**
  * Mark attendance for a specific event
@@ -94,6 +94,7 @@ export async function markEventAttendance(eventId, occurrenceDate = null) {
  * @param {string} eventId - The ID of the event
  * @returns {Promise<Object>} Response data containing eventAttendaceList and TotalPresent
  */
+
 export async function getEventAttendance(eventId) {
   try {
     const response = await api.get(
@@ -103,6 +104,7 @@ export async function getEventAttendance(eventId) {
     if (!response.data) {
       throw new Error('No data received from server');
     }
+    console.log('Event Attendance Response:', response.data);
 
     return response.data;
   } catch (error) {
