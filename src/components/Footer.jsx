@@ -1,12 +1,5 @@
 import React from 'react';
-import { FaLinkedin, FaInstagram, FaFacebook, FaGithub } from 'react-icons/fa';
-
-/**
- * Redesigned responsive footer:
- * Desktop columns (left → right): [Athena heading] [About] [Address & Phone] [Useful Links]
- * Bottom bar: [Condensed links] [© + Social icons]
- * Palette preserved. Accessibility & small typos fixed.
- */
+import { FaLinkedin, FaInstagram, FaFacebook } from 'react-icons/fa';
 
 const styles = {
   footer: {
@@ -24,6 +17,7 @@ const styles = {
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
+    position: 'relative', // Added to allow absolute positioning of the image inside
   },
   col: {
     flex: 1,
@@ -62,7 +56,7 @@ const styles = {
     padding: '14px 64px',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'center', // Reverted to center alignment since image is moved
     gap: 16,
     flexWrap: 'wrap',
   },
@@ -111,11 +105,19 @@ const Footer = () => (
       /* Container width adjustments */
       .athena-footer-container { max-width: 1280px; margin: 0 auto; }
 
-      /* Responsive layout: stack columns on small screens */
+      /* Responsive layout */
       @media (max-width: 880px) {
         .athena-footer-container { padding-left: 20px; padding-right: 20px; }
         .athena-footer .columns { padding: 28px 0; gap: 18px; }
         .athena-footer .brand-col { order: -1; }
+         /* Hide the large decorative image on smaller tablets/mobile to prevent overlap*/
+        /*.footer-decor-image { display: none; }*/
+        
+        /* Adjust footer image for mobile */
+        .footer-decor-image { 
+          right: -50px !important;
+          height: 150px !important;
+        }
       }
 
       @media (max-width: 680px) {
@@ -167,7 +169,8 @@ const Footer = () => (
           <address style={styles.address}>
             Athena LMS
             <br />
-            Kirkland, Washington, USA
+            Creditor Academy PMA,12315 NE 97th ST APT E Kirkland, WA 98033,
+            United States.
             <br />
             <br />
             GF-20, Omaxe Square, Jasola District
@@ -279,6 +282,21 @@ const Footer = () => (
             </div>
           </nav>
         </div>
+
+        {/* NEW IMAGE POSITION - Beside Useful Links column */}
+        <img
+          src="/ww-removebg-preview.png"
+          alt="Holiday decoration"
+          className="footer-decor-image"
+          style={{
+            position: 'absolute',
+            bottom: '-5px',
+            right: '-100px',
+            height: '200px', // Adjusted to be "little large"
+            width: 'auto',
+            pointerEvents: 'none',
+          }}
+        />
       </div>
 
       {/* Bottom bar */}
@@ -340,16 +358,6 @@ const Footer = () => (
             >
               <FaFacebook />
             </a>
-            {/* <a
-              className="social-anchor"
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              style={styles.socialIcon}
-            >
-              <FaGithub />
-            </a> */}
           </div>
         </div>
       </div>

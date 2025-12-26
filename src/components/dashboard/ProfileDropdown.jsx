@@ -44,8 +44,6 @@ import { toast } from 'sonner';
 
 export function ProfileDropdown() {
   const [userAvatar, setUserAvatar] = useState(getUserAvatarUrlSync());
-  const [membershipModalOpen, setMembershipModalOpen] = useState(false);
-  const [membershipActionType, setMembershipActionType] = useState(null);
   const { userProfile, setUserProfile } = useUser();
   const { logout: logoutAuth } = useAuth();
   const navigate = useNavigate();
@@ -125,11 +123,6 @@ export function ProfileDropdown() {
     }
   };
 
-  const handleMembershipAction = actionType => {
-    setMembershipActionType(actionType);
-    setMembershipModalOpen(true);
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -164,14 +157,14 @@ export function ProfileDropdown() {
             </Avatar>
             <div className="absolute inset-0 bg-primary/0 rounded-full transition-colors duration-300 group-hover/avatar:bg-primary/10 animate-pulse-subtle"></div>
           </div>
-          <div className="hidden md:block text-left group/text">
-            <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300">
+          <div className="hidden md:block text-left group/text profile-header-text">
+            <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300 profile-name">
               {userProfile
                 ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() ||
                   'User'
                 : 'User'}
             </p>
-            <p className="text-xs text-muted-foreground group-hover/text:text-primary/70 transition-colors duration-300">
+            <p className="text-xs text-muted-foreground group-hover/text:text-primary/70 transition-colors duration-300 profile-email">
               {userProfile?.email || 'Loading...'}
             </p>
           </div>
@@ -197,34 +190,7 @@ export function ProfileDropdown() {
             </Link>
           </DropdownMenuItem>
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md">
-              <CreditCard className="mr-2 h-4 w-4 transition-all duration-300 group-hover/menu:text-primary group-hover/menu:scale-110" />
-              <span className="transition-all duration-200">
-                Manage Membership
-              </span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="backdrop-blur-sm bg-background/95">
-                {/* Switch to Annual Membership - Commented out for future use */}
-                {/* <DropdownMenuItem 
-                  className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/submenu rounded-md"
-                  onClick={() => handleMembershipAction('annual')}
-                >
-                  <Calendar className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-primary group-hover/submenu:scale-110" />
-                  <span>Switch to Annual Membership</span>
-                </DropdownMenuItem> */}
-
-                <DropdownMenuItem
-                  className="cursor-pointer transition-colors duration-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 group/submenu rounded-md"
-                  onClick={() => handleMembershipAction('cancel')}
-                >
-                  <XCircle className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-red-600 group-hover/submenu:scale-110" />
-                  <span>Cancel Membership</span>
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
+          {/* Membership management submenu (including cancellation) has been intentionally removed */}
 
           {/* <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="w-full cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md"> */}
           {/* <label htmlFor="profile-picture-upload" className="w-full cursor-pointer flex items-center"> */}
@@ -244,11 +210,7 @@ export function ProfileDropdown() {
         </DropdownMenuItem>
       </DropdownMenuContent>
 
-      <MembershipActionModal
-        isOpen={membershipModalOpen}
-        onClose={() => setMembershipModalOpen(false)}
-        actionType={membershipActionType}
-      />
+      {/* MembershipActionModal has been removed as membership actions are no longer available from the profile dropdown */}
     </DropdownMenu>
   );
 }

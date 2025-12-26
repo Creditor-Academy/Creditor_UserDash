@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   rejectPrivateGroupInvitation,
   getPendingInvitations,
 } from '@/services/privateGroupService';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function NotificationModal({
   open,
@@ -28,6 +29,7 @@ export function NotificationModal({
   notificationsFromApi = [],
   onMarkedAllRead,
 }) {
+  const { isChristmasMode } = useContext(SeasonalThemeContext);
   const [notifications, setNotifications] = useState([]);
   const [chatInvites, setChatInvites] = useState([]);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
@@ -124,17 +126,6 @@ export function NotificationModal({
 
     window.addEventListener('userLoggedIn', handleUserLoggedIn);
     return () => window.removeEventListener('userLoggedIn', handleUserLoggedIn);
-  }, []);
-
-  // Refresh invitations when window gains focus (user returns to tab)
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('Window focused - refreshing invitations');
-      loadPendingInvitations();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   // Listen for invitation refresh requests
@@ -599,7 +590,7 @@ export function NotificationModal({
         <DialogHeader className="p-4 pb-0 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
             <Bell className="h-4 w-4 text-gray-700" />
-            Notifications
+            {isChristmasMode ? '🔔 Jingle Alerts' : 'Notifications'}
           </DialogTitle>
         </DialogHeader>
 

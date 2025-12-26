@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Info, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Pricing = () => {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -12,7 +12,7 @@ const Pricing = () => {
       name: 'Starter',
       target:
         'Best for: Solo creators, tutors, and small teams. Launch Mode — Start simple, grow fast.',
-      price: '$7', // isAnnual ? "$74" : "$7",
+      price: '$99', // isAnnual ? "$74" : "$7",
       originalPrice: '$99', // isAnnual ? "$99" : "$99",
       savings: '', // isAnnual ? "Save $300" : "",
       period: ' per user/month',
@@ -33,32 +33,9 @@ const Pricing = () => {
       sectionHeader: 'Starter Includes:',
       cta: 'Join Now',
       link: 'https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8',
-      popular: false,
-      buttonStyle: 'white',
-    },
-    {
-      name: 'Growth',
-      target:
-        'Best for: Growing academies and scaling organizations. Growth Mode — Build for scale, More tools, more reach, same simplicity.',
-      price: '$14', // isAnnual ? "$149" : "$14",
-      originalPrice: '$189', // isAnnual ? "$189" : "$189",
-      savings: '', // isAnnual ? "Save $600" : "",
-      period: ' per user/month',
-      billingNote: 'monthly billing',
-      features: [
-        { text: '50GB of storage', info: false },
-        { text: '300 AI credits per month', info: false },
-        { text: 'Build dozens of SCORM modules with AI', info: false },
-        { text: 'Hundreds of immersive reader texts', info: false },
-        { text: 'Image-rich, AI-assisted course creation', info: false },
-        { text: 'Better per-user value and bundled resources', info: false },
-      ],
-      sectionHeader: 'Growth Includes:',
-      cta: 'Join Now',
       popular: true,
-      link: 'https://quickclick.com/r/gf2xftvzaz3r3lzy0e966gjgeggcj2',
       featured: 'Most Popular!',
-      buttonStyle: 'blue',
+      buttonStyle: 'white',
     },
     {
       name: 'ATHENA',
@@ -204,74 +181,75 @@ const Pricing = () => {
         </motion.div>
 
         {/* Desktop Pricing Cards Grid */}
-        <div className="hidden md:grid md:grid-cols-3 gap-6 mb-8">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              whileHover={{
-                y: -8,
-                transition: { duration: 0.3, ease: 'easeOut' },
-              }}
-              className="relative group"
-            >
-              {/* Card */}
-              <div
-                className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
-                  plan.popular
-                    ? 'border-4 border-yellow-400 shadow-2xl'
-                    : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
-                } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}
+        <div className="hidden md:flex md:justify-center mb-8">
+          <div className="grid grid-cols-2 gap-6 max-w-4xl">
+            {plans.map((plan, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{
+                  y: -8,
+                  transition: { duration: 0.3, ease: 'easeOut' },
+                }}
+                className="relative group"
               >
-                {/* Popular Header - Only on featured plan */}
-                {plan.popular && plan.featured && (
-                  <div
-                    className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                    }}
-                  >
-                    {plan.featured}
-                  </div>
-                )}
+                {/* Card */}
+                <div
+                  className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
+                    plan.popular
+                      ? 'border-4 border-yellow-400 shadow-2xl'
+                      : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
+                  } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}
+                >
+                  {/* Popular Header - Only on featured plan */}
+                  {plan.popular && plan.featured && (
+                    <div
+                      className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                      }}
+                    >
+                      {plan.featured}
+                    </div>
+                  )}
 
-                {/* Alignment Spacer for non-popular cards */}
-                {!plan.popular && <div className="h-14" />}
+                  {/* Alignment Spacer for non-popular cards */}
+                  {!plan.popular && <div className="h-14" />}
 
-                {/* Card Content */}
-                <div className="p-6 flex-1 flex flex-col">
-                  {/* Plan Name - Fixed Height */}
-                  <div className="mb-1 h-[160px] overflow-hidden">
-                    <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                      {plan.name}
-                      {plan.nameHighlight && (
-                        <span className="ml-2 inline-block px-3 py-1 bg-black text-white text-xl font-bold">
-                          {plan.nameHighlight}
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {plan.target}
-                    </p>
-                  </div>
+                  {/* Card Content */}
+                  <div className="p-6 flex-1 flex flex-col">
+                    {/* Plan Name - Fixed Height */}
+                    <div className="mb-1 h-[160px] overflow-hidden">
+                      <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                        {plan.name}
+                        {plan.nameHighlight && (
+                          <span className="ml-2 inline-block px-3 py-1 bg-black text-white text-xl font-bold">
+                            {plan.nameHighlight}
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {plan.target}
+                      </p>
+                    </div>
 
-                  {/* Pricing - Fixed Height for consistent alignment */}
-                  {!plan.isPlusCard && (
-                    <div className="mb-3 h-[80px]">
-                      <div className="flex items-baseline gap-1 mb-1">
-                        <span className="text-5xl font-bold text-gray-900">
-                          {plan.price}
-                        </span>
-                        <span className="text-gray-700 text-xl">
-                          {plan.period}
-                        </span>
-                      </div>
-                      {/* Annual pricing display - commented out for weekly offer */}
-                      {/* {isAnnual && plan.originalPrice && (
+                    {/* Pricing - Fixed Height for consistent alignment */}
+                    {!plan.isPlusCard && (
+                      <div className="mb-3 h-[80px]">
+                        <div className="flex items-baseline gap-1 mb-1">
+                          <span className="text-5xl font-bold text-gray-900">
+                            {plan.price}
+                          </span>
+                          <span className="text-gray-700 text-xl">
+                            {plan.period}
+                          </span>
+                        </div>
+                        {/* Annual pricing display - commented out for weekly offer */}
+                        {/* {isAnnual && plan.originalPrice && (
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-gray-500 line-through text-base">
                             {plan.originalPrice}/mo
@@ -285,54 +263,55 @@ const Pricing = () => {
                           </span>
                         </div>
                       )} */}
-                      <p className="text-sm text-gray-600">
-                        {plan.billingNote}
-                      </p>
+                        <p className="text-sm text-gray-600">
+                          {plan.billingNote}
+                        </p>
+                      </div>
+                    )}
+
+                    {plan.isPlusCard && <div className="mb-3 h-[80px]" />}
+
+                    {/* CTA Button */}
+                    <div className="mb-6">
+                      <a
+                        href={plan.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 text-center ${
+                          plan.buttonStyle === 'yellow'
+                            ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {plan.cta} →
+                      </a>
                     </div>
-                  )}
 
-                  {plan.isPlusCard && <div className="mb-3 h-[80px]" />}
-
-                  {/* CTA Button */}
-                  <div className="mb-6">
-                    <a
-                      href={plan.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 text-center ${
-                        plan.buttonStyle === 'yellow'
-                          ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
+                    {/* Features Section */}
+                    <div
+                      className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}
                     >
-                      {plan.cta} →
-                    </a>
-                  </div>
-
-                  {/* Features Section */}
-                  <div
-                    className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}
-                  >
-                    <h4 className="font-bold text-gray-900 mb-4 text-base">
-                      {plan.sectionHeader}
-                    </h4>
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="text-sm text-gray-800 flex items-center gap-2 flex-1">
-                            {feature.text}
-                          </span>
-                          {feature.info && (
-                            <Info className="w-4 h-4 text-gray-900 flex-shrink-0 cursor-pointer" />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                      <h4 className="font-bold text-gray-900 mb-4 text-base">
+                        {plan.sectionHeader}
+                      </h4>
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <span className="text-sm text-gray-800 flex items-center gap-2 flex-1">
+                              {feature.text}
+                            </span>
+                            {feature.info && (
+                              <Info className="w-4 h-4 text-gray-900 flex-shrink-0 cursor-pointer" />
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         {/* Mobile Slider Layout */}
@@ -512,3 +491,324 @@ const Pricing = () => {
 };
 
 export default Pricing;
+
+// import React from 'react';
+// import { motion } from 'framer-motion';
+// import { CheckCircle2, Sparkles } from 'lucide-react';
+
+// // Clean, centered, neutral-styled Pricing component
+// // - Removed holiday imagery and themed backgrounds
+// // - Centered layout and simplified visual language
+// // - Improved table readability and CTA hierarchy
+
+// const Pricing = () => {
+
+//   const plans = [
+//     {
+//       name: 'Basic',
+//       target: 'Ideal for individuals, small teams, and educators getting started.',
+//       price: '$99',
+//       period: 'per month',
+//       billingNote: 'Billed monthly · cancel anytime',
+//       features: [
+//         { text: '2 users + 1 admin included', info: false },
+//         { text: '3 GB cloud storage', info: false },
+//         { text: '1M AI tokens', info: false },
+//         { text: 'Standard AI tools', info: false },
+//         { text: 'Essential LMS features & analytics', info: false },
+//         { text: 'Standard support', info: false },
+//       ],
+//       sectionHeader: 'Basic Plan Includes:',
+//       cta: 'Start Basic',
+//       link: 'https://quickclick.com/r/0zx71t3oqnqkfdcmjd2gxuefe7it3i',
+//       popular: false,
+//       buttonStyle: 'outline',
+//     },
+//     {
+//       name: 'Advanced',
+//       target: 'Built for orgs that need scale, premium AI and priority support.',
+//       price: '$1,999',
+//       period: 'per year',
+//       billingNote: 'Billed annually · best value',
+//       features: [
+//         { text: '10 users + 1 admin included', info: false },
+//         { text: '10 GB cloud storage', info: false },
+//         { text: '5M AI tokens', info: false },
+//         { text: 'Premium AI features', info: false },
+//         { text: 'Advanced LMS features & automations', info: false },
+//         { text: 'Priority support + 1 consultation', info: false },
+//       ],
+//       sectionHeader: 'Advanced Plan Includes:',
+//       cta: 'Contact Sales',
+//       link: '/contact',
+//       popular: true,
+//       buttonStyle: 'solid',
+//     },
+//     {
+//       name: 'ATHENA',
+//       nameHighlight: 'Enterprise',
+//       target: 'Custom enterprise solutions — contact us for tailored pricing.',
+//       isPlusCard: true,
+//       features: [
+//         { text: 'Custom user capacity & pooled resources', info: false },
+//         { text: 'White-labeling & SSO', info: false },
+//         { text: 'Dedicated success manager', info: false },
+//         { text: 'Enterprise SLA & compliance', info: false },
+//       ],
+//       sectionHeader: 'Enterprise Options:',
+//       cta: 'Request Quote',
+//       link: '/contact',
+//       popular: false,
+//       buttonStyle: 'ghost',
+//     },
+//   ];
+
+//   const comparison = {
+//     intro:
+//       'Two clear options to fit different needs — Basic (monthly) for lighter use and Advanced (yearly) for organizations that need scale, premium features and priority support.',
+//     rows: [
+//       ['Pricing', '$99/month', '$1,999/year'],
+//       ['Included Users', '2 users + 1 admin', '10 users + 1 admin'],
+//       ['Extra User Cost', '$14/user/month', '$14/user/month'],
+//       ['Cloud Storage', '3 GB', '10 GB'],
+//       ['AI Tokens', '1M tokens', '5M tokens'],
+//       ['AI Features', 'Standard AI tools', 'Premium AI features'],
+//       ['Landing Page', 'Not included', 'Free landing page'],
+//       ['Consultation Meeting', 'Not included', 'One free consultation with tech team'],
+//       ['Support Level', 'Standard support', 'Priority support'],
+//       ['Course & Feature Access', 'Essential features', 'Advanced features & enhancements'],
+//       ['Billing Model', 'Monthly', 'Annual'],
+//     ],
+//   };
+
+//   const PlanCard = ({ plan }) => {
+//     const isFeatured = plan.popular;
+//     const ctaStyles = {
+//       solid:
+//         'bg-sky-500 text-white hover:bg-sky-400 focus-visible:ring-sky-300',
+//       outline:
+//         'border border-sky-200 text-white/90 hover:bg-white/10 hover:border-white/60 focus-visible:ring-white/30',
+//       ghost:
+//         'border border-slate-800/60 text-white/90 bg-slate-900/70 hover:border-sky-500/60 hover:bg-slate-900/90 focus-visible:ring-sky-400/40',
+//     };
+
+//     return (
+//       <div className="max-w-sm w-full mx-auto">
+//         <div
+//           className={`relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-sky-500/20 ${
+//             isFeatured ? 'ring-2 ring-sky-400/70' : 'ring-1 ring-white/5'
+//           }`}
+//         >
+//           <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-sky-500/10 to-transparent opacity-70" />
+//           {isFeatured && (
+//             <div className="absolute top-4 right-4 rounded-full px-3 py-1 text-xs font-semibold bg-sky-500/20 text-sky-100 border border-sky-300/40">
+//               Most popular
+//             </div>
+//           )}
+//           <div className="relative px-7 py-6 text-left space-y-3">
+//             <div className="flex items-center gap-2">
+//               <Sparkles className="w-4 h-4 text-sky-200" />
+//               <p className="text-[0.7rem] uppercase tracking-[0.22em] text-sky-100/80">
+//                 {plan.sectionHeader}
+//               </p>
+//             </div>
+//             <h3 className="text-2xl font-semibold text-white">
+//               {plan.name}{' '}
+//               {plan.nameHighlight && (
+//                 <span className="ml-2 text-xs font-semibold px-2 py-1 rounded-full bg-white/10 border border-white/10 text-slate-50">
+//                   {plan.nameHighlight}
+//                 </span>
+//               )}
+//             </h3>
+//             <p className="text-sm text-slate-200/90 leading-relaxed">
+//               {plan.target}
+//             </p>
+//           </div>
+
+//           {!plan.isPlusCard ? (
+//             <div className="relative px-7 pb-2">
+//               <div className="flex items-baseline gap-2">
+//                 <span className="text-4xl font-bold text-white">{plan.price}</span>
+//                 <span className="text-sm text-slate-200/80">{plan.period}</span>
+//               </div>
+//               <p className="text-xs text-slate-300 mt-1">{plan.billingNote}</p>
+//               <div className="mt-6">
+//                 <a
+//                   href={plan.link}
+//                   className={`inline-flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${ctaStyles[plan.buttonStyle]}`}
+//                 >
+//                   {plan.cta}
+//                 </a>
+//               </div>
+//             </div>
+//           ) : (
+//             <div className="relative px-7 pb-2">
+//               <p className="text-sm text-slate-200/90 leading-relaxed">
+//                 Bespoke support, infrastructure, and onboarding for complex teams.
+//               </p>
+//               <div className="mt-6">
+//                 <a
+//                   href={plan.link}
+//                   className={`inline-flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${ctaStyles.ghost}`}
+//                 >
+//                   {plan.cta}
+//                 </a>
+//               </div>
+//             </div>
+//           )}
+
+//           <div className="relative px-7 pt-5 pb-7 border-t border-white/10 bg-slate-900/60">
+//             <ul className="space-y-3 text-sm text-slate-100/90">
+//               {plan.features.map((f, i) => (
+//                 <li key={i} className="flex items-start gap-3">
+//                   <CheckCircle2 className="w-4 h-4 text-sky-300 mt-0.5" />
+//                   <span>{f.text}</span>
+//                 </li>
+//               ))}
+//             </ul>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <section
+//       id="pricing-section"
+//       className="relative py-20 px-4 overflow-hidden bg-gradient-to-br from-slate-950 via-sky-950 to-slate-900 text-white"
+//     >
+//       <div className="pointer-events-none absolute inset-0">
+//         <motion.div
+//           className="absolute -top-10 -left-10 w-72 h-72 rounded-full bg-sky-500/20 blur-3xl"
+//           animate={{ scale: [1, 1.08, 1], opacity: [0.35, 0.55, 0.35] }}
+//           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+//         />
+//         <motion.div
+//           className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-cyan-400/10 blur-3xl"
+//           animate={{ scale: [1.08, 1, 1.1], opacity: [0.4, 0.25, 0.4] }}
+//           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+//         />
+//         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.08),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.1),transparent_32%)]" />
+//       </div>
+
+//       <div className="relative max-w-6xl mx-auto">
+//         <motion.div
+//           initial={{ opacity: 0, y: 24 }}
+//           whileInView={{ opacity: 1, y: 0 }}
+//           transition={{ duration: 0.6 }}
+//           className="text-center mb-12"
+//         >
+//           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 backdrop-blur">
+//             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+//             <span className="text-xs uppercase tracking-[0.18em] text-slate-100">
+//               Pricing rebuilt for clarity
+//             </span>
+//           </div>
+//           <h2 className="mt-4 text-4xl md:text-5xl font-semibold leading-tight text-white">
+//             Pricing that feels premium and reads at a glance
+//           </h2>
+//           <p className="mt-3 text-slate-200/90 max-w-2xl mx-auto">
+//             Choose the experience that fits your team today, and scale into advanced
+//             capabilities as you grow.
+//           </p>
+//           <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
+//             <a
+//               href="/contact"
+//               className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-400 text-slate-950 font-semibold text-sm shadow-lg shadow-sky-500/30 hover:shadow-sky-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+//             >
+//               Talk to Sales
+//             </a>
+//           </div>
+//         </motion.div>
+
+//         {/* Comparison panel */}
+//         <motion.div
+//           initial={{ opacity: 0, y: 16 }}
+//           whileInView={{ opacity: 1, y: 0 }}
+//           viewport={{ once: true }}
+//           transition={{ duration: 0.4 }}
+//           className="mb-10"
+//         >
+//           <div className="bg-slate-900/70 border border-white/10 rounded-2xl shadow-xl overflow-hidden backdrop-blur">
+//             <div className="px-6 py-5 border-b border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+//               <div>
+//                 <h3 className="text-lg font-semibold text-white">LMS Pricing Overview</h3>
+//                 <p className="mt-1 text-sm text-slate-200/80">{comparison.intro}</p>
+//               </div>
+//               <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs uppercase tracking-[0.14em] text-slate-100">
+//                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+//                 Always-on comparison
+//               </div>
+//             </div>
+//             <div className="p-4 overflow-x-auto">
+//               <table className="w-full min-w-[640px] table-auto text-sm text-slate-100/90">
+//                 <thead>
+//                   <tr className="text-left text-slate-300/90">
+//                     <th className="px-4 py-3 font-semibold">Feature</th>
+//                     <th className="px-4 py-3 font-semibold">Basic</th>
+//                     <th className="px-4 py-3 font-semibold">Advanced</th>
+//                   </tr>
+//                 </thead>
+//                 <tbody>
+//                   {comparison.rows.map((row, idx) => (
+//                     <tr
+//                       key={idx}
+//                       className={`${idx % 2 === 0 ? 'bg-white/5' : 'bg-white/0'}`}
+//                     >
+//                       <td className="px-4 py-3 font-medium text-white">{row[0]}</td>
+//                       <td className="px-4 py-3">{row[1]}</td>
+//                       <td className="px-4 py-3">{row[2]}</td>
+//                     </tr>
+//                   ))}
+//                 </tbody>
+//               </table>
+//             </div>
+//             <div className="px-6 py-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
+//               <p className="text-sm text-slate-200/80">
+//                 All prices are in USD. Taxes may apply.
+//               </p>
+//               <div className="flex gap-3">
+//                 <a
+//                   href="/contact"
+//                   className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-semibold hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+//                 >
+//                   Get Basic
+//                 </a>
+//                 <a
+//                   href="/contact"
+//                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-cyan-400 text-slate-950 text-sm font-semibold shadow-md shadow-sky-500/30 hover:shadow-sky-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+//                 >
+//                   Contact Sales
+//                 </a>
+//               </div>
+//             </div>
+//           </div>
+//         </motion.div>
+
+//         {/* Cards */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+//           {plans.map((plan, i) => (
+//             <motion.div
+//               key={i}
+//               initial={{ opacity: 0, y: 18 }}
+//               whileInView={{ opacity: 1, y: 0 }}
+//               transition={{ duration: 0.5, delay: i * 0.08 }}
+//               viewport={{ once: true }}
+//             >
+//               <PlanCard plan={plan} />
+//             </motion.div>
+//           ))}
+//         </div>
+
+//         <p className="text-center text-sm text-slate-200/80 mt-10">
+//           Need a custom setup or volume pricing?{' '}
+//           <a href="/contact" className="text-sky-300 font-semibold underline-offset-4 hover:underline">
+//             Contact our team
+//           </a>.
+//         </p>
+//       </div>
+//     </section>
+//   );
+// };
+
+// export default Pricing;

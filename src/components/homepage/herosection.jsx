@@ -17,7 +17,17 @@ export default function Hero() {
             overflow: hidden;
             margin-top: 0;
             padding-top: 0;
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+            background: linear-gradient(rgba(30, 64, 175, 0.7), rgba(30, 64, 175, 0.7)), url('/6553111.jpg') no-repeat center center/cover;
+          }
+          
+          .tree-decoration {
+            position: absolute;
+            bottom: -40px;
+            right: -10px;
+            width: 200px;
+            height: auto;
+            z-index: 3;
+            opacity: 0.9;
           }
 
           .hero-diagonal-lines {
@@ -293,6 +303,11 @@ export default function Hero() {
       </style>
 
       <div className="hero-diagonal-lines" />
+      <img
+        src="/tree-removebg-preview.png"
+        alt="Decorative tree"
+        className="tree-decoration"
+      />
       <div className="hero-container">
         <div className="hero-left">
           <div className="hero-heading-wrapper">
@@ -324,6 +339,7 @@ export default function Hero() {
           <div className="hero-video-container">
             <video
               src="https://websiteathena.s3.eu-north-1.amazonaws.com/Athena+LMS++website+video+2nd.mp4"
+              // src="/LMS.mp4"
               controls
               autoPlay
               muted

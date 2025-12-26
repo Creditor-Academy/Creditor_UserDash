@@ -5,13 +5,18 @@ const API_BASE =
 
 /**
  * Mark attendance for a specific event
- * @param {string} eventId - The ID of the event
+ * @param {string} eventId - The ID of the event (use originalEventId for recurring events)
+ * @param {string} occurrenceDate - Optional occurrence date/time for recurring events (ISO string)
  * @returns {Promise<Object>} Response data from the API
  */
-export async function markEventAttendance(eventId) {
+export async function markEventAttendance(eventId, occurrenceDate = null) {
   try {
+    // Build request body - include occurrenceDate if provided (for recurring events)
+    const requestBody = occurrenceDate ? { occurrenceDate } : {};
+
     const response = await api.post(
-      `/api/user/event/${eventId}/markattendance`
+      `/api/user/event/${eventId}/markattendance`,
+      Object.keys(requestBody).length > 0 ? requestBody : undefined
     );
 
     if (!response.data) {
