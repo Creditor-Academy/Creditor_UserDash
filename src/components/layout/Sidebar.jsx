@@ -177,7 +177,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -273,10 +273,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       <div
         className={cn(
           'sidebar-header relative flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
-          collapsed ? 'justify-center' : 'justify-between'
+          collapsed ? 'justify-center' : 'justify-between',
+          activeTheme === 'newYear' ? 'newyear-sidebar-header' : ''
         )}
       >
-        <div className="sidebar-lights" aria-hidden="true" />
         {!collapsed && (
           <motion.button
             onClick={handleLogoClick}

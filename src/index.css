@@ -314,122 +314,220 @@
   }
 
   :root {
-    --christmas-red: #b11226;
-    --christmas-red-dark: #8b0000;
-    --christmas-red-medium: #a00000;
-    --christmas-red-light: #c11226;
-    --christmas-red-lighter: #e8d4d6;
-    --christmas-red-lightest: #f5e8e9;
-    --christmas-snow: #1a0000;
+    --newyear-primary: #1e293b;
+    --newyear-secondary: #87ceeb;
+    --newyear-bg: #fafafa;
+    --newyear-accent: #f59e0b;
+    --newyear-gold: #f59e0b;
+    --newyear-gold-light: #fbbf24;
+    --newyear-gold-dark: #d97706;
   }
 
-  .christmas-theme .dashboard-shell {
-    background: linear-gradient(
-      135deg,
-      #f5e8e9 0%,
-      #e8d4d6 25%,
-      #e0c4c7 50%,
-      #e8d4d6 75%,
-      #f5e8e9 100%
-    );
+  .newyear-theme .dashboard-shell {
+    background: var(--newyear-bg);
   }
 
-  .christmas-surface {
-    background: linear-gradient(
-      135deg,
-      #f5e8e9 0%,
-      #e8d4d6 25%,
-      #e0c4c7 50%,
-      #e8d4d6 75%,
-      #f5e8e9 100%
-    );
+  .newyear-surface {
+    background: var(--newyear-bg);
     position: relative;
     overflow: hidden;
   }
 
-  .christmas-surface > main {
+  .newyear-surface > main {
     position: relative;
     z-index: 2;
   }
 
-  .snowfall-layer {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-image:
-      radial-gradient(
-        2px 2px at 20px 20px,
-        rgba(255, 255, 255, 0.8),
-        transparent
-      ),
-      radial-gradient(
-        3px 3px at 0px 40px,
-        rgba(255, 255, 255, 0.6),
-        transparent
-      ),
-      radial-gradient(
-        1.5px 1.5px at 60px 10px,
-        rgba(255, 255, 255, 0.6),
-        transparent
-      );
-    background-size: 80px 80px;
-    /* Slightly faster background snowfall for a more lively effect */
-    animation: snowfall 12s linear infinite;
+  /* Dashboard New Year Background */
+  .dashboard-newyear-bg {
+    background: linear-gradient(180deg, #1e293b 0%, #e0f2fe 50%, #fafafa 100%);
+    position: relative;
+    min-height: 100vh;
   }
 
-  @keyframes snowfall {
-    0% {
-      background-position:
-        0 0,
-        0 0,
-        0 0;
-    }
-    100% {
-      background-position:
-        0 80px,
-        0 120px,
-        0 60px;
-    }
-  }
-
-  /* Snowflake Animation Container */
-  .snowflakes-container {
+  /* Dashboard Year Watermark */
+  .dashboard-year-watermark {
     position: fixed;
+    top: 15%;
+    right: 5%;
+    font-size: 25rem;
+    font-weight: 900;
+    color: rgba(30, 41, 59, 0.03);
+    z-index: 0;
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+
+  @media (max-width: 1024px) {
+    .dashboard-year-watermark {
+      font-size: 18rem;
+      top: 10%;
+      right: 2%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-year-watermark {
+      font-size: 12rem;
+      top: 8%;
+      right: 0;
+    }
+  }
+
+  /* Dashboard New Year Cards */
+  .dashboard-newyear-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow:
+      0 4px 6px rgba(0, 0, 0, 0.05),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(30, 41, 59, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+
+  .dashboard-newyear-card::before {
+    content: '';
+    position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 35; /* Above sidebar (z-30) but below modals */
-    pointer-events: none;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1e293b 0%, #87ceeb 50%, #f59e0b 100%);
+    border-radius: 20px 20px 0 0;
   }
 
-  /* Individual Snowflake */
-  .snowflake {
-    position: absolute;
-    top: -10px;
-    background: white;
-    border-radius: 50%;
+  .dashboard-newyear-card:hover {
+    transform: translateY(-4px);
     box-shadow:
-      0 0 10px rgba(255, 255, 255, 0.8),
-      0 0 20px rgba(255, 255, 255, 0.6),
-      0 0 30px rgba(255, 255, 255, 0.4);
-    animation: snowflake-fall linear infinite;
+      0 12px 24px rgba(0, 0, 0, 0.1),
+      0 4px 8px rgba(0, 0, 0, 0.08);
   }
 
-  /* Snowflake Fall Animation */
-  @keyframes snowflake-fall {
-    0% {
-      transform: translateY(0) translateX(0) rotate(0deg);
-    }
+  /* Progress Bars with Gradient for New Year Theme */
+  .newyear-theme .progress-bar,
+  .newyear-theme [class*='progress'] {
+    background: linear-gradient(90deg, #1e293b 0%, #87ceeb 50%, #1e293b 100%);
+    background-size: 200% 100%;
+    animation: progressShimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes progressShimmer {
+    0%,
     100% {
-      transform: translateY(100vh) translateX(var(--snowflake-drift, 0px))
-        rotate(360deg);
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
     }
   }
 
-  .christmas-hero-banner {
+  /* Dashboard Empty State */
+  .dashboard-empty-state {
+    background: linear-gradient(
+      135deg,
+      rgba(30, 41, 59, 0.03) 0%,
+      rgba(135, 206, 235, 0.03) 100%
+    );
+    border-radius: 1rem;
+    border: 1px dashed rgba(30, 41, 59, 0.2);
+  }
+
+  /* Dashboard Header Enhancement for New Year */
+  .newyear-theme .app-header {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(30, 41, 59, 0.15);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .newyear-theme .app-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(30, 41, 59, 0.4) 50%,
+      transparent 100%
+    );
+  }
+
+  /* All Cards in New Year Theme */
+  .newyear-theme .dashboard-newyear-card,
+  .newyear-theme [class*='Card'],
+  .newyear-theme .card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .newyear-theme .dashboard-newyear-card:hover,
+  .newyear-theme [class*='Card']:hover,
+  .newyear-theme .card:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Button Enhancements */
+  .newyear-theme button[class*='bg-blue']:not(:disabled),
+  .newyear-theme .bg-blue-600:not(:disabled) {
+    transition: all 0.3s ease;
+  }
+
+  .newyear-theme button[class*='bg-blue']:hover:not(:disabled),
+  .newyear-theme .bg-blue-600:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
+  }
+
+  /* Subtle Sparkles in Header (Optional) */
+  .newyear-theme .app-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background-image:
+      radial-gradient(1px 1px at 20px 30px, rgba(30, 41, 59, 0.3), transparent),
+      radial-gradient(
+        1px 1px at 60px 70px,
+        rgba(135, 206, 235, 0.2),
+        transparent
+      );
+    background-size: 100px 100px;
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .dashboard-year-watermark {
+      opacity: 0.015;
+    }
+
+    .dashboard-newyear-card {
+      border-radius: 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-newyear-card,
+    .dashboard-newyear-card:hover {
+      transition: none;
+      transform: none;
+    }
+
+    .progressShimmer {
+      animation: none;
+    }
+  }
+
+  /* New Year Hero Banner */
+  .newyear-hero-banner {
     display: flex;
     flex-wrap: wrap;
     gap: 2rem;
@@ -437,105 +535,111 @@
     border-radius: 1.5rem;
     background: linear-gradient(
       135deg,
-      #8b0000 0%,
-      #a00000 25%,
-      #b11226 50%,
-      #a00000 75%,
-      #8b0000 100%
+      #0b1c2d 0%,
+      #1a2f47 25%,
+      #0b1c2d 50%,
+      #1a2f47 75%,
+      #0b1c2d 100%
     );
     color: #fff;
-    box-shadow: 0 25px 45px rgba(139, 0, 0, 0.4);
+    box-shadow: 0 25px 45px rgba(11, 28, 45, 0.3);
     position: relative;
     overflow: hidden;
   }
 
-  .christmas-hero-banner::after {
+  .newyear-hero-banner::after {
     content: '';
     position: absolute;
     inset: 0;
     background: radial-gradient(
       circle at top right,
-      rgba(255, 255, 255, 0.25),
+      rgba(245, 199, 122, 0.15),
       transparent 45%
     );
     pointer-events: none;
   }
 
-  .christmas-hero-content {
+  .newyear-hero-content {
     flex: 1 1 260px;
     position: relative;
     z-index: 2;
   }
 
-  .christmas-hero-content h1 {
+  .newyear-hero-content h1 {
     font-size: clamp(1.5rem, 3vw, 2.75rem);
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 0.75rem;
   }
 
-  .christmas-hero-content p {
+  .newyear-hero-content p {
     color: rgba(255, 255, 255, 0.85);
     max-width: 36rem;
   }
 
-  .christmas-hero-kicker {
+  .newyear-hero-kicker {
     text-transform: uppercase;
     letter-spacing: 0.2em;
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--newyear-secondary);
   }
 
-  .christmas-hero-cta {
+  .newyear-hero-cta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 1rem;
   }
 
-  .gift-pill,
-  .snow-pill {
+  .goal-pill,
+  .progress-pill {
     padding: 0.4rem 0.9rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(245, 199, 122, 0.2);
+    border: 1px solid rgba(245, 199, 122, 0.4);
     font-size: 0.85rem;
     backdrop-filter: blur(6px);
+    color: var(--newyear-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .christmas-hero-visual {
+  .newyear-hero-visual {
     flex: 0 1 260px;
     position: relative;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .christmas-hero-visual img {
-    width: 100%;
-    max-width: 280px;
-    border-radius: 1.25rem;
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
-    border: 3px solid rgba(255, 255, 255, 0.35);
-  }
-
-  .floating-snow {
+  .sparkles-background {
     position: absolute;
     inset: 0;
     pointer-events: none;
     background-image: radial-gradient(
-      3px 3px at 30px 30px,
-      rgba(255, 255, 255, 0.9),
+      2px 2px at 30px 30px,
+      rgba(245, 199, 122, 0.4),
       transparent
     );
-    animation: gentleSnow 12s linear infinite;
+    background-size: 100px 100px;
+    animation: sparkle 3s ease-in-out infinite;
   }
 
-  @keyframes gentleSnow {
-    0% {
-      transform: translateY(-10px);
-    }
+  @keyframes sparkle {
+    0%,
     100% {
-      transform: translateY(20px);
+      opacity: 0.4;
     }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .newyear-visual-content {
+    position: relative;
+    z-index: 1;
   }
 
   /* Athena Hero Banner - Regular Theme */
@@ -672,20 +776,16 @@
     }
   }
 
-  .christmas-challenge-card {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    padding: 1.75rem;
-    border-radius: 1.25rem;
-    background: var(--christmas-red);
-    color: #fff;
-    box-shadow: 0 20px 30px rgba(255, 77, 79, 0.2);
+  /* New Year Widget Cards */
+  .newyear-widget-card {
+    transition: all 0.2s ease;
+    border: 1px solid rgba(245, 199, 122, 0.2);
   }
 
-  .christmas-challenge-card h2 {
-    font-size: 1.6rem;
-    margin: 0.25rem 0;
+  .newyear-widget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(245, 199, 122, 0.15);
+    border-color: rgba(245, 199, 122, 0.4);
   }
 
   .challenge-badges {
@@ -714,88 +814,25 @@
     overflow: hidden;
   }
 
-  .sidebar-lights {
-    position: absolute;
-    top: -6px;
-    left: 0;
-    right: 0;
-    height: 8px;
-    background-image: repeating-linear-gradient(
-      90deg,
-      rgba(255, 65, 65, 0.967) 0 12px,
-      rgba(222, 27, 27, 0) 12px 16px
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
   .sidebar-logo-mark {
     display: inline-block;
   }
 
-  .sidebar-logo-hat {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.5rem;
-    opacity: 1;
-    transition: opacity 0.3s ease;
-    z-index: 10;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-    pointer-events: none;
+  /* New Year Sidebar Styling */
+  .newyear-theme .newyear-sidebar-header {
+    background: linear-gradient(90deg, #0b1c2d 0%, #1a2f47 50%, #0b1c2d 100%);
+    border-bottom-color: rgba(245, 199, 122, 0.3);
+    box-shadow: 0 18px 35px rgba(11, 28, 45, 0.3);
   }
 
-  .christmas-theme .sidebar-panel {
-    background: linear-gradient(180deg, #f5e8e9 0%, #e8d4d6 50%, #f5e8e9 100%);
-    border-right-color: rgba(177, 18, 38, 0.2);
+  .newyear-theme .sidebar-menu-item-active {
+    background: rgba(245, 199, 122, 0.1);
+    border-left-color: var(--newyear-secondary);
+    color: var(--newyear-primary);
   }
 
-  .christmas-theme .sidebar-header {
-    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
-    border-bottom-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 18px 35px rgba(139, 0, 0, 0.5);
-    color: #fff;
-  }
-
-  .christmas-theme .sidebar-header .text-blue-100,
-  .christmas-theme .sidebar-header .text-blue-600 {
-    color: rgba(255, 255, 255, 0.95) !important;
-  }
-
-  .christmas-theme .christmas-logo-icon {
-    color: #b11226 !important;
-    opacity: 0;
-  }
-
-  .christmas-theme .sidebar-lights {
-    opacity: 1;
-  }
-
-  .christmas-theme .sidebar-logo-hat {
-    opacity: 1;
-    animation: santaBounce 2s ease-in-out infinite;
-  }
-
-  @keyframes santaBounce {
-    0%,
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.1);
-    }
-  }
-
-  /* Profile Header Text in Christmas Theme */
-  .christmas-theme .profile-header-text .profile-name,
-  .christmas-theme .profile-header-text .profile-email {
-    color: rgba(255, 255, 255, 0.95) !important;
-  }
-
-  .christmas-theme .profile-header-text:hover .profile-name,
-  .christmas-theme .profile-header-text:hover .profile-email {
-    color: #8b0000 !important;
+  .newyear-theme .sidebar-menu-item:hover {
+    background: rgba(245, 199, 122, 0.05);
   }
 
   .sidebar-menu-item {
@@ -805,333 +842,132 @@
   }
 
   .sidebar-menu-item-active {
-    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.15);
+    box-shadow: 0 10px 20px rgba(11, 28, 45, 0.1);
   }
 
-  .christmas-theme .sidebar-menu-item-active {
-    background: rgba(255, 255, 255, 0.15);
-    border-left-color: rgba(255, 255, 255, 0.6);
-    color: #fff;
-  }
-
-  .christmas-theme .sidebar-menu-label::after {
-    content: '❄️';
-    margin-left: 0.35rem;
-    font-size: 0.8rem;
-    opacity: 0.6;
-  }
-
-  .christmas-toggle-btn {
+  /* New Year Toggle Button */
+  .newyear-toggle-btn {
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.7);
     transition:
       box-shadow 0.2s ease,
       background 0.2s ease;
   }
 
-  .christmas-theme .christmas-toggle-btn {
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--christmas-red);
+  .newyear-theme .newyear-app-header {
+    background: linear-gradient(90deg, #0b1c2d 0%, #1a2f47 50%, #0b1c2d 100%);
+    border-bottom-color: rgba(245, 199, 122, 0.25) !important;
+    box-shadow: 0 15px 40px rgba(11, 28, 45, 0.3);
   }
 
-  .christmas-theme .christmas-toggle-btn:hover {
-    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.25);
-  }
-
-  .christmas-theme .app-header {
-    background: linear-gradient(90deg, #8b0000 0%, #b11226 50%, #8b0000 100%);
-    border-bottom-color: rgba(255, 255, 255, 0.25) !important;
-    box-shadow: 0 15px 40px rgba(139, 0, 0, 0.5);
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .christmas-theme .christmas-app-header::after {
-    content: none;
-  }
-
-  .christmas-theme .app-header .text-gray-600,
-  .christmas-theme .app-header .text-gray-700,
-  .christmas-theme .app-header .text-gray-900 {
-    color: rgba(255, 255, 255, 0.92) !important;
-  }
-
-  .christmas-theme .app-header .text-blue-600 {
-    color: rgba(255, 255, 255, 0.95) !important;
-  }
-
-  .christmas-theme .app-header .bg-white,
-  .christmas-theme .app-header .bg-white\/80,
-  .christmas-theme .app-header .bg-white\/95 {
-    background-color: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(255, 255, 255, 0.35) !important;
-    color: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(10px);
-  }
-
-  .christmas-theme .app-header .hover\:bg-gray-50:hover,
-  .christmas-theme .app-header .hover\:bg-gray-100:hover {
-    background-color: rgba(255, 255, 255, 0.18) !important;
-  }
-
-  .christmas-theme .app-header .border-gray-200 {
-    border-color: rgba(255, 255, 255, 0.35) !important;
-  }
-
-  .christmas-course-card {
-    border-color: rgba(255, 107, 107, 0.3);
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(6px);
+  /* New Year Course Card */
+  .newyear-course-card {
+    border-color: rgba(30, 41, 59, 0.2);
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s ease;
+    position: relative;
   }
 
-  .christmas-course-card:hover {
+  .newyear-course-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1e293b 0%, #87ceeb 50%, #f59e0b 100%);
+    border-radius: 20px 20px 0 0;
+  }
+
+  .newyear-course-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 35px rgba(255, 107, 107, 0.18);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   }
 
-  .course-holiday-label {
+  .course-newyear-label {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: var(--christmas-red);
-    color: #fff;
+    background: #1e293b;
+    color: #ffffff;
     padding: 0.2rem 0.6rem;
     font-size: 0.75rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 5px 10px rgba(255, 107, 107, 0.25);
+    border: 1px solid rgba(30, 41, 59, 0.4);
+    box-shadow: 0 5px 10px rgba(30, 41, 59, 0.2);
+    font-weight: 600;
   }
 
-  .course-snowflake {
+  .course-sparkle {
     position: absolute;
     top: 6px;
     right: 6px;
     font-size: 1.1rem;
-    animation: twinkle 4s ease-in-out infinite;
+    animation: sparkleGlow 3s ease-in-out infinite;
     opacity: 0.8;
   }
 
-  @keyframes twinkle {
+  @keyframes sparkleGlow {
     0%,
     100% {
-      transform: translateY(0) rotate(0deg);
-      opacity: 0.7;
+      transform: scale(1);
+      opacity: 0.6;
     }
     50% {
-      transform: translateY(4px) rotate(10deg);
+      transform: scale(1.2);
       opacity: 1;
     }
   }
 
-  .christmas-theme button[class*='bg-blue-'],
-  .christmas-theme .bg-blue-600 {
-    background-color: var(--christmas-red) !important;
-    color: #fff !important;
-  }
-
-  .christmas-theme button[class*='bg-blue-']:hover,
-  .christmas-theme .bg-blue-600:hover {
-    background-color: #8b0000 !important;
-    box-shadow: 0 12px 18px rgba(139, 0, 0, 0.4);
-  }
-
-  /* Fix: Buttons with both bg-blue and border-blue should keep white text */
-  .christmas-theme button[class*='bg-blue-'][class*='border-blue-'],
-  .christmas-theme button.bg-blue-600.border-blue-600 {
-    color: #fff !important;
-  }
-
-  .christmas-theme button[class*='border-blue-']:not([class*='bg-blue-']),
-  .christmas-theme .border-blue-200:not([class*='bg-blue-']) {
-    border-color: var(--christmas-red) !important;
-    color: var(--christmas-red) !important;
-  }
-
-  .christmas-theme .progress-bar,
-  .christmas-theme .bg-gradient-to-r.from-blue-50 {
-    background-color: rgba(255, 107, 107, 0.2);
-  }
-
   @media (max-width: 640px) {
-    .christmas-hero-banner,
+    .newyear-hero-banner,
     .athena-hero-banner {
       padding: 1.5rem;
     }
 
     .athena-hero-visual img,
-    .christmas-hero-visual img {
+    .newyear-hero-visual img {
       max-width: 200px;
     }
 
     .athena-hero-content h1,
-    .christmas-hero-content h1 {
+    .newyear-hero-content h1 {
       font-size: clamp(1.25rem, 5vw, 1.75rem);
     }
 
     .athena-hero-cta,
-    .christmas-hero-cta {
+    .newyear-hero-cta {
       gap: 0.5rem;
     }
 
     .progress-pill,
     .achievement-pill,
-    .gift-pill,
-    .snow-pill {
+    .goal-pill {
       font-size: 0.75rem;
       padding: 0.35rem 0.75rem;
-    }
-
-    .challenge-badges {
-      flex-direction: column;
-      align-items: flex-start;
     }
   }
 
   @media (max-width: 480px) {
     .athena-hero-banner,
-    .christmas-hero-banner {
+    .newyear-hero-banner {
       padding: 1rem;
       gap: 1.5rem;
     }
 
     .athena-hero-visual,
-    .christmas-hero-visual {
+    .newyear-hero-visual {
       flex: 1 1 100%;
       text-align: center;
     }
 
-    .athena-hero-visual img,
-    .christmas-hero-visual img {
-      max-width: 180px;
-      margin: 0 auto;
-    }
-
     .athena-hero-content p,
-    .christmas-hero-content p {
+    .newyear-hero-content p {
       font-size: 0.9rem;
     }
-  }
-
-  /* Login Page Christmas Theme */
-  .login-christmas-theme {
-    background: linear-gradient(
-      135deg,
-      #8b0000 0%,
-      #a00000 25%,
-      #b11226 50%,
-      #a00000 75%,
-      #8b0000 100%
-    );
-    position: relative;
-    overflow: hidden;
-  }
-
-  .login-snowfall-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-image:
-      radial-gradient(
-        2px 2px at 20px 20px,
-        rgba(255, 255, 255, 0.8),
-        transparent
-      ),
-      radial-gradient(
-        3px 3px at 0px 40px,
-        rgba(255, 255, 255, 0.6),
-        transparent
-      ),
-      radial-gradient(
-        1.5px 1.5px at 60px 10px,
-        rgba(255, 255, 255, 0.6),
-        transparent
-      );
-    background-size: 80px 80px;
-    animation: snowfall 18s linear infinite;
-  }
-
-  .login-snowflakes-container {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  .login-snowflake {
-    position: absolute;
-    top: -20px;
-    font-size: 1.2rem;
-    opacity: 0.7;
-    animation: loginSnowfall linear infinite;
-    user-select: none;
-  }
-
-  @keyframes loginSnowfall {
-    0% {
-      transform: translateY(0) rotate(0deg);
-      opacity: 0.7;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(100vh) rotate(360deg);
-      opacity: 0.3;
-    }
-  }
-
-  .login-christmas-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow:
-      0 25px 50px rgba(139, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-  }
-
-  .login-christmas-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 2px;
-    background: linear-gradient(
-      135deg,
-      rgba(177, 18, 38, 0.3),
-      rgba(11, 107, 58, 0.3)
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  .login-christmas-theme input[type='email'],
-  .login-christmas-theme input[type='password'] {
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.95);
-  }
-
-  .login-christmas-theme input[type='email']:focus,
-  .login-christmas-theme input[type='password']:focus {
-    border-color: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-  }
-
-  .login-christmas-theme .text-blue-600 {
-    color: rgba(255, 255, 255, 0.9) !important;
-  }
-
-  .login-christmas-theme .text-blue-600:hover {
-    color: #fff !important;
   }
 
   /* Offer Popup Styles */
@@ -1220,33 +1056,7 @@
     box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
   }
 
-  /* Offer Snowflakes Animation */
-  .offer-snowflakes-container {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  .offer-snowflake {
-    position: absolute;
-    top: -10px;
-    background: white;
-    border-radius: 50%;
-    pointer-events: none;
-    animation: offerSnowfall linear infinite;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  }
-
-  @keyframes offerSnowfall {
-    0% {
-      transform: translateY(-10px) translateX(0);
-    }
-    100% {
-      transform: translateY(100vh) translateX(var(--snowflake-drift));
-    }
-  }
+  /* Offer Sparkles Animation (removed - no animations in popup) */
 
   /* Offer Widget (Bottom-right chatbot style) */
   .offer-widget {
@@ -1355,6 +1165,233 @@
       right: 0.5rem;
       width: 2rem;
       height: 2rem;
+    }
+  }
+
+  /* Login Page New Year Theme */
+  .login-newyear-bg {
+    background: linear-gradient(
+      180deg,
+      #0a1628 0%,
+      #1a2f47 25%,
+      #2d4a6b 50%,
+      #4a6fa5 75%,
+      #e8f0f8 100%
+    );
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle Sparkles Animation */
+  .login-sparkles-container {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        2px 2px at 20px 30px,
+        rgba(245, 199, 122, 0.4),
+        transparent
+      ),
+      radial-gradient(
+        1.5px 1.5px at 60px 70px,
+        rgba(245, 199, 122, 0.3),
+        transparent
+      ),
+      radial-gradient(
+        2px 2px at 100px 40px,
+        rgba(255, 255, 255, 0.3),
+        transparent
+      ),
+      radial-gradient(
+        1px 1px at 140px 90px,
+        rgba(245, 199, 122, 0.4),
+        transparent
+      ),
+      radial-gradient(
+        2px 2px at 180px 20px,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+    background-size: 200px 200px;
+    animation: loginSparkleFloat 20s ease-in-out infinite;
+    opacity: 0.6;
+  }
+
+  @keyframes loginSparkleFloat {
+    0%,
+    100% {
+      transform: translateY(0) translateX(0);
+      opacity: 0.4;
+    }
+    50% {
+      transform: translateY(-20px) translateX(10px);
+      opacity: 0.7;
+    }
+  }
+
+  /* Year Watermark */
+  .login-year-watermark {
+    position: fixed;
+    top: 50%;
+    left: 10%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    font-size: 20rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.03);
+    z-index: 0;
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.05em;
+  }
+
+  @media (max-width: 1024px) {
+    .login-year-watermark {
+      font-size: 15rem;
+      left: 5%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .login-year-watermark {
+      font-size: 10rem;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+  }
+
+  /* Glassmorphism Login Card */
+  .login-newyear-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    box-shadow:
+      0 25px 50px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(245, 199, 122, 0.1) inset,
+      0 0 40px rgba(245, 199, 122, 0.1);
+    position: relative;
+    overflow: visible;
+  }
+
+  .login-newyear-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 24px;
+    padding: 2px;
+    background: linear-gradient(
+      135deg,
+      rgba(245, 199, 122, 0.3),
+      rgba(11, 28, 45, 0.1),
+      rgba(245, 199, 122, 0.2)
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* New Year Badge */
+  .login-newyear-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(
+      135deg,
+      rgba(245, 199, 122, 0.95),
+      rgba(245, 199, 122, 0.85)
+    );
+    border: 1px solid rgba(245, 199, 122, 0.5);
+    border-radius: 999px;
+    color: #0b1c2d;
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(245, 199, 122, 0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  /* New Year Button */
+  .login-newyear-button {
+    background: linear-gradient(135deg, #0b1c2d 0%, #1a2f47 50%, #0b1c2d 100%);
+    border: none;
+    box-shadow:
+      0 8px 16px rgba(11, 28, 45, 0.3),
+      0 0 0 1px rgba(245, 199, 122, 0.2) inset;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-newyear-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(245, 199, 122, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .login-newyear-button:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 12px 24px rgba(11, 28, 45, 0.4),
+      0 0 0 1px rgba(245, 199, 122, 0.3) inset;
+  }
+
+  .login-newyear-button:hover::before {
+    opacity: 1;
+  }
+
+  .login-newyear-button:active {
+    transform: translateY(0);
+  }
+
+  .login-newyear-button:disabled {
+    opacity: 0.7;
+    transform: none;
+  }
+
+  /* Input Focus States for New Year Theme */
+  .login-newyear-card input:focus {
+    border-color: rgba(245, 199, 122, 0.5);
+    box-shadow: 0 0 0 3px rgba(245, 199, 122, 0.1);
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .login-newyear-card {
+      border-radius: 20px;
+      margin: 1rem;
+    }
+
+    .login-newyear-badge {
+      font-size: 0.65rem;
+      padding: 0.3rem 0.6rem;
+    }
+
+    .login-year-watermark {
+      opacity: 0.02;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .login-sparkles-container {
+      animation: none;
+      opacity: 0.3;
+    }
+
+    .login-newyear-button {
+      transition: none;
+    }
+
+    .login-newyear-button:hover {
+      transform: none;
     }
   }
 }

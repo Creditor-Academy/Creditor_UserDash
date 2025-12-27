@@ -8,11 +8,13 @@ import { cn } from '@/lib/utils';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function DashboardAnnouncements() {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
-  const titleText = isChristmasMode
-    ? '🎁 Festive Updates'
-    : 'Recent Announcements';
-  const microLabel = isChristmasMode ? '❄️ Holiday News' : 'Stay informed';
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const titleText =
+    activeTheme === 'newYear'
+      ? '🎯 New Year Announcements'
+      : 'Recent Announcements';
+  const microLabel =
+    activeTheme === 'newYear' ? '✨ Latest Updates' : 'Stay informed';
   // Sample announcements data with actual items
   const announcements = [
     {
@@ -69,7 +71,9 @@ export function DashboardAnnouncements() {
   };
 
   return (
-    <Card className="border shadow bg-card text-card-foreground h-full overflow-hidden">
+    <Card
+      className={`border shadow bg-card text-card-foreground h-full overflow-hidden ${activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''}`}
+    >
       <CardHeader className="p-3 flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium flex flex-col gap-1">
           <span className="flex items-center gap-2">

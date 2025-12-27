@@ -29,7 +29,7 @@ export function CourseCard({
 }) {
   const navigate = useNavigate();
   const [showTrialDialog, setShowTrialDialog] = useState(false);
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
 
   // Get trial status if course object is provided
   const trialStatus = course
@@ -49,11 +49,11 @@ export function CourseCard({
   };
   return (
     <div
-      className={`dashboard-course-card ${isChristmasMode ? 'christmas-course-card' : ''}`}
+      className={`dashboard-course-card ${activeTheme === 'newYear' ? 'newyear-course-card' : ''}`}
     >
       <div className="flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
-        {isChristmasMode && (
-          <div className="course-holiday-label">🎄 Holiday Special</div>
+        {activeTheme === 'newYear' && (
+          <div className="course-newyear-label">🎯 New Year Learning Path</div>
         )}
         <div
           className="w-full relative overflow-hidden bg-muted"
@@ -68,9 +68,9 @@ export function CourseCard({
             className="object-cover w-full h-full"
             style={{ height: '190px' }}
           />
-          {isChristmasMode && (
-            <span className="course-snowflake" aria-hidden="true">
-              ❄️
+          {activeTheme === 'newYear' && (
+            <span className="course-sparkle" aria-hidden="true">
+              ✨
             </span>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0"></div>

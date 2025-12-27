@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { markEventAttendance } from '../../services/attendanceService';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 const upcomingClasses = [
   {
@@ -90,6 +91,7 @@ const upcomingClasses = [
 ];
 
 export function UpcomingLiveClasses() {
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const [classes, setClasses] = useState(upcomingClasses);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -226,6 +228,8 @@ export function UpcomingLiveClasses() {
           <Card
             key={classItem.id}
             className={`transition-all duration-300 hover:shadow-lg border-l-4 ${
+              activeTheme === 'newYear' ? 'dashboard-newyear-card ' : ''
+            }${
               classItem.isLive
                 ? 'border-l-red-500 bg-red-50/30 shadow-red-100'
                 : classItem.canJoin

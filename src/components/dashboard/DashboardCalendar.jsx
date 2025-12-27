@@ -31,7 +31,7 @@ import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 
 export function DashboardCalendar() {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const today = new Date();
   const [date, setDate] = React.useState(today);
   const [allEvents, setAllEvents] = React.useState([]); // store all expanded events/occurrences
@@ -489,14 +489,15 @@ export function DashboardCalendar() {
                             return now < end;
                           });
 
-                          // Christmas mode colors
-                          const indicatorColor = isChristmasMode
-                            ? hasLiveEvent
-                              ? 'bg-red-500' // Red for live events in Christmas mode
-                              : 'bg-green-500' // Green for regular events in Christmas mode
-                            : hasLiveEvent
-                              ? 'bg-purple-500' // Purple for live events
-                              : 'bg-blue-500'; // Blue for regular events
+                          // Theme colors
+                          const indicatorColor =
+                            activeTheme === 'newYear'
+                              ? hasLiveEvent
+                                ? 'bg-yellow-500' // Yellow for live events in New Year mode
+                                : 'bg-blue-500' // Blue for regular events in New Year mode
+                              : hasLiveEvent
+                                ? 'bg-purple-500' // Purple for live events
+                                : 'bg-blue-500'; // Blue for regular events
 
                           const dayContent = (
                             <div className="flex flex-col items-center justify-center w-full h-full relative">
