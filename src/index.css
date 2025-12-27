@@ -314,13 +314,13 @@
   }
 
   :root {
-    --newyear-primary: #1e293b;
-    --newyear-secondary: #87ceeb;
-    --newyear-bg: #fafafa;
-    --newyear-accent: #f59e0b;
-    --newyear-gold: #f59e0b;
-    --newyear-gold-light: #fbbf24;
-    --newyear-gold-dark: #d97706;
+    --newyear-primary: #00809d;
+    --newyear-secondary: #00a6b2;
+    --newyear-bg: #e0ffff;
+    --newyear-accent: #00ced1;
+    --newyear-gold: #00ced1;
+    --newyear-gold-light: #00ced1;
+    --newyear-gold-dark: #00ced1;
   }
 
   .newyear-theme .dashboard-shell {
@@ -340,7 +340,7 @@
 
   /* Dashboard New Year Background */
   .dashboard-newyear-bg {
-    background: linear-gradient(180deg, #1e293b 0%, #e0f2fe 50%, #fafafa 100%);
+    background: var(--newyear-bg);
     position: relative;
     min-height: 100vh;
   }
@@ -352,7 +352,8 @@
     right: 5%;
     font-size: 25rem;
     font-weight: 900;
-    color: rgba(30, 41, 59, 0.03);
+    color: var(--newyear-primary);
+    opacity: 0.05;
     z-index: 0;
     pointer-events: none;
     font-family: 'Inter', sans-serif;
@@ -383,7 +384,7 @@
     box-shadow:
       0 4px 6px rgba(0, 0, 0, 0.05),
       0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(30, 41, 59, 0.1);
+    border: 1px solid var(--newyear-secondary);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
   }
@@ -395,7 +396,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #1e293b 0%, #87ceeb 50%, #f59e0b 100%);
+    background: var(--newyear-accent);
     border-radius: 20px 20px 0 0;
   }
 
@@ -409,9 +410,7 @@
   /* Progress Bars with Gradient for New Year Theme */
   .newyear-theme .progress-bar,
   .newyear-theme [class*='progress'] {
-    background: linear-gradient(90deg, #1e293b 0%, #87ceeb 50%, #1e293b 100%);
-    background-size: 200% 100%;
-    animation: progressShimmer 2s ease-in-out infinite;
+    background: var(--newyear-accent);
   }
 
   @keyframes progressShimmer {
@@ -428,11 +427,11 @@
   .dashboard-empty-state {
     background: linear-gradient(
       135deg,
-      rgba(30, 41, 59, 0.03) 0%,
-      rgba(135, 206, 235, 0.03) 100%
+      var(--newyear-primary) 0%,
+      var(--newyear-secondary) 100%
     );
     border-radius: 1rem;
-    border: 1px dashed rgba(30, 41, 59, 0.2);
+    border: 1px dashed rgba(0, 0, 0, 0.1); /* Adjusted for lighter theme */
   }
 
   /* Dashboard Header Enhancement for New Year */
@@ -535,14 +534,11 @@
     border-radius: 1.5rem;
     background: linear-gradient(
       135deg,
-      #0b1c2d 0%,
-      #1a2f47 25%,
-      #0b1c2d 50%,
-      #1a2f47 75%,
-      #0b1c2d 100%
+      var(--newyear-primary) 0%,
+      var(--newyear-secondary) 100%
     );
-    color: #fff;
-    box-shadow: 0 25px 45px rgba(11, 28, 45, 0.3);
+    color: #0c4a6e;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
   }
@@ -551,11 +547,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(
-      circle at top right,
-      rgba(245, 199, 122, 0.15),
-      transparent 45%
-    );
+    background: transparent;
     pointer-events: none;
   }
 
@@ -570,10 +562,11 @@
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 0.75rem;
+    color: var(--newyear-accent);
   }
 
   .newyear-hero-content p {
-    color: rgba(255, 255, 255, 0.85);
+    color: #004d4d; /* Darker teal for readability */
     max-width: 36rem;
   }
 
@@ -820,9 +813,9 @@
 
   /* New Year Sidebar Styling */
   .newyear-theme .newyear-sidebar-header {
-    background: linear-gradient(90deg, #0b1c2d 0%, #1a2f47 50%, #0b1c2d 100%);
-    border-bottom-color: rgba(245, 199, 122, 0.3);
-    box-shadow: 0 18px 35px rgba(11, 28, 45, 0.3);
+    background: var(--newyear-primary);
+    border-bottom-color: var(--newyear-secondary);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   }
 
   .newyear-theme .sidebar-menu-item-active {
@@ -854,9 +847,9 @@
   }
 
   .newyear-theme .newyear-app-header {
-    background: linear-gradient(90deg, #0b1c2d 0%, #1a2f47 50%, #0b1c2d 100%);
-    border-bottom-color: rgba(245, 199, 122, 0.25) !important;
-    box-shadow: 0 15px 40px rgba(11, 28, 45, 0.3);
+    background: var(--newyear-primary);
+    border-bottom-color: var(--newyear-secondary) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   }
 
   /* New Year Course Card */
@@ -891,13 +884,13 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: #1e293b;
-    color: #ffffff;
+    background: var(--newyear-accent);
+    color: #fff;
     padding: 0.2rem 0.6rem;
     font-size: 0.75rem;
     border-radius: 999px;
-    border: 1px solid rgba(30, 41, 59, 0.4);
-    box-shadow: 0 5px 10px rgba(30, 41, 59, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     font-weight: 600;
   }
 
@@ -1172,11 +1165,8 @@
   .login-newyear-bg {
     background: linear-gradient(
       180deg,
-      #0a1628 0%,
-      #1a2f47 25%,
-      #2d4a6b 50%,
-      #4a6fa5 75%,
-      #e8f0f8 100%
+      var(--newyear-primary) 0%,
+      var(--newyear-secondary) 100%
     );
     position: relative;
     overflow: hidden;
@@ -1191,12 +1181,12 @@
     background-image:
       radial-gradient(
         2px 2px at 20px 30px,
-        rgba(245, 199, 122, 0.4),
+        rgba(56, 189, 248, 0.4),
         transparent
       ),
       radial-gradient(
         1.5px 1.5px at 60px 70px,
-        rgba(245, 199, 122, 0.3),
+        rgba(186, 230, 253, 0.3),
         transparent
       ),
       radial-gradient(
@@ -1206,7 +1196,7 @@
       ),
       radial-gradient(
         1px 1px at 140px 90px,
-        rgba(245, 199, 122, 0.4),
+        rgba(56, 189, 248, 0.4),
         transparent
       ),
       radial-gradient(
@@ -1263,15 +1253,10 @@
 
   /* Glassmorphism Login Card */
   .login-newyear-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: #fff;
+    border: 1px solid var(--newyear-secondary);
     border-radius: 24px;
-    box-shadow:
-      0 25px 50px rgba(0, 0, 0, 0.2),
-      0 0 0 1px rgba(245, 199, 122, 0.1) inset,
-      0 0 40px rgba(245, 199, 122, 0.1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: visible;
   }
@@ -1284,9 +1269,8 @@
     padding: 2px;
     background: linear-gradient(
       135deg,
-      rgba(245, 199, 122, 0.3),
-      rgba(11, 28, 45, 0.1),
-      rgba(245, 199, 122, 0.2)
+      var(--newyear-accent),
+      rgba(56, 189, 248, 0.1)
     );
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
@@ -1303,27 +1287,21 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0.35rem 0.75rem;
-    background: linear-gradient(
-      135deg,
-      rgba(245, 199, 122, 0.95),
-      rgba(245, 199, 122, 0.85)
-    );
-    border: 1px solid rgba(245, 199, 122, 0.5);
+    background: var(--newyear-accent);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 999px;
-    color: #0b1c2d;
+    color: #fff;
     font-size: 0.7rem;
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(245, 199, 122, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
   }
 
   /* New Year Button */
   .login-newyear-button {
-    background: linear-gradient(135deg, #0b1c2d 0%, #1a2f47 50%, #0b1c2d 100%);
+    background: var(--newyear-accent);
     border: none;
-    box-shadow:
-      0 8px 16px rgba(11, 28, 45, 0.3),
-      0 0 0 1px rgba(245, 199, 122, 0.2) inset;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     position: relative;
     overflow: hidden;
   }
@@ -1359,8 +1337,8 @@
 
   /* Input Focus States for New Year Theme */
   .login-newyear-card input:focus {
-    border-color: rgba(245, 199, 122, 0.5);
-    box-shadow: 0 0 0 3px rgba(245, 199, 122, 0.1);
+    border-color: var(--newyear-accent);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
   }
 
   /* Responsive Adjustments */

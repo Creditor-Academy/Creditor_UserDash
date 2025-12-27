@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Sparkles, Target, TrendingUp } from 'lucide-react';
+import Fireworks from '@/components/Fireworks';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function NewYearBanner({ userName }) {
+  const { activeTheme } = useContext(SeasonalThemeContext);
   return (
     <section className="newyear-hero-banner mb-8">
+      {activeTheme === 'newYear' && <Fireworks />}
       <div className="newyear-hero-content">
         <p className="newyear-hero-kicker">New Year. New Skills. New You.</p>
         <h1>
