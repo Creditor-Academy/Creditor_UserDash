@@ -58,7 +58,6 @@ import {
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import { NewYearBanner } from '@/components/new-year/NewYearBanner';
-import { NewYearWelcomeModal } from '@/components/new-year/NewYearWelcomeModal';
 import { NewYearWidgets } from '@/components/new-year/NewYearWidgets';
 import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
@@ -2957,8 +2956,6 @@ export function Dashboard() {
 
       {/* Offer Popup */}
       <OfferPopup />
-      {/* New Year Welcome Modal */}
-      {activeTheme === 'newYear' && <NewYearWelcomeModal />}
     </div>
   );
 }
