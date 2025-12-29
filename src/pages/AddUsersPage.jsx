@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+import { X } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   'https://creditor-backend-9upi.onrender.com';
@@ -15,6 +17,7 @@ const normalizeUserPayload = user => ({
 });
 
 const AddUsersForm = () => {
+  const { userProfile } = useUser();
   const [numUsers, setNumUsers] = useState(1);
   const [users, setUsers] = useState([
     { email: '', first_name: '', last_name: '', password: '' },
@@ -29,6 +32,9 @@ const AddUsersForm = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [recentlyAddedUsers, setRecentlyAddedUsers] = useState([]);
   const [failedUsers, setFailedUsers] = useState([]);
+  const [orgData, setOrgData] = useState(null);
+  const [userCount, setUserCount] = useState(0);
+  const [userStatsLoading, setUserStatsLoading] = useState(true);
 
   // Check if user already exists in localStorage (for UI feedback only)
   const isUserAlreadyAdded = email => {
@@ -73,6 +79,67 @@ const AddUsersForm = () => {
   const [excelFile, setExcelFile] = useState(null);
   const [excelData, setExcelData] = useState([]);
   const [showExcelPreview, setShowExcelPreview] = useState(false);
+
+  // Fetch organization data and user count
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      try {
+        setUserStatsLoading(true);
+        const orgId =
+          userProfile?.organization_id ||
+          userProfile?.org_id ||
+          userProfile?.organizationId ||
+          userProfile?.organization?.id ||
+          localStorage.getItem('orgId');
+
+        if (!orgId) {
+          setUserStatsLoading(false);
+          return;
+        }
+
+        // Fetch organization data
+        const orgResponse = await axios.get(
+          `${API_BASE}/api/org/SingleOrg/${orgId}`,
+          {
+            withCredentials: true,
+          }
+        );
+        const orgDataResult = orgResponse?.data?.data || orgResponse?.data;
+        setOrgData(orgDataResult);
+
+        // Fetch user count for the organization
+        try {
+          const usersResponse = await axios.get(
+            `${API_BASE}/api/org/get-all-users`,
+            {
+              withCredentials: true,
+            }
+          );
+          const usersData =
+            usersResponse?.data?.data || usersResponse?.data || [];
+          const orgUsers = Array.isArray(usersData)
+            ? usersData.filter(
+                user =>
+                  user.organization_id === orgId ||
+                  user.org_id === orgId ||
+                  user.organizationId === orgId
+              )
+            : [];
+          setUserCount(orgUsers.length);
+        } catch (err) {
+          console.error('Error fetching user count:', err);
+          // Fallback: use addedUsers length if API fails
+          setUserCount(addedUsers.length);
+        }
+      } catch (err) {
+        console.error('Error fetching organization data:', err);
+      } finally {
+        setUserStatsLoading(false);
+      }
+    };
+
+    fetchUserStats();
+  }, [userProfile, addedUsers.length]);
 
   const handleNumUsersChange = e => {
     const value = parseInt(e.target.value, 10);
@@ -403,6 +470,8 @@ const AddUsersForm = () => {
           const updated = [...prev, ...newUsers];
           // Save to localStorage here for immediate persistence
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+          // Update user count
+          setUserCount(prevCount => prevCount + newUsers.length);
           return updated;
         });
 
@@ -509,6 +578,8 @@ const AddUsersForm = () => {
 
             const updated = [...prev, ...newUsers];
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+            // Update user count
+            setUserCount(prevCount => prevCount + newUsers.length);
             return updated;
           });
 
@@ -789,6 +860,62 @@ const AddUsersForm = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden p-8 mb-8">
+      {/* Success Message */}
+      {successMessage && !success && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <span className="text-sm text-green-700">{successMessage}</span>
+            <button
+              onClick={() => setSuccessMessage('')}
+              className="ml-auto text-green-500 hover:text-green-700"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && !success && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="text-sm text-red-700">{error}</span>
+            <button
+              onClick={() => setError('')}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Heading and View Users button in the same row */}
       <div className="flex items-center justify-between mb-8">
         <div>

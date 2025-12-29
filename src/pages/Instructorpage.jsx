@@ -14,7 +14,7 @@ import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import InstructorFeedbackAnalysis from '@/pages/InstructorFeedbackAnalysis';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import StorageTokens from './StorageTokens';
-import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
+// import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { api } from '@/services/apiClient';
@@ -125,10 +125,33 @@ const InstructorPage = () => {
     fetchStorage();
   }, [userProfile]);
 
-  const formatGb = bytes => {
-    if (bytes === null || bytes === undefined) return null;
-    const gb = bytes / Math.pow(1024, 3);
-    return `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
+  const formatStorageDisplay = (usedBytes, totalRaw) => {
+    if (
+      usedBytes === null ||
+      usedBytes === undefined ||
+      totalRaw === null ||
+      totalRaw === undefined
+    ) {
+      return null;
+    }
+
+    // API returns storage and storage_limit already in GB
+    // If values are small (< 10000), they're already in GB, not bytes
+    // Otherwise, convert from bytes to GB
+    let usedGB = Number(usedBytes) || 0;
+    let totalGB = Number(totalRaw) || 0;
+
+    if (usedGB >= 10000 || totalGB >= 10000) {
+      // Values are in bytes, convert to GB
+      usedGB = usedGB / Math.pow(1024, 3);
+      totalGB = totalGB / Math.pow(1024, 3);
+    }
+
+    // Format: used with 2 decimal places, total as whole number
+    const usedText = `${usedGB.toFixed(2)} GB`;
+    const totalText = `${totalGB.toFixed(0)} GB`;
+
+    return `${usedText} / ${totalText}`;
   };
 
   // Navigation handlers
@@ -405,9 +428,9 @@ const InstructorPage = () => {
               </div>
               {/* AI token box (CompactTokenDisplay) retained for reference */}
 
-              <div className="flex-shrink-0">
+              {/* <div className="flex-shrink-0">
                 <CompactTokenDisplay />
-              </div>
+              </div> */}
 
               <div className="flex-shrink-0">
                 {/* AI token chip temporarily replaced with storage usage */}
@@ -421,11 +444,15 @@ const InstructorPage = () => {
                     </span>
                     {isStorageLoading ? (
                       <span className="text-sm text-gray-600">Loading…</span>
-                    ) : formatGb(storageUsage.used) &&
-                      formatGb(storageUsage.total) ? (
+                    ) : formatStorageDisplay(
+                        storageUsage.used,
+                        storageUsage.total
+                      ) ? (
                       <span className="text-sm font-semibold text-gray-900">
-                        {formatGb(storageUsage.used)} /{' '}
-                        {formatGb(storageUsage.total)}
+                        {formatStorageDisplay(
+                          storageUsage.used,
+                          storageUsage.total
+                        )}
                       </span>
                     ) : (
                       <span className="text-sm text-gray-600">Unavailable</span>

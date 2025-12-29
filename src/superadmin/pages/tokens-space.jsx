@@ -9,6 +9,7 @@ import {
   CheckCircle,
   AlertCircle,
   X,
+  Users,
 } from 'lucide-react';
 
 export default function TokensSpace() {
@@ -36,6 +37,8 @@ export default function TokensSpace() {
         tokensAddon: 5,
         spaceUsed: 120,
         spaceAddon: 10,
+        membersUsed: 15,
+        membersAddon: 5,
         lastPayment: '2025-12-01',
       },
       {
@@ -48,6 +51,8 @@ export default function TokensSpace() {
         tokensAddon: 0,
         spaceUsed: 260,
         spaceAddon: 0,
+        membersUsed: 25,
+        membersAddon: 0,
         lastPayment: '2025-12-05',
       },
       {
@@ -60,6 +65,8 @@ export default function TokensSpace() {
         tokensAddon: 15,
         spaceUsed: 540,
         spaceAddon: 40,
+        membersUsed: 50,
+        membersAddon: 10,
         lastPayment: '2025-11-20',
       },
       {
@@ -72,6 +79,8 @@ export default function TokensSpace() {
         tokensAddon: 8,
         spaceUsed: 140,
         spaceAddon: 15,
+        membersUsed: 20,
+        membersAddon: 8,
         lastPayment: '2025-12-03',
       },
       {
@@ -84,6 +93,8 @@ export default function TokensSpace() {
         tokensAddon: 12,
         spaceUsed: 300,
         spaceAddon: 35,
+        membersUsed: 35,
+        membersAddon: 12,
         lastPayment: '2025-12-04',
       },
       {
@@ -96,6 +107,8 @@ export default function TokensSpace() {
         tokensAddon: 25,
         spaceUsed: 800,
         spaceAddon: 80,
+        membersUsed: 100,
+        membersAddon: 25,
         lastPayment: '2025-12-02',
       },
     ]);
@@ -116,12 +129,13 @@ export default function TokensSpace() {
     () => ({
       tokensAddon: filtered.reduce((sum, o) => sum + o.tokensAddon, 0),
       spaceAddon: filtered.reduce((sum, o) => sum + o.spaceAddon, 0),
+      membersAddon: filtered.reduce((sum, o) => sum + (o.membersAddon || 0), 0),
       orgs: filtered.length,
     }),
     [filtered]
   );
 
-  const adjustOrg = (id, deltaTokens = 0, deltaSpace = 0) => {
+  const adjustOrg = (id, deltaTokens = 0, deltaSpace = 0, deltaMembers = 0) => {
     setOrgs(prev =>
       prev.map(o =>
         o.id === id
@@ -129,6 +143,7 @@ export default function TokensSpace() {
               ...o,
               tokensAddon: Math.max(0, o.tokensAddon + deltaTokens),
               spaceAddon: Math.max(0, o.spaceAddon + deltaSpace),
+              membersAddon: Math.max(0, (o.membersAddon || 0) + deltaMembers),
             }
           : o
       )
@@ -154,7 +169,8 @@ export default function TokensSpace() {
     if (!qty || qty <= 0) return;
     const tokensDelta = allocationType === 'tokens' ? qty : 0;
     const spaceDelta = allocationType === 'space' ? qty : 0;
-    adjustOrg(selectedOrg.id, tokensDelta, spaceDelta);
+    const membersDelta = allocationType === 'members' ? qty : 0;
+    adjustOrg(selectedOrg.id, tokensDelta, spaceDelta, membersDelta);
     closeModal();
   };
 
@@ -236,7 +252,7 @@ export default function TokensSpace() {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div
             className="p-5 rounded-2xl flex items-center justify-between"
             style={{
@@ -286,6 +302,32 @@ export default function TokensSpace() {
               style={{ backgroundColor: 'rgba(16,185,129,0.12)' }}
             >
               <HardDrive className="h-6 w-6" style={{ color: '#10B981' }} />
+            </div>
+          </div>
+
+          <div
+            className="p-5 rounded-2xl flex items-center justify-between"
+            style={{
+              backgroundColor: colors.bg.secondary,
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <div>
+              <p className="text-sm" style={{ color: colors.text.secondary }}>
+                Total Members Add-on
+              </p>
+              <h3
+                className="text-2xl font-bold"
+                style={{ color: colors.text.primary }}
+              >
+                {totals.membersAddon}
+              </h3>
+            </div>
+            <div
+              className="p-3 rounded-full"
+              style={{ backgroundColor: 'rgba(139,92,246,0.12)' }}
+            >
+              <Users className="h-6 w-6" style={{ color: '#8B5CF6' }} />
             </div>
           </div>
 
@@ -425,6 +467,8 @@ export default function TokensSpace() {
                             items.push(`${org.tokensAddon}M tokens add-on`);
                           if (org.spaceAddon > 0)
                             items.push(`${org.spaceAddon}GB space add-on`);
+                          if (org.membersAddon > 0)
+                            items.push(`${org.membersAddon} members add-on`);
                           return items.length
                             ? items.join(' · ')
                             : 'No add-ons';
@@ -557,6 +601,7 @@ export default function TokensSpace() {
                 >
                   <option value="tokens">Tokens (M)</option>
                   <option value="space">Space (GB)</option>
+                  <option value="members">Members</option>
                 </select>
               </div>
 
