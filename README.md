@@ -374,9 +374,32 @@ JFKC/
 │   │   ├── App.jsx                     # Main App Component
 │   │   └── main.jsx                    # Entry Point
 │   │
+│   ├── 📁 public/                      # Static Assets
+│   │   ├── robots.txt
+│   │   ├── _redirects
+│   │   └── _headers
+│   │
+│   ├── 📁 docs/                        # Documentation
+│   │   ├── MULTI_API_INTEGRATION.md    # Multi-API integration guide
+│   │   ├── S3_IMAGE_UPLOAD_GUIDE.md    # S3 upload documentation
+│   │   └── HUGGINGFACE_ROUTER_INTEGRATION.md
+│   │
+│   ├── 📁 cypress/                     # E2E Tests
+│   │   ├── 📁 e2e/                     # End-to-end tests
+│   │   ├── 📁 fixtures/                # Test fixtures
+│   │   └── 📁 support/                 # Test support files
+│   │
 │   ├── package.json
 │   ├── vite.config.ts
-│   └── tailwind.config.cjs
+│   ├── vitest.config.ts
+│   ├── cypress.config.js
+│   ├── tailwind.config.cjs
+│   ├── postcss.config.js
+│   ├── eslint.config.js
+│   ├── tsconfig.json
+│   ├── tsconfig.app.json
+│   ├── tsconfig.node.json
+│   └── netlify.toml
 │
 ├── 📁 backend/                         # Backend Application
 │   └── 📁 creditor_backend/
@@ -432,7 +455,11 @@ JFKC/
 │       │
 │       └── package.json
 │
-└── README.md                           # This File
+├── 📁 .github/                         # GitHub Configuration
+├── 📁 .vscode/                         # VS Code Settings
+├── 📁 .husky/                          # Git Hooks
+├── README.md                           # This File
+└── Jenkinsfile                         # CI/CD Pipeline
 ```
 
 ---
@@ -1394,12 +1421,78 @@ vercel --prod
 
 ## 📚 Additional Documentation
 
-- [AI Integration Guide](./Creditor_UserDash/docs/MULTI_API_INTEGRATION.md)
-- [Setup Instructions](./Creditor_UserDash/SETUP.md)
-- [Testing Guide](./Creditor_UserDash/TESTING_GUIDE.md)
-- [Tech Stack Workflow](./Creditor_UserDash/TECH_STACK_WORKFLOW.md)
-- [Backend AI Architecture](./backend/creditor_backend/AI_ARCHITECTURE.md)
-- [Redis Caching](./backend/creditor_backend/REDIS_CACHING_README.md)
+- [AI Multi-API Integration Guide](./docs/MULTI_API_INTEGRATION.md)
+- [S3 Image Upload Guide](./docs/S3_IMAGE_UPLOAD_GUIDE.md)
+- [HuggingFace Router Integration](./docs/HUGGINGFACE_ROUTER_INTEGRATION.md)
+- [Superadmin Dashboard Documentation](./SUPERADMIN_DOCUMENTATION_INDEX.md)
+- [Superadmin Quick Start Guide](./SUPERADMIN_QUICK_START.md)
+- [Superadmin Integration Complete](./SUPERADMIN_INTEGRATION_COMPLETE.md)
+- [Superadmin Directory Structure](./SUPERADMIN_DIRECTORY_STRUCTURE.txt)
+- [Superadmin Dashboard Summary](./SUPERADMIN_DASHBOARD_SUMMARY.txt)
+- [Project Completion Summary](./PROJECT_COMPLETION_SUMMARY.md)
+- [Integration Final Report](./INTEGRATION_FINAL_REPORT.md)
+- [Final UI Improvements](./FINAL_UI_IMPROVEMENTS.md)
+- [Final Fixes Complete](./FINAL_FIXES_COMPLETE.md)
+- [Navigation and UI Complete](./NAVIGATION_AND_UI_COMPLETE.md)
+- [Glass UI Update Summary](./GLASS_UI_UPDATE_SUMMARY.txt)
+- [Cleanup Summary](./CLEANUP_SUMMARY.md)
+- [Backend Routes Example](./BACKEND_ROUTES_EXAMPLE.js)
+
+---
+
+## ⚙️ Configuration Files
+
+### Root Configuration
+- `package.json` - Frontend dependencies and scripts
+- `package-lock.json` - Dependency lock file
+- `vite.config.ts` - Vite build configuration
+- `vitest.config.ts` - Vitest testing configuration
+- `cypress.config.js` - Cypress E2E testing configuration
+- `tailwind.config.cjs` - Tailwind CSS configuration
+- `postcss.config.js` - PostCSS configuration
+- `eslint.config.js` - ESLint configuration
+- `components.json` - Shadcn/UI components configuration
+- `tsconfig.json` - TypeScript base configuration
+- `tsconfig.app.json` - TypeScript app configuration
+- `tsconfig.node.json` - TypeScript Node configuration
+- `netlify.toml` - Netlify deployment configuration
+- `versel.json` - Vercel deployment configuration
+- `Jenkinsfile` - CI/CD Jenkins pipeline
+
+### Environment Files
+- `.env` - Local environment variables
+- `.env.development` - Development environment configuration
+- `.env.production` - Production environment configuration
+- `.env.example` - Example environment template
+
+### Git Configuration
+- `.gitignore` - Git ignore rules
+- `.github/` - GitHub workflows and configuration
+- `.husky/` - Git hooks configuration
+- `.prettierignore` - Prettier ignore rules
+- `.prettierrc` - Prettier code formatting configuration
+
+### VS Code
+- `.vscode/` - VS Code workspace settings and extensions
+
+---
+
+## 🧪 Testing & Utilities
+
+### Test Files
+- `cypress/` - End-to-end tests with Cypress
+- `coverage/` - Test coverage reports
+
+### Utility Scripts
+- `test-ai-api.cjs` - AI API testing script
+- `test-ai-image.js` - AI image generation testing
+- `test-bytez-api.js` - Bytez.js API testing
+- `test-env.html` - Environment configuration tester
+- `fix_video_block.js` - Video block fix utility
+
+### Build Output
+- `dist/` - Production build output
+- `index.html` - Main HTML entry point
 
 ---
 

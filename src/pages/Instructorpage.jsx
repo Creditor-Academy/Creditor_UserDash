@@ -14,7 +14,7 @@ import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
 import InstructorFeedbackAnalysis from '@/pages/InstructorFeedbackAnalysis';
 import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
 import StorageTokens from './StorageTokens';
-// import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
+import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
 import Sidebar from '@/components/layout/Sidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { api } from '@/services/apiClient';
@@ -428,9 +428,9 @@ const InstructorPage = () => {
               </div>
               {/* AI token box (CompactTokenDisplay) retained for reference */}
 
-              {/* <div className="flex-shrink-0">
+              <div className="flex-shrink-0">
                 <CompactTokenDisplay />
-              </div> */}
+              </div>
 
               <div className="flex-shrink-0">
                 {/* AI token chip temporarily replaced with storage usage */}
