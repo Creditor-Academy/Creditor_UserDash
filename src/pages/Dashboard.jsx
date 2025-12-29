@@ -1080,7 +1080,7 @@ export function Dashboard() {
               </div>
               <div className="christmas-hero-visual">
                 <video
-                  src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/VCM.mp4"
+                  src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/_Christmas+Poster+with+Levitating+Book+(2).mp4"
                   autoPlay
                   loop
                   muted
