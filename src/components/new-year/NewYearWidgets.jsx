@@ -9,12 +9,18 @@ export function NewYearWidgets() {
       <Card className="newyear-widget-card dashboard-newyear-card">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-yellow-500" />
+            <Target
+              className="h-5 w-5"
+              style={{ color: 'var(--newyear-accent)' }}
+            />
             <CardTitle className="text-base">Goals for This Year</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600">
+          <p
+            className="text-sm"
+            style={{ color: 'var(--newyear-text-secondary)' }}
+          >
             Set and track your learning objectives for this year
           </p>
         </CardContent>
@@ -24,12 +30,18 @@ export function NewYearWidgets() {
       <Card className="newyear-widget-card dashboard-newyear-card">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-500" />
+            <TrendingUp
+              className="h-5 w-5"
+              style={{ color: 'var(--newyear-secondary)' }}
+            />
             <CardTitle className="text-base">Fresh Start</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600">
+          <p
+            className="text-sm"
+            style={{ color: 'var(--newyear-text-secondary)' }}
+          >
             New year, new opportunities to excel
           </p>
         </CardContent>
@@ -39,12 +51,18 @@ export function NewYearWidgets() {
       <Card className="newyear-widget-card dashboard-newyear-card">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Award className="h-5 w-5 text-blue-500" />
+            <Award
+              className="h-5 w-5"
+              style={{ color: 'var(--newyear-secondary)' }}
+            />
             <CardTitle className="text-base">Your Achievements</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600">
+          <p
+            className="text-sm"
+            style={{ color: 'var(--newyear-text-secondary)' }}
+          >
             Review your accomplishments from last year
           </p>
         </CardContent>
@@ -54,12 +72,18 @@ export function NewYearWidgets() {
       <Card className="newyear-widget-card dashboard-newyear-card">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-purple-500" />
+            <BookOpen
+              className="h-5 w-5"
+              style={{ color: 'var(--newyear-primary)' }}
+            />
             <CardTitle className="text-base">Recommended</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600">
+          <p
+            className="text-sm"
+            style={{ color: 'var(--newyear-text-secondary)' }}
+          >
             Discover courses to start your journey
           </p>
         </CardContent>

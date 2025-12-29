@@ -314,13 +314,15 @@
   }
 
   :root {
-    --newyear-primary: #00809d;
-    --newyear-secondary: #00a6b2;
-    --newyear-bg: #e0ffff;
-    --newyear-accent: #00ced1;
-    --newyear-gold: #00ced1;
-    --newyear-gold-light: #00ced1;
-    --newyear-gold-dark: #00ced1;
+    --newyear-primary: #1e293b;
+    --newyear-secondary: #6366f1;
+    --newyear-bg: #f5f3ff;
+    --newyear-accent: #f59e0b;
+    --newyear-gold: #f59e0b;
+    --newyear-gold-light: #fbbf24;
+    --newyear-gold-dark: #d97706;
+    --newyear-text: #0f172a;
+    --newyear-text-secondary: #475569;
   }
 
   .newyear-theme .dashboard-shell {
@@ -352,8 +354,8 @@
     right: 5%;
     font-size: 25rem;
     font-weight: 900;
-    color: var(--newyear-primary);
-    opacity: 0.05;
+    color: var(--newyear-secondary);
+    opacity: 0.08;
     z-index: 0;
     pointer-events: none;
     font-family: 'Inter', sans-serif;
@@ -382,9 +384,9 @@
     background: #ffffff;
     border-radius: 20px;
     box-shadow:
-      0 4px 6px rgba(0, 0, 0, 0.05),
-      0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--newyear-secondary);
+      0 4px 6px rgba(30, 41, 59, 0.08),
+      0 1px 3px rgba(30, 41, 59, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
   }
@@ -396,7 +398,11 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--newyear-accent);
+    background: linear-gradient(
+      90deg,
+      var(--newyear-secondary) 0%,
+      var(--newyear-accent) 100%
+    );
     border-radius: 20px 20px 0 0;
   }
 
@@ -431,7 +437,8 @@
       var(--newyear-secondary) 100%
     );
     border-radius: 1rem;
-    border: 1px dashed rgba(0, 0, 0, 0.1); /* Adjusted for lighter theme */
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    color: #ffffff;
   }
 
   /* Dashboard Header Enhancement for New Year */
@@ -535,10 +542,11 @@
     background: linear-gradient(
       135deg,
       var(--newyear-primary) 0%,
-      var(--newyear-secondary) 100%
+      var(--newyear-secondary) 50%,
+      var(--newyear-primary) 100%
     );
-    color: #0c4a6e;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    color: #ffffff;
+    box-shadow: 0 10px 25px rgba(30, 41, 59, 0.2);
     position: relative;
     overflow: hidden;
   }
@@ -555,6 +563,7 @@
     flex: 1 1 260px;
     position: relative;
     z-index: 2;
+    padding-top: 1.5rem;
   }
 
   .newyear-hero-content h1 {
@@ -562,11 +571,11 @@
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 0.75rem;
-    color: var(--newyear-accent);
+    color: #ffffff;
   }
 
   .newyear-hero-content p {
-    color: #004d4d; /* Darker teal for readability */
+    color: rgba(255, 255, 255, 0.95);
     max-width: 36rem;
   }
 
@@ -574,7 +583,8 @@
     text-transform: uppercase;
     letter-spacing: 0.2em;
     font-size: 0.7rem;
-    color: var(--newyear-secondary);
+    color: var(--newyear-gold-light);
+    font-weight: 600;
   }
 
   .newyear-hero-cta {
@@ -588,14 +598,23 @@
   .progress-pill {
     padding: 0.4rem 0.9rem;
     border-radius: 999px;
-    background: rgba(245, 199, 122, 0.2);
-    border: 1px solid rgba(245, 199, 122, 0.4);
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     font-size: 0.85rem;
     backdrop-filter: blur(6px);
-    color: var(--newyear-secondary);
+    color: #ffffff;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .goal-pill:hover,
+  .progress-pill:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
   }
 
   .newyear-hero-visual {
@@ -613,7 +632,7 @@
     pointer-events: none;
     background-image: radial-gradient(
       2px 2px at 30px 30px,
-      rgba(245, 199, 122, 0.4),
+      rgba(245, 158, 11, 0.4),
       transparent
     );
     background-size: 100px 100px;
@@ -633,6 +652,20 @@
   .newyear-visual-content {
     position: relative;
     z-index: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .newyear-visual-content video {
+    width: 100%;
+    height: auto;
+    max-width: 400px;
+    border-radius: 1rem;
+    box-shadow: 0 15px 30px rgba(30, 41, 59, 0.25);
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    object-fit: cover;
   }
 
   /* Athena Hero Banner - Regular Theme */
@@ -772,13 +805,13 @@
   /* New Year Widget Cards */
   .newyear-widget-card {
     transition: all 0.2s ease;
-    border: 1px solid rgba(245, 199, 122, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.2);
   }
 
   .newyear-widget-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(245, 199, 122, 0.15);
-    border-color: rgba(245, 199, 122, 0.4);
+    box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
   }
 
   .challenge-badges {
@@ -819,13 +852,13 @@
   }
 
   .newyear-theme .sidebar-menu-item-active {
-    background: rgba(245, 199, 122, 0.1);
+    background: rgba(99, 102, 241, 0.1);
     border-left-color: var(--newyear-secondary);
     color: var(--newyear-primary);
   }
 
   .newyear-theme .sidebar-menu-item:hover {
-    background: rgba(245, 199, 122, 0.05);
+    background: rgba(99, 102, 241, 0.05);
   }
 
   .sidebar-menu-item {
@@ -852,6 +885,181 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   }
 
+  /* Make all header text visible in New Year theme */
+  .newyear-theme .newyear-app-header,
+  .newyear-theme .app-header {
+    background: var(--newyear-primary) !important;
+  }
+
+  /* Header text colors - make all text white/light */
+  .newyear-theme .newyear-app-header h1,
+  .newyear-theme .newyear-app-header .text-gray-900,
+  .newyear-theme .newyear-app-header .text-gray-800,
+  .newyear-theme .newyear-app-header .text-gray-700,
+  .newyear-theme .newyear-app-header .text-gray-600,
+  .newyear-theme .app-header h1,
+  .newyear-theme .app-header .text-gray-900,
+  .newyear-theme .app-header .text-gray-800,
+  .newyear-theme .app-header .text-gray-700,
+  .newyear-theme .app-header .text-gray-600 {
+    color: #ffffff !important;
+  }
+
+  /* User profile text */
+  .newyear-theme .newyear-app-header .profile-name,
+  .newyear-theme .newyear-app-header .profile-email,
+  .newyear-theme .app-header .profile-name,
+  .newyear-theme .app-header .profile-email {
+    color: #ffffff !important;
+  }
+
+  /* Buttons in header */
+  .newyear-theme
+    .newyear-app-header
+    button:not(.bg-white):not(.bg-gray-50):not(.bg-gray-100),
+  .newyear-theme
+    .app-header
+    button:not(.bg-white):not(.bg-gray-50):not(.bg-gray-100) {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .newyear-theme
+    .newyear-app-header
+    button:hover:not(.bg-white):not(.bg-gray-50):not(.bg-gray-100),
+  .newyear-theme
+    .app-header
+    button:hover:not(.bg-white):not(.bg-gray-50):not(.bg-gray-100) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+  }
+
+  /* Toggle button specific styling */
+  .newyear-theme .newyear-app-header .newyear-toggle-btn,
+  .newyear-theme .app-header .newyear-toggle-btn {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+  }
+
+  .newyear-theme .newyear-app-header .newyear-toggle-btn:hover,
+  .newyear-theme .app-header .newyear-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+  }
+
+  /* Credits badge */
+  .newyear-theme .newyear-app-header button[aria-label='Open credits purchase'],
+  .newyear-theme .app-header button[aria-label='Open credits purchase'] {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+  }
+
+  .newyear-theme
+    .newyear-app-header
+    button[aria-label='Open credits purchase']:hover,
+  .newyear-theme .app-header button[aria-label='Open credits purchase']:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  /* Icons in header */
+  .newyear-theme .newyear-app-header svg,
+  .newyear-theme .newyear-app-header .text-gray-400,
+  .newyear-theme .app-header svg,
+  .newyear-theme .app-header .text-gray-400 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .newyear-theme .newyear-app-header button svg,
+  .newyear-theme .app-header button svg {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  /* Search bar styling */
+  .newyear-theme .newyear-app-header input[type='text'],
+  .newyear-theme .app-header input[type='text'] {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+  }
+
+  .newyear-theme .newyear-app-header input[type='text']::placeholder,
+  .newyear-theme .app-header input[type='text']::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .newyear-theme .newyear-app-header input[type='text']:focus,
+  .newyear-theme .app-header input[type='text']:focus {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
+  }
+
+  /* Mobile menu button */
+  .newyear-theme .newyear-app-header button[aria-label='Open menu'],
+  .newyear-theme .app-header button[aria-label='Open menu'] {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+  }
+
+  .newyear-theme .newyear-app-header button[aria-label='Open menu']:hover,
+  .newyear-theme .app-header button[aria-label='Open menu']:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Notification bell */
+  .newyear-theme .newyear-app-header button[aria-label='Notifications'],
+  .newyear-theme .app-header button[aria-label='Notifications'] {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .newyear-theme .newyear-app-header button[aria-label='Notifications']:hover,
+  .newyear-theme .app-header button[aria-label='Notifications']:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+  }
+
+  /* Search button (mobile) */
+  .newyear-theme .newyear-app-header button[aria-label='Search'],
+  .newyear-theme .app-header button[aria-label='Search'] {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .newyear-theme .newyear-app-header button[aria-label='Search']:hover,
+  .newyear-theme .app-header button[aria-label='Search']:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+  }
+
+  /* Text muted foreground (for email and secondary text) */
+  .newyear-theme .newyear-app-header .text-muted-foreground,
+  .newyear-theme .app-header .text-muted-foreground {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  /* All text elements in header */
+  .newyear-theme .newyear-app-header *,
+  .newyear-theme .app-header * {
+    /* Ensure text colors are visible - but don't override specific styled elements */
+  }
+
+  /* Profile dropdown trigger text */
+  .newyear-theme .newyear-app-header .profile-header-text,
+  .newyear-theme .app-header .profile-header-text {
+    color: #ffffff !important;
+  }
+
+  /* Ensure spans and other inline elements are visible */
+  .newyear-theme
+    .newyear-app-header
+    span:not(.bg-white):not(.bg-gray-50):not(.bg-gray-100),
+  .newyear-theme
+    .app-header
+    span:not(.bg-white):not(.bg-gray-50):not(.bg-gray-100) {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+
   /* New Year Course Card */
   .newyear-course-card {
     border-color: rgba(30, 41, 59, 0.2);
@@ -871,7 +1079,12 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #1e293b 0%, #87ceeb 50%, #f59e0b 100%);
+    background: linear-gradient(
+      90deg,
+      var(--newyear-primary) 0%,
+      var(--newyear-secondary) 50%,
+      var(--newyear-accent) 100%
+    );
     border-radius: 20px 20px 0 0;
   }
 
@@ -922,7 +1135,8 @@
     }
 
     .athena-hero-visual img,
-    .newyear-hero-visual img {
+    .newyear-hero-visual img,
+    .newyear-hero-visual video {
       max-width: 200px;
     }
 
@@ -1163,13 +1377,24 @@
 
   /* Login Page New Year Theme */
   .login-newyear-bg {
-    background: linear-gradient(
-      180deg,
-      var(--newyear-primary) 0%,
-      var(--newyear-secondary) 100%
-    );
+    background-image: url('https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/2026_rc.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     position: relative;
     overflow: hidden;
+  }
+
+  .login-newyear-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(30, 41, 59, 0.4) 0%,
+      rgba(99, 102, 241, 0.3) 100%
+    );
+    z-index: 0;
   }
 
   /* Subtle Sparkles Animation */
@@ -1221,44 +1446,15 @@
     }
   }
 
-  /* Year Watermark */
-  .login-year-watermark {
-    position: fixed;
-    top: 50%;
-    left: 10%;
-    transform: translate(-50%, -50%) rotate(-90deg);
-    font-size: 20rem;
-    font-weight: 900;
-    color: rgba(255, 255, 255, 0.03);
-    z-index: 0;
-    pointer-events: none;
-    font-family: 'Inter', sans-serif;
-    letter-spacing: -0.05em;
-  }
-
-  @media (max-width: 1024px) {
-    .login-year-watermark {
-      font-size: 15rem;
-      left: 5%;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .login-year-watermark {
-      font-size: 10rem;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(0deg);
-    }
-  }
-
   /* Glassmorphism Login Card */
   .login-newyear-card {
-    background: #fff;
+    background: rgba(245, 243, 255, 0.95);
     border: 1px solid var(--newyear-secondary);
     border-radius: 24px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: visible;
+    backdrop-filter: blur(10px);
   }
 
   .login-newyear-card::before {
@@ -1310,7 +1506,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(245, 199, 122, 0.1), transparent);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -1318,8 +1514,8 @@
   .login-newyear-button:hover {
     transform: translateY(-2px);
     box-shadow:
-      0 12px 24px rgba(11, 28, 45, 0.4),
-      0 0 0 1px rgba(245, 199, 122, 0.3) inset;
+      0 12px 24px rgba(30, 41, 59, 0.4),
+      0 0 0 1px rgba(245, 158, 11, 0.3) inset;
   }
 
   .login-newyear-button:hover::before {
@@ -1338,7 +1534,42 @@
   /* Input Focus States for New Year Theme */
   .login-newyear-card input:focus {
     border-color: var(--newyear-accent);
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+
+  /* Text Visibility Rules for New Year Theme */
+  .newyear-theme .text-gray-900,
+  .newyear-theme [class*='text-gray-900'] {
+    color: var(--newyear-text) !important;
+  }
+
+  .newyear-theme .text-gray-800,
+  .newyear-theme [class*='text-gray-800'] {
+    color: var(--newyear-text) !important;
+  }
+
+  .newyear-theme .text-gray-700,
+  .newyear-theme [class*='text-gray-700'] {
+    color: var(--newyear-text-secondary) !important;
+  }
+
+  .newyear-theme .text-gray-600,
+  .newyear-theme [class*='text-gray-600'] {
+    color: var(--newyear-text-secondary) !important;
+  }
+
+  .newyear-theme .text-gray-500,
+  .newyear-theme [class*='text-gray-500'] {
+    color: var(--newyear-text-secondary) !important;
+    opacity: 0.8;
+  }
+
+  /* Ensure card titles are visible */
+  .newyear-theme .dashboard-newyear-card h3,
+  .newyear-theme .dashboard-newyear-card h4,
+  .newyear-theme .dashboard-newyear-card .font-semibold,
+  .newyear-theme .dashboard-newyear-card .font-bold {
+    color: var(--newyear-text);
   }
 
   /* Responsive Adjustments */
@@ -1351,10 +1582,6 @@
     .login-newyear-badge {
       font-size: 0.65rem;
       padding: 0.3rem 0.6rem;
-    }
-
-    .login-year-watermark {
-      opacity: 0.02;
     }
   }
 

@@ -1193,7 +1193,7 @@ export function Dashboard() {
   const courseSectionTitle =
     activeTheme === 'newYear' ? '📚 New Year Learning Path' : 'My Courses';
 
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
 
   return (
     <div

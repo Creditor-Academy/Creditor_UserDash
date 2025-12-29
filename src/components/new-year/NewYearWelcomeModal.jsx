@@ -15,7 +15,7 @@ export function NewYearWelcomeModal() {
 
   useEffect(() => {
     // Check if modal has been shown this year
-    const currentYear = new Date().getFullYear();
+    const currentYear = 2026;
     const key = `newYearWelcomeSeen_${currentYear}`;
     const hasSeen = localStorage.getItem(key);
 
@@ -30,7 +30,7 @@ export function NewYearWelcomeModal() {
   }, []);
 
   const handleClose = () => {
-    const currentYear = new Date().getFullYear();
+    const currentYear = 2026;
     const key = `newYearWelcomeSeen_${currentYear}`;
     localStorage.setItem(key, 'true');
     setIsOpen(false);
@@ -64,8 +64,16 @@ export function NewYearWelcomeModal() {
           <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
             <Sparkles className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-gray-900">Set New Goals</p>
-              <p className="text-sm text-gray-600">
+              <p
+                className="font-medium"
+                style={{ color: 'var(--newyear-text)' }}
+              >
+                Set New Goals
+              </p>
+              <p
+                className="text-sm"
+                style={{ color: 'var(--newyear-text-secondary)' }}
+              >
                 Define what you want to achieve this year
               </p>
             </div>
@@ -74,8 +82,16 @@ export function NewYearWelcomeModal() {
           <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
             <TrendingUp className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-gray-900">Track Progress</p>
-              <p className="text-sm text-gray-600">
+              <p
+                className="font-medium"
+                style={{ color: 'var(--newyear-text)' }}
+              >
+                Track Progress
+              </p>
+              <p
+                className="text-sm"
+                style={{ color: 'var(--newyear-text-secondary)' }}
+              >
                 Monitor your learning journey and celebrate milestones
               </p>
             </div>

@@ -185,7 +185,6 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [animateCard, setAnimateCard] = useState(false);
-  const [animateImage, setAnimateImage] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const navigate = useNavigate();
@@ -194,9 +193,6 @@ export function Login() {
   useEffect(() => {
     // Trigger card animation on mount
     setAnimateCard(true);
-    // Staggered image entrance
-    const t = setTimeout(() => setAnimateImage(true), 50);
-    return () => clearTimeout(t);
   }, []);
 
   const handleSubmit = async e => {
@@ -274,153 +270,16 @@ export function Login() {
     navigate('/'); // Navigate directly to homepage
   };
 
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2026;
 
   return (
     <div className="min-h-screen relative overflow-hidden login-newyear-bg">
       {/* Subtle Sparkles Background */}
       <div className="login-sparkles-container" aria-hidden="true"></div>
 
-      {/* Year Watermark */}
-      <div className="login-year-watermark" aria-hidden="true">
-        {currentYear}
-      </div>
-
-      <div className="relative flex min-h-screen">
-        {/* Left Side - Motivational Visual */}
-        <div className="hidden lg:flex w-1/2 items-center justify-center p-10 relative">
-          <div className="max-w-[420px] w-[80%] h-auto flex flex-col items-center justify-center gap-6">
-            <div className={`login-ny-hero ${animateImage ? 'is-in' : ''}`}>
-              <div className="login-ny-fireworks" aria-hidden="true">
-                <span className="login-ny-burst login-ny-burst-a" />
-                <span className="login-ny-burst login-ny-burst-b" />
-                <span className="login-ny-burst login-ny-burst-c" />
-              </div>
-              <svg
-                viewBox="0 0 520 320"
-                role="img"
-                aria-label="Happy New Year"
-                className="login-ny-hero-svg"
-              >
-                <defs>
-                  <linearGradient id="nySky" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="rgba(255,255,255,0.18)" />
-                    <stop offset="1" stopColor="rgba(255,255,255,0.06)" />
-                  </linearGradient>
-                  <linearGradient id="nyText" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
-                    <stop
-                      offset="0.55"
-                      stopColor="#bae6fd"
-                      stopOpacity="0.95"
-                    />
-                    <stop offset="1" stopColor="#f5c77a" stopOpacity="0.95" />
-                  </linearGradient>
-                  <filter
-                    id="nyGlow"
-                    x="-30%"
-                    y="-30%"
-                    width="160%"
-                    height="160%"
-                  >
-                    <feGaussianBlur stdDeviation="6" result="b" />
-                    <feMerge>
-                      <feMergeNode in="b" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <rect
-                  x="10"
-                  y="10"
-                  width="500"
-                  height="300"
-                  rx="22"
-                  fill="url(#nySky)"
-                />
-
-                <g opacity="0.9" filter="url(#nyGlow)">
-                  <circle
-                    cx="92"
-                    cy="84"
-                    r="18"
-                    fill="rgba(255,255,255,0.16)"
-                  />
-                  <circle
-                    cx="432"
-                    cy="76"
-                    r="22"
-                    fill="rgba(255,255,255,0.12)"
-                  />
-                  <circle
-                    cx="402"
-                    cy="224"
-                    r="28"
-                    fill="rgba(245,199,122,0.10)"
-                  />
-                  <circle
-                    cx="118"
-                    cy="228"
-                    r="34"
-                    fill="rgba(186,230,253,0.10)"
-                  />
-                </g>
-
-                <g>
-                  <text
-                    x="50%"
-                    y="142"
-                    textAnchor="middle"
-                    fontSize="48"
-                    fontWeight="900"
-                    fill="url(#nyText)"
-                    style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-                  >
-                    HAPPY NEW YEAR
-                  </text>
-                  <text
-                    x="50%"
-                    y="182"
-                    textAnchor="middle"
-                    fontSize="16"
-                    fontWeight="600"
-                    fill="rgba(255,255,255,0.78)"
-                    style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-                  >
-                    Start fresh. Learn smarter. Grow faster.
-                  </text>
-                </g>
-
-                <g opacity="0.85">
-                  <path
-                    d="M72 246 C118 212, 182 262, 236 238 C294 212, 340 262, 444 236"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.25)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M78 260 C122 234, 190 278, 242 256 C300 232, 348 282, 448 252"
-                    fill="none"
-                    stroke="rgba(186,230,253,0.22)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </g>
-              </svg>
-            </div>
-
-            <div className="text-center space-y-2">
-              <p className="text-white/85 text-lg font-semibold">
-                Happy New Year
-              </p>
-              <p className="text-white/60 text-sm">New goals. New wins.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side - Login Card */}
-        <div className="flex-1 relative flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="relative flex min-h-screen z-10">
+        {/* Login Card - Right Side */}
+        <div className="w-full lg:w-1/2 lg:ml-auto relative flex items-center justify-center p-4 sm:p-6 lg:p-8">
           {/* Card */}
           <div className="w-full max-w-md relative z-10">
             <Card
