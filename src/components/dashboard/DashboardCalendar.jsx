@@ -32,6 +32,7 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 
 export function DashboardCalendar() {
   const { activeTheme } = useContext(SeasonalThemeContext);
+  const isNewYear = activeTheme === 'newYear';
   const today = new Date();
   const [date, setDate] = React.useState(today);
   const [allEvents, setAllEvents] = React.useState([]); // store all expanded events/occurrences
@@ -344,7 +345,60 @@ export function DashboardCalendar() {
 
   return (
     <TooltipProvider>
-      <Card className="border shadow hover:shadow-lg transition-all duration-300 hover:border-primary/20 group w-full max-w-sm relative overflow-hidden">
+      <Card
+        className={`border shadow hover:shadow-lg transition-all duration-300 hover:border-primary/20 group w-full max-w-sm relative overflow-hidden ${
+          isNewYear ? 'ny-calendar-card' : ''
+        }`}
+      >
+        {isNewYear && (
+          <style>{`
+            .ny-calendar-card {
+              border-color: rgba(59, 130, 246, 0.35);
+            }
+
+            .ny-calendar-card::before {
+              content: '';
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background:
+                radial-gradient(520px 180px at 10% 0%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
+                radial-gradient(520px 180px at 90% 0%, rgba(99, 102, 241, 0.16) 0%, transparent 60%),
+                radial-gradient(380px 160px at 50% 0%, rgba(234, 179, 8, 0.10) 0%, transparent 70%);
+              opacity: 0.9;
+            }
+
+            .ny-calendar-card::after {
+              content: '';
+              position: absolute;
+              inset: 0;
+              pointer-events: none;
+              background:
+                radial-gradient(circle at 18px 18px, rgba(255, 255, 255, 0.95) 0 1.2px, transparent 1.3px),
+                radial-gradient(circle at 42px 26px, rgba(255, 255, 255, 0.75) 0 1.1px, transparent 1.2px),
+                radial-gradient(circle at 24px 44px, rgba(255, 255, 255, 0.70) 0 1px, transparent 1.1px),
+                radial-gradient(circle at calc(100% - 18px) 18px, rgba(255, 255, 255, 0.95) 0 1.2px, transparent 1.3px),
+                radial-gradient(circle at calc(100% - 42px) 26px, rgba(255, 255, 255, 0.75) 0 1.1px, transparent 1.2px),
+                radial-gradient(circle at calc(100% - 24px) 44px, rgba(255, 255, 255, 0.70) 0 1px, transparent 1.1px);
+              opacity: 0.55;
+              animation: ny-calendar-twinkle 3.2s ease-in-out infinite;
+              mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 35%, transparent 70%);
+              -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.55) 35%, transparent 70%);
+            }
+
+            @keyframes ny-calendar-twinkle {
+              0% { opacity: 0.35; transform: translateY(0); }
+              50% { opacity: 0.7; transform: translateY(2px); }
+              100% { opacity: 0.45; transform: translateY(0); }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .ny-calendar-card::after {
+                animation: none !important;
+              }
+            }
+          `}</style>
+        )}
         {/* Flip Container */}
         <div
           className="relative w-full"

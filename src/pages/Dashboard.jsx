@@ -140,6 +140,150 @@ export function Dashboard() {
         max-height: 200px;
       }
     }
+
+    .dashboard-newyear-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(239, 246, 255, 1) 55%, rgba(238, 242, 255, 1) 100%);
+      border-color: rgba(59, 130, 246, 0.35);
+      box-shadow: 0 10px 22px rgba(2, 6, 23, 0.10);
+      overflow: hidden;
+    }
+
+    .dashboard-newyear-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(800px 240px at 20% 0%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
+        radial-gradient(700px 220px at 80% 0%, rgba(99, 102, 241, 0.16) 0%, transparent 55%),
+        radial-gradient(360px 180px at 50% 0%, rgba(234, 179, 8, 0.12) 0%, transparent 65%);
+      opacity: 0.85;
+    }
+
+    .dashboard-newyear-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.85) 0 1.2px, transparent 1.3px),
+        radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.70) 0 1px, transparent 1.1px),
+        radial-gradient(circle at 44% 16%, rgba(255, 255, 255, 0.55) 0 1.1px, transparent 1.2px),
+        radial-gradient(circle at 62% 22%, rgba(255, 255, 255, 0.70) 0 1.2px, transparent 1.3px),
+        radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.60) 0 1px, transparent 1.1px),
+        radial-gradient(circle at 90% 24%, rgba(255, 255, 255, 0.75) 0 1.2px, transparent 1.3px);
+      opacity: 0.55;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 40%, transparent 85%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 40%, transparent 85%);
+    }
+
+    .dashboard-course-card.newyear-course-card {
+      position: relative;
+    }
+
+    .dashboard-course-card.newyear-course-card .course-card-surface {
+      border: 1px solid rgba(99, 102, 241, 0.30);
+      box-shadow: 0 10px 20px rgba(2, 6, 23, 0.08);
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .dashboard-course-card.newyear-course-card .course-card-surface::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 10px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.65), rgba(99, 102, 241, 0.60), rgba(234, 179, 8, 0.55));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .dashboard-course-card.newyear-course-card:hover .course-card-surface {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(2, 6, 23, 0.14);
+    }
+
+    .course-newyear-label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: rgba(30, 64, 175, 1);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 9999px;
+      padding: 6px 10px;
+      box-shadow: 0 8px 18px rgba(2, 6, 23, 0.10);
+      backdrop-filter: blur(8px);
+    }
+
+    .course-sparkle {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      z-index: 5;
+      font-size: 18px;
+      opacity: 0.9;
+      filter: drop-shadow(0 8px 10px rgba(2, 6, 23, 0.25));
+      animation: ny-sparkle 1.8s ease-in-out infinite;
+      user-select: none;
+    }
+
+    @keyframes ny-sparkle {
+      0% { transform: translateY(0) scale(1); opacity: 0.75; }
+      50% { transform: translateY(-2px) scale(1.06); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 0.78; }
+    }
+
+    .dashboard-empty-state {
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(239, 246, 255, 1), rgba(238, 242, 255, 1));
+      border: 1px dashed rgba(99, 102, 241, 0.35);
+    }
+
+    .ny-important-updates {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ny-important-updates::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 8% 18%, rgba(59, 130, 246, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 16% 32%, rgba(234, 179, 8, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 24% 12%, rgba(99, 102, 241, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 36% 28%, rgba(244, 63, 94, 0.25) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 52% 14%, rgba(59, 130, 246, 0.28) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 64% 26%, rgba(234, 179, 8, 0.30) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 76% 10%, rgba(99, 102, 241, 0.28) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 88% 22%, rgba(244, 63, 94, 0.20) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 92% 44%, rgba(234, 179, 8, 0.22) 0 2px, transparent 2.1px);
+      opacity: 0.45;
+      filter: blur(0.2px);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 45%, transparent 85%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 45%, transparent 85%);
+      animation: ny-confetti-drift 6.5s ease-in-out infinite;
+    }
+
+    @keyframes ny-confetti-drift {
+      0% { transform: translateY(0); opacity: 0.35; }
+      50% { transform: translateY(6px); opacity: 0.55; }
+      100% { transform: translateY(0); opacity: 0.40; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ny-important-updates::after {
+        animation: none !important;
+      }
+    }
   `;
 
   const { userProfile } = useUser();
@@ -1481,7 +1625,9 @@ export function Dashboard() {
               {/* Important Updates Section */}
               <div
                 className={`bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper ${
-                  activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+                  activeTheme === 'newYear'
+                    ? 'dashboard-newyear-card ny-important-updates'
+                    : ''
                 }`}
               >
                 <style>{importantUpdateStyles}</style>

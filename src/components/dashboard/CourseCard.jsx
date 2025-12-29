@@ -47,11 +47,22 @@ export function CourseCard({
   const handleCloseTrialDialog = () => {
     setShowTrialDialog(false);
   };
+
+  const isNewYear = activeTheme === 'newYear';
+
+  const primaryButtonClasses = isNewYear
+    ? 'w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-yellow-500 hover:from-blue-700 hover:via-indigo-700 hover:to-yellow-600 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
+    : 'w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200';
+
+  const expiredButtonClasses = isNewYear
+    ? 'w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5'
+    : 'w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow transition-colors duration-200 flex items-center justify-center gap-2';
+
   return (
     <div
       className={`dashboard-course-card ${activeTheme === 'newYear' ? 'newyear-course-card' : ''}`}
     >
-      <div className="flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
+      <div className="course-card-surface flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
         {activeTheme === 'newYear' && (
           <div className="course-newyear-label">🎯 New Year Learning Path</div>
         )}
@@ -127,7 +138,7 @@ export function CourseCard({
             <div className="mt-3 space-y-2">
               {trialStatus.isInTrial && trialStatus.isExpired ? (
                 <button
-                  className="w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow transition-colors duration-200 flex items-center justify-center gap-2"
+                  className={expiredButtonClasses}
                   onClick={handleCourseClick}
                 >
                   <Lock size={14} />
@@ -135,7 +146,7 @@ export function CourseCard({
                 </button>
               ) : (
                 <button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200"
+                  className={primaryButtonClasses}
                   onClick={handleCourseClick}
                 >
                   {trialStatus.isInTrial ? 'Continue Trial' : 'View Course'}
