@@ -728,26 +728,7 @@ const KeyCapabilities = () => {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]" />
       </div>
 
-      {/* Christmas Tree Decoration */}
-      <motion.img
-        src={TreeElement}
-        alt="Christmas tree"
-        className="hidden lg:block absolute bottom-0 right-4 w-64 max-w-xs pointer-events-none drop-shadow-xl"
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-      />
-      {/* Smaller tree for mobile/tablet */}
-      <motion.img
-        src={TreeElement}
-        alt="Christmas tree"
-        className="block lg:hidden absolute -bottom-4 right-1/2 translate-x-1/2 w-40 opacity-80 pointer-events-none drop-shadow-xl"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-      />
+      {/* New Year Decoration - Removed for cleaner look */}
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Section Header */}
@@ -758,15 +739,15 @@ const KeyCapabilities = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {/* Small Christmas pill above heading */}
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/80 border border-red-100 shadow-sm mb-4">
+          {/* New Year Edition pill */}
+          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/80 border border-blue-100 shadow-sm mb-4">
             <span
-              className="text-xs font-semibold text-red-600 uppercase tracking-wide"
+              className="text-xs font-semibold text-blue-600 uppercase tracking-wide"
               style={{ fontFamily: 'Arial, sans-serif' }}
             >
-              Christmas Edition
+              New Year Edition
             </span>
-            <span className="text-lg">🎄</span>
+            <span className="text-lg">🎯</span>
           </div>
 
           <h2
