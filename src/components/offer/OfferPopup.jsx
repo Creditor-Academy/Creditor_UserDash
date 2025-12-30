@@ -49,7 +49,7 @@ const OfferPopup = () => {
               <X className="h-5 w-5" />
             </button>
             <img
-              src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/NewOffer_rc.png"
+              src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/FREE+(1)_rc.png"
               alt="New Year Offer"
               className="offer-popup-image"
             />
