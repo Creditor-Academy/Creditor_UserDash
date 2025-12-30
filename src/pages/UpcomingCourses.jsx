@@ -163,11 +163,11 @@ function UpcomingCourses() {
               key={course}
               onClick={() => setSelectedCourse(course)}
               className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#d10000] 
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#6164ec] 
                 ${
                   selectedCourse === course
-                    ? 'bg-[#d10000] text-white border-transparent shadow-md ring-1 ring-[#d10000]/40 hover:shadow-lg hover:brightness-105'
-                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#d10000]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
+                    ? 'bg-[#6164ec] text-white border-transparent shadow-md ring-1 ring-[#6164ec]/40 hover:shadow-lg hover:brightness-105'
+                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#6164ec]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
                 }
               `}
               aria-pressed={selectedCourse === course}

@@ -727,11 +727,33 @@ const InteractiveComponent = forwardRef(
         preview: (
           <div className="w-full h-32 bg-white rounded-lg border p-3">
             <div className="flex border-b mb-2">
-              <div className="px-3 py-1 bg-blue-100 text-blue-600 text-xs rounded-t border-b-2 border-blue-500">
+              <div
+                className="px-3 py-1 bg-blue-100 text-blue-600 text-base font-bold rounded-t border-b-2 border-blue-500"
+                style={{
+                  fontFamily: '"Times New Roman", Times, serif',
+                  fontWeight: 900,
+                }}
+              >
                 Tab 1
               </div>
-              <div className="px-3 py-1 text-gray-500 text-xs">Tab 2</div>
-              <div className="px-3 py-1 text-gray-500 text-xs">Tab 3</div>
+              <div
+                className="px-3 py-1 text-gray-700 text-base font-bold"
+                style={{
+                  fontFamily: '"Times New Roman", Times, serif',
+                  fontWeight: 900,
+                }}
+              >
+                Tab 2
+              </div>
+              <div
+                className="px-3 py-1 text-gray-700 text-base font-semibold"
+                style={{
+                  fontFamily: '"Times New Roman", Times, serif',
+                  fontWeight: 900,
+                }}
+              >
+                Tab 3
+              </div>
             </div>
             <div className="text-xs text-gray-600">
               Content area for active tab
@@ -2160,12 +2182,13 @@ const InteractiveComponent = forwardRef(
               ${data
                 .map(
                   (tab, index) => `
-                <button class="tab-button px-4 py-2 text-sm font-medium transition-colors duration-200 ${index === 0 ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}" 
+                <button class="tab-button px-4 py-2 text-lg font-bold transition-colors duration-200 ${index === 0 ? 'border-b-2 border-blue-500 text-blue-700 bg-blue-50' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}" 
+                        style="font-weight:900; font-size:18px; font-family:'Times New Roman', Times, serif;" 
                         role="tab" 
                         data-tab="${index}"
                         data-container="${tabsId}"
                         onclick="window.switchTab && window.switchTab('${tabsId}', ${index})">
-                  ${tab.title}
+                  <span style="font-weight:900; font-size:18px; font-family:'Times New Roman', Times, serif;">${tab.title}</span>
                 </button>
               `
                 )

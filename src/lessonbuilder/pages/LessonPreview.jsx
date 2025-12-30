@@ -27,6 +27,14 @@ import devLogger from '@lessonbuilder/utils/devLogger';
 import ImmersiveReader from '@/components/courses/ImmersiveReader';
 import { getTtsToken } from '@/services/speechify';
 
+// Helper function to decode HTML entities
+const decodeHtmlEntities = text => {
+  if (!text) return '';
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
 const getImageCaptionHtml = block => {
   const captionHtml = (
     block.captionHtml ||

@@ -40,6 +40,9 @@ import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
 import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
 import LiveClasses from '@/components/dashboard/LiveClasses';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import SponsorBanner from '@/components/sponsorAds/SponsorBanner';
+import SponsorSidebarAd from '@/components/sponsorAds/SponsorSidebarAd';
+import SponsorAdPopup from '@/components/sponsorAds/SponsorAdPopup';
 import axios from 'axios';
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
@@ -54,9 +57,12 @@ import {
   fetchUserWebsiteServices,
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import { NewYearBanner } from '@/components/new-year/NewYearBanner';
+import { NewYearWidgets } from '@/components/new-year/NewYearWidgets';
 import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
-
+import { useSponsorAds } from '@/contexts/SponsorAdsContext';
+import { useAuth } from '@/contexts/AuthContext';
 export function Dashboard() {
   const importantUpdateStyles = `
     .important-updates-wrapper {
@@ -103,12 +109,9 @@ export function Dashboard() {
       }
     }
     .important-updates-scroll {
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       scroll-behavior: smooth;
-    }
-    .important-updates-scroll::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
     }
     .important-updates-scroll::-webkit-scrollbar {
       height: 6px;
@@ -123,10 +126,297 @@ export function Dashboard() {
     .important-updates-scroll:hover::-webkit-scrollbar {
       opacity: 1;
     }
+    .vcm-video {
+      width: 100%;
+      height: auto;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .vcm-video {
+        max-height: 200px;
+      }
+    }
+
+    .dashboard-newyear-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(239, 246, 255, 1) 55%, rgba(238, 242, 255, 1) 100%);
+      border-color: rgba(59, 130, 246, 0.35);
+      box-shadow: 0 10px 22px rgba(2, 6, 23, 0.10);
+      overflow: hidden;
+    }
+
+    .dashboard-newyear-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(800px 240px at 20% 0%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
+        radial-gradient(700px 220px at 80% 0%, rgba(99, 102, 241, 0.16) 0%, transparent 55%),
+        radial-gradient(360px 180px at 50% 0%, rgba(234, 179, 8, 0.12) 0%, transparent 65%);
+      opacity: 0.85;
+    }
+
+    .dashboard-newyear-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.85) 0 1.2px, transparent 1.3px),
+        radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.70) 0 1px, transparent 1.1px),
+        radial-gradient(circle at 44% 16%, rgba(255, 255, 255, 0.55) 0 1.1px, transparent 1.2px),
+        radial-gradient(circle at 62% 22%, rgba(255, 255, 255, 0.70) 0 1.2px, transparent 1.3px),
+        radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.60) 0 1px, transparent 1.1px),
+        radial-gradient(circle at 90% 24%, rgba(255, 255, 255, 0.75) 0 1.2px, transparent 1.3px);
+      opacity: 0.55;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 40%, transparent 85%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 40%, transparent 85%);
+    }
+
+    .dashboard-course-card.newyear-course-card {
+      position: relative;
+    }
+
+    .dashboard-course-card.newyear-course-card .course-card-surface {
+      border: 1px solid rgba(99, 102, 241, 0.30);
+      box-shadow: 0 10px 20px rgba(2, 6, 23, 0.08);
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .dashboard-course-card.newyear-course-card .course-card-surface::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 10px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.65), rgba(99, 102, 241, 0.60), rgba(234, 179, 8, 0.55));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .dashboard-course-card.newyear-course-card:hover .course-card-surface {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(2, 6, 23, 0.14);
+    }
+
+    .course-newyear-label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: rgba(30, 64, 175, 1);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 9999px;
+      padding: 6px 10px;
+      box-shadow: 0 8px 18px rgba(2, 6, 23, 0.10);
+      backdrop-filter: blur(8px);
+    }
+
+    .course-sparkle {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      z-index: 5;
+      font-size: 18px;
+      opacity: 0.9;
+      filter: drop-shadow(0 8px 10px rgba(2, 6, 23, 0.25));
+      animation: ny-sparkle 1.8s ease-in-out infinite;
+      user-select: none;
+    }
+
+    @keyframes ny-sparkle {
+      0% { transform: translateY(0) scale(1); opacity: 0.75; }
+      50% { transform: translateY(-2px) scale(1.06); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 0.78; }
+    }
+
+    .dashboard-empty-state {
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(239, 246, 255, 1), rgba(238, 242, 255, 1));
+      border: 1px dashed rgba(99, 102, 241, 0.35);
+    }
+
+    .ny-important-updates {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ny-important-updates::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 8% 18%, rgba(59, 130, 246, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 16% 32%, rgba(234, 179, 8, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 24% 12%, rgba(99, 102, 241, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 36% 28%, rgba(244, 63, 94, 0.25) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 52% 14%, rgba(59, 130, 246, 0.28) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 64% 26%, rgba(234, 179, 8, 0.30) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 76% 10%, rgba(99, 102, 241, 0.28) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 88% 22%, rgba(244, 63, 94, 0.20) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 92% 44%, rgba(234, 179, 8, 0.22) 0 2px, transparent 2.1px);
+      opacity: 0.45;
+      filter: blur(0.2px);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 45%, transparent 85%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 45%, transparent 85%);
+      animation: ny-confetti-drift 6.5s ease-in-out infinite;
+    }
+
+    @keyframes ny-confetti-drift {
+      0% { transform: translateY(0); opacity: 0.35; }
+      50% { transform: translateY(6px); opacity: 0.55; }
+      100% { transform: translateY(0); opacity: 0.40; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ny-important-updates::after {
+        animation: none !important;
+      }
+    }
   `;
+
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const { userRole } = useAuth();
+  const { getPrimaryAdForPlacement, getActiveAdsByPlacement } = useSponsorAds();
+  const [isSponsorPopupOpen, setIsSponsorPopupOpen] = useState(false);
+  const [bannerCarouselIndex, setBannerCarouselIndex] = useState(0);
+  const [sidebarCarouselIndex, setSidebarCarouselIndex] = useState(0);
+
+  const dashboardBannerAds = useMemo(() => {
+    const activeAds = getActiveAdsByPlacement('dashboard_banner', {
+      role: userRole,
+    });
+    // Sort by LIFO (Last In First Out) - newest ads first
+    // Sort by startDate descending (newest first), then by ID descending as fallback
+    const sortedAds = [...activeAds].sort((a, b) => {
+      const dateA = new Date(a.startDate || 0).getTime();
+      const dateB = new Date(b.startDate || 0).getTime();
+      if (dateB !== dateA) {
+        return dateB - dateA; // Newer date first
+      }
+      // If dates are equal, sort by ID descending (assuming higher ID = newer)
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    return sortedAds.slice(0, 3); // Only show first 3 ads (newest 3)
+  }, [getActiveAdsByPlacement, userRole]);
+
+  const dashboardBannerAd = useMemo(
+    () => (dashboardBannerAds.length > 0 ? dashboardBannerAds[0] : null),
+    [dashboardBannerAds]
+  );
+
+  const dashboardSidebarAds = useMemo(() => {
+    const activeAds = getActiveAdsByPlacement('dashboard_sidebar', {
+      role: userRole,
+    });
+    // Sort by LIFO (Last In First Out) - newest ads first
+    // Sort by startDate descending (newest first), then by ID descending as fallback
+    const sortedAds = [...activeAds].sort((a, b) => {
+      const dateA = new Date(a.startDate || 0).getTime();
+      const dateB = new Date(b.startDate || 0).getTime();
+      if (dateB !== dateA) {
+        return dateB - dateA; // Newer date first
+      }
+      // If dates are equal, sort by ID descending (assuming higher ID = newer)
+      return (b.id || '').localeCompare(a.id || '');
+    });
+    return sortedAds.slice(0, 3); // Only show first 3 ads (newest 3)
+  }, [getActiveAdsByPlacement, userRole]);
+
+  const dashboardSidebarAd = useMemo(
+    () => (dashboardSidebarAds.length > 0 ? dashboardSidebarAds[0] : null),
+    [dashboardSidebarAds]
+  );
+
+  const popupAd = useMemo(
+    () => getPrimaryAdForPlacement('popup', { role: userRole }),
+    [getPrimaryAdForPlacement, userRole]
+  );
+
+  useEffect(() => {
+    if (!popupAd) return;
+    const storageKey = `sponsor_popup_${popupAd.id}`;
+    if (
+      popupAd.frequency === 'once_per_session' &&
+      typeof window !== 'undefined' &&
+      window.sessionStorage.getItem(storageKey)
+    ) {
+      return;
+    }
+    const shouldShow =
+      popupAd.frequency === 'always' ||
+      popupAd.frequency === 'once_per_session' ||
+      (popupAd.frequency === 'low' && Math.random() < 0.4);
+    if (!shouldShow) return;
+    const timer = setTimeout(() => {
+      setIsSponsorPopupOpen(true);
+      if (
+        popupAd.frequency === 'once_per_session' &&
+        typeof window !== 'undefined'
+      ) {
+        window.sessionStorage.setItem(storageKey, 'shown');
+      }
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [popupAd]);
+
+  // Auto-rotate banner carousel every 10 seconds
+  useEffect(() => {
+    if (dashboardBannerAds.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setBannerCarouselIndex(prev =>
+        prev === dashboardBannerAds.length - 1 ? 0 : prev + 1
+      );
+    }, 10000); // Rotate every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [dashboardBannerAds.length]);
+
+  // Reset carousel index when ads change
+  useEffect(() => {
+    setBannerCarouselIndex(0);
+  }, [dashboardBannerAds.length]);
+
+  // Auto-rotate sidebar carousel every 5-6 seconds (randomized between 5-6)
+  useEffect(() => {
+    if (dashboardSidebarAds.length <= 1) return;
+
+    const getRandomInterval = () => Math.random() * 1000 + 5000; // 5000-6000ms
+
+    let timeoutId;
+    const scheduleNext = () => {
+      timeoutId = setTimeout(() => {
+        setSidebarCarouselIndex(prev =>
+          prev === dashboardSidebarAds.length - 1 ? 0 : prev + 1
+        );
+        scheduleNext();
+      }, getRandomInterval());
+    };
+
+    scheduleNext();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [dashboardSidebarAds.length]);
+
+  // Reset sidebar carousel index when ads change
+  useEffect(() => {
+    setSidebarCarouselIndex(0);
+  }, [dashboardSidebarAds.length]);
 
   // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
   const refreshBalanceRef = useRef(null);
@@ -899,50 +1189,29 @@ export function Dashboard() {
     }
   };
 
-  const courseSectionTitle = isChristmasMode
-    ? '📚 Winter Courses'
-    : 'My Courses';
+  const courseSectionTitle =
+    activeTheme === 'newYear' ? '📚 New Year Learning Path' : 'My Courses';
+
+  const currentYear = 2026;
 
   return (
     <div
-      className={`relative flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white ${
-        isChristmasMode ? 'christmas-surface' : ''
+      className={`relative flex flex-col min-h-screen ${
+        activeTheme === 'newYear'
+          ? 'dashboard-newyear-bg'
+          : 'bg-gradient-to-br from-gray-50 to-white'
       }`}
     >
-      {isChristmasMode && (
-        <div
-          className="snowfall-layer pointer-events-none"
-          aria-hidden="true"
-        />
+      {/* Subtle Year Watermark */}
+      {activeTheme === 'newYear' && (
+        <div className="dashboard-year-watermark" aria-hidden="true">
+          {currentYear}
+        </div>
       )}
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          {isChristmasMode ? (
-            <section className="christmas-hero-banner mb-8">
-              <div className="christmas-hero-content">
-                <p className="christmas-hero-kicker">Exclusive Holiday Mode</p>
-                <h1>
-                  Season's Greetings, {userName || 'Scholar'}! Keep learning
-                  this Christmas 🎄
-                </h1>
-                <p>
-                  Cozy up with pine-green goals, track your progress like Santa,
-                  and unlock extra sparkle with every lesson.
-                </p>
-                <div className="christmas-hero-cta">
-                  <span className="gift-pill">🎁 Bonus tips unlocked</span>
-                  <span className="snow-pill">❄️ Snow-safe streak active</span>
-                </div>
-              </div>
-              <div className="christmas-hero-visual">
-                <img
-                  src="https://cdn.pixabay.com/animation/2024/10/16/09/27/09-27-15-148_512.gif"
-                  alt="Festive tree with gifts"
-                  loading="lazy"
-                />
-                <div className="floating-snow" aria-hidden="true" />
-              </div>
-            </section>
+          {activeTheme === 'newYear' ? (
+            <NewYearBanner userName={userName} />
           ) : (
             <section className="athena-hero-banner mb-8">
               <div className="athena-hero-content">
@@ -965,25 +1234,58 @@ export function Dashboard() {
               </div>
             </section>
           )}
+          {/* New Year Widgets */}
+          {activeTheme === 'newYear' && <NewYearWidgets />}
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}
             <div className="xl:col-span-8 space-y-4">
               {/* Enhanced Greeting Section */}
-              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-                <div className="animate-gradient-shift absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10"></div>
-                <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
+              <div
+                className={`relative rounded-2xl overflow-hidden shadow-lg border ${
+                  activeTheme === 'newYear'
+                    ? 'dashboard-newyear-card border-gray-200/50'
+                    : 'border-gray-200'
+                }`}
+              >
+                <div
+                  className={`absolute inset-0 ${
+                    activeTheme === 'newYear'
+                      ? 'bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5'
+                      : 'animate-gradient-shift bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10'
+                  }`}
+                ></div>
+                <div
+                  className={`relative z-10 p-4 sm:p-5 backdrop-blur-sm ${
+                    activeTheme === 'newYear' ? 'bg-white/90' : 'bg-white/80'
+                  }`}
+                >
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <div
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0 ${
+                        activeTheme === 'newYear'
+                          ? 'bg-gradient-to-br from-blue-600 to-indigo-700'
+                          : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                      }`}
+                    >
                       <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
-                        {`Welcome back${userName ? `, ${userName}` : ''}!`}
+                      <h2
+                        className={`text-xl sm:text-2xl font-bold mb-1 leading-tight break-words ${
+                          activeTheme === 'newYear'
+                            ? 'text-gray-900'
+                            : 'bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent'
+                        }`}
+                      >
+                        {activeTheme === 'newYear'
+                          ? `Your ${currentYear} Learning Dashboard${userName ? `, ${userName}` : ''}`
+                          : `Welcome back${userName ? `, ${userName}` : ''}!`}
                       </h2>
                       <p className="text-gray-600 text-sm sm:text-base leading-snug">
-                        Continue your private education journey and achieve your
-                        learning goals.
+                        {activeTheme === 'newYear'
+                          ? "New Year. New Goals. Let's Learn. Start your journey to excellence."
+                          : 'Continue your private education journey and achieve your learning goals.'}
                       </p>
                     </div>
                   </div>
@@ -1078,7 +1380,11 @@ export function Dashboard() {
               </div>
 
               {/* My Courses Section (carousel with arrows) */}
-              <div className="mb-6 relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+              <div
+                className={`mb-6 relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4 ${
+                  activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-2xl font-bold text-gray-800">
                     {courseSectionTitle}
@@ -1158,25 +1464,90 @@ export function Dashboard() {
                       )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <h3 className="text-lg font-medium mb-2">
-                      No courses enrolled
+                  <div
+                    className={`flex flex-col items-center justify-center py-12 ${
+                      activeTheme === 'newYear' ? 'dashboard-empty-state' : ''
+                    }`}
+                  >
+                    <div className="text-5xl mb-4 opacity-50">🎯</div>
+                    <h3
+                      className={`text-lg font-medium mb-2 ${
+                        activeTheme === 'newYear' ? 'text-gray-900' : ''
+                      }`}
+                    >
+                      {activeTheme === 'newYear'
+                        ? 'Start your first course this year'
+                        : 'No courses enrolled'}
                     </h3>
-                    <p className="text-muted-foreground mb-4">
-                      You are not enrolled in any courses yet.
+                    <p
+                      className={`mb-4 ${
+                        activeTheme === 'newYear'
+                          ? 'text-gray-600'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {activeTheme === 'newYear'
+                        ? 'Set your learning goals for the year ahead and begin your journey.'
+                        : 'You are not enrolled in any courses yet.'}
                     </p>
                     <Button
                       variant="default"
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md transition-colors duration-200"
+                      className={`font-semibold shadow-md transition-all duration-300 ${
+                        activeTheme === 'newYear'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white hover:shadow-lg hover:-translate-y-0.5'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
                       onClick={() =>
                         (window.location.href = '/dashboard/catalog')
                       }
                     >
-                      Click to view courses
+                      {activeTheme === 'newYear'
+                        ? '🚀 Explore Courses'
+                        : 'Click to view courses'}
                     </Button>
                   </div>
                 )}
               </div>
+              {/* Dashboard Banner Ads - Between Courses and Calendar */}
+              {dashboardBannerAds.length > 0 && (
+                <div className="mb-6 relative">
+                  <div className="relative overflow-hidden rounded-2xl">
+                    <div
+                      className="flex transition-transform duration-500 ease-in-out"
+                      style={{
+                        transform: `translateX(-${bannerCarouselIndex * 100}%)`,
+                      }}
+                    >
+                      {dashboardBannerAds.map((ad, index) => (
+                        <div key={ad.id} className="w-full flex-shrink-0">
+                          <SponsorBanner
+                            ad={ad}
+                            isActive={index === bannerCarouselIndex}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dots Indicator */}
+                  {dashboardBannerAds.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                      {dashboardBannerAds.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setBannerCarouselIndex(index)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            index === bannerCarouselIndex
+                              ? 'bg-white w-6'
+                              : 'bg-white/50 hover:bg-white/75'
+                          }`}
+                          aria-label={`Go to ad ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Latest Updates Section */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -1200,7 +1571,47 @@ export function Dashboard() {
             </div>
 
             {/* Right section - enhanced sidebar widgets */}
-            <div className="xl:col-span-4 space-y-4">
+            <div className="xl:col-span-4 space-y-6">
+              {dashboardSidebarAds.length > 0 && (
+                <div className="relative overflow-hidden rounded-xl h-[200px]">
+                  <div
+                    className="flex flex-col transition-transform duration-500 ease-in-out h-full"
+                    style={{
+                      transform: `translateY(-${sidebarCarouselIndex * 100}%)`,
+                    }}
+                  >
+                    {dashboardSidebarAds.map((ad, index) => (
+                      <div
+                        key={ad.id}
+                        className="w-full flex-shrink-0 h-[200px]"
+                      >
+                        <SponsorSidebarAd
+                          ad={ad}
+                          isActive={index === sidebarCarouselIndex}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dots Indicator for sidebar ads */}
+                  {dashboardSidebarAds.length > 1 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                      {dashboardSidebarAds.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSidebarCarouselIndex(index)}
+                          className={`h-1.5 rounded-full transition-all ${
+                            index === sidebarCarouselIndex
+                              ? 'bg-white w-4'
+                              : 'bg-white/50 hover:bg-white/75 w-1.5'
+                          }`}
+                          aria-label={`Go to ad ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Announcements*/}
               {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1211,7 +1622,13 @@ export function Dashboard() {
               </div> */}
 
               {/* Important Updates Section */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper">
+              <div
+                className={`bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper ${
+                  activeTheme === 'newYear'
+                    ? 'dashboard-newyear-card ny-important-updates'
+                    : ''
+                }`}
+              >
                 <style>{importantUpdateStyles}</style>
                 <div className="mb-2">
                   <div className="flex items-center gap-2 mb-2">
@@ -1326,22 +1743,37 @@ export function Dashboard() {
             </div>
           </div>
           {/* Catalog Banner Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+          <div
+            className={`w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 ${
+              activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+            }`}
+          >
             <div className="text-center mb-4"></div>
             <DashboardCarousel />
           </div>
 
           <div className="mb-6">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <div
+              className={`bg-white rounded-2xl shadow-lg border border-gray-200 p-6 ${
+                activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+              }`}
+            >
               <div className="flex items-center gap-3 mb-4">
                 <MonitorPlay className="h-6 w-6 text-purple-500" />
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2
+                  className={`text-2xl font-bold ${
+                    activeTheme === 'newYear'
+                      ? 'text-gray-900'
+                      : 'text-gray-800'
+                  }`}
+                >
                   Learning Sessions
                 </h2>
               </div>
               <LiveClasses />
             </div>
           </div>
+
           <UpcomingCourses />
           {/* Groups Preview Section */}
           <div className="mb-6">
@@ -1645,6 +2077,13 @@ export function Dashboard() {
           </div>
         </div>
       </main>
+      {popupAd && (
+        <SponsorAdPopup
+          ad={popupAd}
+          open={isSponsorPopupOpen}
+          onClose={() => setIsSponsorPopupOpen(false)}
+        />
+      )}
       {/* Credits Modal (reused for services top-up) */}
       {showCreditsModal && (
         <CreditPurchaseModal

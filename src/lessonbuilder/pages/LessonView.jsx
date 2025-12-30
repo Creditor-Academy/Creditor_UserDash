@@ -19,6 +19,7 @@ import {
   RefreshCw,
   ArrowLeft,
   ChevronRight,
+  FolderOpen,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -660,6 +661,17 @@ const LessonView = () => {
                   onClick={() => handleViewLesson(lesson)}
                 >
                   <Play className="h-4 w-4" /> Start Lesson
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() =>
+                    navigate(
+                      `/dashboard/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/resources`
+                    )
+                  }
+                >
+                  <FolderOpen className="h-4 w-4" /> View Resources
                 </Button>
                 <Button
                   className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
