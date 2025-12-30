@@ -41,7 +41,6 @@ export default function Organizations() {
   const [addOnQuantity, setAddOnQuantity] = useState('');
   const [isAllocating, setIsAllocating] = useState(false);
   const [addOnStatus, setAddOnStatus] = useState(null);
-  const staticOrgId = '997be751-2e1b-4751-80af-3b29f81e0eb0';
 
   // Fetch organizations from API
   useEffect(() => {
@@ -103,19 +102,28 @@ export default function Organizations() {
       return;
     }
 
+    const orgId = selectedAddOnOrg?.id;
+    if (!orgId) {
+      setAddOnStatus({
+        type: 'error',
+        message: 'No organization selected for allocation.',
+      });
+      return;
+    }
+
     let endpoint = '';
     let payload = {};
     if (addOnType === 'tokens') {
-      endpoint = `${baseURL}/api/org/updateToken/${staticOrgId}`;
+      endpoint = `${baseURL}/api/org/updateToken/${orgId}`;
       // Backend expects integer tokens (no million scaling)
       payload = { ai_token_limit: Math.round(numericQty) };
     } else if (addOnType === 'storage') {
-      endpoint = `${baseURL}/api/org/updateStorage/${staticOrgId}`;
+      endpoint = `${baseURL}/api/org/updateStorage/${orgId}`;
       // UI enters GB; send as integer GB (also include storage_limit for compatibility)
       const gbValue = Math.round(numericQty);
       payload = { storage: gbValue, storage_limit: gbValue };
     } else if (addOnType === 'users') {
-      endpoint = `${baseURL}/api/org/updateUser/${staticOrgId}`;
+      endpoint = `${baseURL}/api/org/updateUser/${orgId}`;
       payload = { seats: Math.max(1, Math.round(numericQty)) };
     } else {
       setAddOnStatus({
