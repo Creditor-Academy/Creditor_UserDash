@@ -1,10 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FaCloud,
-  FaCheckCircle,
-  FaShoppingCart,
-  FaArrowUp,
-} from 'react-icons/fa';
+import { FaCloud, FaShoppingCart, FaArrowUp, FaBolt } from 'react-icons/fa';
 import { X } from 'lucide-react';
 import { api } from '@/services/apiClient';
 import { useUser } from '@/contexts/UserContext';
@@ -74,19 +69,6 @@ const StatCard = ({
   );
 };
 
-const formatBytes = bytes => {
-  const value = Number(bytes) || 0;
-  if (value <= 0) return { value: 0, unit: 'GB' };
-  const kb = 1024;
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.min(
-    Math.floor(Math.log(value) / Math.log(kb)),
-    units.length - 1
-  );
-  const normalized = value / Math.pow(kb, i);
-  return { value: normalized, unit: units[i] };
-};
-
 const StorageTokens = () => {
   const { userProfile } = useUser();
   const [orgData, setOrgData] = useState(null);
@@ -94,7 +76,9 @@ const StorageTokens = () => {
   const [error, setError] = useState(null);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isBuyStorageModalOpen, setIsBuyStorageModalOpen] = useState(false);
+  const [isBuyTokensModalOpen, setIsBuyTokensModalOpen] = useState(false);
   const [storageAmount, setStorageAmount] = useState('');
+  const [tokensAmount, setTokensAmount] = useState('');
 
   const orgId =
     userProfile?.organization_id ||
@@ -154,6 +138,19 @@ const StorageTokens = () => {
     };
   }, [orgData]);
 
+  const tokens = useMemo(() => {
+    const used = Number(orgData?.ai_tokens_used) || 0;
+    const total = Number(orgData?.ai_token_limit) || 0;
+
+    return {
+      used,
+      total,
+      usedInMillions: used / 1_000_000,
+      totalInMillions: total / 1_000_000,
+      unit: 'M',
+    };
+  }, [orgData]);
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl text-white p-6 shadow-lg">
@@ -177,6 +174,12 @@ const StorageTokens = () => {
               <FaShoppingCart /> Buy Storage
             </button>
             <button
+              onClick={() => setIsBuyTokensModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 text-indigo-700 font-semibold shadow-sm hover:shadow transition"
+            >
+              <FaBolt /> Buy Tokens
+            </button>
+            <button
               onClick={() => setIsPlanModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/50 text-white border border-white/30 font-semibold hover:bg-white/15 transition"
             >
@@ -189,6 +192,140 @@ const StorageTokens = () => {
       {loading && (
         <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
           <p className="text-gray-600">Loading usage...</p>
+        </div>
+      )}
+
+      {/* Buy Tokens Modal */}
+      {isBuyTokensModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4"
+          onClick={() => setIsBuyTokensModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-white"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Buy AI Tokens</h2>
+              <button
+                onClick={() => setIsBuyTokensModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Close"
+              >
+                <X size={24} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Current Token Info */}
+              {orgData && (
+                <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-1">
+                    Current AI Tokens
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {tokens.usedInMillions.toFixed(2)}M /{' '}
+                    {tokens.totalInMillions.toFixed(2)}M tokens
+                  </p>
+                </div>
+              )}
+
+              {/* Token Amount Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Token Amount (in millions)
+                </label>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={tokensAmount}
+                  onChange={e => setTokensAmount(e.target.value)}
+                  placeholder="Enter tokens to buy (e.g., 0.5, 1, 2)"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Pricing: $17 per 1M tokens. Enter the number of millions you
+                  want to purchase.
+                </p>
+              </div>
+
+              {/* Price Calculation */}
+              {tokensAmount && Number(tokensAmount) > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-purple-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Tokens:
+                    </span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {Number(tokensAmount).toFixed(2)}M
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Price per 1M:
+                    </span>
+                    <span className="text-lg font-bold text-gray-900">
+                      $17.00
+                    </span>
+                  </div>
+                  <div className="border-t border-purple-200 pt-2 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-bold text-gray-900">
+                        Total Amount:
+                      </span>
+                      <span className="text-2xl font-bold text-purple-700">
+                        $
+                        {(Number(tokensAmount) * 17).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Button */}
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    if (!tokensAmount || Number(tokensAmount) <= 0) {
+                      alert('Please enter a valid token amount');
+                      return;
+                    }
+                    // Handle payment here
+                    console.log(
+                      'Processing payment for',
+                      tokensAmount,
+                      'M tokens'
+                    );
+                    alert(
+                      `Payment processing for ${Number(tokensAmount).toFixed(
+                        2
+                      )}M tokens ($${(Number(tokensAmount) * 17).toFixed(2)})`
+                    );
+                  }}
+                  disabled={!tokensAmount || Number(tokensAmount) <= 0}
+                  className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Proceed to Payment
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsBuyTokensModalOpen(false);
+                  setTokensAmount('');
+                }}
+                className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -211,85 +348,16 @@ const StorageTokens = () => {
               tag="Media, files, resources"
               description="Includes courses, media uploads, and shared assets."
             />
-            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
-              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                Usage Health
-              </p>
-              <h3 className="text-xl font-bold text-gray-900 mt-1 mb-3">
-                {storage.total
-                  ? `${Math.round((storage.used / storage.total) * 100)}% used`
-                  : '—'}
-              </h3>
-              <ProgressBar
-                percent={
-                  storage.total
-                    ? Math.round((storage.used / storage.total) * 100)
-                    : 0
-                }
-              />
-              <p className="mt-3 text-sm text-gray-600">
-                Keep usage below 80% for best performance. Offload old media or
-                upgrade when you approach the limit.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-                  <FaCloud />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Storage Summary</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {storage.used.toFixed(2)} {storage.unit} /{' '}
-                    {formatNumber(storage.total)} {storage.unit}
-                  </p>
-                </div>
-              </div>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <FaCheckCircle className="text-blue-500 mt-0.5" />
-                  <span>
-                    Optimize uploads to reduce usage and keep performance high.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <FaCheckCircle className="text-blue-500 mt-0.5" />
-                  <span>
-                    Archive old lesson media to reclaim space instantly.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <FaCheckCircle className="text-blue-500 mt-0.5" />
-                  <span>Upgrade anytime; changes apply immediately.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Quick Actions</p>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Keep storage healthy
-              </h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setIsBuyStorageModalOpen(true)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-800 font-semibold hover:border-blue-500 hover:text-blue-700 transition flex items-center justify-between"
-                >
-                  <span>Buy more storage</span>
-                  <FaShoppingCart />
-                </button>
-                <button
-                  onClick={() => setIsBuyStorageModalOpen(true)}
-                  className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-sm hover:shadow transition flex items-center justify-between"
-                >
-                  <span>Upgrade storage plan</span>
-                  <FaArrowUp />
-                </button>
-              </div>
-            </div>
+            <StatCard
+              icon={FaBolt}
+              title="AI Tokens"
+              used={tokens.usedInMillions}
+              total={tokens.totalInMillions}
+              unit={`${tokens.unit} tokens`}
+              accent="bg-purple-600"
+              tag="AI requests, chat, media"
+              description="Track and top-up token capacity used across AI features."
+            />
           </div>
         </>
       )}
