@@ -653,7 +653,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                         ? 's'
                         : ''}
                       {searchResults.results?.users?.length > 0 && (
-                        <span>
+                        <span className="text-gray-700">
                           {' '}
                           and {searchResults.results.users.length} user
                           {searchResults.results.users.length !== 1 ? 's' : ''}

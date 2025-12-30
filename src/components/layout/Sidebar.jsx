@@ -188,14 +188,15 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   };
 
   const handleNavigate = path => {
-    // Keep sidebar collapsed when on instructor portal
     if (collapsed && path !== '/instructor') {
       setCollapsed(false);
     }
-    // Collapse sidebar when navigating to instructor portal
+
     if (path === '/instructor') {
       setCollapsed(true);
     }
+
+    navigate(path); // ✅ THIS WAS MISSING
   };
 
   const handleLogoClick = () => {
@@ -272,11 +273,12 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       {/* Header */}
       <div
         className={cn(
-          'sidebar-header relative flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
-          collapsed ? 'justify-center' : 'justify-between',
-          activeTheme === 'newYear' ? 'newyear-sidebar-header' : ''
+          'sidebar-header relative flex items-center border-b border-gray-200 p-4 pr-0 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
+          collapsed ? 'justify-center' : 'justify-between'
         )}
       >
+        <div className="sidebar-lights" aria-hidden="true" />
+
         {!collapsed && (
           <motion.button
             onClick={handleLogoClick}
@@ -285,7 +287,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative sidebar-logo-mark">
@@ -345,7 +346,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               variant="ghost"
               size="icon"
               onClick={() => setCollapsed(!collapsed)}
-              className="text-white hover:bg-white/20 border-none rounded-lg"
+              className="text-white hover:bg-white/20 rounded-lg"
             >
               <ChevronLeft size={18} />
             </Button>
@@ -463,8 +464,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 <SidebarItem
                   icon={CreditCard}
                   label="Creditor Card"
-                  href="#"
-                  active={false}
                   collapsed={collapsed}
                   onNavigate={handleCreditorCardClick}
                 />
