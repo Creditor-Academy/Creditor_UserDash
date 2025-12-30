@@ -393,10 +393,10 @@ const EventAttendanceModal = ({
 
                           {/* Right section: Attendance date & time */}
                           <div className="text-right text-sm text-gray-600">
-                            {attendee.attendanceTime && (
+                            {attendee.attendanceDate && (
                               <>
                                 <p className="font-medium">
-                                  {formatDateOnly(attendee.attendanceTime)}
+                                  {formatDateOnly(attendee.attendanceDate)}
                                 </p>
                                 <div className="flex items-center gap-1 justify-end">
                                   <svg
