@@ -54,8 +54,6 @@ const SidebarItem = ({
   dropdownContent,
   onNavigate,
   external,
-  showNewYearAccent,
-  newYearAccent,
 }) => {
   const handleClick = () => {
     if (external) {
@@ -81,11 +79,6 @@ const SidebarItem = ({
         <Icon size={collapsed ? 24 : 20} />
         {!collapsed && (
           <span className="font-medium sidebar-menu-label">{label}</span>
-        )}
-        {!collapsed && showNewYearAccent && (
-          <span className="ny-sidebar-accent" aria-hidden="true">
-            {newYearAccent}
-          </span>
         )}
       </button>
     );
@@ -128,11 +121,6 @@ const SidebarItem = ({
                     {label}
                   </span>
                 )}
-                {!collapsed && showNewYearAccent && (
-                  <span className="ny-sidebar-accent" aria-hidden="true">
-                    {newYearAccent}
-                  </span>
-                )}
               </button>
             ) : (
               <Link
@@ -167,11 +155,6 @@ const SidebarItem = ({
                     {label}
                   </span>
                 )}
-                {!collapsed && showNewYearAccent && (
-                  <span className="ny-sidebar-accent" aria-hidden="true">
-                    {newYearAccent}
-                  </span>
-                )}
               </Link>
             )}
           </motion.div>
@@ -195,30 +178,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
   const { activeTheme } = useContext(SeasonalThemeContext);
-  const isNewYear = activeTheme === 'newYear';
-
-  const getNewYearAccentForLabel = sidebarLabel => {
-    switch (sidebarLabel) {
-      case 'Dashboard':
-        return '✨';
-      case 'My Courses':
-        return '📚';
-      case 'Study Groups':
-        return '🎊';
-      case 'Course Catalog':
-        return '🎆';
-      case 'Attendance':
-        return '🗓️';
-      case 'Messages':
-        return '💬';
-      case 'Sponsor Center':
-        return '🎁';
-      case 'Creditor Card':
-        return '💳';
-      default:
-        return '✨';
-    }
-  };
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -427,8 +386,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Dashboard')}
                 />
               </motion.div>
 
@@ -440,8 +397,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/courses')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('My Courses')}
                 />
               </motion.div>
 
@@ -453,8 +408,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/groups')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Study Groups')}
                 />
               </motion.div>
 
@@ -466,8 +419,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/catalog')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Course Catalog')}
                 />
               </motion.div>
 
@@ -479,8 +430,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/attendance')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Attendance')}
                 />
               </motion.div>
 
@@ -493,8 +442,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/messages')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Messages')}
                 />
               </motion.div>
 
@@ -508,8 +455,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   )}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Sponsor Center')}
                 />
               </motion.div>
 
@@ -522,8 +467,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={false}
                   collapsed={collapsed}
                   onNavigate={handleCreditorCardClick}
-                  showNewYearAccent={isNewYear}
-                  newYearAccent={getNewYearAccentForLabel('Creditor Card')}
                 />
               </motion.div>
             </>
@@ -704,34 +647,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
           </DropdownMenu>
         )}
       </motion.div>
-
-      {isNewYear && (
-        <style>{`
-          .ny-sidebar-accent {
-            position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 14px;
-            opacity: 0.95;
-            filter: drop-shadow(0 10px 14px rgba(2, 6, 23, 0.14));
-            animation: ny-accent-twinkle 1.8s ease-in-out infinite;
-            pointer-events: none;
-          }
-
-          @keyframes ny-accent-twinkle {
-            0% { transform: translateY(-50%) scale(1); opacity: 0.8; }
-            50% { transform: translateY(calc(-50% - 1px)) scale(1.08); opacity: 1; }
-            100% { transform: translateY(-50%) scale(1); opacity: 0.85; }
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .ny-sidebar-accent {
-              animation: none !important;
-            }
-          }
-        `}</style>
-      )}
     </motion.div>
   );
 }
