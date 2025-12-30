@@ -1255,6 +1255,7 @@ const PaymentDashboard = () => {
   ]);
 
   // Analytics: purchases by course (top N), lapses, and lightweight AI suggestions
+  // Calculated client-side from existing API data (reusing /payment-order/grant-deduct and /payment-order/credits/allusage)
   const analytics = useMemo(() => {
     // Top courses by usage purchases
     const purchaseCounts = new Map();
