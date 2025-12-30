@@ -1,1075 +1,157 @@
-// import React, { useState, useRef } from 'react';
-// import { motion } from 'framer-motion';
-// import { useNavigate } from 'react-router-dom';
-// import { ChevronLeft, ChevronRight } from 'lucide-react';
-// import Voice from '../../assets/Voice.webp';
-// import AI from '../../assets/aicourse.webp';
-// import Multi from '../../assets/multimedia.webp';
-// import Pathway from '../../assets/Pathway.webp';
-// import Progress from '../../assets/analytics.webp';
-// import Template from '../../assets/Template.webp';
-
-// const KeyCapabilities = () => {
-//   const [hoveredIndex, setHoveredIndex] = useState(null);
-//   const [currentSlide, setCurrentSlide] = useState(0);
-//   const navigate = useNavigate();
-//   const sliderRef = useRef(null);
-
-//   const capabilities = [
-//     {
-//       title: 'AI-Powered Course Creation',
-//       description:
-//         'Generate complete courses in seconds with intelligent AI that understands your content needs and learner goals.',
-//       image: AI,
-//       buttonText: 'Learn More',
-//       buttonStyle: 'blue', // blue button
-//       bottomColor: '#3b82f6', // blue
-//       icon: (
-//         <svg
-//           className="w-6 h-6"
-//           fill="none"
-//           stroke="currentColor"
-//           viewBox="0 0 24 24"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-//           />
-//         </svg>
-//       ),
-//     },
-//     {
-//       title: 'Smart Lesson Templates',
-//       description:
-//         'Pre-designed, research-backed templates that adapt to any subject, making course design effortless and effective.',
-//       image: Template,
-//       buttonText: 'Learn More',
-//       buttonStyle: 'blue', // blue button
-//       bottomColor: '#f59e0b', // orange
-//       icon: (
-//         <svg
-//           className="w-6 h-6"
-//           fill="none"
-//           stroke="currentColor"
-//           viewBox="0 0 24 24"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-//           />
-//         </svg>
-//       ),
-//     },
-//     {
-//       title: 'Adaptive Learner Pathways',
-//       description:
-//         'VAK model integration that personalizes content delivery based on Visual, Auditory, and Kinesthetic learning styles.',
-//       image: Pathway,
-//       buttonText: 'Learn More',
-//       buttonStyle: 'blue', // blue button
-//       bottomColor: '#10b981', // green
-//       icon: (
-//         <svg
-//           className="w-6 h-6"
-//           fill="none"
-//           stroke="currentColor"
-//           viewBox="0 0 24 24"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M13 10V3L4 14h7v7l9-11h-7z"
-//           />
-//         </svg>
-//       ),
-//     },
-//     {
-//       title: 'Multimedia & Interactivity Suite',
-//       description:
-//         'Rich media integration with interactive elements, quizzes, and gamification to boost engagement and retention.',
-//       image: Multi,
-//       buttonText: 'Learn More',
-//       buttonStyle: 'blue', // blue button
-//       bottomColor: '#8b5cf6', // purple
-//       icon: (
-//         <svg
-//           className="w-6 h-6"
-//           fill="none"
-//           stroke="currentColor"
-//           viewBox="0 0 24 24"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-//           />
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-//           />
-//         </svg>
-//       ),
-//     },
-//     {
-//       title: 'AI Voice & Video Presenter',
-//       description:
-//         'Lifelike AI narrators and video presenters that bring your content to life with natural, engaging delivery.',
-//       image: Voice,
-//       buttonText: 'Learn More',
-//       buttonStyle: 'blue', // blue button
-//       bottomColor: '#06b6d4', // cyan
-//       icon: (
-//         <svg
-//           className="w-6 h-6"
-//           fill="none"
-//           stroke="currentColor"
-//           viewBox="0 0 24 24"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-//           />
-//         </svg>
-//       ),
-//     },
-//     {
-//       title: 'Analytics & Progress Dashboard',
-//       description:
-//         'Real-time insights into learner progress, engagement metrics, and performance analytics to optimize outcomes.',
-//       image: Progress,
-//       buttonText: 'Learn More',
-//       buttonStyle: 'blue', // blue button
-//       bottomColor: '#ef4444', // red
-//       icon: (
-//         <svg
-//           className="w-6 h-6"
-//           fill="none"
-//           stroke="currentColor"
-//           viewBox="0 0 24 24"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth={2}
-//             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-//           />
-//         </svg>
-//       ),
-//     },
-//   ];
-
-//   // Slider functions for mobile
-//   const nextSlide = () => {
-//     setCurrentSlide(prev => (prev + 1) % capabilities.length);
-//   };
-
-//   const prevSlide = () => {
-//     setCurrentSlide(
-//       prev => (prev - 1 + capabilities.length) % capabilities.length
-//     );
-//   };
-
-//   const goToSlide = index => {
-//     setCurrentSlide(index);
-//   };
-
-//   return (
-//     <section
-//       className="py-20 px-4 relative overflow-hidden"
-//       style={{
-//         background:
-//           'linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)',
-//       }}
-//     >
-//       {/* Decorative background elements */}
-//       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-//         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
-//         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-400/5 rounded-full blur-3xl" />
-//         {/* Grid pattern */}
-//         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-//       </div>
-
-//       <div className="max-w-7xl mx-auto relative z-10">
-//         {/* Section Header */}
-//         <motion.div
-//           className="text-center mb-16"
-//           initial={{ opacity: 0, y: 20 }}
-//           whileInView={{ opacity: 1, y: 0 }}
-//           viewport={{ once: true }}
-//           transition={{ duration: 0.6 }}
-//         >
-//           <h2
-//             className="text-4xl md:text-5xl lg:text-6xl font-normal mb-4 leading-tight"
-//             style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
-//           >
-//             <span className="text-gray-900">Revolutionary Features</span>
-//           </h2>
-//           <p
-//             className="text-lg text-gray-600 max-w-3xl mx-auto font-normal"
-//             style={{ fontFamily: 'Arial, sans-serif' }}
-//           >
-//             Experience the next generation of learning technology
-//           </p>
-//         </motion.div>
-
-//         {/* Desktop Grid Layout */}
-//         <div className="hidden lg:grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-//           {capabilities.map((capability, index) => (
-//             <motion.div
-//               key={index}
-//               className="group relative h-full"
-//               initial={{ opacity: 0, y: 30 }}
-//               whileInView={{ opacity: 1, y: 0 }}
-//               viewport={{ once: true }}
-//               transition={{ duration: 0.5, delay: index * 0.1 }}
-//             >
-//               {/* Card */}
-//               <div
-//                 className="group relative h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col"
-//                 onMouseEnter={() => setHoveredIndex(index)}
-//                 onMouseLeave={() => setHoveredIndex(null)}
-//               >
-//                 {/* Image Section */}
-//                 {capability.image && (
-//                   <div className="relative w-full h-48 flex-shrink-0 overflow-hidden">
-//                     <img
-//                       src={capability.image}
-//                       alt={capability.title}
-//                       className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-//                     />
-//                     {/* Gradient overlay */}
-//                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-
-//                     {/* Icon overlay */}
-//                     <div className="absolute top-4 right-4">
-//                       <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
-//                         <div className="w-5 h-5 text-blue-600 flex items-center justify-center">
-//                           {capability.icon}
-//                         </div>
-//                       </div>
-//                     </div>
-//                   </div>
-//                 )}
-
-//                 {/* Content */}
-//                 <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
-//                   {/* Hover Fill Animation */}
-//                   <div
-//                     className="absolute inset-0 transition-all duration-500 ease-out"
-//                     style={{
-//                       backgroundColor: capability.bottomColor,
-//                       transform:
-//                         hoveredIndex === index
-//                           ? 'translateY(0)'
-//                           : 'translateY(100%)',
-//                       opacity: hoveredIndex === index ? 0.2 : 0,
-//                     }}
-//                   />
-
-//                   {/* Content with higher z-index */}
-//                   <div className="relative z-10 flex flex-col flex-grow">
-//                     {/* Title */}
-//                     <h3
-//                       className="text-lg font-bold mb-4 text-gray-900 leading-tight"
-//                       style={{ fontFamily: 'Arial, sans-serif' }}
-//                     >
-//                       {capability.title}
-//                     </h3>
-
-//                     {/* Description */}
-//                     <p
-//                       className="text-gray-600 leading-relaxed text-sm flex-grow mb-6"
-//                       style={{ fontFamily: 'Arial, sans-serif' }}
-//                     >
-//                       {capability.description}
-//                     </p>
-//                   </div>
-//                 </div>
-
-//                 {/* Bottom Color Line - Static */}
-//                 <div className="absolute bottom-0 left-0 right-0 h-1">
-//                   <div
-//                     style={{
-//                       backgroundColor: capability.bottomColor,
-//                       height: '100%',
-//                     }}
-//                   />
-//                 </div>
-//               </div>
-//             </motion.div>
-//           ))}
-//         </div>
-
-//         {/* Mobile Slider Layout */}
-//         <div className="lg:hidden max-w-7xl mx-auto">
-//           {/* Slider Container */}
-//           <div className="relative overflow-hidden">
-//             <div
-//               ref={sliderRef}
-//               className="flex transition-transform duration-300 ease-in-out"
-//               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-//             >
-//               {capabilities.map((capability, index) => (
-//                 <div key={index} className="w-full flex-shrink-0 px-4">
-//                   <motion.div
-//                     className="group relative h-full"
-//                     initial={{ opacity: 0, y: 30 }}
-//                     whileInView={{ opacity: 1, y: 0 }}
-//                     viewport={{ once: true }}
-//                     transition={{ duration: 0.5, delay: index * 0.1 }}
-//                   >
-//                     {/* Card */}
-//                     <div
-//                       className="group relative h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col"
-//                       onMouseEnter={() => setHoveredIndex(index)}
-//                       onMouseLeave={() => setHoveredIndex(null)}
-//                     >
-//                       {/* Image Section */}
-//                       {capability.image && (
-//                         <div className="relative w-full h-48 flex-shrink-0 overflow-hidden">
-//                           <img
-//                             src={capability.image}
-//                             alt={capability.title}
-//                             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-//                           />
-//                           {/* Gradient overlay */}
-//                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-
-//                           {/* Icon overlay */}
-//                           <div className="absolute top-4 right-4">
-//                             <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
-//                               <div className="w-5 h-5 text-blue-600 flex items-center justify-center">
-//                                 {capability.icon}
-//                               </div>
-//                             </div>
-//                           </div>
-//                         </div>
-//                       )}
-
-//                       {/* Content */}
-//                       <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
-//                         {/* Hover Fill Animation */}
-//                         <div
-//                           className="absolute inset-0 transition-all duration-500 ease-out"
-//                           style={{
-//                             backgroundColor: capability.bottomColor,
-//                             transform:
-//                               hoveredIndex === index
-//                                 ? 'translateY(0)'
-//                                 : 'translateY(100%)',
-//                             opacity: hoveredIndex === index ? 0.2 : 0,
-//                           }}
-//                         />
-
-//                         {/* Content with higher z-index */}
-//                         <div className="relative z-10 flex flex-col flex-grow">
-//                           {/* Title */}
-//                           <h3
-//                             className="text-lg font-bold mb-4 text-gray-900 leading-tight"
-//                             style={{ fontFamily: 'Arial, sans-serif' }}
-//                           >
-//                             {capability.title}
-//                           </h3>
-
-//                           {/* Description */}
-//                           <p
-//                             className="text-gray-600 leading-relaxed text-sm flex-grow mb-6"
-//                             style={{ fontFamily: 'Arial, sans-serif' }}
-//                           >
-//                             {capability.description}
-//                           </p>
-//                         </div>
-//                       </div>
-
-//                       {/* Bottom Color Line - Static */}
-//                       <div className="absolute bottom-0 left-0 right-0 h-1">
-//                         <div
-//                           style={{
-//                             backgroundColor: capability.bottomColor,
-//                             height: '100%',
-//                           }}
-//                         />
-//                       </div>
-//                     </div>
-//                   </motion.div>
-//                 </div>
-//               ))}
-//             </div>
-
-//             {/* Navigation Arrows */}
-//             <button
-//               onClick={prevSlide}
-//               className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-colors duration-200 z-10"
-//               aria-label="Previous slide"
-//             >
-//               <ChevronLeft className="w-5 h-5 text-gray-700" />
-//             </button>
-
-//             <button
-//               onClick={nextSlide}
-//               className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-colors duration-200 z-10"
-//               aria-label="Next slide"
-//             >
-//               <ChevronRight className="w-5 h-5 text-gray-700" />
-//             </button>
-//           </div>
-
-//           {/* Dots Indicator */}
-//           <div className="flex justify-center mt-6 space-x-2">
-//             {capabilities.map((_, index) => (
-//               <button
-//                 key={index}
-//                 onClick={() => goToSlide(index)}
-//                 className={`w-3 h-3 rounded-full transition-all duration-200 ${
-//                   index === currentSlide
-//                     ? 'bg-blue-600 scale-125'
-//                     : 'bg-gray-300 hover:bg-gray-400'
-//                 }`}
-//                 aria-label={`Go to slide ${index + 1}`}
-//               />
-//             ))}
-//           </div>
-//         </div>
-
-//         {/* Bottom CTA */}
-//         <motion.div
-//           className="text-center mt-20"
-//           initial={{ opacity: 0, y: 20 }}
-//           whileInView={{ opacity: 1, y: 0 }}
-//           viewport={{ once: true }}
-//           transition={{ duration: 0.6, delay: 0.3 }}
-//         >
-//           <div className="max-w-2xl mx-auto">
-//             <h3
-//               className="text-2xl font-normal mb-4 text-gray-900"
-//               style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
-//             >
-//               Ready to transform your learning experience?
-//             </h3>
-//             <p
-//               className="text-gray-600 mb-8 text-base"
-//               style={{ fontFamily: 'Arial, sans-serif' }}
-//             >
-//               Join thousands of educators worldwide who are already creating
-//               amazing courses with Athena LMS
-//             </p>
-
-//             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-//               <button
-//                 onClick={() => navigate('/contact')}
-//                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-//                 style={{ fontFamily: 'Arial, sans-serif' }}
-//               >
-//                 Start Your Journey
-//                 <svg
-//                   className="w-4 h-4"
-//                   fill="none"
-//                   stroke="currentColor"
-//                   viewBox="0 0 24 24"
-//                 >
-//                   <path
-//                     strokeLinecap="round"
-//                     strokeLinejoin="round"
-//                     strokeWidth={2}
-//                     d="M9 5l7 7-7 7"
-//                   />
-//                 </svg>
-//               </button>
-
-//               {/* <button 
-//                 onClick={() => navigate('/trial')}
-//                 className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2"
-//                 style={{ fontFamily: 'Arial, sans-serif' }}
-//               >
-//                 Try Free Trial
-//                 <svg
-//                   className="w-4 h-4"
-//                   fill="none"
-//                   stroke="currentColor"
-//                   viewBox="0 0 24 24"
-//                 >
-//                   <path
-//                     strokeLinecap="round"
-//                     strokeLinejoin="round"
-//                     strokeWidth={2}
-//                     d="M9 5l7 7-7 7"
-//                   />
-//                 </svg>
-//               </button> */}
-//             </div>
-
-//             {/* <p className="text-gray-500 mt-6 text-sm" style={{ fontFamily: 'Arial, sans-serif' }}>
-//               No credit card required • 14-day free trial • Cancel anytime
-//             </p> */}
-//           </div>
-//         </motion.div>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default KeyCapabilities;
-
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ShoppingCart,
+  CreditCard,
+  Layers,
+  BarChart3,
+  Brain,
+  Puzzle,
+} from 'lucide-react';
 
-import Voice from '../../assets/Voice.webp';
-import AI from '../../assets/aicourse.webp';
-import Multi from '../../assets/multimedia.webp';
-import Pathway from '../../assets/Pathway.webp';
-import Progress from '../../assets/analytics.webp';
-import Template from '../../assets/Template.webp';
+const features = [
+  {
+    title: 'E-Commerce Marketplace',
+    description:
+      'Shop like Amazon with intelligent search, curated categories, demos, reviews, ratings, and side-by-side comparisons.',
+    icon: ShoppingCart,
+  },
+  {
+    title: 'Flexible Purchasing Options',
+    description:
+      'Freemium trials, subscriptions, one-time purchases, AI credits, and bundled plans — all in one checkout flow.',
+    icon: CreditCard,
+  },
+  {
+    title: '8 Modular Flagship Products',
+    description:
+      'Choose exactly what you need. Each product integrates seamlessly into the Athena ecosystem.',
+    icon: Layers,
+  },
+  {
+    title: 'Centralized Dashboard',
+    description:
+      'Deploy tools, track usage, monitor learner progress, analyze performance, and measure ROI in one place.',
+    icon: BarChart3,
+  },
+  {
+    title: 'AI-Powered Automation',
+    description:
+      'Eliminate repetitive work across authoring, design, delivery, and management with intelligent automation.',
+    icon: Brain,
+  },
+  {
+    title: 'Scalability & Integration',
+    description:
+      'Built for solo creators to global enterprises with SCORM compliance and seamless LMS exports.',
+    icon: Puzzle,
+  },
+];
 
-// ⬇️ update this path to where your tree image actually lives
-import TreeElement from '../../assets/Treeelement.png';
-
-const KeyCapabilities = () => {
-  const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const navigate = useNavigate();
-  const sliderRef = useRef(null);
-
-  const capabilities = [
-    {
-      title: 'AI-Powered Course Creation',
-      description:
-        'Generate complete courses in seconds with intelligent AI that understands your content needs and learner goals.',
-      image: AI,
-      buttonText: 'Learn More',
-      buttonStyle: 'blue',
-      bottomColor: '#3b82f6',
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-          />
-        </svg>
-      ),
-    },
-    {
-      title: 'Smart Lesson Templates',
-      description:
-        'Pre-designed, research-backed templates that adapt to any subject, making course design effortless and effective.',
-      image: Template,
-      buttonText: 'Learn More',
-      buttonStyle: 'blue',
-      bottomColor: '#f59e0b',
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-          />
-        </svg>
-      ),
-    },
-    {
-      title: 'Adaptive Learner Pathways',
-      description:
-        'VAK model integration that personalizes content delivery based on Visual, Auditory, and Kinesthetic learning styles.',
-      image: Pathway,
-      buttonText: 'Learn More',
-      buttonStyle: 'blue',
-      bottomColor: '#10b981',
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          />
-        </svg>
-      ),
-    },
-    {
-      title: 'Multimedia & Interactivity Suite',
-      description:
-        'Rich media integration with interactive elements, quizzes, and gamification to boost engagement and retention.',
-      image: Multi,
-      buttonText: 'Learn More',
-      buttonStyle: 'blue',
-      bottomColor: '#8b5cf6',
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-    },
-    {
-      title: 'AI Voice & Video Presenter',
-      description:
-        'Lifelike AI narrators and video presenters that bring your content to life with natural, engaging delivery.',
-      image: Voice,
-      buttonText: 'Learn More',
-      buttonStyle: 'blue',
-      bottomColor: '#06b6d4',
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-          />
-        </svg>
-      ),
-    },
-    {
-      title: 'Analytics & Progress Dashboard',
-      description:
-        'Real-time insights into learner progress, engagement metrics, and performance analytics to optimize outcomes.',
-      image: Progress,
-      buttonText: 'Learn More',
-      buttonStyle: 'blue',
-      bottomColor: '#ef4444',
-      icon: (
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
-        </svg>
-      ),
-    },
-  ];
-
-  // Slider functions for mobile
-  const nextSlide = () => {
-    setCurrentSlide(prev => (prev + 1) % capabilities.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide(
-      prev => (prev - 1 + capabilities.length) % capabilities.length
-    );
-  };
-
-  const goToSlide = index => {
-    setCurrentSlide(index);
-  };
-
+const AthenaPlatformOffers = () => {
   return (
-     <section
-    className="py-20 px-4 relative overflow-hidden"
-    style={{
-      // 🌸 Light red / warm festive background
-      background:
-        'linear-gradient(180deg, #ffffff 0%, #fef2f2 45%, #fee2e2 70%, #ffffff 100%)',
-    }}
-  >
-    {/* Decorative background elements */}
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* change these two from blue to red/pink tones */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-300/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-rose-300/10 rounded-full blur-3xl" />
+    <section className="relative py-28 px-4 overflow-hidden">
 
-      {/* Grid pattern can stay the same */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]" />
-    </div>
+      {/* 🌤 Light blue creative background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-50 via-white to-sky-50" />
+      <div className="absolute top-24 left-24 w-96 h-96 bg-sky-200/30 rounded-full blur-3xl" />
+      <div className="absolute bottom-24 right-24 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl" />
 
-      {/* Christmas Tree Decoration */}
-      <motion.img
-        src={TreeElement}
-        alt="Christmas tree"
-        className="hidden lg:block absolute bottom-0 right-4 w-64 max-w-xs pointer-events-none drop-shadow-xl"
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-      />
-      {/* Smaller tree for mobile/tablet */}
-      <motion.img
-        src={TreeElement}
-        alt="Christmas tree"
-        className="block lg:hidden absolute -bottom-4 right-1/2 translate-x-1/2 w-40 opacity-80 pointer-events-none drop-shadow-xl"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-      />
+      <div className="relative z-10 max-w-6xl mx-auto">
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Section Header */}
+        {/* Header */}
         <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          className="max-w-3xl mb-20"
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.7 }}
         >
-          {/* Small Christmas pill above heading */}
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/80 border border-red-100 shadow-sm mb-4">
-            <span
-              className="text-xs font-semibold text-red-600 uppercase tracking-wide"
-              style={{ fontFamily: 'Arial, sans-serif' }}
-            >
-              Christmas Edition
-            </span>
-            <span className="text-lg">🎄</span>
-          </div>
+          <p className="text-sm uppercase tracking-widest text-slate-500 mb-4">
+            What Athena Platform Offers
+          </p>
 
-          <h2
-            className="text-4xl md:text-5xl lg:text-6xl font-normal mb-4 leading-tight"
-            style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
-          >
-            <span className="text-gray-900">Revolutionary Features</span>
+          <h2 className="text-4xl md:text-5xl font-normal text-slate-900 leading-tight mb-6">
+            A complete learning ecosystem,
+            <br />
+            <span className="text-sky-600">built for modern education</span>
           </h2>
-          <p
-            className="text-lg text-gray-600 max-w-3xl mx-auto font-normal"
-            style={{ fontFamily: 'Arial, sans-serif' }}
-          >
-            Experience the next generation of learning technology with a festive
-            touch this holiday season.
+
+          <p className="text-lg text-slate-600 leading-relaxed">
+            Athena is more than software — it’s a unified platform that brings
+            together commerce, creation, delivery, and analytics into a single,
+            intuitive experience.
           </p>
         </motion.div>
 
-        {/* Desktop Grid Layout */}
-        <div className="hidden lg:grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {capabilities.map((capability, index) => (
-            <motion.div
-              key={index}
-              className="group relative h-full"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              {/* Card */}
-              <div
-                className="group relative h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col"
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-14">
+          {features.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -6 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.05 }}
+                className="
+                  group flex gap-6 items-start
+                  p-4 -m-4 rounded-xl
+                  transition-all duration-300
+                  hover:bg-white/70 hover:shadow-lg
+                "
               >
-                {/* Image Section */}
-                {capability.image && (
-                  <div className="relative w-full h-48 flex-shrink-0 overflow-hidden">
-                    <img
-                      src={capability.image}
-                      alt={capability.title}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                    />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-
-                    {/* Icon overlay */}
-                    <div className="absolute top-4 right-4 flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                        <div className="w-5 h-5 text-blue-600 flex items-center justify-center">
-                          {capability.icon}
-                        </div>
-                      </div>
-                      {/* Tiny festive accent on each card */}
-                      <span className="text-xl drop-shadow">
-                        {index % 2 === 0 ? '🎁' : '✨'}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {/* Icon */}
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  className="
+                    w-12 h-12 rounded-xl
+                    border border-slate-200
+                    bg-white
+                    flex items-center justify-center
+                    text-sky-600
+                    transition
+                  "
+                >
+                  <Icon className="w-6 h-6" />
+                </motion.div>
 
                 {/* Content */}
-                <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
-                  {/* Hover Fill Animation */}
-                  <div
-                    className="absolute inset-0 transition-all duration-500 ease-out"
-                    style={{
-                      backgroundColor: capability.bottomColor,
-                      transform:
-                        hoveredIndex === index
-                          ? 'translateY(0)'
-                          : 'translateY(100%)',
-                      opacity: hoveredIndex === index ? 0.2 : 0,
-                    }}
-                  />
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-sky-700 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-slate-600 leading-relaxed">
+                    {item.description}
+                  </p>
 
-                  {/* Content with higher z-index */}
-                  <div className="relative z-10 flex flex-col flex-grow">
-                    {/* Title */}
-                    <h3
-                      className="text-lg font-bold mb-4 text-gray-900 leading-tight"
-                      style={{ fontFamily: 'Arial, sans-serif' }}
-                    >
-                      {capability.title}
-                    </h3>
-
-                    {/* Description */}
-                    <p
-                      className="text-gray-600 leading-relaxed text-sm flex-grow mb-6"
-                      style={{ fontFamily: 'Arial, sans-serif' }}
-                    >
-                      {capability.description}
-                    </p>
-                  </div>
+                  {/* subtle underline on hover */}
+                  <div className="mt-3 h-px w-0 bg-sky-400 group-hover:w-16 transition-all duration-300" />
                 </div>
-
-                {/* Bottom Color Line - Static */}
-                <div className="absolute bottom-0 left-0 right-0 h-1">
-                  <div
-                    style={{
-                      backgroundColor: capability.bottomColor,
-                      height: '100%',
-                    }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* Mobile Slider Layout */}
-        <div className="lg:hidden max-w-7xl mx-auto">
-          {/* Slider Container */}
-          <div className="relative overflow-hidden">
-            <div
-              ref={sliderRef}
-              className="flex transition-transform duration-300 ease-in-out"
-              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-            >
-              {capabilities.map((capability, index) => (
-                <div key={index} className="w-full flex-shrink-0 px-4">
-                  <motion.div
-                    className="group relative h-full"
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    {/* Card */}
-                    <div
-                      className="group relative h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col"
-                      onMouseEnter={() => setHoveredIndex(index)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                    >
-                      {/* Image Section */}
-                      {capability.image && (
-                        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden">
-                          <img
-                            src={capability.image}
-                            alt={capability.title}
-                            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
-                          />
-                          {/* Gradient overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-
-                          {/* Icon overlay */}
-                          <div className="absolute top-4 right-4 flex items-center gap-2">
-                            <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                              <div className="w-5 h-5 text-blue-600 flex items-center justify-center">
-                                {capability.icon}
-                              </div>
-                            </div>
-                            <span className="text-xl drop-shadow">
-                              {index % 2 === 0 ? '🎁' : '✨'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Content */}
-                      <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
-                        {/* Hover Fill Animation */}
-                        <div
-                          className="absolute inset-0 transition-all duration-500 ease-out"
-                          style={{
-                            backgroundColor: capability.bottomColor,
-                            transform:
-                              hoveredIndex === index
-                                ? 'translateY(0)'
-                                : 'translateY(100%)',
-                            opacity: hoveredIndex === index ? 0.2 : 0,
-                          }}
-                        />
-
-                        {/* Content with higher z-index */}
-                        <div className="relative z-10 flex flex-col flex-grow">
-                          {/* Title */}
-                          <h3
-                            className="text-lg font-bold mb-4 text-gray-900 leading-tight"
-                            style={{ fontFamily: 'Arial, sans-serif' }}
-                          >
-                            {capability.title}
-                          </h3>
-
-                          {/* Description */}
-                          <p
-                            className="text-gray-600 leading-relaxed text-sm flex-grow mb-6"
-                            style={{ fontFamily: 'Arial, sans-serif' }}
-                          >
-                            {capability.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Bottom Color Line - Static */}
-                      <div className="absolute bottom-0 left-0 right-0 h-1">
-                        <div
-                          style={{
-                            backgroundColor: capability.bottomColor,
-                            height: '100%',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              ))}
-            </div>
-
-            {/* Navigation Arrows */}
-            <button
-              onClick={prevSlide}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-colors duration-200 z-10"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-700" />
-            </button>
-
-            <button
-              onClick={nextSlide}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-colors duration-200 z-10"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
-
-          {/* Dots Indicator */}
-          <div className="flex justify-center mt-6 space-x-2">
-            {capabilities.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                  index === currentSlide
-                    ? 'bg-blue-600 scale-125'
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom CTA */}
+        {/* Closing Statement */}
         <motion.div
-          className="text-center mt-20"
+          className="mt-24 max-w-3xl"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.7 }}
         >
-          <div className="max-w-2xl mx-auto">
-            <h3
-              className="text-2xl font-normal mb-4 text-gray-900"
-              style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
-            >
-              Ready to transform your learning experience?
-            </h3>
-            <p
-              className="text-gray-600 mb-8 text-base"
-              style={{ fontFamily: 'Arial, sans-serif' }}
-            >
-              Join thousands of educators worldwide who are already creating
-              amazing courses with Athena LMS this festive season.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={() => navigate('/contact')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                style={{ fontFamily: 'Arial, sans-serif' }}
-              >
-                Start Your Journey
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+          <p className="text-xl text-slate-700 leading-relaxed">
+            Athena eliminates fragmentation and puts professional-grade edtech
+            within reach of every budget — from individual creators to global
+            enterprises.
+          </p>
         </motion.div>
       </div>
-
-      {/* Bottom Left Image
-      <div className="absolute bottom-0 left-0 z-0 pointer-events-none">
-        <img
-          src="/21446-removebg-preview.png"
-          alt="Decorative element"
-          className="w-48 h-auto opacity-80"
-          style={{ transform: 'translateY(20%)' }}
-        />
-      </div> */}
     </section>
   );
 };
 
-export default KeyCapabilities;
+export default AthenaPlatformOffers;

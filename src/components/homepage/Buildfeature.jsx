@@ -166,7 +166,7 @@ const Buildfeature = () => {
       <section
         className="relative py-12"
         style={{
-          backgroundImage: 'url("/winter-landscape-with-deer-snow.jpg")',
+          // backgroundImage: 'url("/winter-landscape-with-deer-snow.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
