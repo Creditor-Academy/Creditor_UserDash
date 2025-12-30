@@ -47,7 +47,23 @@ const EventAttendanceModal = ({
         }
 
         const data = await response.json();
-        const raw = data?.data || {};
+
+        // Handle different response structures
+        // Structure 1: { code: 200, data: { eventAttendanceList: [...] }, success: true }
+        // Structure 2: { data: { eventAttendanceList: [...] } }
+        // Structure 3: { eventAttendanceList: [...] } (direct)
+        let raw = {};
+        if (data?.code !== undefined && data?.data) {
+          // Nested structure with code
+          raw = data.data;
+        } else if (data?.data) {
+          // Nested structure without code
+          raw = data.data;
+        } else {
+          // Direct structure
+          raw = data || {};
+        }
+
         const rawList = raw.eventAttendanceList || raw.eventAttendaceList || [];
 
         // Normalize attendee user fields and list name so rest of component works

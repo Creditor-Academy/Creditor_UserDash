@@ -6,7 +6,7 @@ import {
 } from './tokenService';
 
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || 'https://testbackend-hcoy.onrender.com';
+  import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
 // Enhanced API client with reliability improvements
 export const api = axios.create({
