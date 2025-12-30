@@ -1189,8 +1189,7 @@ export function Dashboard() {
     }
   };
 
-  const courseSectionTitle =
-    activeTheme === 'newYear' ? '📚 New Year Learning Path' : 'My Courses';
+  const courseSectionTitle = 'My Courses';
 
   const currentYear = 2026;
 
