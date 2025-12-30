@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { getAuthHeader } from '@/services/authHeader';
 import { Button } from '@/components/ui/button';
 import ExcelJS from 'exceljs';
+import { Search } from 'lucide-react';
 
 const EventAttendanceModal = ({
   isOpen,
@@ -48,45 +49,37 @@ const EventAttendanceModal = ({
 
         const data = await response.json();
 
-        // Handle different response structures
-        // Structure 1: { code: 200, data: { eventAttendanceList: [...] }, success: true }
-        // Structure 2: { data: { eventAttendanceList: [...] } }
-        // Structure 3: { eventAttendanceList: [...] } (direct)
         let raw = {};
         if (data?.code !== undefined && data?.data) {
-          // Nested structure with code
           raw = data.data;
         } else if (data?.data) {
-          // Nested structure without code
           raw = data.data;
         } else {
-          // Direct structure
           raw = data || {};
         }
 
         const rawList = raw.eventAttendanceList || raw.eventAttendaceList || [];
 
-        // Normalize attendee user fields and list name so rest of component works
         const normalizedList = Array.isArray(rawList)
           ? rawList.map(attendee => {
               const user = attendee.user || {};
               const name = user.name || '';
               const [firstFromName, ...restName] = name.split(' ');
-              const normalizedTime =
-                attendee.attendanceTime ||
-                attendee.attendance_time ||
-                attendee.time ||
-                '';
 
               return {
                 ...attendee,
-                attendanceTime: normalizedTime,
+                attendanceTime:
+                  attendee.attendanceTime ||
+                  attendee.attendance_time ||
+                  attendee.time ||
+                  '',
                 user: {
                   ...user,
                   first_name:
                     user.first_name || user.firstName || firstFromName || '',
                   last_name:
                     user.last_name || user.lastName || restName.join(' ') || '',
+                  email: user.email || '',
                 },
               };
             })
@@ -94,7 +87,6 @@ const EventAttendanceModal = ({
 
         setAttendanceData({
           ...raw,
-          // keep both keys for compatibility
           eventAttendaceList: normalizedList,
           eventAttendanceList: normalizedList,
         });
@@ -113,8 +105,8 @@ const EventAttendanceModal = ({
     attendee => {
       if (!attendee || !attendee.user) return false;
       const user = attendee.user;
-      const firstName = (user.first_name || user.firstName || '').toLowerCase();
-      const lastName = (user.last_name || user.lastName || '').toLowerCase();
+      const firstName = (user.first_name || '').toLowerCase();
+      const lastName = (user.last_name || '').toLowerCase();
       const email = (user.email || '').toLowerCase();
       const searchLower = searchTerm.toLowerCase();
 
@@ -127,29 +119,49 @@ const EventAttendanceModal = ({
   );
 
   const formatDate = dateString => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const options = {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
+    };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  const formatTimeOnly = dateString => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date
+      .toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .toLowerCase();
+  };
+
+  const formatDateOnly = dateString => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
+    return date.toLocaleDateString('en-US', options);
   };
 
   const handleExportCSV = async () => {
-    if (
-      !attendanceData ||
-      !attendanceData.eventAttendanceList ||
-      attendanceData.eventAttendanceList.length === 0
-    ) {
-      return;
-    }
+    if (!attendanceData?.eventAttendanceList?.length) return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Attendance');
 
-    // ✅ Proper CSV headers (single header row)
     worksheet.addRow([
       'Event Title',
       'Attendance Date',
@@ -159,24 +171,19 @@ const EventAttendanceModal = ({
       'Status',
     ]);
 
-    // ✅ Flat data rows (no report-style rows)
     attendanceData.eventAttendanceList.forEach(attendee => {
       worksheet.addRow([
         eventTitle,
         attendee.attendanceDate ?? '',
         attendee.attendanceTime ?? '',
-        `${attendee.user?.firstName ?? ''} ${attendee.user?.lastName ?? ''}`.trim(),
+        `${attendee.user?.first_name ?? ''} ${attendee.user?.last_name ?? ''}`.trim(),
         attendee.user?.email ?? '',
         attendee.isPresent ? 'Present' : 'Absent',
       ]);
     });
 
-    // Auto column width
-    worksheet.columns.forEach(col => {
-      col.width = 30;
-    });
+    worksheet.columns.forEach(col => (col.width = 30));
 
-    // Generate CSV
     const buffer = await workbook.csv.writeBuffer();
     const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
@@ -195,8 +202,8 @@ const EventAttendanceModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
           <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -217,33 +224,6 @@ const EventAttendanceModal = ({
         </DialogHeader>
 
         <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-shrink-0">
-            <div className="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h3 className="font-semibold text-lg text-gray-900">
-                {eventTitle}
-              </h3>
-              {eventDate && (
-                <div className="flex items-center mt-2 text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <p className="text-sm">{formatDate(eventDate)}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -271,7 +251,36 @@ const EventAttendanceModal = ({
             </div>
           ) : (
             <>
-              <div className="mb-6">
+              {/* Event Info Section */}
+              <div className="flex-shrink-0 px-6 py-4">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h3 className="font-semibold text-lg text-gray-900">
+                    {eventTitle}
+                  </h3>
+                  {eventDate && (
+                    <div className="flex items-center mt-2 text-gray-600">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <p className="text-sm">{formatDate(eventDate)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Total Attendees Section */}
+              <div className="px-6 py-4">
                 <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -300,22 +309,10 @@ const EventAttendanceModal = ({
                 </div>
               </div>
 
-              <div className="flex gap-4 mb-6">
+              {/* Search and Export Section */}
+              <div className="flex gap-4 mb-6 px-6">
                 <div className="relative flex-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+                  <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
                     type="text"
                     placeholder="Search by name or email..."
@@ -351,99 +348,109 @@ const EventAttendanceModal = ({
                 </Button>
               </div>
 
-              <div
-                className="overflow-y-auto rounded-lg border border-gray-200"
-                style={{ maxHeight: 'calc(85vh - 380px)' }}
-              >
-                {filteredAttendees?.length > 0 ? (
-                  <div className="divide-y divide-gray-200">
-                    {filteredAttendees.map((attendee, index) => (
-                      <div
-                        key={index}
-                        className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                      >
-                        {/* Left section: User info */}
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm uppercase">
-                            {attendee.user?.firstName?.[0]}
-                            {attendee.user?.lastName?.[0]}
-                          </div>
+              {/* Attendees List Section */}
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  {filteredAttendees?.length > 0 ? (
+                    <div className="divide-y divide-gray-200">
+                      {filteredAttendees.map((attendee, index) => (
+                        <div
+                          key={index}
+                          className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                        >
+                          {/* Left section: User info */}
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm uppercase">
+                              {attendee.user?.first_name?.[0] || ''}
+                              {attendee.user?.last_name?.[0] || ''}
+                            </div>
 
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {attendee.user?.firstName}{' '}
-                              {attendee.user?.lastName}
-                            </p>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {attendee.user?.first_name || ''}{' '}
+                                {attendee.user?.last_name || ''}
+                              </p>
 
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                />
-                              </svg>
-                              {attendee.user?.email}
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                  />
+                                </svg>
+                                {attendee.user?.email || 'No email'}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Right section: Attendance date & time */}
-                        <div className="text-right text-sm text-gray-500">
-                          <p>{attendee.attendanceDate}</p>
-                          <div className="flex items-center gap-1 justify-end">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            {attendee.attendanceTime}
+                          {/* Right section: Attendance date & time */}
+                          <div className="text-right text-sm text-gray-600">
+                            {attendee.attendanceTime && (
+                              <>
+                                <p className="font-medium">
+                                  {formatDateOnly(attendee.attendanceTime)}
+                                </p>
+                                <div className="flex items-center gap-1 justify-end">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  <span className="font-medium">
+                                    {formatTimeOnly(attendee.attendanceTime)}
+                                  </span>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 px-4">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-12 w-12 text-gray-300 mb-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                      />
-                    </svg>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 px-4">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-12 w-12 text-gray-300 mb-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                        />
+                      </svg>
 
-                    <p className="text-gray-500 text-center">
-                      No attendance records found
-                    </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Try adjusting your search terms
-                    </p>
-                  </div>
-                )}
+                      <p className="text-gray-500 text-center">
+                        {searchTerm
+                          ? 'No attendees found matching your search.'
+                          : 'No attendance records found'}
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {searchTerm ? 'Try adjusting your search terms' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
