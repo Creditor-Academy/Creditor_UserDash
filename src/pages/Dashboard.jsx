@@ -30,6 +30,7 @@ import {
   Award,
   Video,
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 import DashboardCarousel from '@/components/dashboard/DashboardCarousel';
 import DashboardGroup from '@/components/dashboard/DashboardGroup';
@@ -58,7 +59,6 @@ import {
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import { NewYearBanner } from '@/components/new-year/NewYearBanner';
-import { NewYearWelcomeModal } from '@/components/new-year/NewYearWelcomeModal';
 import { NewYearWidgets } from '@/components/new-year/NewYearWidgets';
 import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
@@ -1209,6 +1209,7 @@ export function Dashboard() {
           {currentYear}
         </div>
       )}
+
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
           {activeTheme === 'newYear' ? (
@@ -2957,8 +2958,6 @@ export function Dashboard() {
 
       {/* Offer Popup */}
       <OfferPopup />
-      {/* New Year Welcome Modal */}
-      {activeTheme === 'newYear' && <NewYearWelcomeModal />}
     </div>
   );
 }

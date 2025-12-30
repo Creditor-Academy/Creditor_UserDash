@@ -1033,6 +1033,19 @@
     color: #ffffff !important;
   }
 
+  /* Ensure search dropdown text stays dark on light backgrounds */
+  .newyear-theme .newyear-app-header .search-results-dropdown {
+    color: #0f172a !important;
+  }
+
+  .newyear-theme .newyear-app-header .search-results-dropdown .text-gray-900,
+  .newyear-theme .newyear-app-header .search-results-dropdown .text-gray-800,
+  .newyear-theme .newyear-app-header .search-results-dropdown .text-gray-700,
+  .newyear-theme .newyear-app-header .search-results-dropdown .text-gray-600,
+  .newyear-theme .newyear-app-header .search-results-dropdown .text-gray-500 {
+    color: #0f172a !important;
+  }
+
   /* Text muted foreground (for email and secondary text) */
   .newyear-theme .newyear-app-header .text-muted-foreground,
   .newyear-theme .app-header .text-muted-foreground {
@@ -1273,11 +1286,11 @@
     right: 2rem;
     width: 4rem;
     height: 4rem;
-    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    background: linear-gradient(135deg, #6164ec 0%, #8183ff 100%);
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 8px 24px rgba(97, 100, 236, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1288,20 +1301,20 @@
 
   .offer-widget:hover {
     transform: scale(1.1) translateY(-4px);
-    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.5);
+    box-shadow: 0 12px 32px rgba(97, 100, 236, 0.5);
   }
 
   @keyframes offerWidgetPulse {
     0%,
     100% {
       box-shadow:
-        0 8px 24px rgba(220, 38, 38, 0.4),
-        0 0 0 0 rgba(220, 38, 38, 0.7);
+        0 8px 24px rgba(97, 100, 236, 0.4),
+        0 0 0 0 rgba(97, 100, 236, 0.7);
     }
     50% {
       box-shadow:
-        0 8px 24px rgba(220, 38, 38, 0.4),
-        0 0 0 10px rgba(220, 38, 38, 0);
+        0 8px 24px rgba(97, 100, 236, 0.4),
+        0 0 0 10px rgba(97, 100, 236, 0);
     }
   }
 
