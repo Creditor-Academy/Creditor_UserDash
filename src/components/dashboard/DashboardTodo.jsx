@@ -42,11 +42,11 @@ const todoItems = [
 ];
 
 export function DashboardTodo() {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
-  const titleText = isChristmasMode ? '✅ Holiday To-Do' : 'Task List';
-  const helperText = isChristmasMode
-    ? '🎅 Stay on Santa’s List'
-    : 'Stay on Task';
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const titleText =
+    activeTheme === 'newYear' ? '🎯 New Year Goals' : 'Task List';
+  const helperText =
+    activeTheme === 'newYear' ? '🎯 Achieve Your Goals' : 'Stay on Task';
   const [todos, setTodos] = React.useState(todoItems);
 
   const toggleTodo = id => {
@@ -100,7 +100,9 @@ export function DashboardTodo() {
   };
 
   return (
-    <Card className="border h-full shadow hover:shadow-lg transition-all duration-300 hover:border-primary/20 group">
+    <Card
+      className={`border h-full shadow hover:shadow-lg transition-all duration-300 hover:border-primary/20 group ${activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''}`}
+    >
       <div className="p-3 flex items-center justify-between border-b">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">

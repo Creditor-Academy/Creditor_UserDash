@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useContext,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -16,6 +22,7 @@ import { getAuthHeader } from '../../services/authHeader'; // adjust path as nee
 import { markEventAttendance } from '../../services/attendanceService';
 import { toast } from 'sonner';
 import AttendanceAlreadyMarkedModal from './AttendanceAlreadyMarkedModal';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
@@ -89,6 +96,7 @@ const processEvents = (events, userTimezone) => {
 };
 
 export function LiveClasses() {
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [todayEvents, setTodayEvents] = useState([]);
@@ -436,7 +444,9 @@ export function LiveClasses() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
+      <Card
+        className={`border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 ${activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''}`}
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Video
@@ -637,7 +647,9 @@ export function LiveClasses() {
 
       {/* Cancelled Events Section - Only show if there are cancelled events */}
       {cancelledEvents && cancelledEvents.length > 0 && (
-        <Card className="border border-red-100 bg-white hover:shadow-md transition-all duration-300">
+        <Card
+          className={`border border-red-100 bg-white hover:shadow-md transition-all duration-300 ${activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''}`}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="p-2 bg-red-50 rounded-lg text-red-600">

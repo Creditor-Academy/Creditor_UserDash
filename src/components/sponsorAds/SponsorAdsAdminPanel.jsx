@@ -12,12 +12,14 @@ import { Sparkles } from 'lucide-react';
 import SponsorAdCreate from '@/pages/admin/SponsorAdCreate';
 import SponsorAdManage from '@/pages/admin/SponsorAdManage';
 import SponsorAdAnalytics from '@/pages/admin/SponsorAdAnalytics';
+import SponsorAdRequests from '@/pages/admin/SponsorAdRequests';
 
 const BASE_PATH = '/instructor/sponsor-ads';
 
 const tabConfig = [
   { value: 'create', label: 'Create Ad', href: `${BASE_PATH}/create` },
   { value: 'manage', label: 'Manage Ads', href: `${BASE_PATH}/manage` },
+  { value: 'requests', label: 'Ad Requests', href: `${BASE_PATH}/requests` },
   {
     value: 'analytics',
     label: 'Sponsor Analytics',
@@ -44,6 +46,8 @@ const SponsorAdsAdminPanel = () => {
     switch (currentTab) {
       case 'manage':
         return <SponsorAdManage />;
+      case 'requests':
+        return <SponsorAdRequests />;
       case 'analytics':
         return <SponsorAdAnalytics />;
       case 'create':
@@ -74,7 +78,7 @@ const SponsorAdsAdminPanel = () => {
             </Badge>
           </div>
           <Tabs value={currentTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-gray-50">
+            <TabsList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-gray-50">
               {tabConfig.map(tab => (
                 <TabsTrigger
                   key={tab.value}

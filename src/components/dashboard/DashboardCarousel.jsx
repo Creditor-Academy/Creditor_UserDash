@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   Carousel,
   CarouselContent,
@@ -6,6 +6,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 const carouselItems = [
   // {
@@ -16,38 +17,30 @@ const carouselItems = [
   //   course: "Upcoming Event",
   //   order: 1
   // },
-  {
-    id: 1,
-    type: 'image',
-    image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/saturday+event.png',
-    title: 'This Saturday',
-    course: '8th Nov',
-  },
+  // {
+  //   id: 1,
+  //   type: 'image',
+  //   image:
+  //     'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/saturday+event.png',
+  //   title: 'This Saturday',
+  //   course: '8th Nov',
+  // },
   {
     id: 2,
     type: 'image',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/%2469Month!+(19).png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/1+(1).png',
     title: 'Upcoming Event',
     course: 'Banner 2',
   },
-  // {
-  //   id: 3,
-  //   type: 'image',
-  //   image:
-  //     'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/unnamed+(8).webp',
-  //   title: 'Upcoming Event',
-  //   course: 'Banner 3',
-  // },
-  // {
-  //   id: 3,
-  //   type: 'image',
-  //   image:
-  //     'https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/thanks+giving+(1).png',
-  //   title: 'Upcoming Event',
-  //   course: 'Banner 3',
-  // },
+  {
+    id: 3,
+    type: 'image',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/2+(1).png',
+    title: 'Upcoming Event',
+    course: 'Banner 3',
+  },
 ];
 
 export function DashboardCarousel() {
@@ -57,6 +50,8 @@ export function DashboardCarousel() {
   const intervalRef = useRef(null);
   const videoRef = useRef(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const isNewYear = activeTheme === 'newYear';
 
   const startAutoAdvance = () => {
     if (intervalRef.current) {
@@ -86,23 +81,56 @@ export function DashboardCarousel() {
   }, []);
 
   return (
-    <div className="group relative w-full max-w-4xl mx-auto">
+    <div
+      className={`group relative w-full max-w-4xl mx-auto ${
+        isNewYear ? 'ny-upcoming-events' : ''
+      }`}
+    >
       {/* Section header */}
-      <div className="mb-4 px-1">
+      <div className={`mb-4 px-1 ${isNewYear ? 'ny-upcoming-header' : ''}`}>
+        {isNewYear && (
+          <div className="ny-crackers" aria-hidden="true">
+            <span className="ny-burst ny-burst-a" />
+            <span className="ny-burst ny-burst-b" />
+            <span className="ny-burst ny-burst-c" />
+          </div>
+        )}
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+          <span
+            className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+              isNewYear
+                ? 'bg-white/85 text-indigo-700 border-indigo-200 shadow-sm'
+                : 'bg-blue-50 text-blue-700 border-blue-200'
+            }`}
+          >
             Featured
           </span>
           <span className="text-[11px] text-gray-400">|</span>
-          <span className="text-[11px] text-gray-500">Upcoming</span>
+          <span
+            className={`text-[11px] ${isNewYear ? 'text-indigo-700/80' : 'text-gray-500'}`}
+          >
+            Upcoming
+          </span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+        <h2
+          className={`text-2xl sm:text-3xl font-bold leading-tight ${
+            isNewYear ? 'ny-title' : 'text-gray-900'
+          }`}
+        >
           Upcoming Events
         </h2>
-        <p className="text-gray-500 text-sm sm:text-base">
+        <p
+          className={`text-sm sm:text-base ${isNewYear ? 'text-indigo-700/70' : 'text-gray-500'}`}
+        >
           Discover what’s events upcoming for you
         </p>
-        <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40" />
+        <div
+          className={`mt-2 h-1 w-24 rounded-full ${
+            isNewYear
+              ? 'bg-gradient-to-r from-blue-600/50 via-indigo-600/45 to-yellow-500/45'
+              : 'bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40'
+          }`}
+        />
       </div>
       {/* Removed outer decorative border to match banner bounds */}
 
@@ -211,6 +239,112 @@ export function DashboardCarousel() {
 
       {/* Subtle bottom accent line */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent rounded-full"></div>
+
+      {isNewYear && (
+        <style>{`
+          .ny-upcoming-events {
+            isolation: isolate;
+          }
+
+          .ny-upcoming-header {
+            position: relative;
+            border-radius: 14px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+          }
+
+          .ny-upcoming-header::before {
+            content: '';
+            position: absolute;
+            inset: -6px -10px;
+            border-radius: 18px;
+            pointer-events: none;
+            background:
+              radial-gradient(700px 220px at 20% 0%, rgba(59, 130, 246, 0.20) 0%, transparent 60%),
+              radial-gradient(640px 220px at 80% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
+              radial-gradient(420px 160px at 50% 0%, rgba(234, 179, 8, 0.12) 0%, transparent 70%);
+            opacity: 0.95;
+            z-index: 0;
+          }
+
+          .ny-upcoming-header > * {
+            position: relative;
+            z-index: 1;
+          }
+
+          .ny-title {
+            background: linear-gradient(90deg, rgba(30, 64, 175, 1), rgba(79, 70, 229, 1), rgba(234, 179, 8, 1));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+          }
+
+          .ny-crackers {
+            position: absolute;
+            inset: -10px -6px auto -6px;
+            height: 64px;
+            pointer-events: none;
+            z-index: 2;
+          }
+
+          .ny-burst {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 9999px;
+            opacity: 0;
+            filter: drop-shadow(0 12px 18px rgba(2, 6, 23, 0.18));
+            background:
+              radial-gradient(circle, rgba(255,255,255,0.95) 0 6px, transparent 7px),
+              conic-gradient(
+                from 0deg,
+                rgba(59,130,246,0.85),
+                rgba(99,102,241,0.85),
+                rgba(234,179,8,0.85),
+                rgba(244,63,94,0.80),
+                rgba(59,130,246,0.85)
+              );
+            mask:
+              radial-gradient(circle, transparent 0 18px, #000 19px 20px, transparent 21px),
+              radial-gradient(circle, #000 0 60%, transparent 61%);
+            -webkit-mask:
+              radial-gradient(circle, transparent 0 18px, #000 19px 20px, transparent 21px),
+              radial-gradient(circle, #000 0 60%, transparent 61%);
+          }
+
+          .ny-burst::after {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border-radius: 9999px;
+            background:
+              radial-gradient(circle at 18% 22%, rgba(255,255,255,0.85) 0 1.3px, transparent 1.4px),
+              radial-gradient(circle at 70% 20%, rgba(255,255,255,0.70) 0 1.1px, transparent 1.2px),
+              radial-gradient(circle at 34% 78%, rgba(255,255,255,0.75) 0 1.2px, transparent 1.3px),
+              radial-gradient(circle at 82% 72%, rgba(255,255,255,0.65) 0 1.1px, transparent 1.2px);
+            opacity: 0.85;
+          }
+
+          .ny-burst-a { left: -6px; top: -6px; transform: scale(0.7); animation: ny-burst 2.7s ease-in-out infinite; }
+          .ny-burst-b { left: 42%; top: -14px; transform: scale(0.55); animation: ny-burst 3.1s ease-in-out infinite 0.45s; }
+          .ny-burst-c { right: -10px; top: -8px; transform: scale(0.65); animation: ny-burst 2.9s ease-in-out infinite 0.2s; }
+
+          @keyframes ny-burst {
+            0% { opacity: 0; transform: translateY(10px) scale(0.35) rotate(0deg); }
+            12% { opacity: 0.95; }
+            35% { opacity: 0.95; transform: translateY(0) scale(0.75) rotate(18deg); }
+            55% { opacity: 0.55; transform: translateY(-3px) scale(0.82) rotate(28deg); }
+            100% { opacity: 0; transform: translateY(-10px) scale(0.9) rotate(40deg); }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .ny-burst-a, .ny-burst-b, .ny-burst-c {
+              animation: none !important;
+              opacity: 0.25;
+            }
+          }
+        `}</style>
+      )}
     </div>
   );
 }

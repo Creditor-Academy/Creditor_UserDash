@@ -83,11 +83,12 @@ api.interceptors.request.use(
         throw new Error('Request URL is required');
       }
 
-      // Add request ID for tracking
+      // Add request ID for tracking (merge with existing metadata if present)
       config.metadata = {
-        requestId: generateRequestId(),
-        startTime: Date.now(),
-        retryCount: config.retryCount || 0,
+        ...config.metadata,
+        requestId: config.metadata?.requestId || generateRequestId(),
+        startTime: config.metadata?.startTime || Date.now(),
+        retryCount: config.metadata?.retryCount || config.retryCount || 0,
       };
 
       // Enhanced headers
@@ -134,13 +135,14 @@ function getRetryDelay(retryCount, baseDelay = 1000) {
   return Math.min(delay + jitter, 10000); // Max 10 seconds
 }
 
-function shouldRetry(error, retryCount, maxRetries = 3, url = '') {
+function shouldRetry(error, retryCount, maxRetries = 3, url = '', method = '') {
   if (retryCount >= maxRetries) return false;
 
   const status = error.response?.status;
   const errorMessage =
     error.response?.data?.errorMessage || error.response?.data?.message || '';
   const errorMessageLower = errorMessage.toLowerCase();
+  const httpMethod = method || error.config?.method?.toUpperCase() || '';
 
   // Don't retry if error indicates "already marked" or similar business logic errors
   // These are not transient errors and shouldn't be retried
@@ -162,14 +164,27 @@ function shouldRetry(error, retryCount, maxRetries = 3, url = '') {
     return !status;
   }
 
+  // Don't retry mutating operations (POST, PUT, DELETE, PATCH) on server errors (5xx)
+  // These operations should fail fast to avoid duplicate submissions or side effects
+  if (
+    status >= 500 &&
+    ['POST', 'PUT', 'DELETE', 'PATCH'].includes(httpMethod)
+  ) {
+    console.warn(
+      `[API] Not retrying ${httpMethod} request on ${status} error to avoid duplicate operations:`,
+      url
+    );
+    return false;
+  }
+
   // Don't retry client errors (4xx) except for specific cases
   if (status >= 400 && status < 500) {
     // Retry only for rate limiting and temporary auth issues
     return status === 429 || status === 408;
   }
 
-  // Retry server errors (5xx) and network errors
-  return status >= 500 || !status;
+  // Retry server errors (5xx) only for GET requests and network errors
+  return (status >= 500 && httpMethod === 'GET') || !status;
 }
 
 function isNetworkError(error) {
@@ -239,6 +254,13 @@ api.interceptors.response.use(
     originalRequest.metadata = originalRequest.metadata || {};
     const retryCount = originalRequest.metadata.retryCount || 0;
 
+    // Skip retries if explicitly disabled
+    if (originalRequest.metadata?.disableRetry) {
+      console.log(`[API] Retries disabled for request:`, url);
+      error.userMessage = getErrorMessage(error);
+      return Promise.reject(error);
+    }
+
     // Prevent infinite retries by adding a safety check
     if (retryCount >= 5) {
       console.error(`[API] Safety limit reached - stopping retries for:`, url);
@@ -265,7 +287,8 @@ api.interceptors.response.use(
       console.error('[API] Network error detected:', error.message);
 
       // Retry network errors (with payment endpoint check)
-      if (shouldRetry(error, retryCount, 3, url)) {
+      const method = originalRequest?.method?.toUpperCase() || '';
+      if (shouldRetry(error, retryCount, 3, url, method)) {
         const delay = getRetryDelay(retryCount);
         console.log(
           `[API] Retrying network request in ${delay}ms (attempt ${retryCount + 1}/${3})`
@@ -289,7 +312,8 @@ api.interceptors.response.use(
         ? parseInt(retryAfter) * 1000
         : getRetryDelay(retryCount, 2000);
 
-      if (shouldRetry(error, retryCount, 3, url)) {
+      const method = originalRequest?.method?.toUpperCase() || '';
+      if (shouldRetry(error, retryCount, 3, url, method)) {
         console.log(
           `[API] Rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${3})`
         );
@@ -306,7 +330,8 @@ api.interceptors.response.use(
     }
 
     // Handle server errors with retry
-    if (status >= 500 && shouldRetry(error, retryCount, 3, url)) {
+    const method = originalRequest?.method?.toUpperCase() || '';
+    if (status >= 500 && shouldRetry(error, retryCount, 3, url, method)) {
       const delay = getRetryDelay(retryCount);
       console.log(
         `[API] Server error (${status}), retrying in ${delay}ms (attempt ${retryCount + 1}/${3})`

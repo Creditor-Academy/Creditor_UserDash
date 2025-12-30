@@ -23,6 +23,7 @@ import {
   Bot,
   CreditCard,
   CalendarDays,
+  Handshake,
 } from 'lucide-react';
 import { currentUserId } from '@/data/currentUser';
 import { getUserRole } from '@/services/userService';
@@ -41,6 +42,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import caTextLogo from '@/assets/CA_text_logo.png';
+import caManLogo from '@/assets/CA_man_logo.png';
 
 const SidebarItem = ({
   icon: Icon,
@@ -51,6 +54,8 @@ const SidebarItem = ({
   dropdownContent,
   onNavigate,
   external,
+  showNewYearAccent,
+  newYearAccent,
 }) => {
   const handleClick = () => {
     if (external) {
@@ -76,6 +81,11 @@ const SidebarItem = ({
         <Icon size={collapsed ? 24 : 20} />
         {!collapsed && (
           <span className="font-medium sidebar-menu-label">{label}</span>
+        )}
+        {!collapsed && showNewYearAccent && (
+          <span className="ny-sidebar-accent" aria-hidden="true">
+            {newYearAccent}
+          </span>
         )}
       </button>
     );
@@ -118,6 +128,11 @@ const SidebarItem = ({
                     {label}
                   </span>
                 )}
+                {!collapsed && showNewYearAccent && (
+                  <span className="ny-sidebar-accent" aria-hidden="true">
+                    {newYearAccent}
+                  </span>
+                )}
               </button>
             ) : (
               <Link
@@ -152,6 +167,11 @@ const SidebarItem = ({
                     {label}
                   </span>
                 )}
+                {!collapsed && showNewYearAccent && (
+                  <span className="ny-sidebar-accent" aria-hidden="true">
+                    {newYearAccent}
+                  </span>
+                )}
               </Link>
             )}
           </motion.div>
@@ -174,7 +194,31 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const isNewYear = activeTheme === 'newYear';
+
+  const getNewYearAccentForLabel = sidebarLabel => {
+    switch (sidebarLabel) {
+      case 'Dashboard':
+        return '✨';
+      case 'My Courses':
+        return '📚';
+      case 'Study Groups':
+        return '🎊';
+      case 'Course Catalog':
+        return '🎆';
+      case 'Attendance':
+        return '🗓️';
+      case 'Messages':
+        return '💬';
+      case 'Sponsor Center':
+        return '🎁';
+      case 'Creditor Card':
+        return '💳';
+      default:
+        return '✨';
+    }
+  };
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -185,14 +229,15 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   };
 
   const handleNavigate = path => {
-    // Keep sidebar collapsed when on instructor portal
     if (collapsed && path !== '/instructor') {
       setCollapsed(false);
     }
-    // Collapse sidebar when navigating to instructor portal
+
     if (path === '/instructor') {
       setCollapsed(true);
     }
+
+    navigate(path); // ✅ THIS WAS MISSING
   };
 
   const handleLogoClick = () => {
@@ -269,11 +314,12 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       {/* Header */}
       <div
         className={cn(
-          'sidebar-header relative flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
+          'sidebar-header relative flex items-center border-b border-gray-200 p-4 pr-0 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
           collapsed ? 'justify-center' : 'justify-between'
         )}
       >
         <div className="sidebar-lights" aria-hidden="true" />
+
         {!collapsed && (
           <motion.button
             onClick={handleLogoClick}
@@ -282,30 +328,22 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative sidebar-logo-mark">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                <BookOpen
-                  size={22}
-                  className="text-blue-600 christmas-logo-icon"
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img
+                  src={caManLogo}
+                  alt="Creditor Academy Logo"
+                  className="w-full h-full object-contain p-1"
                 />
               </div>
-              {isChristmasMode && (
-                <span className="sidebar-logo-hat" aria-hidden="true">
-                  🎅
-                </span>
-              )}
             </div>
-            <div className="flex flex-col">
-              <span className="text-white text-base leading-tight font-bold">
-                Creditor
-              </span>
-              <span className="text-blue-100 text-sm leading-tight font-medium">
-                Academy
-              </span>
-            </div>
+            <img
+              src={caTextLogo}
+              alt="Creditor Academy"
+              className="h-8 w-auto object-contain"
+            />
           </motion.button>
         )}
 
@@ -323,17 +361,13 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className="relative sidebar-logo-mark">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                      <BookOpen
-                        size={22}
-                        className="text-blue-600 christmas-logo-icon"
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                      <img
+                        src={caManLogo}
+                        alt="Creditor Academy Logo"
+                        className="w-full h-full object-contain p-1"
                       />
                     </div>
-                    {isChristmasMode && (
-                      <span className="sidebar-logo-hat" aria-hidden="true">
-                        🎅
-                      </span>
-                    )}
                   </div>
                 </motion.button>
               </TooltipTrigger>
@@ -353,7 +387,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               variant="ghost"
               size="icon"
               onClick={() => setCollapsed(!collapsed)}
-              className="text-white hover:bg-white/20 border-none rounded-lg"
+              className="text-white hover:bg-white/20 rounded-lg"
             >
               <ChevronLeft size={18} />
             </Button>
@@ -394,6 +428,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Dashboard')}
                 />
               </motion.div>
 
@@ -405,6 +441,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/courses')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('My Courses')}
                 />
               </motion.div>
 
@@ -416,6 +454,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/groups')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Study Groups')}
                 />
               </motion.div>
 
@@ -427,6 +467,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/catalog')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Course Catalog')}
                 />
               </motion.div>
 
@@ -438,6 +480,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/attendance')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Attendance')}
                 />
               </motion.div>
 
@@ -450,6 +494,23 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/messages')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Messages')}
+                />
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <SidebarItem
+                  icon={Handshake}
+                  label="Sponsor Center"
+                  href="/dashboard/sponsor-center/submit"
+                  active={location.pathname.startsWith(
+                    '/dashboard/sponsor-center'
+                  )}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Sponsor Center')}
                 />
               </motion.div>
 
@@ -458,10 +519,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 <SidebarItem
                   icon={CreditCard}
                   label="Creditor Card"
-                  href="#"
-                  active={false}
                   collapsed={collapsed}
                   onNavigate={handleCreditorCardClick}
+                  showNewYearAccent={isNewYear}
+                  newYearAccent={getNewYearAccentForLabel('Creditor Card')}
                 />
               </motion.div>
             </>
@@ -642,6 +703,34 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
           </DropdownMenu>
         )}
       </motion.div>
+
+      {isNewYear && (
+        <style>{`
+          .ny-sidebar-accent {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            opacity: 0.95;
+            filter: drop-shadow(0 10px 14px rgba(2, 6, 23, 0.14));
+            animation: ny-accent-twinkle 1.8s ease-in-out infinite;
+            pointer-events: none;
+          }
+
+          @keyframes ny-accent-twinkle {
+            0% { transform: translateY(-50%) scale(1); opacity: 0.8; }
+            50% { transform: translateY(calc(-50% - 1px)) scale(1.08); opacity: 1; }
+            100% { transform: translateY(-50%) scale(1); opacity: 0.85; }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .ny-sidebar-accent {
+              animation: none !important;
+            }
+          }
+        `}</style>
+      )}
     </motion.div>
   );
 }

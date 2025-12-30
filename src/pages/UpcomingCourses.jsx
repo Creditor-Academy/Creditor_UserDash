@@ -2,115 +2,97 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from 'lucide-react';
 
 const UPCOMING_COURSES = [
+  // SOV 101
+  {
+    id: 'sov-101-the-shift-post-civil-war-legal-reconstruction',
+    title: 'The Shift — Post-Civil War Legal Reconstruction',
+    course: 'SOV 101',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)The+Shift+%E2%80%94+Post-Civil+War+Legal+Reconstruction.png',
+  },
+  {
+    id: 'sov-101-understanding-legal-identity-public-administration',
+    title: 'Understanding Legal Identity and Public Administration',
+    course: 'SOV 101',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)Understanding+Legal+Identity+and+Public+Administration.png',
+  },
+  {
+    id: 'sov-101-commerce-banking-control',
+    title: 'Commerce, Banking, and Control',
+    course: 'SOV 101',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)Commerce%2C+Banking%2C+and+Control.png',
+  },
+
   // Become Private
   {
-    id: 'become-private-part-1-declaration-political-status',
-    title: 'Become Private – Part 1 (Declaration of Political Status)',
+    id: 'become-private-act-of-expatriation-oath-of-allegiance',
+    title: 'ACT OF EXPATRIATION AND OATH OF ALLEGIANCE',
     course: 'Become Private',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+2.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)ACT+OF+EXPATRIATION+AND+OATH+OF+ALLEGIANCE.png',
   },
   {
-    id: 'become-private-part-2-restoration-former-status',
-    title: 'Become Private – Part 2 (Restoration of Former Status)',
+    id: 'become-private-declaration-of-copyright',
+    title: 'Declaration of Copyright',
     course: 'Become Private',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+3.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Declaration+of+Copyright.png',
   },
   {
-    id: 'become-private-part-3-declaration-naturalization-1972',
-    title: 'Become Private – Part 3 (Declaration of Naturalization 1972)',
+    id: 'become-private-power-of-attorney-in-fact',
+    title: 'POWER OF ATTORNEY IN FACT',
     course: 'Become Private',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+4.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)POWER+OF+ATTORNEY+IN+FACT.png',
   },
   {
-    id: 'become-private-part-4-witness-testimony',
-    title:
-      'Become Private – Part 4 (Witness Testimony Affirming American State Political Status and Identity)',
+    id: 'become-private-cancellation-all-prior-powers-of-attorney',
+    title: 'Cancellation of All Prior Powers of Attorney',
     course: 'Become Private',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+5.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Cancellation+of+All+Prior+Powers+of+Attorney.png',
   },
 
   // Business Credit
   {
-    id: 'business-credit-lesson-1-why-business-credit-matters',
-    title: 'Why Business Credit Matters',
+    id: 'business-credit-tier-3-credit-unions-community-banks',
+    title: 'Tier 3 – Credit Unions and Community Banks',
     course: 'Business Credit',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+1.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+3+%E2%80%93+Credit+Unions+and+Community+Banks.png',
   },
   {
-    id: 'business-credit-lesson-2-credit-bureaus',
-    title: 'The Business Credit Bureaus',
+    id: 'business-credit-tier-4-high-limit-non-pg-revolving-cards',
+    title: 'Tier 4 – High-Limit Non-PG Revolving Store Cards & Fleet Cards',
     course: 'Business Credit',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+2.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+4+%E2%80%93+High-Limit+Non-PG+Revolving+Store+Cards+%26+Fleet+Cards.png',
   },
   {
-    id: 'business-credit-lesson-3-credit-scores',
-    title: 'How Business Credit Scores Are Calculated',
+    id: 'business-credit-tier-5-cash-flow-revenue-based-financing',
+    title:
+      'Tier 5 – True Cash-Flow & Revenue-Based Financing (No Collateral, No PG)',
     course: 'Business Credit',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+3.png',
-  },
-  {
-    id: 'business-credit-lesson-4-tier-0-foundation',
-    title: 'Setting Up the Foundation (Tier 0)',
-    course: 'Business Credit',
-    image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+4.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+5+%E2%80%93+True+Cash-Flow+%26+Revenue-Based+Financing+(No+Collateral%2C+No+PG).png',
   },
 
   // Operate Private
   {
-    id: 'operate-private-lesson-1-fiduciary-duty',
-    title:
-      'Business Trust – Foundations of Fiduciary Duty & Trust Responsibility',
+    id: 'operate-private-advantages-business-trust',
+    title: 'Advantages of the Business Trust',
     course: 'Operate Private',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+1.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(OP)Advantages+of+the+Business+Trust.png',
   },
   {
-    id: 'operate-private-lesson-2-installing-irrevocable-trust',
-    title: 'Business Trust – Installing Your Irrevocable Trust',
+    id: 'operate-private-business-trust-structure-governance',
+    title: 'The Business Trust – Structure & Governance',
     course: 'Operate Private',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+2.png',
-  },
-
-  // SOV 101
-  {
-    id: 'sov-101-lesson-12-introduction-purpose-self-ownership',
-    title: 'Lesson 12 – Introduction, Purpose, Self-Ownership',
-    course: 'SOV 101',
-    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson12.png',
-  },
-  {
-    id: 'sov-101-lesson-15-basics-of-sovereignty-summary-of-freedom',
-    title: 'Lesson 15 – Basics of Sovereignty, Summary of Freedom',
-    course: 'SOV 101',
-    image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson+15.png',
-  },
-  {
-    id: 'sov-101-lesson-18-figuring-it-all-out-protection-by-god-vs-government',
-    title: 'Lesson 18 – Figuring It All Out, Protection by God vs Government',
-    course: 'SOV 101',
-    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson18.png',
-  },
-  {
-    id: 'sov-101-lesson-19-gods-religion-vs-governments-religion',
-    title: "Lesson 19 – God's Religion vs. Government's Religion",
-    course: 'SOV 101',
-    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson19.png',
-  },
-  {
-    id: 'sov-101-lesson-20-public-vs-private-separation-of-powers-rise',
-    title: 'Lesson 20 – Public vs. Private, Separation of Powers Rise',
-    course: 'SOV 101',
-    image: 'https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/lesson20.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(OP)The+Business+Trust+%E2%80%93+Structure+%26+Governance.png',
   },
 ];
 
@@ -181,11 +163,11 @@ function UpcomingCourses() {
               key={course}
               onClick={() => setSelectedCourse(course)}
               className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#d10000] 
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#6164ec] 
                 ${
                   selectedCourse === course
-                    ? 'bg-[#d10000] text-white border-transparent shadow-md ring-1 ring-[#d10000]/40 hover:shadow-lg hover:brightness-105'
-                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#d10000]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
+                    ? 'bg-[#6164ec] text-white border-transparent shadow-md ring-1 ring-[#6164ec]/40 hover:shadow-lg hover:brightness-105'
+                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#6164ec]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
                 }
               `}
               aria-pressed={selectedCourse === course}

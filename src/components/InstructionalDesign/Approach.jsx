@@ -35,7 +35,8 @@ const Approach = () => {
       label: '02 — Design',
       icon: Lightbulb,
       summary: 'Storyboarding, prototype development',
-      headline: 'Architect the learning journey before a single pixel is built.',
+      headline:
+        'Architect the learning journey before a single pixel is built.',
       color: 'from-sky-500 to-sky-600',
       accent: 'bg-sky-500/10',
       border: 'border-sky-300/60',
@@ -463,7 +464,7 @@ const Approach = () => {
                       In this phase
                     </p>
                     <ul className="space-y-2">
-                      {step.details.map((item) => (
+                      {step.details.map(item => (
                         <li
                           key={item}
                           className="flex items-start gap-2 text-xs text-slate-700"
