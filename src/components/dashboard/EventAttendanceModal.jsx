@@ -72,9 +72,15 @@ const EventAttendanceModal = ({
               const user = attendee.user || {};
               const name = user.name || '';
               const [firstFromName, ...restName] = name.split(' ');
+              const normalizedTime =
+                attendee.attendanceTime ||
+                attendee.attendance_time ||
+                attendee.time ||
+                '';
 
               return {
                 ...attendee,
+                attendanceTime: normalizedTime,
                 user: {
                   ...user,
                   first_name:
@@ -104,14 +110,20 @@ const EventAttendanceModal = ({
   }, [eventId, isOpen]);
 
   const filteredAttendees = attendanceData?.eventAttendaceList?.filter(
-    attendee =>
-      attendee.user.first_name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      attendee.user.last_name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      attendee.user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    attendee => {
+      if (!attendee || !attendee.user) return false;
+      const user = attendee.user;
+      const firstName = (user.first_name || user.firstName || '').toLowerCase();
+      const lastName = (user.last_name || user.lastName || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
+
+      return (
+        firstName.includes(searchLower) ||
+        lastName.includes(searchLower) ||
+        email.includes(searchLower)
+      );
+    }
   );
 
   const formatDate = dateString => {
