@@ -29,7 +29,7 @@ const carouselItems = [
     id: 2,
     type: 'image',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/1.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/1+(1).png',
     title: 'Upcoming Event',
     course: 'Banner 2',
   },
@@ -37,7 +37,7 @@ const carouselItems = [
     id: 3,
     type: 'image',
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/2.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/2+(1).png',
     title: 'Upcoming Event',
     course: 'Banner 3',
   },
