@@ -567,8 +567,37 @@ export function Login() {
                   </form>
                 )}
               </CardContent>
+            </Card>
 
-              {/* {!showSignUp && !showForgotPassword && (
+            {/* Support Statement */}
+            {!showSignUp && !showForgotPassword && (
+              <div className="mt-4 text-center">
+                <div className="text-sm text-white font-medium space-y-2">
+                  <p className="text-white font-semibold">
+                    For Login related issues email us at:{' '}
+                    <a
+                      href="mailto:support@creditoracademy.com"
+                      className="text-yellow-300 hover:text-yellow-200 transition-colors underline font-bold"
+                    >
+                      support@creditoracademy.com
+                    </a>
+                  </p>
+                  <p className="text-white font-semibold">
+                    Or You can schedule a meeting with us at this link:{' '}
+                    <a
+                      href="https://calendly.com/creditor-academy/30min"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-yellow-300 hover:text-yellow-200 transition-colors underline font-bold"
+                    >
+                      Click Here
+                    </a>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* {!showSignUp && !showForgotPassword && (
                 <CardFooter className="flex flex-col space-y-4 pt-2">
                   <div className="text-center text-sm text-slate-500">
                     Don't have an account?{" "}
@@ -583,7 +612,6 @@ export function Login() {
                   </div>
                 </CardFooter>
               )} */}
-            </Card>
           </div>
         </div>
       </div>
