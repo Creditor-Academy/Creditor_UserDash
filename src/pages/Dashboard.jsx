@@ -1235,8 +1235,6 @@ export function Dashboard() {
               </div>
             </section>
           )}
-          {/* New Year Widgets */}
-          {activeTheme === 'newYear' && <NewYearWidgets />}
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}

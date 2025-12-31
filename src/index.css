@@ -747,11 +747,74 @@
   .newyear-kid-image {
     position: absolute;
     bottom: 0;
-    left: 0;
+    left: 50%;
     z-index: 3;
     pointer-events: none;
     display: flex;
     align-items: flex-end;
+    will-change: left;
+    animation: newyear-pull-to-center 4.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s
+      forwards;
+  }
+
+  @keyframes newyear-pull-to-center {
+    0% {
+      left: -240px;
+      transform: translateX(-50%);
+    }
+    15% {
+      transform: translateX(-50%) translateY(-2px);
+    }
+    70% {
+      left: 52%;
+      transform: translateX(-50%) translateY(0);
+    }
+    100% {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  .newyear-kid-img {
+    animation: newyear-pull-strain 4.5s cubic-bezier(0.22, 1, 0.36, 1) 0.3s
+      forwards;
+  }
+
+  @keyframes newyear-pull-strain {
+    0% {
+      transform: translateY(5px) rotate(0deg);
+    }
+    12% {
+      transform: translateY(2px) rotate(-2deg);
+    }
+    24% {
+      transform: translateY(6px) rotate(1.5deg);
+    }
+    36% {
+      transform: translateY(3px) rotate(-1.5deg);
+    }
+    48% {
+      transform: translateY(6px) rotate(1deg);
+    }
+    60% {
+      transform: translateY(4px) rotate(-1deg);
+    }
+    75% {
+      transform: translateY(5px) rotate(0.5deg);
+    }
+    100% {
+      transform: translateY(5px) rotate(0deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .newyear-kid-image {
+      animation: none;
+    }
+
+    .newyear-kid-img {
+      animation: none;
+    }
   }
 
   .newyear-kid-img {

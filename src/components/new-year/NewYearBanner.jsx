@@ -16,16 +16,6 @@ export function NewYearBanner({ userName }) {
           Set ambitious learning goals, track your progress, and unlock your
           full potential this year. Every lesson brings you closer to success.
         </p>
-        <div className="newyear-hero-cta">
-          <span className="goal-pill">
-            <Target className="h-4 w-4" />
-            Set Learning Goals
-          </span>
-          <span className="progress-pill">
-            <TrendingUp className="h-4 w-4" />
-            Track Progress
-          </span>
-        </div>
       </div>
       <div className="newyear-hero-visual">
         <div className="newyear-visual-content">
