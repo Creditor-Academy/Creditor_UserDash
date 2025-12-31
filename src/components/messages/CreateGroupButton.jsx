@@ -323,7 +323,7 @@ export default function CreateGroupButton({ className = '', onCreated }) {
           <TooltipTrigger asChild>
             <Button
               size="sm"
-              className={`bg-[#d10000] hover:bg-[#b00000] text-white ${className} ${userHasGroup ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-[#6164ec] hover:bg-[#b00000] text-white ${className} ${userHasGroup ? 'opacity-50 cursor-not-allowed' : ''}`}
               title="Create Group"
               onClick={() => !userHasGroup && handleOpen(true)}
               disabled={userHasGroup}

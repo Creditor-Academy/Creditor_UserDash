@@ -29,7 +29,7 @@ export function NotificationModal({
   notificationsFromApi = [],
   onMarkedAllRead,
 }) {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const [notifications, setNotifications] = useState([]);
   const [chatInvites, setChatInvites] = useState([]);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
@@ -590,7 +590,7 @@ export function NotificationModal({
         <DialogHeader className="p-4 pb-0 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
             <Bell className="h-4 w-4 text-gray-700" />
-            {isChristmasMode ? '🔔 Jingle Alerts' : 'Notifications'}
+            Notifications
           </DialogTitle>
         </DialogHeader>
 

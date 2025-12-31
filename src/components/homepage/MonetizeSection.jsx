@@ -16,39 +16,10 @@ const MonetizeSection = () => {
     <section
       className="py-20 pt-32 md:pt-20 px-4 relative overflow-hidden"
       style={{
-        /*background:
-          'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-      }}
-    >*/
-        position: 'relative',
-        zIndex: 1,
+        background:
+          'linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%)',
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'url("/7155.jpg") center/cover no-repeat',
-          transform: 'scaleX(-1)',
-          zIndex: -1,
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background:
-              'linear-gradient(135deg, rgba(3, 7, 18, 0.7) 0%, rgba(15, 23, 42, 0.75) 50%, rgba(30, 41, 59, 0.8) 100%)',
-            zIndex: 1,
-          }}
-        />
-      </div>
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Section - Content */}
@@ -74,14 +45,14 @@ const MonetizeSection = () => {
             {/* Description */}
             <div className="space-y-4">
               <p
-                className="text-lg text-white leading-relaxed font-normal"
+                className="text-lg text-slate-200 leading-relaxed"
                 style={{ fontFamily: 'Arial, sans-serif' }}
               >
                 Transform your expertise into courses, communities, and other
                 high-quality learning experiences.
               </p>
               <p
-                className="text-lg text-white leading-relaxed font-normal"
+                className="text-lg text-slate-200 leading-relaxed"
                 style={{ fontFamily: 'Arial, sans-serif' }}
               >
                 Our platform is designed to drive revenue growth for businesses
@@ -100,11 +71,11 @@ const MonetizeSection = () => {
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="flex items-center gap-4"
                 >
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="w-4 h-4 text-black" />
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-4 h-4 text-white" />
                   </div>
                   <span
-                    className="text-white font-normal"
+                    className="text-slate-100"
                     style={{ fontFamily: 'Arial, sans-serif' }}
                   >
                     {feature}
@@ -123,23 +94,22 @@ const MonetizeSection = () => {
             >
               <a
                 href="/contact"
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-4 px-8 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                style={{ fontFamily: 'Arial, sans-serif' }}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-8 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Start Creating
-                <ArrowUpRight size={16} strokeWidth={2} />
+                <ArrowUpRight size={16} />
               </a>
+
               <a
                 href="/login"
-                className="bg-transparent hover:bg-white/10 text-white font-semibold py-4 px-8 border border-white rounded-lg transition-all duration-300 flex items-center justify-center"
-                style={{ fontFamily: 'Arial, sans-serif' }}
+                className="bg-transparent hover:bg-white/10 text-white font-semibold py-4 px-8 border border-white/40 rounded-lg transition-all duration-300 flex items-center justify-center"
               >
                 Book a Demo
               </a>
             </motion.div>
           </motion.div>
 
-          {/* Right Section - Image and Testimonial */}
+          {/* Right Section - Dashboard */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -147,23 +117,20 @@ const MonetizeSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            {/* Dashboard Logo */}
             <div className="relative w-full max-w-2xl mx-auto">
-              {/* Glassmorphism border/glow effect */}
+              {/* Glow Frame */}
               <div
                 className="absolute -inset-4 rounded-2xl"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 50%, rgba(59, 130, 246, 0.3) 100%)',
+                    'linear-gradient(135deg, rgba(59,130,246,0.35), rgba(37,99,235,0.35))',
                   boxShadow:
-                    '0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(147, 51, 234, 0.3)',
+                    '0 0 40px rgba(59,130,246,0.45), 0 0 80px rgba(37,99,235,0.3)',
                   backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  filter: 'blur(2px)',
+                  border: '1px solid rgba(255,255,255,0.15)',
                 }}
               />
 
-              {/* Image */}
               <img
                 src={DashLogo}
                 alt="Athena LMS Dashboard"

@@ -54,6 +54,7 @@ const SidebarItem = ({
   dropdownContent,
   onNavigate,
   external,
+  activeTheme,
 }) => {
   const handleClick = () => {
     if (external) {
@@ -72,8 +73,16 @@ const SidebarItem = ({
         className={cn(
           'sidebar-menu-item flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left',
           active
-            ? 'sidebar-menu-item-active bg-blue-50 text-blue-600 border-l-4 border-blue-500 shadow-sm font-medium'
-            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            ? cn(
+                'sidebar-menu-item-active border-l-4 shadow-sm font-medium',
+                activeTheme === 'newYear'
+                  ? 'text-slate-900'
+                  : 'bg-blue-50 text-blue-600 border-blue-500'
+              )
+            : cn(
+                'text-gray-600 hover:text-gray-900',
+                activeTheme === 'newYear' ? '' : 'hover:bg-gray-50'
+              )
         )}
       >
         <Icon size={collapsed ? 24 : 20} />
@@ -96,8 +105,18 @@ const SidebarItem = ({
                   'sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left',
                   collapsed ? 'justify-center px-2' : '',
                   active
-                    ? 'sidebar-menu-item-active bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
+                    ? cn(
+                        'sidebar-menu-item-active border-l-4 shadow-md font-semibold',
+                        activeTheme === 'newYear'
+                          ? 'text-slate-900'
+                          : 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600'
+                      )
+                    : cn(
+                        'text-gray-600 hover:text-gray-900',
+                        activeTheme === 'newYear'
+                          ? ''
+                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
+                      )
                 )}
               >
                 <Icon
@@ -105,7 +124,9 @@ const SidebarItem = ({
                   className={cn(
                     'transition-all duration-200',
                     active
-                      ? 'text-blue-700'
+                      ? activeTheme === 'newYear'
+                        ? 'text-[color:var(--newyear-secondary)]'
+                        : 'text-blue-700'
                       : 'text-gray-500 group-hover:text-gray-700'
                   )}
                 />
@@ -114,7 +135,9 @@ const SidebarItem = ({
                     className={cn(
                       'sidebar-menu-label transition-colors duration-200',
                       active
-                        ? 'font-semibold text-blue-700'
+                        ? activeTheme === 'newYear'
+                          ? 'font-semibold text-[color:var(--newyear-primary)]'
+                          : 'font-semibold text-blue-700'
                         : 'text-gray-700 group-hover:text-gray-900'
                     )}
                   >
@@ -130,8 +153,18 @@ const SidebarItem = ({
                   'sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group',
                   collapsed ? 'justify-center px-2' : '',
                   active
-                    ? 'sidebar-menu-item-active bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
+                    ? cn(
+                        'sidebar-menu-item-active border-l-4 shadow-md font-semibold',
+                        activeTheme === 'newYear'
+                          ? 'text-slate-900'
+                          : 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600'
+                      )
+                    : cn(
+                        'text-gray-600 hover:text-gray-900',
+                        activeTheme === 'newYear'
+                          ? ''
+                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
+                      )
                 )}
               >
                 <Icon
@@ -139,7 +172,9 @@ const SidebarItem = ({
                   className={cn(
                     'transition-all duration-200',
                     active
-                      ? 'text-blue-700'
+                      ? activeTheme === 'newYear'
+                        ? 'text-[color:var(--newyear-secondary)]'
+                        : 'text-blue-700'
                       : 'text-gray-500 group-hover:text-gray-700'
                   )}
                 />
@@ -148,7 +183,9 @@ const SidebarItem = ({
                     className={cn(
                       'sidebar-menu-label transition-colors duration-200',
                       active
-                        ? 'font-semibold text-blue-700'
+                        ? activeTheme === 'newYear'
+                          ? 'font-semibold text-[color:var(--newyear-primary)]'
+                          : 'font-semibold text-blue-700'
                         : 'text-gray-700 group-hover:text-gray-900'
                     )}
                   >
@@ -177,7 +214,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
 
   const isActive = path => {
     if (path === '/dashboard') {
@@ -188,14 +225,15 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   };
 
   const handleNavigate = path => {
-    // Keep sidebar collapsed when on instructor portal
     if (collapsed && path !== '/instructor') {
       setCollapsed(false);
     }
-    // Collapse sidebar when navigating to instructor portal
+
     if (path === '/instructor') {
       setCollapsed(true);
     }
+
+    navigate(path); // ✅ THIS WAS MISSING
   };
 
   const handleLogoClick = () => {
@@ -272,11 +310,15 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       {/* Header */}
       <div
         className={cn(
-          'sidebar-header relative flex items-center border-b border-gray-200 p-4 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md',
+          'sidebar-header relative flex items-center border-b border-gray-200 p-4 pr-0 shadow-md',
+          activeTheme === 'newYear'
+            ? 'newyear-sidebar-header'
+            : 'bg-gradient-to-r from-blue-600 to-blue-700',
           collapsed ? 'justify-center' : 'justify-between'
         )}
       >
         <div className="sidebar-lights" aria-hidden="true" />
+
         {!collapsed && (
           <motion.button
             onClick={handleLogoClick}
@@ -285,7 +327,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative sidebar-logo-mark">
@@ -345,7 +386,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               variant="ghost"
               size="icon"
               onClick={() => setCollapsed(!collapsed)}
-              className="text-white hover:bg-white/20 border-none rounded-lg"
+              className="text-white hover:bg-white/20 rounded-lg"
             >
               <ChevronLeft size={18} />
             </Button>
@@ -359,7 +400,12 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setCollapsed(false)}
-                className="h-8 w-8 bg-white text-blue-600 hover:bg-gray-50 border border-gray-200 rounded-full shadow-lg"
+                className={cn(
+                  'h-8 w-8 bg-white hover:bg-gray-50 border border-gray-200 rounded-full shadow-lg',
+                  activeTheme === 'newYear'
+                    ? 'text-[color:var(--newyear-secondary)]'
+                    : 'text-blue-600'
+                )}
               >
                 <ChevronRight size={16} />
               </Button>
@@ -386,6 +432,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -397,6 +444,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/courses')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -408,6 +456,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/groups')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -419,6 +468,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/catalog')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -430,6 +480,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/attendance')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -442,6 +493,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/messages')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -455,6 +507,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   )}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -463,10 +516,9 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 <SidebarItem
                   icon={CreditCard}
                   label="Creditor Card"
-                  href="#"
-                  active={false}
                   collapsed={collapsed}
                   onNavigate={handleCreditorCardClick}
+                  activeTheme={activeTheme}
                 />
               </motion.div>
             </>
@@ -484,8 +536,12 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   className={cn(
                     'w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors',
                     moreOpen
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? activeTheme === 'newYear'
+                        ? 'bg-[color:var(--newyear-bg)] text-[color:var(--newyear-primary)]'
+                        : 'bg-blue-50 text-blue-700'
+                      : activeTheme === 'newYear'
+                        ? 'bg-white text-[color:var(--newyear-primary)] hover:bg-[color:var(--newyear-bg)]'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
                   )}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -519,6 +575,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive('/dashboard/chatbot')}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
+                  activeTheme={activeTheme}
                 />
                 <SidebarItem
                   icon={Gamepad2}
@@ -528,6 +585,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                   external={true}
+                  activeTheme={activeTheme}
                 />
                 {/* Less control now unified with the More link above; hide duplicate */}
               </div>
@@ -555,6 +613,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 active={isActive('/instructor')}
                 collapsed={collapsed}
                 onNavigate={handleNavigate}
+                activeTheme={activeTheme}
               />
             </motion.div>
           )}

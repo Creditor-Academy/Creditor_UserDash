@@ -434,6 +434,7 @@ function App() {
                       path="membership/enroll"
                       element={<MembershipEnrollment />}
                     />
+
                     <Route
                       path="upcoming-courses"
                       element={<UpcomingCourses />}

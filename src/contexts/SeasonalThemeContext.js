@@ -1,8 +1,8 @@
 import { createContext } from 'react';
 
 const defaultValue = {
-  isChristmasMode: false,
-  toggleChristmasMode: () => {},
+  activeTheme: 'default', // 'default' | 'newYear'
+  setTheme: () => {},
 };
 
 export const SeasonalThemeContext = createContext(defaultValue);

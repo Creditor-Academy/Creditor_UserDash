@@ -303,11 +303,11 @@ export default function Hero() {
       </style>
 
       <div className="hero-diagonal-lines" />
-      <img
+      {/* <img
         src="/tree-removebg-preview.png"
         alt="Decorative tree"
         className="tree-decoration"
-      />
+      /> */}
       <div className="hero-container">
         <div className="hero-left">
           <div className="hero-heading-wrapper">
@@ -328,7 +328,10 @@ export default function Hero() {
                 Start Creating
                 <ArrowUpRight size={16} strokeWidth={2} />
               </a>
-              <a href="/login" className="btn-secondary">
+              <a
+                href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
+                className="btn-secondary"
+              >
                 Book a Demo
               </a>
             </div>

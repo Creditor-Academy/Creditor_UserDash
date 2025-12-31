@@ -875,9 +875,18 @@ const AddEvent = () => {
     setCalendarYear(Number(e.target.value));
   };
 
+  // Safely extract an event id regardless of backend naming
+  const getEventId = event =>
+    event?.id || event?._id || event?.eventId || event?.event_id || '';
+
   // Handle opening attendance modal
   const handleViewAttendance = event => {
-    setSelectedEventForAttendance(event);
+    const eventId = getEventId(event);
+    if (!eventId) {
+      setModalMessage('Unable to open attendance: missing event id');
+      return;
+    }
+    setSelectedEventForAttendance({ ...event, id: eventId });
     setIsAttendanceModalOpen(true);
   };
 
@@ -889,7 +898,12 @@ const AddEvent = () => {
 
   // Handle opening event attendance modal
   const handleViewEventAttendance = event => {
-    setSelectedEventForEventAttendance(event);
+    const eventId = getEventId(event);
+    if (!eventId) {
+      setModalMessage('Unable to open attendance: missing event id');
+      return;
+    }
+    setSelectedEventForEventAttendance({ ...event, id: eventId });
     setIsEventAttendanceModalOpen(true);
   };
 
@@ -2529,7 +2543,7 @@ const AddEvent = () => {
       <EventAttendanceModal
         isOpen={isAttendanceModalOpen}
         onClose={handleCloseAttendanceModal}
-        eventId={selectedEventForAttendance?.id}
+        eventId={getEventId(selectedEventForAttendance)}
         eventTitle={selectedEventForAttendance?.title}
         eventDate={selectedEventForAttendance?.startTime}
         eventTime={selectedEventForAttendance?.startTime}
@@ -2539,7 +2553,7 @@ const AddEvent = () => {
       <EventAttendanceModal
         isOpen={isEventAttendanceModalOpen}
         onClose={handleCloseEventAttendanceModal}
-        eventId={selectedEventForEventAttendance?.id}
+        eventId={getEventId(selectedEventForEventAttendance)}
         eventTitle={selectedEventForEventAttendance?.title}
         eventDate={selectedEventForEventAttendance?.startTime}
         eventTime={selectedEventForEventAttendance?.startTime}

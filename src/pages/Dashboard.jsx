@@ -30,6 +30,7 @@ import {
   Award,
   Video,
 } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 import DashboardCarousel from '@/components/dashboard/DashboardCarousel';
 import DashboardGroup from '@/components/dashboard/DashboardGroup';
@@ -57,6 +58,8 @@ import {
   fetchUserWebsiteServices,
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import { NewYearBanner } from '@/components/new-year/NewYearBanner';
+import { NewYearWidgets } from '@/components/new-year/NewYearWidgets';
 import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
 import { useSponsorAds } from '@/contexts/SponsorAdsContext';
@@ -137,11 +140,155 @@ export function Dashboard() {
         max-height: 200px;
       }
     }
+
+    .dashboard-newyear-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(239, 246, 255, 1) 55%, rgba(238, 242, 255, 1) 100%);
+      border-color: rgba(59, 130, 246, 0.35);
+      box-shadow: 0 10px 22px rgba(2, 6, 23, 0.10);
+      overflow: hidden;
+    }
+
+    .dashboard-newyear-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(800px 240px at 20% 0%, rgba(59, 130, 246, 0.18) 0%, transparent 60%),
+        radial-gradient(700px 220px at 80% 0%, rgba(99, 102, 241, 0.16) 0%, transparent 55%),
+        radial-gradient(360px 180px at 50% 0%, rgba(234, 179, 8, 0.12) 0%, transparent 65%);
+      opacity: 0.85;
+    }
+
+    .dashboard-newyear-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.85) 0 1.2px, transparent 1.3px),
+        radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.70) 0 1px, transparent 1.1px),
+        radial-gradient(circle at 44% 16%, rgba(255, 255, 255, 0.55) 0 1.1px, transparent 1.2px),
+        radial-gradient(circle at 62% 22%, rgba(255, 255, 255, 0.70) 0 1.2px, transparent 1.3px),
+        radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.60) 0 1px, transparent 1.1px),
+        radial-gradient(circle at 90% 24%, rgba(255, 255, 255, 0.75) 0 1.2px, transparent 1.3px);
+      opacity: 0.55;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 40%, transparent 85%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 40%, transparent 85%);
+    }
+
+    .dashboard-course-card.newyear-course-card {
+      position: relative;
+    }
+
+    .dashboard-course-card.newyear-course-card .course-card-surface {
+      border: 1px solid rgba(99, 102, 241, 0.30);
+      box-shadow: 0 10px 20px rgba(2, 6, 23, 0.08);
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .dashboard-course-card.newyear-course-card .course-card-surface::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 10px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.65), rgba(99, 102, 241, 0.60), rgba(234, 179, 8, 0.55));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .dashboard-course-card.newyear-course-card:hover .course-card-surface {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(2, 6, 23, 0.14);
+    }
+
+    .course-newyear-label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: rgba(30, 64, 175, 1);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 9999px;
+      padding: 6px 10px;
+      box-shadow: 0 8px 18px rgba(2, 6, 23, 0.10);
+      backdrop-filter: blur(8px);
+    }
+
+    .course-sparkle {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      z-index: 5;
+      font-size: 18px;
+      opacity: 0.9;
+      filter: drop-shadow(0 8px 10px rgba(2, 6, 23, 0.25));
+      animation: ny-sparkle 1.8s ease-in-out infinite;
+      user-select: none;
+    }
+
+    @keyframes ny-sparkle {
+      0% { transform: translateY(0) scale(1); opacity: 0.75; }
+      50% { transform: translateY(-2px) scale(1.06); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 0.78; }
+    }
+
+    .dashboard-empty-state {
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(239, 246, 255, 1), rgba(238, 242, 255, 1));
+      border: 1px dashed rgba(99, 102, 241, 0.35);
+    }
+
+    .ny-important-updates {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ny-important-updates::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 8% 18%, rgba(59, 130, 246, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 16% 32%, rgba(234, 179, 8, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 24% 12%, rgba(99, 102, 241, 0.35) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 36% 28%, rgba(244, 63, 94, 0.25) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 52% 14%, rgba(59, 130, 246, 0.28) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 64% 26%, rgba(234, 179, 8, 0.30) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 76% 10%, rgba(99, 102, 241, 0.28) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 88% 22%, rgba(244, 63, 94, 0.20) 0 2px, transparent 2.1px),
+        radial-gradient(circle at 92% 44%, rgba(234, 179, 8, 0.22) 0 2px, transparent 2.1px);
+      opacity: 0.45;
+      filter: blur(0.2px);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 45%, transparent 85%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 45%, transparent 85%);
+      animation: ny-confetti-drift 6.5s ease-in-out infinite;
+    }
+
+    @keyframes ny-confetti-drift {
+      0% { transform: translateY(0); opacity: 0.35; }
+      50% { transform: translateY(6px); opacity: 0.55; }
+      100% { transform: translateY(0); opacity: 0.40; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ny-important-updates::after {
+        animation: none !important;
+      }
+    }
   `;
 
   const { userProfile } = useUser();
   const { balance, membership, refreshBalance } = useCredits();
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const { userRole } = useAuth();
   const { getPrimaryAdForPlacement, getActiveAdsByPlacement } = useSponsorAds();
   const [isSponsorPopupOpen, setIsSponsorPopupOpen] = useState(false);
@@ -1043,54 +1190,29 @@ export function Dashboard() {
     }
   };
 
-  const courseSectionTitle = isChristmasMode
-    ? '📚 Winter Courses'
-    : 'My Courses';
+  const courseSectionTitle = 'My Courses';
+
+  const currentYear = 2026;
 
   return (
     <div
-      className={`relative flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white ${
-        isChristmasMode ? 'christmas-surface' : ''
+      className={`relative flex flex-col min-h-screen ${
+        activeTheme === 'newYear'
+          ? 'dashboard-newyear-bg'
+          : 'bg-gradient-to-br from-gray-50 to-white'
       }`}
     >
-      {isChristmasMode && (
-        <div
-          className="snowfall-layer pointer-events-none"
-          aria-hidden="true"
-        />
+      {/* Subtle Year Watermark */}
+      {activeTheme === 'newYear' && (
+        <div className="dashboard-year-watermark" aria-hidden="true">
+          {currentYear}
+        </div>
       )}
+
       <main className="flex-1">
         <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
-          {isChristmasMode ? (
-            <section className="christmas-hero-banner mb-8">
-              <div className="christmas-hero-content">
-                <p className="christmas-hero-kicker">Exclusive Holiday Mode</p>
-                <h1>
-                  Season's Greetings, {userName || 'Scholar'}! Keep learning
-                  this Christmas 🎄
-                </h1>
-                <p>
-                  Cozy up with pine-green goals, track your progress like Santa,
-                  and unlock extra sparkle with every lesson.
-                </p>
-                <div className="christmas-hero-cta">
-                  <span className="gift-pill">🎁 Bonus tips unlocked</span>
-                  <span className="snow-pill">❄️ Snow-safe streak active</span>
-                </div>
-              </div>
-              <div className="christmas-hero-visual">
-                <video
-                  src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/_Christmas+Poster+with+Levitating+Book+(2).mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover rounded-2xl"
-                  aria-label="Festive tree with gifts"
-                />
-                <div className="floating-snow" aria-hidden="true" />
-              </div>
-            </section>
+          {activeTheme === 'newYear' ? (
+            <NewYearBanner userName={userName} />
           ) : (
             <section className="athena-hero-banner mb-8">
               <div className="athena-hero-content">
@@ -1118,20 +1240,51 @@ export function Dashboard() {
             {/* Left section - greeting and latest updates */}
             <div className="xl:col-span-8 space-y-4">
               {/* Enhanced Greeting Section */}
-              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200">
-                <div className="animate-gradient-shift absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10"></div>
-                <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
+              <div
+                className={`relative rounded-2xl overflow-hidden shadow-lg border ${
+                  activeTheme === 'newYear'
+                    ? 'dashboard-newyear-card border-gray-200/50'
+                    : 'border-gray-200'
+                }`}
+              >
+                <div
+                  className={`absolute inset-0 ${
+                    activeTheme === 'newYear'
+                      ? 'bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5'
+                      : 'animate-gradient-shift bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10'
+                  }`}
+                ></div>
+                <div
+                  className={`relative z-10 p-4 sm:p-5 backdrop-blur-sm ${
+                    activeTheme === 'newYear' ? 'bg-white/90' : 'bg-white/80'
+                  }`}
+                >
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <div
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0 ${
+                        activeTheme === 'newYear'
+                          ? 'bg-gradient-to-br from-blue-600 to-indigo-700'
+                          : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                      }`}
+                    >
                       <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
-                        {`Welcome back${userName ? `, ${userName}` : ''}!`}
+                      <h2
+                        className={`text-xl sm:text-2xl font-bold mb-1 leading-tight break-words ${
+                          activeTheme === 'newYear'
+                            ? 'text-gray-900'
+                            : 'bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent'
+                        }`}
+                      >
+                        {activeTheme === 'newYear'
+                          ? `Your ${currentYear} Learning Dashboard${userName ? `, ${userName}` : ''}`
+                          : `Welcome back${userName ? `, ${userName}` : ''}!`}
                       </h2>
                       <p className="text-gray-600 text-sm sm:text-base leading-snug">
-                        Continue your private education journey and achieve your
-                        learning goals.
+                        {activeTheme === 'newYear'
+                          ? "New Year. New Goals. Let's Learn. Start your journey to excellence."
+                          : 'Continue your private education journey and achieve your learning goals.'}
                       </p>
                     </div>
                   </div>
@@ -1226,7 +1379,11 @@ export function Dashboard() {
               </div>
 
               {/* My Courses Section (carousel with arrows) */}
-              <div className="mb-6 relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+              <div
+                className={`mb-6 relative bg-white rounded-2xl shadow-lg border border-gray-200 p-4 ${
+                  activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-2xl font-bold text-gray-800">
                     {courseSectionTitle}
@@ -1306,21 +1463,46 @@ export function Dashboard() {
                       )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <h3 className="text-lg font-medium mb-2">
-                      No courses enrolled
+                  <div
+                    className={`flex flex-col items-center justify-center py-12 ${
+                      activeTheme === 'newYear' ? 'dashboard-empty-state' : ''
+                    }`}
+                  >
+                    <div className="text-5xl mb-4 opacity-50">🎯</div>
+                    <h3
+                      className={`text-lg font-medium mb-2 ${
+                        activeTheme === 'newYear' ? 'text-gray-900' : ''
+                      }`}
+                    >
+                      {activeTheme === 'newYear'
+                        ? 'Start your first course this year'
+                        : 'No courses enrolled'}
                     </h3>
-                    <p className="text-muted-foreground mb-4">
-                      You are not enrolled in any courses yet.
+                    <p
+                      className={`mb-4 ${
+                        activeTheme === 'newYear'
+                          ? 'text-gray-600'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {activeTheme === 'newYear'
+                        ? 'Set your learning goals for the year ahead and begin your journey.'
+                        : 'You are not enrolled in any courses yet.'}
                     </p>
                     <Button
                       variant="default"
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md transition-colors duration-200"
+                      className={`font-semibold shadow-md transition-all duration-300 ${
+                        activeTheme === 'newYear'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white hover:shadow-lg hover:-translate-y-0.5'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
                       onClick={() =>
                         (window.location.href = '/dashboard/catalog')
                       }
                     >
-                      Click to view courses
+                      {activeTheme === 'newYear'
+                        ? '🚀 Explore Courses'
+                        : 'Click to view courses'}
                     </Button>
                   </div>
                 )}
@@ -1439,7 +1621,13 @@ export function Dashboard() {
               </div> */}
 
               {/* Important Updates Section */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper">
+              <div
+                className={`bg-white rounded-2xl shadow-lg border border-gray-200 p-4 important-updates-wrapper ${
+                  activeTheme === 'newYear'
+                    ? 'dashboard-newyear-card ny-important-updates'
+                    : ''
+                }`}
+              >
                 <style>{importantUpdateStyles}</style>
                 <div className="mb-2">
                   <div className="flex items-center gap-2 mb-2">
@@ -1554,16 +1742,30 @@ export function Dashboard() {
             </div>
           </div>
           {/* Catalog Banner Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+          <div
+            className={`w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 ${
+              activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+            }`}
+          >
             <div className="text-center mb-4"></div>
             <DashboardCarousel />
           </div>
 
           <div className="mb-6">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <div
+              className={`bg-white rounded-2xl shadow-lg border border-gray-200 p-6 ${
+                activeTheme === 'newYear' ? 'dashboard-newyear-card' : ''
+              }`}
+            >
               <div className="flex items-center gap-3 mb-4">
                 <MonitorPlay className="h-6 w-6 text-purple-500" />
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2
+                  className={`text-2xl font-bold ${
+                    activeTheme === 'newYear'
+                      ? 'text-gray-900'
+                      : 'text-gray-800'
+                  }`}
+                >
                   Learning Sessions
                 </h2>
               </div>
