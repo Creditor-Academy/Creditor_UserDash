@@ -585,7 +585,7 @@ export function Login() {
                   <p className="text-white font-semibold">
                     Or You can schedule a meeting with us at this link:{' '}
                     <a
-                      href="https://calendly.com/creditor-academy/30min"
+                      href="https://scheduler.zoom.us/daniyal-hashim/athena-lesson-editor-team"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-yellow-300 hover:text-yellow-200 transition-colors underline font-bold"
