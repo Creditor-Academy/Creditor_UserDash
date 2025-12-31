@@ -51,7 +51,7 @@ export function CourseCard({
   const isNewYear = activeTheme === 'newYear';
 
   const primaryButtonClasses = isNewYear
-    ? 'w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-yellow-500 hover:from-blue-700 hover:via-indigo-700 hover:to-yellow-600 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
+    ? 'w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
     : 'w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200';
 
   const expiredButtonClasses = isNewYear
@@ -63,9 +63,6 @@ export function CourseCard({
       className={`dashboard-course-card ${activeTheme === 'newYear' ? 'newyear-course-card' : ''}`}
     >
       <div className="course-card-surface flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
-        {activeTheme === 'newYear' && (
-          <div className="course-newyear-label">🎯 New Year Learning Path</div>
-        )}
         <div
           className="w-full relative overflow-hidden bg-muted"
           style={{ height: '190px' }}
