@@ -592,16 +592,17 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             </motion.div>
           )}
 
-          {/* <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants}>
             <SidebarItem
               icon={BarChart}
               label="My Progress"
-              href="/progress"
-              active={isActive("/progress")}
+              href="/dashboard/progress"
+              active={isActive('/dashboard/progress')}
               collapsed={collapsed}
               onNavigate={handleNavigate}
+              activeTheme={activeTheme}
             />
-          </motion.div> */}
+          </motion.div>
 
           {/* Instructor Portal - only for admin or instructor */}
           {!moreOpen && isInstructorOrAdmin() && (

@@ -26,7 +26,7 @@ import Groups from '@/pages/Groups';
 import Catalog from '@/pages/Catalog';
 import CatelogCourses from '@/pages/CatelogCourses';
 
-import Progress from '@/pages/Progress';
+import ProgressPage from '@/pages/Progress';
 import Messages from '@/pages/Messages';
 import Profile from '@/pages/Profile';
 import NotFound from '@/pages/NotFound';
@@ -625,7 +625,7 @@ function App() {
                       path="avatar-picker"
                       element={<AvatarPickerPage />}
                     />
-                    <Route path="progress" element={<Progress />} />
+                    <Route path="progress" element={<ProgressPage />} />
                     <Route path="messages" element={<Messages />} />
 
                     {/* Other dashboard routes */}
@@ -682,7 +682,7 @@ function App() {
                     path="payment-failed/:courseId"
                     element={<PaymentFailed />}
                   />
-                  <Route path="progress" element={<Progress />} />
+                  <Route path="progress" element={<ProgressPage />} />
                   {/* Duplicate top-level messages route removed to keep messages inside dashboard layout */}
 
                   <Route path="profile" element={<Profile />} />
