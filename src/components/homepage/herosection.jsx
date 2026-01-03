@@ -322,13 +322,17 @@ export default function Hero() {
               research-backed courses in minutes.
             </p>
           </div>
+
           <div className="hero-buttons-wrapper">
             <div className="hero-buttons">
               <a href="/contact" className="btn-primary">
                 Start Creating
                 <ArrowUpRight size={16} strokeWidth={2} />
               </a>
-              <a href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting" className="btn-secondary">
+              <a
+                href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
+                className="btn-secondary"
+              >
                 Book a Demo
               </a>
             </div>
