@@ -11,195 +11,51 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { fetchUserCourses } from '@/services/courseService';
+import { fetchUserProgressOverview } from '@/services/progressService';
 import { useUser } from '@/contexts/UserContext';
+import ModulesModal from './ModulesModal';
 
 const clamp = (num, min, max) => Math.max(min, Math.min(num, max));
 
-function useProgressData(externalData) {
-  const { userProfile } = useUser?.() || {};
+function useProgressData() {
+  const { userProfile } = useUser();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [courses, setCourses] = useState([]);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     let ignore = false;
-    if (externalData?.courses?.length) {
-      setCourses(externalData.courses);
-      return;
-    }
-    setLoading(true);
-    (async () => {
+
+    const fetchProgressData = async () => {
+      if (!userProfile?.id) return;
+
+      setLoading(true);
+      setError(null);
+
       try {
-        const res = await fetchUserCourses?.();
-        if (!ignore && Array.isArray(res)) setCourses(res);
-      } catch (e) {
-        if (!ignore) setError('Unable to load courses');
+        const progressData = await fetchUserProgressOverview();
+        if (!ignore) {
+          setData(progressData);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err.message || 'Unable to load progress data');
+        }
       } finally {
-        if (!ignore) setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
-    })();
+    };
+
+    fetchProgressData();
+
     return () => {
       ignore = true;
     };
-  }, [userProfile?.id, externalData?.courses]);
+  }, [userProfile?.id]);
 
-  // Fallback shaping for modules/lessons/badges when not provided
-  const shaped = useMemo(() => {
-    const shapedCourses = (courses || []).map((c, idx) => {
-      const modules = c.modules?.length
-        ? c.modules
-        : [
-            {
-              id: `m-${idx}-1`,
-              title: 'Introduction',
-              status: 'completed',
-              progress: 100,
-              lessons: 6,
-              completedLessons: 6,
-            },
-            {
-              id: `m-${idx}-2`,
-              title: 'Core Concepts',
-              status: 'in-progress',
-              progress: 45,
-              lessons: 10,
-              completedLessons: 4,
-            },
-            {
-              id: `m-${idx}-3`,
-              title: 'Advanced',
-              status: 'locked',
-              progress: 0,
-              lessons: 9,
-              completedLessons: 0,
-            },
-          ];
-      const totalModules = modules.length;
-      const completedModules = modules.filter(
-        m => m.status === 'completed'
-      ).length;
-      const inProgressModules = modules.filter(
-        m => m.status === 'in-progress'
-      ).length;
-      const lockedModules = modules.filter(m => m.status === 'locked').length;
-      const totalLessons = modules.reduce((a, m) => a + (m.lessons || 0), 0);
-      const completedLessons = modules.reduce(
-        (a, m) => a + (m.completedLessons || 0),
-        0
-      );
-      const unlockedLessons = modules
-        .filter(m => m.status !== 'locked')
-        .reduce((a, m) => a + (m.lessons || 0), 0);
-      const lockedLessons = totalLessons - unlockedLessons;
-      const overallProgress =
-        totalModules === 0
-          ? 0
-          : Math.round(
-              (modules.reduce((a, m) => a + clamp(m.progress || 0, 0, 100), 0) /
-                (totalModules * 100)) *
-                100
-            );
-      return {
-        id: c.id ?? `course-${idx}`,
-        title: c.title ?? c.name ?? `Course ${idx + 1}`,
-        overallProgress,
-        modules,
-        stats: {
-          totalModules,
-          completedModules,
-          inProgressModules,
-          lockedModules,
-          totalLessons,
-          completedLessons,
-          unlockedLessons,
-          lockedLessons,
-        },
-      };
-    });
-
-    // Aggregate across courses
-    const totalCourses = shapedCourses.length;
-    const totals = shapedCourses.reduce(
-      (acc, c) => {
-        acc.totalModules += c.stats.totalModules;
-        acc.completedModules += c.stats.completedModules;
-        acc.inProgressModules += c.stats.inProgressModules;
-        acc.lockedModules += c.stats.lockedModules;
-        acc.totalLessons += c.stats.totalLessons;
-        acc.completedLessons += c.stats.completedLessons;
-        acc.unlockedLessons += c.stats.unlockedLessons;
-        acc.lockedLessons += c.stats.lockedLessons;
-        acc.progressSum += c.overallProgress;
-        return acc;
-      },
-      {
-        totalModules: 0,
-        completedModules: 0,
-        inProgressModules: 0,
-        lockedModules: 0,
-        totalLessons: 0,
-        completedLessons: 0,
-        unlockedLessons: 0,
-        lockedLessons: 0,
-        progressSum: 0,
-      }
-    );
-    const overallCompletion = totalCourses
-      ? Math.round(totals.progressSum / totalCourses)
-      : 0;
-
-    // Credits + badges placeholders (could be sourced from contexts/services)
-    const creditsEarned = externalData?.creditsEarned ?? 240;
-    const creditsRedeemed = externalData?.creditsRedeemed ?? 300;
-    const badges = externalData?.badges ?? [
-      {
-        id: 'b1',
-        title: 'Starter',
-        progress: 100,
-        hint: 'Completed first lesson',
-      },
-      {
-        id: 'b2',
-        title: 'Streak 7',
-        progress: 65,
-        hint: '7-day learning streak',
-      },
-      {
-        id: 'b3',
-        title: 'Quiz Whiz',
-        progress: 40,
-        hint: 'Score 85%+ on 5 quizzes',
-      },
-      {
-        id: 'b4',
-        title: 'Attendance',
-        progress: 75,
-        hint: 'Attendance 75%+ Badge',
-      },
-    ];
-
-    return {
-      courses: shapedCourses,
-      summary: {
-        totalCourses,
-        totalModules: totals.totalModules,
-        unlockedModules: totals.completedModules + totals.inProgressModules,
-        inProgressModules: totals.inProgressModules,
-        lockedModules: totals.lockedModules,
-        totalLessons: totals.totalLessons,
-        completedLessons: totals.completedLessons,
-        unlockedLessons: totals.unlockedLessons,
-        lockedLessons: totals.lockedLessons,
-        overallCompletion,
-        creditsEarned,
-        creditsRedeemed,
-        badges,
-      },
-    };
-  }, [courses, externalData]);
-
-  return { loading, error, data: shaped };
+  return { loading, error, data };
 }
 
 function CircularProgress({ value = 0, size = 140, stroke = 10 }) {
@@ -266,20 +122,18 @@ function SegmentedModuleBars({ modules = [] }) {
   return (
     <div className="space-y-3">
       {modules.map(m => {
-        const color =
-          m.status === 'completed'
-            ? 'bg-emerald-500'
-            : m.status === 'in-progress'
-              ? 'bg-amber-400'
-              : 'bg-rose-400';
-        const Icon =
-          m.status === 'completed'
-            ? CheckCircle2
-            : m.status === 'in-progress'
-              ? CircleDot
-              : Lock;
+        const color = m.completed
+          ? 'bg-emerald-500'
+          : m.progress > 0
+            ? 'bg-amber-400'
+            : 'bg-rose-400';
+        const Icon = m.completed
+          ? CheckCircle2
+          : m.progress > 0
+            ? CircleDot
+            : Lock;
         return (
-          <div key={m.id} className="space-y-2">
+          <div key={m.module_id} className="space-y-2">
             <div className="flex items-center gap-2 min-w-0">
               <Icon className="h-4 w-4 text-gray-500 flex-shrink-0" />
               <span className="text-sm text-gray-700 truncate flex-1">
@@ -304,29 +158,25 @@ function SegmentedModuleBars({ modules = [] }) {
   );
 }
 
-function StatCard({ icon: Icon, label, value, subtext }) {
+function StatCard({ icon: Icon, label, value, subtext, onClick }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="rounded-2xl border border-gray-100 bg-gradient-to-b from-gray-50 to-white p-5 min-h-[120px] flex flex-col justify-between"
+      whileHover={onClick ? { scale: 1.02 } : {}}
+      whileTap={onClick ? { scale: 0.98 } : {}}
+      className={`bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200 ${
+        onClick ? 'cursor-pointer hover:border-blue-300' : ''
+      }`}
+      onClick={onClick}
     >
       <div className="flex items-center gap-3 mb-3">
-        <div className="p-2.5 rounded-xl bg-white border border-gray-100 shadow-sm flex-shrink-0">
-          <Icon className="h-5 w-5 text-gray-700" />
+        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100">
+          <Icon className="h-5 w-5 text-blue-600" />
         </div>
-        <div className="text-xs uppercase tracking-wider font-medium text-gray-500 truncate">
-          {label}
-        </div>
+        <span className="text-sm font-medium text-gray-600">{label}</span>
       </div>
       <div className="space-y-1">
-        <div className="text-2xl font-bold text-gray-900 leading-none">
-          {value}
-        </div>
-        {subtext ? (
-          <div className="text-xs text-gray-600 leading-relaxed">{subtext}</div>
-        ) : null}
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-xs text-gray-500">{subtext}</p>
       </div>
     </motion.div>
   );
@@ -430,43 +280,59 @@ function BadgesGallery({ badges = [] }) {
   );
 }
 
-export default function ProgressStats({ data }) {
-  const { loading, error, data: shaped } = useProgressData(data);
-  const overall = shaped.summary;
-  const firstCourse = shaped.courses[0];
+export default function ProgressStats() {
+  const { loading, error, data } = useProgressData();
+  const [showModulesModal, setShowModulesModal] = useState(false);
+
+  // Extract data from backend response structure
+  const summary = data?.summary || {};
+  const overall = data?.overall_completion || {};
+  const achievements = data?.achievements || {};
+  const currentCourse = data?.current_course;
 
   const highlightStats = [
     {
       icon: Users,
       label: 'Courses',
-      value: overall.totalCourses,
-      subtext: 'Enrolled',
+      value: summary.courses?.enrolled || 0,
+      subtext: `${summary.courses?.completed || 0} completed`,
     },
     {
       icon: Briefcase,
       label: 'Modules',
-      value: `${overall.totalModules}`,
-      subtext: `${overall.unlockedModules} unlocked`,
+      value: summary.modules?.total || 0,
+      subtext: `${summary.modules?.unlocked || 0} unlocked`,
+      onClick: () => setShowModulesModal(true),
     },
     {
       icon: Clock,
       label: 'Lessons',
-      value: overall.totalLessons,
-      subtext: `${overall.completedLessons} completed`,
+      value: summary.lessons?.total || 0,
+      subtext: `${summary.lessons?.completed || 0} completed`,
     },
     {
       icon: TrendingUp,
       label: 'Completion',
-      value: `${overall.overallCompletion}%`,
+      value: `${overall.percentage || 0}%`,
       subtext: 'Overall progress',
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 md:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-8 space-y-6">
+    <div className="w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="space-y-1">
-          <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-tight">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 leading-tight">
             Your Progress Overview
           </h3>
           <p className="text-sm text-gray-500">
@@ -485,27 +351,27 @@ export default function ProgressStats({ data }) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {highlightStats.map(stat => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-1 rounded-3xl border border-gray-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-6 flex flex-col items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="col-span-1 lg:col-span-1 rounded-3xl border border-gray-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-4 sm:p-6 flex flex-col items-center">
           <div className="flex justify-center mb-4">
-            <CircularProgress value={overall.overallCompletion} />
+            <CircularProgress value={overall.percentage || 0} />
           </div>
-          <div className="text-center mb-5">
+          <div className="text-center mb-4 sm:mb-5">
             <p className="text-sm text-gray-600 leading-relaxed">
               <span className="font-semibold text-gray-900">
-                {overall.unlockedModules}
+                {overall.unlocked_modules || 0}
               </span>{' '}
               unlocked modules
             </p>
             <p className="text-sm text-gray-600 leading-relaxed">
               <span className="font-semibold text-gray-900">
-                {overall.lockedModules}
+                {overall.locked_modules || 0}
               </span>{' '}
               locked
             </p>
@@ -516,7 +382,7 @@ export default function ProgressStats({ data }) {
                 Credits
               </p>
               <p className="text-sm font-bold text-gray-900">
-                {overall.creditsEarned}
+                {achievements.credits_earned || 0}
               </p>
               <p className="text-[10px] text-gray-500">Earned</p>
             </div>
@@ -525,44 +391,44 @@ export default function ProgressStats({ data }) {
                 Badges
               </p>
               <p className="text-sm font-bold text-gray-900">
-                {overall.badges?.length || 0}
+                {achievements.badges_collected || 0}
               </p>
               <p className="text-[10px] text-gray-500">Collected</p>
             </div>
           </div>
         </div>
-        <div className="col-span-1 lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-6 space-y-5">
+        <div className="col-span-1 lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 space-y-4 sm:space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">
                 Current course
               </p>
-              <h4 className="text-lg font-semibold text-gray-900 truncate">
-                {firstCourse?.title || 'Select a course to begin'}
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                {currentCourse?.course_title || 'No course in progress'}
               </h4>
             </div>
             <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 whitespace-nowrap">
-              {firstCourse?.stats?.completedModules ?? 0}/
-              {firstCourse?.stats?.totalModules ?? 0} modules
+              {currentCourse?.modules_summary?.completed || 0}/
+              {currentCourse?.modules_summary?.total || 0} modules
             </div>
           </div>
-          <SegmentedModuleBars modules={firstCourse?.modules || []} />
+          <SegmentedModuleBars modules={currentCourse?.modules || []} />
           <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 grid grid-cols-3 gap-3">
             <div className="text-center">
-              <p className="text-xl font-bold text-gray-900 mb-1">
-                {overall.totalModules}
+              <p className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
+                {summary.modules?.total || 0}
               </p>
               <p className="text-xs text-gray-600">Total modules</p>
             </div>
             <div className="text-center border-l border-r border-gray-200">
-              <p className="text-xl font-bold text-amber-600 mb-1">
-                {overall.inProgressModules}
+              <p className="text-lg sm:text-xl font-bold text-amber-600 mb-1">
+                {summary.modules?.in_progress || 0}
               </p>
               <p className="text-xs text-gray-600">In-progress</p>
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold text-rose-600 mb-1">
-                {overall.lockedModules}
+              <p className="text-lg sm:text-xl font-bold text-rose-600 mb-1">
+                {summary.modules?.locked || 0}
               </p>
               <p className="text-xs text-gray-600">Locked</p>
             </div>
@@ -570,7 +436,12 @@ export default function ProgressStats({ data }) {
         </div>
       </div>
 
-      <BadgesGallery badges={overall.badges} />
+      {/* <BadgesGallery badges={overall.badges} /> */}
+
+      <ModulesModal
+        isOpen={showModulesModal}
+        onClose={() => setShowModulesModal(false)}
+      />
     </div>
   );
 }

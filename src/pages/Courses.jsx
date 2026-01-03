@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -37,12 +37,14 @@ import { useSponsorAds } from '@/contexts/SponsorAdsContext';
 import SponsorAdCard from '@/components/sponsorAds/SponsorAdCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUnlockedModulesByUser } from '../services/modulesService';
+import { trackModuleAccess } from '../services/progressService';
 import api from '../services/apiClient';
 
 export function Courses() {
   const { userProfile } = useUser();
   const { userRole } = useAuth();
   const { getPrimaryAdForPlacement } = useSponsorAds();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCourses, setFilteredCourses] = useState([]);
@@ -107,6 +109,52 @@ export function Courses() {
 
     return 0;
   }
+
+  // Handler for continue learning with module tracking
+  const handleContinueLearning = async courseId => {
+    console.log('Continue Learning clicked for course:', courseId);
+
+    try {
+      let modules = courseModules[courseId] || [];
+      console.log('Available modules:', modules.length);
+
+      // If modules aren't loaded yet, fetch them on-demand
+      if (modules.length === 0) {
+        console.log('Fetching modules on-demand...');
+        try {
+          modules = await fetchCourseModules(courseId);
+          console.log('Fetched modules:', modules.length);
+          // Cache the modules for future use
+          setCourseModules(prev => ({
+            ...prev,
+            [courseId]: modules,
+          }));
+        } catch (error) {
+          console.warn('Failed to fetch modules for tracking:', error);
+        }
+      }
+
+      if (modules.length > 0) {
+        // Find the first unlocked or in-progress module
+        const targetModule = modules.find(m => !m.is_locked) || modules[0];
+        console.log('Target module for tracking:', targetModule.id);
+
+        // Track module access
+        await trackModuleAccess(targetModule.id);
+        console.log('Module tracking completed');
+      } else {
+        console.log('No modules available for tracking');
+      }
+
+      // Navigate to course modules page
+      navigate(`/dashboard/courses/${courseId}/modules`);
+    } catch (error) {
+      console.error('Error tracking module access:', error);
+      // Still navigate even if tracking fails
+      navigate(`/dashboard/courses/${courseId}/modules`);
+    }
+  };
+
   // Get time spent for all courses from localStorage
   const getCourseTimes = () => {
     const times = {};
@@ -405,14 +453,13 @@ export function Courses() {
 
         <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
           <div className="flex gap-2 w-full">
-            <Link
-              to={`/dashboard/courses/${course.id}/modules`}
-              className="flex-1"
+            <Button
+              variant="default"
+              className="w-full text-sm sm:text-base"
+              onClick={() => handleContinueLearning(course.id)}
             >
-              <Button variant="default" className="w-full text-sm sm:text-base">
-                Continue Learning
-              </Button>
-            </Link>
+              Continue Learning
+            </Button>
           </div>
           {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
             <div className="text-xs text-center text-gray-600">
@@ -770,17 +817,13 @@ export function Courses() {
 
                       <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
                         <div className="flex gap-2 w-full">
-                          <Link
-                            to={`/dashboard/courses/${course.id}/modules`}
-                            className="flex-1"
+                          <Button
+                            variant="default"
+                            className="w-full text-sm sm:text-base bg-[#6164ec] hover:bg-[#b00000]"
+                            onClick={() => handleContinueLearning(course.id)}
                           >
-                            <Button
-                              variant="default"
-                              className="w-full text-sm sm:text-base bg-[#6164ec] hover:bg-[#b00000]"
-                            >
-                              Continue Learning
-                            </Button>
-                          </Link>
+                            Continue Learning
+                          </Button>
                         </div>
 
                         {/* Trial Status Info */}

@@ -1235,6 +1235,11 @@ export function Dashboard() {
               </div>
             </section>
           )}
+          {/* Your Progress Overview - Full Width Section */}
+          <div className="w-full mb-6">
+            <ProgressStats />
+          </div>
+
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6 relative z-0">
             {/* Left section - greeting and latest updates */}
@@ -1555,9 +1560,6 @@ export function Dashboard() {
                 </div>
                 <DashboardCarousel />
               </div> */}
-
-              {/* Your Progress */}
-              <ProgressStats />
 
               {/* Monthly Overview */}
               {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">

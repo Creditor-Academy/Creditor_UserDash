@@ -36,6 +36,11 @@ import { useCredits } from '@/contexts/CreditsContext';
 import { useUser } from '@/contexts/UserContext';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import { getUnlockedModulesByUser } from '@/services/modulesService';
+import {
+  trackModuleAccess,
+  trackLessonAccess,
+  updateProgressAfterTracking,
+} from '@/services/progressService';
 import api from '@/services/apiClient';
 import axios from 'axios';
 import { getAuthHeader } from '@/services/authHeader';
@@ -755,6 +760,59 @@ export function CourseView() {
     return `${hours} hr ${remainingMinutes} min`;
   };
 
+  // Helper function to track module access
+  const handleModuleAccess = async moduleId => {
+    try {
+      console.log('Tracking module access for:', moduleId);
+
+      // Track module access
+      await trackModuleAccess(moduleId);
+
+      let lessonId = null;
+
+      // Try to get the first lesson for this module to track lesson access
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
+          {
+            headers: {
+              ...getAuthHeader(),
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        const lessons = response.data?.data || [];
+        if (lessons.length > 0) {
+          const firstLesson = lessons[0];
+          lessonId = firstLesson.id;
+          console.log('Tracking lesson access for:', firstLesson.id);
+          await trackLessonAccess(firstLesson.id);
+        }
+      } catch (lessonError) {
+        console.warn('Failed to fetch lessons for tracking:', lessonError);
+        // Continue even if lesson tracking fails
+      }
+
+      // Update progress after tracking
+      try {
+        console.log('Updating progress after tracking...');
+        await updateProgressAfterTracking(moduleId, lessonId);
+        console.log('Progress update completed');
+      } catch (progressError) {
+        console.warn('Failed to update progress:', progressError);
+        // Continue even if progress update fails
+      }
+
+      // Navigate to lessons page after tracking
+      navigate(`/dashboard/courses/${courseId}/modules/${moduleId}/lessons`);
+    } catch (error) {
+      console.error('Error tracking module access:', error);
+      // Still navigate even if tracking fails
+      navigate(`/dashboard/courses/${courseId}/modules/${moduleId}/lessons`);
+    }
+  };
+
   // Helper function to render a module card
   const renderModuleCard = module => {
     const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
@@ -835,15 +893,13 @@ export function CourseView() {
           <div className="mt-auto px-6 pb-4">
             <CardFooter className="p-0 flex flex-col gap-2">
               {hasAccess && modulesWithLessons.has(String(module.id)) ? (
-                <Link
-                  to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`}
+                <Button
                   className="w-full"
+                  onClick={() => handleModuleAccess(module.id)}
                 >
-                  <Button className="w-full">
-                    <Play size={16} className="mr-2" />
-                    View Lessons
-                  </Button>
-                </Link>
+                  <Play size={16} className="mr-2" />
+                  View Lessons
+                </Button>
               ) : !modulesWithLessons.has(String(module.id)) ? (
                 <Button
                   className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"

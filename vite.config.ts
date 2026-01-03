@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
     cors: {
-      origin: ['http://localhost:8080', 'http://localhost:9000'],
+      origin: ['http://localhost:3000', 'http://localhost:9000'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: [
         'Content-Type',
@@ -45,17 +45,15 @@ export default defineConfig(({ mode }) => ({
     },
     strictPort: true,
     hmr: {
-      overlay: false,
-      port: 8081,
-    },
-    watch: {
-      usePolling: false,
-      ignored: ['**/node_modules/**', '**/.git/**'],
+      port: 3000,
+      protocol: 'ws',
+      host: 'localhost',
+      clientPort: 3000,
     },
   },
   preview: {
     host: '0.0.0.0',
-    port: 8080,
+    port: 3000,
     allowedHosts: [
       'www.lmsathena.com',
       'lmsathena.com',
@@ -67,12 +65,9 @@ export default defineConfig(({ mode }) => ({
     cors: true,
   },
   base: '/',
-  plugins: [
-    react(),
-    // Temporarily disabled componentTagger to fix infinite refresh
-    // mode === 'development' &&
-    // componentTagger(),
-  ].filter(Boolean),
+  plugins: [react(), mode === 'development' && componentTagger()].filter(
+    Boolean
+  ),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -81,30 +76,16 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://creditor.onrender.com'
-    ),
-    // AI Service API Keys - Injected at build time
-    'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
-      process.env.VITE_OPENAI_API_KEY || ''
-    ),
-    // Optional: Add other API keys if needed
-    'import.meta.env.VITE_DEEPAI_API_KEY': JSON.stringify(
-      process.env.VITE_DEEPAI_API_KEY || ''
-    ),
-    'import.meta.env.VITE_HUGGINGFACE_API_KEY': JSON.stringify(
-      process.env.VITE_HUGGINGFACE_API_KEY || ''
+      'http://localhost:9000'
     ),
   },
 }));
-// Public Resouce Section
+
 // #(Testing Backend)
 // # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
 // #(development Backend)
 // VITE_API_BASE_URL=https://creditor.onrender.com
-
-// #(AWS Backend)
-// # VITE_API_BASE_URL= http://3.212.62.124
 
 // #(local Backend)
 // # VITE_API_BASE_URL= http://localhost:9000
