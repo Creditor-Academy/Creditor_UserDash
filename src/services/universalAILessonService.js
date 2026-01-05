@@ -3601,7 +3601,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
             // As a last resort, attempt to parse individual objects so that
             // a single malformed comma or bracket does not discard all
             // otherwise valid questions.
-            console.warn(
+            console.debug(
               '⚠️ Could not parse full quiz JSON, attempting object-by-object recovery.'
             );
 

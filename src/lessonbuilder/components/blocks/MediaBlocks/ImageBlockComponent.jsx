@@ -717,7 +717,7 @@ const ImageBlockComponent = forwardRef(
         return `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
           <div class="${imageOrder}">
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-auto object-contain rounded-lg shadow-lg" style="max-height: min(60vh, 400px);" />
           </div>
           <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
             ${textContent ? `<div>${textContent}</div>` : ''}
@@ -734,7 +734,7 @@ const ImageBlockComponent = forwardRef(
       } else if (layout === 'full-width') {
         return `
         <div class="space-y-3">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-auto object-contain rounded" style="max-height: min(60vh, 400px);" />
           ${textContent ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ''}
         </div>
       `;
@@ -749,7 +749,7 @@ const ImageBlockComponent = forwardRef(
 
         return `
         <div class="${alignmentClass}">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full h-auto object-contain rounded-xl shadow-lg" style="max-height: min(60vh, 400px); width: auto; ${alignment === 'center' ? 'mx-auto' : ''}" />
           ${textContent ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ''}
         </div>
       `;

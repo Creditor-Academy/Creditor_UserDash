@@ -749,7 +749,7 @@ export function generateImageHTML(block) {
     return `
       <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
         <div class="${imageOrder}">
-          <img src="${imageUrl}" alt="${imageTitle}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+          <img src="${imageUrl}" alt="${imageTitle}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded-lg shadow-lg" />
         </div>
         <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
           ${renderedText}
@@ -778,7 +778,7 @@ export function generateImageHTML(block) {
   if (layout === 'full-width') {
     return `
       <div class="space-y-3">
-        <img src="${imageUrl}" alt="${imageTitle}" class="w-full max-h-[28rem] object-contain rounded" />
+        <img src="${imageUrl}" alt="${imageTitle}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded" />
         ${
           renderedText
             ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
@@ -798,7 +798,7 @@ export function generateImageHTML(block) {
 
   return `
     <div class="${alignmentClass}">
-      <img src="${imageUrl}" alt="${imageTitle}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${mxAuto}" />
+      <img src="${imageUrl}" alt="${imageTitle}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg ${mxAuto}" />
       ${
         renderedText
           ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">

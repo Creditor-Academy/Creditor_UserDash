@@ -42,7 +42,7 @@ export const convertBlocksToHtml = blocks => {
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
                   <div class="${imageOrder}">
-                    <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+                    <img src="${imageUrl}" alt="${title}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded-lg shadow-lg" />
                   </div>
                   <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3">
                     ${caption ? `<div>${caption}</div>` : ''}
@@ -61,7 +61,7 @@ export const convertBlocksToHtml = blocks => {
           html = `
               <div class="lesson-image full-width">
                 <div class="space-y-3">
-                  <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded" />
+                  <img src="${imageUrl}" alt="${title}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded" />
                   ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2">${caption}</div>` : ''}
                 </div>
               </div>`;
@@ -69,7 +69,7 @@ export const convertBlocksToHtml = blocks => {
           html = `
               <div class="lesson-image centered">
                 <div class="text-center">
-                  <img src="${imageUrl}" alt="${title}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+                  <img src="${imageUrl}" alt="${title}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg mx-auto" />
                   ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2">${caption}</div>` : ''}
                 </div>
               </div>`;
