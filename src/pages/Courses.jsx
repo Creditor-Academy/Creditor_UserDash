@@ -460,7 +460,7 @@ export function Courses() {
                   </div>
                 </button>
                 <button
-                  className="relative px-6 py-3 text-sm font-medium rounded-lg bg-[#6164ec] hover:bg-[#b00000] text-white disabled:bg-[#a00000] disabled:text-white/70"
+                  className="relative px-6 py-3 text-sm font-medium rounded-lg bg-[#6164ec] text-white disabled:text-white/70"
                   disabled
                 >
                   <div className="flex items-center gap-2">
@@ -549,7 +549,7 @@ export function Courses() {
           </div>
 
           <div className="mb-6">
-            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm gap-4">
               <button
                 className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeTab === 'courses'
@@ -776,7 +776,7 @@ export function Courses() {
                           >
                             <Button
                               variant="default"
-                              className="w-full text-sm sm:text-base bg-[#6164ec] hover:bg-[#b00000]"
+                              className="w-full text-sm sm:text-base bg-[#6164ec]"
                             >
                               Continue Learning
                             </Button>

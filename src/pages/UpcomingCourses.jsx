@@ -147,7 +147,7 @@ function UpcomingCourses() {
   }, []);
 
   return (
-    <div className="mb-16 relative max-w-4xl mx-auto">
+    <div className="mb-16 relative mx-auto">
       {/* Header */}
       <div className="mb-8 px-1">
         <div>
