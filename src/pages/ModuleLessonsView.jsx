@@ -47,6 +47,11 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { getAuthHeader } from '@/services/authHeader';
+import {
+  trackLessonAccess,
+  getLessonProgress,
+  updateLessonProgress,
+} from '@/services/progressService';
 import { MoreVertical, Edit, Trash2, Settings, Sparkles } from 'lucide-react';
 import UniversalAIContentButton from '@lessonbuilder/components/ai/UniversalAIContentButton';
 import {
@@ -516,12 +521,24 @@ const ModuleLessonsView = () => {
     return filtered;
   }, [lessons, searchQuery]);
 
-  const handleLessonClick = lesson => {
+  const handleLessonClick = async lesson => {
+    try {
+      // Track lesson access when user opens the lesson
+      await trackLessonAccess(lesson.id);
+      console.log('Lesson access tracked for:', lesson.id);
+    } catch (error) {
+      console.warn('Failed to track lesson access:', error);
+      // Continue with navigation even if tracking fails
+    }
+
     // Navigate to the builder - DashboardLayout will auto-collapse sidebar for lesson builder pages
     navigate(
       `/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`,
       {
-        state: { lessonData: lesson },
+        state: {
+          lesson: lesson,
+          fromModuleLessons: true,
+        },
       }
     );
   };

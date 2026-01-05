@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft,
   Clock,
@@ -25,6 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import ImmersiveReader from '@/components/courses/ImmersiveReader';
 import { getTtsToken } from '@/services/speechify';
+import { updateLessonProgress } from '@/services/progressService';
 
 // Helper function to decode HTML entities
 const decodeHtmlEntities = text => {
@@ -116,6 +117,7 @@ const generateImageHtml = block => {
 const LessonPreview = () => {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [lessonData, setLessonData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -132,6 +134,10 @@ const LessonPreview = () => {
   const [isReaderOpen, setIsReaderOpen] = useState(false);
   const [readerContent, setReaderContent] = useState('');
   const [readerTitle, setReaderTitle] = useState('');
+
+  // Get progress state from navigation
+  const progressState = location.state || {};
+  const { lessonProgress, targetSection, resumeFromProgress } = progressState;
 
   useEffect(() => {
     let styleEl = document.getElementById('lesson-preview-image-list-style');
@@ -447,12 +453,68 @@ const LessonPreview = () => {
       const computedPages = computePages(transformedData.allContent);
       setPages(computedPages);
 
-      // Set initial current section to the first heading section if available
-      if (
-        parsedContent.headingSections &&
-        parsedContent.headingSections.length > 0
-      ) {
-        setCurrentSection(parsedContent.headingSections[0].id);
+      // Handle progress-based navigation
+      if (resumeFromProgress && targetSection && lessonProgress) {
+        console.log('Resuming lesson from progress:', {
+          lessonProgress,
+          targetSection,
+        });
+
+        // Find the target section index
+        const targetIndex = transformedData.headingSections?.findIndex(
+          s => s.id === targetSection
+        );
+        if (targetIndex >= 0) {
+          // Set current page and section
+          setCurrentPage(targetIndex);
+          setCurrentSection(targetSection);
+
+          // Mark previous sections as completed based on progress
+          const progressPercentage = lessonProgress.progress;
+          const totalSections = transformedData.headingSections?.length || 1;
+          const completedCount = Math.floor(
+            (progressPercentage / 100) * totalSections
+          );
+
+          const completedSet = new Set();
+          for (
+            let i = 0;
+            i < completedCount && i < transformedData.headingSections?.length;
+            i++
+          ) {
+            completedSet.add(transformedData.headingSections[i].id);
+          }
+          setCompletedSections(completedSet);
+
+          console.log('Progress navigation setup:', {
+            progressPercentage,
+            totalSections,
+            completedCount,
+            targetIndex,
+            completedSections: Array.from(completedSet),
+          });
+
+          // Scroll to target section after a short delay to ensure DOM is ready
+          setTimeout(() => {
+            const targetElement = document.getElementById(
+              `section-${targetSection}`
+            );
+            if (targetElement) {
+              const headerOffset = 100;
+              const elementPosition = targetElement.getBoundingClientRect().top;
+              const offsetPosition =
+                elementPosition + window.pageYOffset - headerOffset;
+              window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+            }
+          }, 300);
+        }
+      } else {
+        // Default behavior: start from first section
+        const firstSection = transformedData.headingSections?.[0];
+        if (firstSection) {
+          setCurrentSection(firstSection.id);
+          setCurrentPage(0);
+        }
       }
     } catch (err) {
       console.error('Error fetching lesson content:', err);
@@ -954,7 +1016,43 @@ const LessonPreview = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    try {
+      // Calculate progress based on completed sections
+      const totalSections = lessonData?.headingSections?.length || 1;
+      const completedCount = completedSections.size;
+      const progressPercentage = Math.round(
+        (completedCount / totalSections) * 100
+      );
+
+      // Check if lesson is completed
+      const isCompleted = completedCount >= totalSections;
+
+      // Update lesson progress in backend
+      await updateLessonProgress(lessonId, progressPercentage, isCompleted);
+      console.log('Lesson progress updated:', {
+        lessonId,
+        progress: progressPercentage,
+        completed: isCompleted,
+      });
+
+      // Show success toast
+      toast({
+        title: 'Progress Updated',
+        description: isCompleted
+          ? 'Lesson completed! 🎉'
+          : `Progress: ${progressPercentage}%`,
+      });
+    } catch (error) {
+      console.error('Error updating lesson progress:', error);
+      toast({
+        title: 'Progress Update Failed',
+        description: 'Failed to save progress. Please try again.',
+        variant: 'destructive',
+      });
+    }
+
+    // Continue with existing logic
     setCompletedSections(prev => {
       const done = new Set(prev);
       const currentHeading = lessonData?.headingSections?.[currentPage]?.id;
@@ -978,7 +1076,9 @@ const LessonPreview = () => {
         } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-      }, 0);
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 

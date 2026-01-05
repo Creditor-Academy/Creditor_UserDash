@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { fetchCourseById, fetchCourseModules } from '@/services/courseService';
 import { getAuthHeader } from '@/services/authHeader';
+import { getLessonProgress } from '@/services/progressService';
 import { SidebarContext } from '@/layouts/DashboardLayout';
 import axios from 'axios';
 
@@ -308,7 +309,20 @@ const LessonView = () => {
         setSidebarCollapsed(true);
       }
 
-      // Fetch lesson content to check for SCORM URL
+      // Fetch lesson progress first
+      let lessonProgress = null;
+      try {
+        lessonProgress = await getLessonProgress(lesson.id);
+        console.log('Lesson progress fetched:', lessonProgress);
+      } catch (progressError) {
+        console.warn(
+          'Failed to fetch lesson progress, starting from beginning:',
+          progressError
+        );
+        // Continue without progress - will start from beginning
+      }
+
+      // Fetch lesson content to check for SCORM URL and get lesson structure
       const baseUrl =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
       const response = await fetch(
@@ -346,14 +360,66 @@ const LessonView = () => {
           description: 'The lesson will open in a new tab.',
         });
       } else {
-        // If no SCORM URL, navigate to lesson preview (regardless of content)
-        console.log('No SCORM URL found, navigating to preview page');
-        navigate(
-          `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`
+        // If no SCORM URL, navigate to lesson preview with progress information
+        console.log(
+          'No SCORM URL found, navigating to preview page with progress'
         );
+
+        // Calculate target section based on progress
+        let targetSection = null;
+        if (lessonProgress && lessonProgress.progress > 0) {
+          // Parse lesson content to find sections
+          const lessonContent = data.allContent || data.content || [];
+          const sections = lessonContent.filter(
+            item => item.type === 'text' && item.textType === 'master_heading'
+          );
+
+          if (sections.length > 0) {
+            // Calculate which section to go to based on progress
+            const progressPercentage = lessonProgress.progress;
+            const targetIndex = Math.floor(
+              (progressPercentage / 100) * sections.length
+            );
+            targetSection =
+              sections[Math.min(targetIndex, sections.length - 1)]?.id;
+
+            console.log('Calculated target section:', {
+              progress: progressPercentage,
+              totalSections: sections.length,
+              targetIndex,
+              targetSection,
+            });
+          }
+        }
+
+        // Navigate to preview with progress state
+        navigate(
+          `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`,
+          {
+            state: {
+              lessonProgress: lessonProgress,
+              targetSection: targetSection,
+              resumeFromProgress:
+                !!lessonProgress && lessonProgress.progress > 0,
+            },
+          }
+        );
+
+        // Show appropriate toast message
+        if (lessonProgress && lessonProgress.progress > 0) {
+          toast({
+            title: 'Resuming Lesson',
+            description: `Continuing from ${lessonProgress.progress}% progress`,
+          });
+        } else {
+          toast({
+            title: 'Starting Lesson',
+            description: 'Beginning lesson from the start',
+          });
+        }
       }
     } catch (error) {
-      console.error('Error fetching lesson content:', error);
+      console.error('Error in handleViewLesson:', error);
       toast({
         title: 'Error',
         description: 'Failed to load lesson content. Please try again.',

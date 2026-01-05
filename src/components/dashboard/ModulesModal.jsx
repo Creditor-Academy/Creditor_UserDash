@@ -13,7 +13,6 @@ import {
   fetchUserAllModules,
   trackModuleAccess,
   trackLessonAccess,
-  updateProgressAfterTracking,
 } from '@/services/progressService';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -143,8 +142,6 @@ export default function ModulesModal({ isOpen, onClose }) {
       // Track module access
       await trackModuleAccess(module.module_id);
 
-      let lessonId = null;
-
       // Try to get the first lesson for this module to track lesson access
       try {
         const response = await axios.get(
@@ -160,23 +157,12 @@ export default function ModulesModal({ isOpen, onClose }) {
         const lessons = response.data?.data || [];
         if (lessons.length > 0) {
           const firstLesson = lessons[0];
-          lessonId = firstLesson.id;
           console.log('Tracking lesson access for:', firstLesson.id);
           await trackLessonAccess(firstLesson.id);
         }
       } catch (lessonError) {
         console.warn('Failed to fetch lessons for tracking:', lessonError);
         // Continue even if lesson tracking fails
-      }
-
-      // Update progress after tracking
-      try {
-        console.log('Updating progress after tracking...');
-        await updateProgressAfterTracking(module.module_id, lessonId);
-        console.log('Progress update completed');
-      } catch (progressError) {
-        console.warn('Failed to update progress:', progressError);
-        // Continue even if progress update fails
       }
 
       // Navigate to the module's course page

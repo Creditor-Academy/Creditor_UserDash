@@ -39,7 +39,6 @@ import { getUnlockedModulesByUser } from '@/services/modulesService';
 import {
   trackModuleAccess,
   trackLessonAccess,
-  updateProgressAfterTracking,
 } from '@/services/progressService';
 import api from '@/services/apiClient';
 import axios from 'axios';
@@ -768,8 +767,6 @@ export function CourseView() {
       // Track module access
       await trackModuleAccess(moduleId);
 
-      let lessonId = null;
-
       // Try to get the first lesson for this module to track lesson access
       try {
         const response = await axios.get(
@@ -785,23 +782,12 @@ export function CourseView() {
         const lessons = response.data?.data || [];
         if (lessons.length > 0) {
           const firstLesson = lessons[0];
-          lessonId = firstLesson.id;
           console.log('Tracking lesson access for:', firstLesson.id);
           await trackLessonAccess(firstLesson.id);
         }
       } catch (lessonError) {
         console.warn('Failed to fetch lessons for tracking:', lessonError);
         // Continue even if lesson tracking fails
-      }
-
-      // Update progress after tracking
-      try {
-        console.log('Updating progress after tracking...');
-        await updateProgressAfterTracking(moduleId, lessonId);
-        console.log('Progress update completed');
-      } catch (progressError) {
-        console.warn('Failed to update progress:', progressError);
-        // Continue even if progress update fails
       }
 
       // Navigate to lessons page after tracking

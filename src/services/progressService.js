@@ -79,6 +79,32 @@ export const fetchUserModuleById = async moduleId => {
   }
 };
 
+// Get lesson progress (to retrieve saved progress)
+export const getLessonProgress = async lessonId => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/user/track/lesson/${lessonId}/progress`,
+      {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.data?.success) {
+      return response.data.data;
+    } else {
+      throw new Error(
+        response.data?.message || 'Failed to fetch lesson progress'
+      );
+    }
+  } catch (error) {
+    console.error('Error fetching lesson progress:', error);
+    throw error;
+  }
+};
+
 // Track module access and progress
 export const trackModuleAccess = async moduleId => {
   try {
@@ -160,35 +186,6 @@ export const updateLessonProgress = async (
     }
   } catch (error) {
     console.error('Error updating lesson progress:', error);
-    throw error;
-  }
-};
-
-// Update progress after tracking (comprehensive progress update)
-export const updateProgressAfterTracking = async (moduleId, lessonId) => {
-  try {
-    const results = {};
-
-    // Update lesson progress (mark as started/in-progress)
-    if (lessonId) {
-      try {
-        results.lessonProgress = await updateLessonProgress(
-          lessonId,
-          10,
-          false
-        ); // 10% progress for starting
-        console.log('Lesson progress updated:', results.lessonProgress);
-      } catch (error) {
-        console.warn('Failed to update lesson progress:', error);
-      }
-    }
-
-    // You can add more progress update logic here as needed
-    // For example: update module progress, course progress, etc.
-
-    return results;
-  } catch (error) {
-    console.error('Error updating progress after tracking:', error);
     throw error;
   }
 };
