@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -6,24 +6,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +31,9 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Clock,
   CheckCircle,
@@ -41,134 +41,156 @@ import {
   Eye,
   Users,
   AlertCircle,
-  TrendingUp,
-} from 'lucide-react';
-import { toast } from 'sonner';
+  Shield,
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   getAllAdApplications,
   updateApplicationStatus,
-} from '@/services/sponsorAdsService';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/services/sponsorAdsService";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Add this import for auth context/hook (adjust based on your auth setup)
+// import { useAuth } from '@/contexts/AuthContext';
 
 // Map backend position to frontend placement
 const POSITION_TO_PLACEMENT = {
-  DASHBOARD: 'dashboard_banner',
-  SIDEBAR: 'dashboard_sidebar',
-  COURSE_PLAYER: 'course_player_sidebar',
-  COURSE_LISTING: 'course_listing_tile',
-  POPUP: 'popup',
+  DASHBOARD: "dashboard_banner",
+  SIDEBAR: "dashboard_sidebar",
+  COURSE_PLAYER: "course_player_sidebar",
+  COURSE_LISTING: "course_listing_tile",
+  POPUP: "popup",
 };
 
 // Normalize backend application to frontend format
-const normalizeApplication = app => {
-  const mediaUrl = app.video_url || app.image_url || '';
-  const mediaType = app.video_url ? 'video' : 'image';
+const normalizeApplication = (app) => {
+  const mediaUrl = app.video_url || app.image_url || "";
+  const mediaType = app.video_url ? "video" : "image";
 
   // Extract requester name from email or use company name
   const getRequesterName = () => {
     if (app.contact_email) {
-      const emailName = app.contact_email.split('@')[0];
+      const emailName = app.contact_email.split("@")[0];
       // Capitalize first letter and replace dots/underscores with spaces
       return emailName
-        .replace(/[._]/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+        .replace(/[._]/g, " ")
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
     }
     if (app.company_name) {
       return app.company_name;
     }
-    return 'Unknown User';
+    return "Unknown User";
   };
 
   return {
     id: app.id,
     requesterName: getRequesterName(),
-    requesterEmail: app.contact_email || '',
-    organizationName: app.company_name || '',
-    sponsorName: app.sponsor_name || '',
-    adTitle: app.title || '',
-    description: app.description || '',
+    requesterEmail: app.contact_email || "",
+    organizationName: app.company_name || "",
+    sponsorName: app.sponsor_name || "",
+    adTitle: app.title || "",
+    description: app.description || "",
     detailedDescription:
       app.offer_details ||
       app.detailed_description ||
       app.detailedDescription ||
-      '',
-    websiteDescription: app.website_description || app.websiteDescription || '',
-    websiteOverview: app.website_overview || app.websiteOverview || '',
+      "",
+    websiteDescription: app.website_description || app.websiteDescription || "",
+    websiteOverview: app.website_overview || app.websiteOverview || "",
     websiteFeatures:
       app.website_features_highlights ||
       app.website_features ||
       app.websiteFeatures ||
-      '',
+      "",
     placement:
-      POSITION_TO_PLACEMENT[app.preferred_position] || 'dashboard_banner',
-    tier: 'Gold', // Not in backend response, defaulting
-    budget: app.budget ? `$${Number(app.budget).toLocaleString()}` : '$0',
-    startDate: app.preferred_start_date || app.start_date || '',
-    endDate: app.preferred_end_date || app.end_date || '',
+      POSITION_TO_PLACEMENT[app.preferred_position] || "dashboard_banner",
+    tier: "Gold", // Not in backend response, defaulting
+    budget: app.budget ? `$${Number(app.budget).toLocaleString()}` : "$0",
+    startDate: app.preferred_start_date || app.start_date || "",
+    endDate: app.preferred_end_date || app.end_date || "",
     mediaUrl: mediaUrl,
     mediaType: mediaType,
-    ctaUrl: app.link_url || '',
-    ctaText: app.cta_text || app.ctaText || (app.link_url ? 'Learn More' : ''),
-    status: app.status?.toLowerCase() || 'pending',
-    submittedAt: app.created_at || '',
+    ctaUrl: app.link_url || "",
+    ctaText: app.cta_text || app.ctaText || (app.link_url ? "Learn More" : ""),
+    status: app.status?.toLowerCase() || "pending",
+    submittedAt: app.created_at || "",
     reviewedAt: app.reviewed_at || null,
     reviewedBy: app.reviewed_by || null,
-    notes: app.additional_notes || '',
+    notes: app.additional_notes || "",
     rejectionReason: app.admin_notes || null,
-    contactEmail: app.contact_email || '',
-    contactPhone: app.contact_phone || '',
-    companyName: app.company_name || '',
+    contactEmail: app.contact_email || "",
+    contactPhone: app.contact_phone || "",
+    companyName: app.company_name || "",
     websiteMedia: app.website_media || [],
   };
 };
 
 const statusConfig = {
   pending: {
-    label: 'Pending',
+    label: "Pending",
     icon: Clock,
-    color: 'bg-amber-50 text-amber-700 border-amber-200',
+    color: "bg-amber-50 text-amber-700 border-amber-200",
   },
   approved: {
-    label: 'Approved',
+    label: "Approved",
     icon: CheckCircle,
-    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   rejected: {
-    label: 'Rejected',
+    label: "Rejected",
     icon: XCircle,
-    color: 'bg-rose-50 text-rose-700 border-rose-200',
+    color: "bg-rose-50 text-rose-700 border-rose-200",
   },
 };
 
 const placementLabels = {
-  dashboard_banner: 'Dashboard Banner',
-  dashboard_sidebar: 'Dashboard Sidebar',
-  course_player_sidebar: 'Course Player',
-  course_listing_tile: 'Course Listing',
-  popup: 'Popup Ad',
+  dashboard_banner: "Dashboard Banner",
+  dashboard_sidebar: "Dashboard Sidebar",
+  course_player_sidebar: "Course Player",
+  course_listing_tile: "Course Listing",
+  popup: "Popup Ad",
 };
 
 export const SponsorAdRequests = () => {
+  // Add this line to get user info (adjust based on your auth setup)
+  // const { user, isAdmin } = useAuth();
+
+  // For demonstration, I'll create a mock isAdmin state
+  // You should replace this with your actual auth logic
+  const [isAdmin, setIsAdmin] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [viewingRequest, setViewingRequest] = useState(null);
   const [reviewAction, setReviewAction] = useState(null);
-  const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewNotes, setReviewNotes] = useState("");
   const [viewImageError, setViewImageError] = useState(false);
   const [viewVideoError, setViewVideoError] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+  // Simulate checking if user is admin
+  // Replace this with your actual auth check
+  useEffect(() => {
+    // Example: Check user role from localStorage or context
+    const checkAdminStatus = () => {
+      // This is a mock - replace with your actual auth logic
+      const userRole = localStorage.getItem("userRole") || "user";
+      setIsAdmin(userRole === "admin");
+    };
+
+    checkAdminStatus();
+  }, []);
+
   // Helper function to check if URL is a placeholder/invalid
-  const isPlaceholderUrl = url => {
-    if (!url || url === '') return true;
+  const isPlaceholderUrl = (url) => {
+    if (!url || url === "") return true;
     return (
-      url.includes('example.com') ||
-      url.includes('placeholder') ||
+      url.includes("example.com") ||
+      url.includes("placeholder") ||
       url === null ||
       url === undefined
     );
@@ -182,8 +204,13 @@ export const SponsorAdRequests = () => {
     }
   }, [viewingRequest]);
 
-  // Fetch all ad applications from backend
+  // Fetch all ad applications from backend - only if user is admin
   const fetchApplications = useCallback(async () => {
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -191,27 +218,27 @@ export const SponsorAdRequests = () => {
       const normalizedRequests = applications.map(normalizeApplication);
       setRequests(normalizedRequests);
     } catch (err) {
-      console.error('[SponsorAdRequests] Failed to fetch applications:', err);
+      console.error("[SponsorAdRequests] Failed to fetch applications:", err);
       setError(err.message);
       setRequests([]);
-      toast.error('Failed to load ad applications');
+      toast.error("Failed to load ad applications");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchApplications();
   }, [fetchApplications]);
 
   const filteredRequests = useMemo(() => {
-    return requests.filter(req => {
+    return requests.filter((req) => {
       const matchesSearch =
         req.sponsorName.toLowerCase().includes(search.toLowerCase()) ||
         req.adTitle.toLowerCase().includes(search.toLowerCase()) ||
         req.requesterName.toLowerCase().includes(search.toLowerCase());
       const matchesStatus =
-        statusFilter === 'all' || req.status === statusFilter;
+        statusFilter === "all" || req.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [requests, search, statusFilter]);
@@ -219,24 +246,28 @@ export const SponsorAdRequests = () => {
   const stats = useMemo(() => {
     return {
       total: requests.length,
-      pending: requests.filter(r => r.status === 'pending').length,
-      approved: requests.filter(r => r.status === 'approved').length,
-      rejected: requests.filter(r => r.status === 'rejected').length,
+      pending: requests.filter((r) => r.status === "pending").length,
+      approved: requests.filter((r) => r.status === "approved").length,
+      rejected: requests.filter((r) => r.status === "rejected").length,
     };
   }, [requests]);
 
   const handleReview = (request, action) => {
+    if (!isAdmin) {
+      toast.error("You do not have permission to review requests");
+      return;
+    }
     setViewingRequest(request);
     setReviewAction(action);
-    setReviewNotes('');
+    setReviewNotes("");
   };
 
   const submitReview = async () => {
-    if (!viewingRequest) return;
+    if (!viewingRequest || !isAdmin) return;
 
     // For rejection, require admin notes
-    if (reviewAction === 'reject' && !reviewNotes.trim()) {
-      toast.error('Please provide a rejection reason');
+    if (reviewAction === "reject" && !reviewNotes.trim()) {
+      toast.error("Please provide a rejection reason");
       return;
     }
 
@@ -244,45 +275,72 @@ export const SponsorAdRequests = () => {
 
     try {
       // Map frontend action to backend status
-      const status = reviewAction === 'approve' ? 'APPROVED' : 'REJECTED';
+      const status = reviewAction === "approve" ? "APPROVED" : "REJECTED";
       const adminNotes =
-        reviewAction === 'reject'
+        reviewAction === "reject"
           ? reviewNotes.trim()
-          : reviewAction === 'approve'
+          : reviewAction === "approve"
             ? reviewNotes.trim() ||
-              'Application approved. Ad will be live soon.'
-            : '';
+              "Application approved. Ad will be live soon."
+            : "";
 
       // Call API to update status
       await updateApplicationStatus(viewingRequest.id, status, adminNotes);
 
       // Show success message
-      if (reviewAction === 'approve') {
-        toast.success('Ad request approved successfully!');
+      if (reviewAction === "approve") {
+        toast.success("Ad request approved successfully!");
       } else {
-        toast.success('Ad request rejected');
+        toast.success("Ad request rejected");
       }
 
       // Close dialog and reset state
       setViewingRequest(null);
       setReviewAction(null);
-      setReviewNotes('');
+      setReviewNotes("");
 
       // Refresh applications to get updated data
       await fetchApplications();
     } catch (error) {
       console.error(
-        '[SponsorAdRequests] Failed to update application status:',
-        error
+        "[SponsorAdRequests] Failed to update application status:",
+        error,
       );
       toast.error(
         error.message ||
-          'Failed to update application status. Please try again.'
+          "Failed to update application status. Please try again.",
       );
     } finally {
       setIsSubmittingReview(false);
     }
   };
+
+  // Non-admin access restriction view
+  if (!isAdmin) {
+    return (
+      <div className="space-y-4">
+        <Card className="rounded-2xl border-red-200 bg-red-50">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="p-3 bg-red-100 rounded-full">
+                <Shield className="w-12 h-12 text-red-600" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xl font-bold text-red-900">
+                  Access Restricted
+                </p>
+                <p className="text-sm text-red-700 max-w-md">
+                  You do not have administrator privileges to view or manage
+                  sponsor ad requests. Please contact your system administrator
+                  if you believe this is an error.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -303,23 +361,26 @@ export const SponsorAdRequests = () => {
 
   if (error) {
     return (
-      <Card className="rounded-2xl border-red-200 bg-red-50">
-        <CardContent className="p-6">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <AlertCircle className="w-12 h-12 text-red-600" />
-            <p className="text-lg font-semibold text-red-900">
-              Failed to load ad applications
-            </p>
-            <p className="text-sm text-red-700">{error}</p>
-            <Button
-              onClick={fetchApplications}
-              className="mt-4 bg-red-600 hover:bg-red-700"
-            >
-              Retry
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card className="rounded-2xl border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+              <p className="text-lg font-semibold text-red-900">
+                Failed to load ad applications
+              </p>
+              <p className="text-sm text-red-700">{error}</p>
+              {/* Only show retry button for admin */}
+              <Button
+                onClick={fetchApplications}
+                className="mt-4 bg-red-600 hover:bg-red-700"
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -402,7 +463,7 @@ export const SponsorAdRequests = () => {
             <Input
               placeholder="Search requests..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="rounded-lg h-9 text-sm"
             />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -450,7 +511,7 @@ export const SponsorAdRequests = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredRequests.map(request => {
+                filteredRequests.map((request) => {
                   const StatusIcon = statusConfig[request.status].icon;
                   return (
                     <TableRow key={request.id} className="hover:bg-gray-50">
@@ -506,11 +567,11 @@ export const SponsorAdRequests = () => {
                             <Eye className="w-3 h-3 mr-1" />
                             View
                           </Button>
-                          {request.status === 'pending' && (
+                          {request.status === "pending" && (
                             <>
                               <Button
                                 size="sm"
-                                onClick={() => handleReview(request, 'approve')}
+                                onClick={() => handleReview(request, "approve")}
                                 className="rounded-lg h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700"
                               >
                                 <CheckCircle className="w-3 h-3 mr-1" />
@@ -519,7 +580,7 @@ export const SponsorAdRequests = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleReview(request, 'reject')}
+                                onClick={() => handleReview(request, "reject")}
                                 className="rounded-lg h-7 px-2 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
                               >
                                 <XCircle className="w-3 h-3 mr-1" />
@@ -541,11 +602,11 @@ export const SponsorAdRequests = () => {
       {/* View/Review Dialog */}
       <Dialog
         open={Boolean(viewingRequest)}
-        onOpenChange={open => {
+        onOpenChange={(open) => {
           if (!open) {
             setViewingRequest(null);
             setReviewAction(null);
-            setReviewNotes('');
+            setReviewNotes("");
             setViewImageError(false);
             setViewVideoError(false);
           }
@@ -554,7 +615,7 @@ export const SponsorAdRequests = () => {
         <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {reviewAction ? 'Review Request' : 'Request Details'}
+              {reviewAction ? "Review Request" : "Request Details"}
             </DialogTitle>
             <DialogDescription>
               {viewingRequest?.sponsorName} - {viewingRequest?.adTitle}
@@ -569,7 +630,7 @@ export const SponsorAdRequests = () => {
                 !isPlaceholderUrl(viewingRequest.mediaUrl) &&
                 !viewImageError &&
                 !viewVideoError ? (
-                  viewingRequest.mediaType === 'video' ? (
+                  viewingRequest.mediaType === "video" ? (
                     <video
                       src={viewingRequest.mediaUrl}
                       className="w-full h-64 object-cover"
@@ -597,11 +658,11 @@ export const SponsorAdRequests = () => {
                     </Badge>
                     <Badge
                       className={
-                        viewingRequest.tier === 'Gold'
-                          ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                          : viewingRequest.tier === 'Silver'
-                            ? 'bg-slate-50 text-slate-700 border-slate-200'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        viewingRequest.tier === "Gold"
+                          ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                          : viewingRequest.tier === "Silver"
+                            ? "bg-slate-50 text-slate-700 border-slate-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
                       }
                     >
                       {viewingRequest.tier} Tier
@@ -674,7 +735,7 @@ export const SponsorAdRequests = () => {
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-500">CTA Text</Label>
                   <p className="font-semibold">
-                    {viewingRequest.ctaText || 'Not specified'}
+                    {viewingRequest.ctaText || "Not specified"}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -682,7 +743,7 @@ export const SponsorAdRequests = () => {
                     Campaign Period
                   </Label>
                   <p className="font-semibold">
-                    {new Date(viewingRequest.startDate).toLocaleDateString()} -{' '}
+                    {new Date(viewingRequest.startDate).toLocaleDateString()} -{" "}
                     {new Date(viewingRequest.endDate).toLocaleDateString()}
                   </p>
                 </div>
@@ -756,16 +817,16 @@ export const SponsorAdRequests = () => {
                           key={index}
                           className="relative rounded-lg overflow-hidden border border-gray-200"
                         >
-                          {media.type === 'image' ? (
+                          {media.type === "image" ? (
                             <img
                               src={media.url}
                               alt={
                                 media.caption || `Website image ${index + 1}`
                               }
                               className="w-full h-32 object-cover"
-                              onError={e => {
+                              onError={(e) => {
                                 e.target.src =
-                                  'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                                  "https://via.placeholder.com/400x300?text=Image+Not+Available";
                               }}
                             />
                           ) : (
@@ -797,7 +858,7 @@ export const SponsorAdRequests = () => {
                 </div>
               )}
 
-              {viewingRequest.status === 'rejected' &&
+              {viewingRequest.status === "rejected" &&
                 viewingRequest.rejectionReason && (
                   <div className="space-y-2">
                     <Label className="text-xs text-rose-600">
@@ -809,7 +870,7 @@ export const SponsorAdRequests = () => {
                   </div>
                 )}
 
-              {reviewAction === 'reject' && (
+              {reviewAction === "reject" && (
                 <div className="space-y-2">
                   <Label htmlFor="review-notes">
                     Rejection Reason <span className="text-rose-600">*</span>
@@ -818,14 +879,14 @@ export const SponsorAdRequests = () => {
                     id="review-notes"
                     placeholder="Explain why this request is being rejected..."
                     value={reviewNotes}
-                    onChange={e => setReviewNotes(e.target.value)}
+                    onChange={(e) => setReviewNotes(e.target.value)}
                     rows={4}
                     className="rounded-xl"
                   />
                 </div>
               )}
 
-              {reviewAction === 'approve' && (
+              {reviewAction === "approve" && (
                 <>
                   <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                     <div className="flex items-start gap-3">
@@ -849,7 +910,7 @@ export const SponsorAdRequests = () => {
                       id="approval-notes"
                       placeholder="Add any notes about this approval..."
                       value={reviewNotes}
-                      onChange={e => setReviewNotes(e.target.value)}
+                      onChange={(e) => setReviewNotes(e.target.value)}
                       rows={3}
                       className="rounded-xl"
                     />
@@ -865,23 +926,23 @@ export const SponsorAdRequests = () => {
               onClick={() => {
                 setViewingRequest(null);
                 setReviewAction(null);
-                setReviewNotes('');
+                setReviewNotes("");
                 setViewImageError(false);
                 setViewVideoError(false);
               }}
               className="rounded-xl"
               disabled={isSubmittingReview}
             >
-              {reviewAction ? 'Cancel' : 'Close'}
+              {reviewAction ? "Cancel" : "Close"}
             </Button>
             {reviewAction && (
               <Button
                 onClick={submitReview}
                 disabled={isSubmittingReview}
                 className={
-                  reviewAction === 'approve'
-                    ? 'rounded-xl bg-emerald-600 hover:bg-emerald-700'
-                    : 'rounded-xl bg-rose-600 hover:bg-rose-700'
+                  reviewAction === "approve"
+                    ? "rounded-xl bg-emerald-600 hover:bg-emerald-700"
+                    : "rounded-xl bg-rose-600 hover:bg-rose-700"
                 }
               >
                 {isSubmittingReview ? (
@@ -889,10 +950,10 @@ export const SponsorAdRequests = () => {
                     <span className="mr-2">Processing...</span>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   </>
-                ) : reviewAction === 'approve' ? (
-                  'Confirm Approval'
+                ) : reviewAction === "approve" ? (
+                  "Confirm Approval"
                 ) : (
-                  'Confirm Rejection'
+                  "Confirm Rejection"
                 )}
               </Button>
             )}

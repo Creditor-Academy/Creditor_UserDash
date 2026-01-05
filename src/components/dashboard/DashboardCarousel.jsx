@@ -1,12 +1,12 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from '@/components/ui/carousel';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+} from "@/components/ui/carousel";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 const carouselItems = [
   // {
@@ -27,19 +27,19 @@ const carouselItems = [
   // },
   {
     id: 2,
-    type: 'image',
+    type: "image",
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/1.png',
-    title: 'Upcoming Event',
-    course: 'Banner 2',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/www.creditoracademy.com+(8).png",
+    title: "Upcoming Event",
+    course: "Banner 2",
   },
   {
     id: 3,
-    type: 'image',
+    type: "image",
     image:
-      'https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/2.png',
-    title: 'Upcoming Event',
-    course: 'Banner 4',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/www.creditoracademy.com+(9).png",
+    title: "Upcoming Event",
+    course: "Banner 4",
   },
 ];
 
@@ -51,7 +51,7 @@ export function DashboardCarousel() {
   const videoRef = useRef(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const { activeTheme } = useContext(SeasonalThemeContext);
-  const isNewYear = activeTheme === 'newYear';
+  const isNewYear = activeTheme === "newYear";
 
   const startAutoAdvance = () => {
     if (intervalRef.current) {
@@ -83,11 +83,11 @@ export function DashboardCarousel() {
   return (
     <div
       className={`group relative w-full max-w-4xl mx-auto ${
-        isNewYear ? 'ny-upcoming-events' : ''
+        isNewYear ? "ny-upcoming-events" : ""
       }`}
     >
       {/* Section header */}
-      <div className={`mb-4 px-1 ${isNewYear ? 'ny-upcoming-header' : ''}`}>
+      <div className={`mb-4 px-1 ${isNewYear ? "ny-upcoming-header" : ""}`}>
         {isNewYear && (
           <div className="ny-crackers" aria-hidden="true">
             <span className="ny-burst ny-burst-a" />
@@ -99,36 +99,36 @@ export function DashboardCarousel() {
           <span
             className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
               isNewYear
-                ? 'bg-white/85 text-indigo-700 border-indigo-200 shadow-sm'
-                : 'bg-blue-50 text-blue-700 border-blue-200'
+                ? "bg-white/85 text-indigo-700 border-indigo-200 shadow-sm"
+                : "bg-blue-50 text-blue-700 border-blue-200"
             }`}
           >
             Featured
           </span>
           <span className="text-[11px] text-gray-400">|</span>
           <span
-            className={`text-[11px] ${isNewYear ? 'text-indigo-700/80' : 'text-gray-500'}`}
+            className={`text-[11px] ${isNewYear ? "text-indigo-700/80" : "text-gray-500"}`}
           >
             Upcoming
           </span>
         </div>
         <h2
           className={`text-2xl sm:text-3xl font-bold leading-tight ${
-            isNewYear ? 'ny-title' : 'text-gray-900'
+            isNewYear ? "ny-title" : "text-gray-900"
           }`}
         >
           Upcoming Events
         </h2>
         <p
-          className={`text-sm sm:text-base ${isNewYear ? 'text-indigo-700/70' : 'text-gray-500'}`}
+          className={`text-sm sm:text-base ${isNewYear ? "text-indigo-700/70" : "text-gray-500"}`}
         >
           Discover what’s events upcoming for you
         </p>
         <div
           className={`mt-2 h-1 w-24 rounded-full ${
             isNewYear
-              ? 'bg-gradient-to-r from-blue-600/50 via-indigo-600/45 to-yellow-500/45'
-              : 'bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40'
+              ? "bg-gradient-to-r from-blue-600/50 via-indigo-600/45 to-yellow-500/45"
+              : "bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40"
           }`}
         />
       </div>
@@ -136,16 +136,16 @@ export function DashboardCarousel() {
 
       <Carousel
         opts={{
-          align: 'center',
+          align: "center",
           loop: true,
           // Slow down the embla scroll animation for a smoother feel
           duration: 40,
         }}
         className="w-full relative z-10 px-1"
-        setApi={api => {
+        setApi={(api) => {
           carouselApiRef.current = api;
           if (api) {
-            api.on('select', () => {
+            api.on("select", () => {
               const newSlide = api.selectedScrollSnap();
               setCurrentSlide(newSlide);
 
@@ -153,7 +153,7 @@ export function DashboardCarousel() {
               const currentItem = carouselItems[newSlide];
               if (
                 currentItem &&
-                currentItem.type === 'video' &&
+                currentItem.type === "video" &&
                 videoRef.current
               ) {
                 videoRef.current.currentTime = 0;
@@ -168,7 +168,7 @@ export function DashboardCarousel() {
             <CarouselItem key={item.id} className="md:basis-full">
               <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100">
                 <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] bg-white flex items-center justify-center p-2 sm:p-3">
-                  {item.type === 'video' ? (
+                  {item.type === "video" ? (
                     <video
                       ref={videoRef}
                       src={item.videoUrl}
@@ -177,10 +177,10 @@ export function DashboardCarousel() {
                       loop
                       playsInline
                       className="max-w-full max-h-full object-contain transition-all duration-700 select-none rounded-lg"
-                      onMouseEnter={e => {
+                      onMouseEnter={(e) => {
                         e.target.muted = false;
                       }}
-                      onMouseLeave={e => {
+                      onMouseLeave={(e) => {
                         e.target.muted = true;
                       }}
                     />
@@ -189,8 +189,8 @@ export function DashboardCarousel() {
                       src={item.image}
                       alt={
                         item.title
-                          ? `${item.title} – ${item.course || ''}`.trim()
-                          : item.course || 'Banner'
+                          ? `${item.title} – ${item.course || ""}`.trim()
+                          : item.course || "Banner"
                       }
                       loading="lazy"
                       draggable={false}
@@ -222,8 +222,8 @@ export function DashboardCarousel() {
               key={index}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === currentSlide
-                  ? 'bg-blue-600 shadow-lg scale-125'
-                  : 'bg-blue-300 hover:bg-blue-400'
+                  ? "bg-blue-600 shadow-lg scale-125"
+                  : "bg-blue-300 hover:bg-blue-400"
               }`}
               onClick={() => {
                 if (carouselApiRef.current) {

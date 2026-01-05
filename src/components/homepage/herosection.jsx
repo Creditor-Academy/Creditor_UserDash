@@ -1,4 +1,4 @@
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -303,11 +303,11 @@ export default function Hero() {
       </style>
 
       <div className="hero-diagonal-lines" />
-      <img
+      {/* <img
         src="/tree-removebg-preview.png"
         alt="Decorative tree"
         className="tree-decoration"
-      />
+      /> */}
       <div className="hero-container">
         <div className="hero-left">
           <div className="hero-heading-wrapper">
@@ -322,13 +322,17 @@ export default function Hero() {
               research-backed courses in minutes.
             </p>
           </div>
+
           <div className="hero-buttons-wrapper">
             <div className="hero-buttons">
               <a href="/contact" className="btn-primary">
                 Start Creating
                 <ArrowUpRight size={16} strokeWidth={2} />
               </a>
-              <a href="/login" className="btn-secondary">
+              <a
+                href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
+                className="btn-secondary"
+              >
                 Book a Demo
               </a>
             </div>
@@ -346,11 +350,11 @@ export default function Hero() {
               loop
               playsInline
               style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: '12px',
-                objectFit: 'cover',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                width: "100%",
+                height: "100%",
+                borderRadius: "12px",
+                objectFit: "cover",
+                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
               }}
             >
               Your browser does not support the video tag.

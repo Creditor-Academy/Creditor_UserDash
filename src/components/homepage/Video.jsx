@@ -1,7 +1,7 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
-import CreditorImage from '../../assets/creditor.png';
+import React from "react";
+import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import CreditorImage from "../../assets/creditor.png";
 
 const Video = () => {
   return (
@@ -9,13 +9,13 @@ const Video = () => {
       className="py-20 px-4 relative overflow-hidden"
       style={{
         background:
-          'linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)',
+          "linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)",
       }}
     >
       {/* Background Decoration */}
       <div className="absolute inset-0">
         {/* Top Right Image - Snug Corner */}
-        <div
+        {/* <div
           className="absolute top-0 right-0 z-10 overflow-hidden"
           style={{ width: '200px', height: '200px' }}
         >
@@ -25,9 +25,9 @@ const Video = () => {
             className="h-full w-auto -mt-4 -mr-10"
             style={{ transform: 'scale(1.1)' }}
           />
-        </div>
+        </div> */}
 
-        {/* Bottom Left Image */}
+        {/* Bottom Left Image
         <div className="absolute bottom-0 left-0 z-10">
           <img
             src="/snta-removebg-preview.png"
@@ -35,7 +35,7 @@ const Video = () => {
             className="w-80 h-auto opacity-90"
             style={{ transform: 'scaleX(-1)' }}
           />
-        </div>
+        </div> */}
 
         <motion.div
           className="absolute top-20 right-20 w-72 h-72 bg-sky-400/20 rounded-full blur-3xl"
@@ -46,7 +46,7 @@ const Video = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: "easeInOut",
           }}
         />
         <motion.div
@@ -58,7 +58,7 @@ const Video = () => {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: "easeInOut",
             delay: 1,
           }}
         />
@@ -75,7 +75,7 @@ const Video = () => {
         >
           <h2
             className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight"
-            style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+            style={{ fontFamily: "Georgia, Times New Roman, serif" }}
           >
             The right learning products
             <br />
@@ -84,7 +84,7 @@ const Video = () => {
 
           <p
             className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal"
-            style={{ fontFamily: 'Arial, sans-serif' }}
+            style={{ fontFamily: "Arial, sans-serif" }}
           >
             From online courses and communities to memberships and digital
             downloads. Athena LMS supports every way you want to share — and

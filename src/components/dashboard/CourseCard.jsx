@@ -1,15 +1,15 @@
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, Calendar, Lock } from 'lucide-react';
-import { getCourseTrialStatus } from '../../utils/trialUtils';
-import TrialBadge from '../ui/TrialBadge';
-import { useState, useContext } from 'react';
-import TrialExpiredDialog from '../ui/TrialExpiredDialog';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Link, useNavigate } from "react-router-dom";
+import { BookOpen, Clock, Calendar, Lock } from "lucide-react";
+import { getCourseTrialStatus } from "../../utils/trialUtils";
+import TrialBadge from "../ui/TrialBadge";
+import { useState, useContext } from "react";
+import TrialExpiredDialog from "../ui/TrialExpiredDialog";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 function formatDuration(secs) {
-  if (!secs) return 'Duration not specified';
+  if (!secs) return "Duration not specified";
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
@@ -48,38 +48,35 @@ export function CourseCard({
     setShowTrialDialog(false);
   };
 
-  const isNewYear = activeTheme === 'newYear';
+  const isNewYear = activeTheme === "newYear";
 
   const primaryButtonClasses = isNewYear
-    ? 'w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-yellow-500 hover:from-blue-700 hover:via-indigo-700 hover:to-yellow-600 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5'
-    : 'w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200';
+    ? "w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+    : "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200";
 
   const expiredButtonClasses = isNewYear
-    ? 'w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5'
-    : 'w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow transition-colors duration-200 flex items-center justify-center gap-2';
+    ? "w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-semibold py-2 px-4 rounded shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
+    : "w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow transition-colors duration-200 flex items-center justify-center gap-2";
 
   return (
     <div
-      className={`dashboard-course-card ${activeTheme === 'newYear' ? 'newyear-course-card' : ''}`}
+      className={`dashboard-course-card ${activeTheme === "newYear" ? "newyear-course-card" : ""}`}
     >
       <div className="course-card-surface flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
-        {activeTheme === 'newYear' && (
-          <div className="course-newyear-label">🎯 New Year Learning Path</div>
-        )}
         <div
           className="w-full relative overflow-hidden bg-muted"
-          style={{ height: '190px' }}
+          style={{ height: "190px" }}
         >
           <img
             src={
               image ||
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
             }
             alt={title}
             className="object-cover w-full h-full"
-            style={{ height: '190px' }}
+            style={{ height: "190px" }}
           />
-          {activeTheme === 'newYear' && (
+          {activeTheme === "newYear" && (
             <span className="course-sparkle" aria-hidden="true">
               ✨
             </span>
@@ -149,14 +146,14 @@ export function CourseCard({
                   className={primaryButtonClasses}
                   onClick={handleCourseClick}
                 >
-                  {trialStatus.isInTrial ? 'Continue Trial' : 'View Course'}
+                  {trialStatus.isInTrial ? "Continue Trial" : "View Course"}
                 </button>
               )}
 
               {/* Trial Status Info */}
               {trialStatus.isInTrial && !trialStatus.isExpired && (
                 <div className="text-xs text-center text-gray-600">
-                  Trial ends:{' '}
+                  Trial ends:{" "}
                   {new Date(trialStatus.subscriptionEnd).toLocaleDateString()}
                 </div>
               )}

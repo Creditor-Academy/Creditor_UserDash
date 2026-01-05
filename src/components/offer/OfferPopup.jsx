@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Gift } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { X, Gift } from "lucide-react";
 
 const OfferPopup = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -39,7 +39,7 @@ const OfferPopup = () => {
         <div className="offer-popup-overlay" onClick={handleClose}>
           <div
             className="offer-popup-content"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               className="offer-popup-close"
@@ -49,7 +49,7 @@ const OfferPopup = () => {
               <X className="h-5 w-5" />
             </button>
             <img
-              src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/NewOffer_rc.png"
+              src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/White+and+Green+Modern+Business+Growth+Poster.jpg"
               alt="New Year Offer"
               className="offer-popup-image"
             />
