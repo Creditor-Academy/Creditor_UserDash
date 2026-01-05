@@ -23,6 +23,8 @@ import {
   Upload,
   Link,
   ExternalLink,
+  FolderOpen,
+  Trash2 as Trash2Icon,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -65,6 +67,12 @@ import {
 import ImageEditor from '@lessonbuilder/components/blocks/MediaBlocks/ImageEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { uploadImage } from '@/services/imageUploadService';
+import {
+  getLessonResources,
+  uploadLessonResource,
+  deleteLessonResource,
+  updateLessonResource,
+} from '@/services/lessonResourceService';
 
 const ModuleLessonsView = () => {
   const { courseId, moduleId } = useParams();
@@ -121,6 +129,25 @@ const ModuleLessonsView = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [thumbnailMode, setThumbnailMode] = useState('url'); // 'url' or 'upload'
   const [editingContext, setEditingContext] = useState(null); // 'create' or 'update'
+
+  // Lesson resources state
+  const [showResourcesDialog, setShowResourcesDialog] = useState(false);
+  const [selectedLessonForResources, setSelectedLessonForResources] =
+    useState(null);
+  const [lessonResources, setLessonResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+  const [uploadingResource, setUploadingResource] = useState(false);
+  const [resourceFile, setResourceFile] = useState(null);
+  const [resourceTitle, setResourceTitle] = useState('');
+  const [resourceDescription, setResourceDescription] = useState('');
+  const [resourceType, setResourceType] = useState('');
+  const [deletingResourceId, setDeletingResourceId] = useState(null);
+  const [showEditResourceDialog, setShowEditResourceDialog] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
+  const [editResourceTitle, setEditResourceTitle] = useState('');
+  const [editResourceDescription, setEditResourceDescription] = useState('');
+  const [editResourceType, setEditResourceType] = useState('');
+  const [updatingResourceId, setUpdatingResourceId] = useState(null);
 
   // Fetch module and lessons data
   useEffect(() => {
@@ -983,6 +1010,303 @@ const ModuleLessonsView = () => {
     }
   };
 
+  // Lesson Resources Handlers
+  const handleOpenResourcesDialog = async lesson => {
+    setSelectedLessonForResources(lesson);
+    setShowResourcesDialog(true);
+    setResourceFile(null);
+    setResourceTitle('');
+    setResourceDescription('');
+    await fetchLessonResources(lesson.id);
+  };
+
+  const handleCloseResourcesDialog = () => {
+    setShowResourcesDialog(false);
+    setSelectedLessonForResources(null);
+    setLessonResources([]);
+    setResourceFile(null);
+    setResourceTitle('');
+    setResourceDescription('');
+  };
+
+  const fetchLessonResources = async lessonId => {
+    try {
+      setLoadingResources(true);
+      const resources = await getLessonResources(courseId, moduleId, lessonId);
+      setLessonResources(Array.isArray(resources) ? resources : []);
+    } catch (error) {
+      console.error('Error fetching lesson resources:', error);
+      // Set empty array on error
+      setLessonResources([]);
+      toast({
+        title: 'Error',
+        description: 'Failed to load resources.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingResources(false);
+    }
+  };
+
+  const handleResourceFileChange = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!resourceType) {
+      toast({
+        title: 'Select Type First',
+        description: 'Please choose the resource type before selecting a file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const maxSize = 1024 * 1024 * 1024; // 1GB (backend limit)
+    if (file.size > maxSize) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please select a file under 1GB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Basic MIME validation based on selected type
+    const mime = file.type.toLowerCase();
+    if (resourceType === 'IMAGE' && !mime.startsWith('image/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Selected type is Image, but the file is not an image.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (resourceType === 'VIDEO' && !mime.startsWith('video/')) {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Selected type is Video, but the file is not a video.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (resourceType === 'PDF' && mime !== 'application/pdf') {
+      toast({
+        title: 'Invalid File Type',
+        description: 'Selected type is PDF, but the file is not a PDF.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setResourceFile(file);
+    if (!resourceTitle) {
+      setResourceTitle(file.name);
+    }
+  };
+
+  const handleUploadResource = async () => {
+    if (!selectedLessonForResources) {
+      toast({
+        title: 'Select a Lesson',
+        description: 'Please select a lesson before uploading resources.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!resourceFile) {
+      toast({
+        title: 'Select a File',
+        description: 'Please choose a file to upload.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!resourceTitle.trim()) {
+      toast({
+        title: 'Title Required',
+        description: 'Please enter a title for the resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!resourceType) {
+      toast({
+        title: 'Resource Type Required',
+        description: 'Please select the type of resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUploadingResource(true);
+
+      await uploadLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        resourceFile,
+        {
+          title: resourceTitle,
+          description: resourceDescription,
+          resource_type: resourceType,
+        }
+      );
+
+      toast({
+        title: 'Success',
+        description: 'Resource uploaded successfully!',
+      });
+
+      // Refresh resources list
+      await fetchLessonResources(selectedLessonForResources.id);
+
+      // Reset form
+      setResourceFile(null);
+      setResourceTitle('');
+      setResourceDescription('');
+      setResourceType('');
+      if (document.getElementById('resource-file-input')) {
+        document.getElementById('resource-file-input').value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading resource:', error);
+      let errorMessage = 'Failed to upload resource. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingResource(false);
+    }
+  };
+
+  const handleDeleteResource = async resourceId => {
+    if (!selectedLessonForResources) return;
+
+    try {
+      setDeletingResourceId(resourceId);
+      await deleteLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        resourceId
+      );
+
+      toast({
+        title: 'Success',
+        description: 'Resource deleted successfully!',
+      });
+
+      // Refresh resources list
+      await fetchLessonResources(selectedLessonForResources.id);
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      let errorMessage = 'Failed to delete resource. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingResourceId(null);
+    }
+  };
+
+  const openEditResourceDialog = resource => {
+    setEditingResource(resource);
+    setEditResourceTitle(resource.title || '');
+    setEditResourceDescription(resource.description || '');
+    setEditResourceType(resource.resource_type || 'TEXT');
+    setShowEditResourceDialog(true);
+  };
+
+  const handleUpdateResource = async () => {
+    if (!selectedLessonForResources || !editingResource) return;
+
+    if (!editResourceTitle.trim()) {
+      toast({
+        title: 'Title Required',
+        description: 'Please enter a title for the resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!editResourceType) {
+      toast({
+        title: 'Resource Type Required',
+        description: 'Please select the type of resource.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setUpdatingResourceId(editingResource.id);
+
+      await updateLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        editingResource.id,
+        {
+          title: editResourceTitle,
+          description: editResourceDescription,
+          resource_type: editResourceType,
+        }
+      );
+
+      toast({
+        title: 'Updated',
+        description: 'Resource updated successfully!',
+      });
+
+      await fetchLessonResources(selectedLessonForResources.id);
+      setShowEditResourceDialog(false);
+      setEditingResource(null);
+    } catch (error) {
+      console.error('Error updating resource:', error);
+      let errorMessage = 'Failed to update resource. Please try again.';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingResourceId(null);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6 flex items-center gap-4">
@@ -1131,7 +1455,7 @@ const ModuleLessonsView = () => {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="pt-0">
+              <CardFooter className="pt-0 flex flex-col gap-2">
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
@@ -1140,13 +1464,13 @@ const ModuleLessonsView = () => {
                   <Play className="h-4 w-4" /> View Lesson
                 </Button>
                 <div
-                  className="flex items-center space-x-2 ml-4"
+                  className="flex items-center justify-center gap-2 w-full"
                   onClick={e => e.stopPropagation()}
                 >
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
+                    className="h-8 w-8 flex-shrink-0 text-blue-600 hover:bg-blue-50 border-blue-200"
                     onClick={e => {
                       e.stopPropagation();
                       handleOpenUpdateDialog(lesson);
@@ -1158,7 +1482,7 @@ const ModuleLessonsView = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-red-600 hover:bg-red-50 border-red-200"
+                    className="h-8 w-8 flex-shrink-0 text-red-600 hover:bg-red-50 border-red-200"
                     onClick={e => {
                       e.stopPropagation();
                       setLessonToDelete(lesson);
@@ -1170,7 +1494,7 @@ const ModuleLessonsView = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-green-600 hover:bg-green-50 border-green-200"
+                    className="h-8 w-8 flex-shrink-0 text-green-600 hover:bg-green-50 border-green-200"
                     onClick={e => {
                       e.stopPropagation();
                       handleOpenScormDialog(lesson);
@@ -1178,6 +1502,18 @@ const ModuleLessonsView = () => {
                   >
                     <Plus className="h-4 w-4" />
                     <span className="sr-only">Add SCORM</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0 text-purple-600 hover:bg-purple-50 border-purple-200"
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleOpenResourcesDialog(lesson);
+                    }}
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="sr-only">Upload Resources</span>
                   </Button>
                 </div>
               </CardFooter>
@@ -1848,6 +2184,330 @@ const ModuleLessonsView = () => {
           title="Edit Thumbnail Image"
         />
       )}
+
+      {/* Upload Resources Dialog */}
+      <Dialog
+        open={showResourcesDialog}
+        onOpenChange={open => !open && handleCloseResourcesDialog()}
+      >
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLessonForResources
+                ? `Manage Resources for "${selectedLessonForResources.title || 'Lesson'}"`
+                : 'Upload Resources'}
+            </DialogTitle>
+            <DialogDescription>
+              Upload and manage resources for this lesson. Students can download
+              these resources.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 py-4">
+            {/* Upload Section */}
+            <div className="space-y-4 border-b pb-4">
+              <h3 className="text-lg font-semibold">Upload New Resource</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-type">Resource Type *</Label>
+                <Select
+                  value={resourceType}
+                  onValueChange={value => {
+                    setResourceType(value);
+                    // Clear any previously selected file when changing type
+                    setResourceFile(null);
+                    if (document.getElementById('resource-file-input')) {
+                      document.getElementById('resource-file-input').value = '';
+                    }
+                  }}
+                  disabled={uploadingResource}
+                >
+                  <SelectTrigger id="resource-type">
+                    <SelectValue placeholder="Select resource type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IMAGE">Image</SelectItem>
+                    <SelectItem value="VIDEO">Video</SelectItem>
+                    <SelectItem value="PDF">PDF</SelectItem>
+                    <SelectItem value="TEXT">
+                      Document (Text / Other)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Choose the type that best matches this file. This controls how
+                  it is validated and displayed to students.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-file-input">File *</Label>
+                <Input
+                  id="resource-file-input"
+                  type="file"
+                  onChange={handleResourceFileChange}
+                  disabled={uploadingResource}
+                  className="cursor-pointer"
+                />
+                {resourceFile && (
+                  <p className="text-xs text-gray-600">
+                    Selected: {resourceFile.name} (
+                    {(resourceFile.size / (1024 * 1024)).toFixed(2)} MB)
+                  </p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Maximum file size: 1GB. Supported formats: PDF, Images,
+                  Videos, Documents.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-title">Title *</Label>
+                <Input
+                  id="resource-title"
+                  value={resourceTitle}
+                  onChange={e => setResourceTitle(e.target.value)}
+                  placeholder="Enter resource title"
+                  disabled={uploadingResource}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-description">Description</Label>
+                <Textarea
+                  id="resource-description"
+                  value={resourceDescription}
+                  onChange={e => setResourceDescription(e.target.value)}
+                  placeholder="Enter resource description (optional)"
+                  rows={3}
+                  disabled={uploadingResource}
+                />
+              </div>
+
+              <Button
+                onClick={handleUploadResource}
+                disabled={!resourceFile || !resourceTitle || uploadingResource}
+                className="w-full"
+              >
+                {uploadingResource ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Resource
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Existing Resources Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Existing Resources</h3>
+
+              {loadingResources ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : lessonResources.length > 0 ? (
+                <div className="space-y-2">
+                  {lessonResources.map((resource, index) => {
+                    // Backend response fields: id, title, description, url, resource_type
+                    const resourceUrl = resource.url;
+
+                    return (
+                      <Card key={resource.id || index}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm mb-1 line-clamp-1">
+                                {resource.title || 'Untitled Resource'}
+                              </h4>
+                              {resource.description && (
+                                <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                                  {resource.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="capitalize">
+                                  {resource.resource_type
+                                    ?.replace('_', ' ')
+                                    .toLowerCase() || 'File'}
+                                </span>
+                                {(resource.created_at ||
+                                  resource.updated_at) && (
+                                  <span>
+                                    {new Date(
+                                      resource.created_at || resource.updated_at
+                                    ).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {resourceUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(
+                                      resourceUrl,
+                                      '_blank',
+                                      'noopener,noreferrer'
+                                    )
+                                  }
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditResourceDialog(resource)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteResource(resource.id)
+                                }
+                                disabled={deletingResourceId === resource.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                {deletingResourceId === resource.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2Icon className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No resources uploaded yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCloseResourcesDialog}
+              disabled={uploadingResource}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Resource Dialog */}
+      <Dialog
+        open={showEditResourceDialog}
+        onOpenChange={open => {
+          if (!open) {
+            setShowEditResourceDialog(false);
+            setEditingResource(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingResource
+                ? `Edit Resource "${editingResource.title || 'Resource'}"`
+                : 'Edit Resource'}
+            </DialogTitle>
+            <DialogDescription>
+              Update the title, description, or type of this resource.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-title">Title *</Label>
+              <Input
+                id="edit-resource-title"
+                value={editResourceTitle}
+                onChange={e => setEditResourceTitle(e.target.value)}
+                placeholder="Enter resource title"
+                disabled={!!updatingResourceId}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-type">Resource Type *</Label>
+              <Select
+                value={editResourceType}
+                onValueChange={value => setEditResourceType(value)}
+                disabled={!!updatingResourceId}
+              >
+                <SelectTrigger id="edit-resource-type">
+                  <SelectValue placeholder="Select resource type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IMAGE">Image</SelectItem>
+                  <SelectItem value="VIDEO">Video</SelectItem>
+                  <SelectItem value="PDF">PDF</SelectItem>
+                  <SelectItem value="TEXT">Document (Text / Other)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-description">Description</Label>
+              <Textarea
+                id="edit-resource-description"
+                value={editResourceDescription}
+                onChange={e => setEditResourceDescription(e.target.value)}
+                placeholder="Enter resource description (optional)"
+                rows={3}
+                disabled={!!updatingResourceId}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditResourceDialog(false);
+                setEditingResource(null);
+              }}
+              disabled={!!updatingResourceId}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateResource}
+              disabled={
+                !!updatingResourceId || !editResourceTitle || !editResourceType
+              }
+            >
+              {updatingResourceId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

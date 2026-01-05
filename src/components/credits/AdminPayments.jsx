@@ -2809,15 +2809,7 @@ const AdminPayments = () => {
                     </div>
                   );
                 })()}
-                <div className="mt-5 flex justify-between">
-                  <button
-                    onClick={() => {
-                      alert('Cancel membership (mock). No API call.');
-                    }}
-                    className="px-4 py-2 rounded-md border text-red-700 border-red-200 hover:bg-red-50"
-                  >
-                    Cancel Membership
-                  </button>
+                <div className="mt-5 flex justify-end">
                   <div className="flex gap-2">
                     <button
                       onClick={() =>

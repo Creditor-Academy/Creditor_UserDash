@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Sidebar from '@/components/layout/Sidebar';
@@ -18,14 +18,14 @@ export function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
-  const [isChristmasMode, setIsChristmasMode] = useState(() => {
-    if (typeof window === 'undefined') return true;
+  const [activeTheme, setActiveTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'newYear';
     try {
-      const saved = localStorage.getItem('dashboardChristmasMode');
-      // Default to true if not set
-      return saved === null ? true : saved === 'true';
+      const saved = localStorage.getItem('dashboardSeasonalTheme');
+      // Default to 'newYear' if not set
+      return saved === null ? 'newYear' : saved;
     } catch {
-      return true;
+      return 'newYear';
     }
   });
 
@@ -61,90 +61,40 @@ export function DashboardLayout() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
-    document.body.classList.toggle('christmas-theme', isChristmasMode);
+    // Remove old Christmas theme class if present
+    document.body.classList.remove('christmas-theme');
+    // Apply New Year theme class
+    document.body.classList.toggle('newyear-theme', activeTheme === 'newYear');
     return () => {
-      document.body.classList.remove('christmas-theme');
+      document.body.classList.remove('newyear-theme');
     };
-  }, [isChristmasMode]);
+  }, [activeTheme]);
 
-  const toggleChristmasMode = () => {
-    setIsChristmasMode(prev => {
-      const next = !prev;
-      try {
-        localStorage.setItem('dashboardChristmasMode', String(next));
-        // Dispatch custom event so other components (like Login) can detect the change
-        window.dispatchEvent(
-          new CustomEvent('localStorageChange', {
-            detail: { key: 'dashboardChristmasMode', value: String(next) },
-          })
-        );
-      } catch {
-        /* storage unavailable */
-      }
-      return next;
-    });
+  const setTheme = theme => {
+    try {
+      localStorage.setItem('dashboardSeasonalTheme', theme);
+      // Dispatch custom event so other components can detect the change
+      window.dispatchEvent(
+        new CustomEvent('localStorageChange', {
+          detail: { key: 'dashboardSeasonalTheme', value: theme },
+        })
+      );
+    } catch {
+      /* storage unavailable */
+    }
+    setActiveTheme(theme);
   };
 
-  // Generate snowflakes for animation - covers entire layout including sidebar
-  const snowflakes = useMemo(() => {
-    if (!isChristmasMode) return [];
-
-    // Create 100 snowflakes with varied properties
-    return Array.from({ length: 100 }, (_, i) => {
-      const size = 3 + Math.random() * 6; // Size between 3-9px
-      const left = Math.random() * 100; // Random horizontal position
-      const delay = Math.random() * 2; // Start delay 0-2s for staggered effect
-      const duration = 8 + Math.random() * 7; // Fall duration 8-15s (varied speeds)
-      const drift = (Math.random() - 0.5) * 60; // Horizontal drift -30px to +30px
-      const opacity = 0.5 + Math.random() * 0.5; // Opacity 0.5-1.0
-
-      return {
-        id: i,
-        left: `${left}%`,
-        size: `${size}px`,
-        delay: `${delay}s`,
-        duration: `${duration}s`,
-        drift: `${drift}px`,
-        opacity,
-      };
-    });
-  }, [isChristmasMode]);
-
   return (
-    <SeasonalThemeContext.Provider
-      value={{ isChristmasMode, toggleChristmasMode }}
-    >
+    <SeasonalThemeContext.Provider value={{ activeTheme, setTheme }}>
       <SidebarContext.Provider
         value={{ sidebarCollapsed, setSidebarCollapsed }}
       >
         <div
           className={`dashboard-shell flex min-h-screen w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-gray-50 to-white ${
-            isChristmasMode ? 'christmas-theme' : ''
+            activeTheme === 'newYear' ? 'newyear-theme' : ''
           }`}
         >
-          {/* Snowflake Animation - covers entire layout including sidebar */}
-          {isChristmasMode && (
-            <div
-              className="snowflakes-container pointer-events-none"
-              aria-hidden="true"
-            >
-              {snowflakes.map(flake => (
-                <div
-                  key={flake.id}
-                  className="snowflake"
-                  style={{
-                    left: flake.left,
-                    width: flake.size,
-                    height: flake.size,
-                    animationDelay: flake.delay,
-                    animationDuration: flake.duration,
-                    opacity: flake.opacity,
-                    '--snowflake-drift': flake.drift,
-                  }}
-                />
-              ))}
-            </div>
-          )}
           {/* Sidebar - mobile drawer and desktop fixed */}
           <div
             className={

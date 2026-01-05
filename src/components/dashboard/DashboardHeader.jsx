@@ -37,8 +37,7 @@ import { useCredits } from '@/contexts/CreditsContext';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
-  const { isChristmasMode, toggleChristmasMode } =
-    useContext(SeasonalThemeContext);
+  const { activeTheme, setTheme } = useContext(SeasonalThemeContext);
   const { isInstructorOrAdmin, hasRole } = useAuth();
   const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -580,8 +579,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   return (
     <>
       <header
-        className={`app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95 ${
-          isChristmasMode ? 'christmas-app-header' : ''
+        className={`app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95 relative ${
+          activeTheme === 'newYear' ? 'newyear-app-header' : ''
         }`}
       >
         <div className="h-16 flex items-center justify-between px-4 sm:px-6">
@@ -606,8 +605,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <h1
                 className={`text-base sm:text-lg font-bold ${
-                  isChristmasMode
-                    ? 'text-white drop-shadow-sm'
+                  activeTheme === 'newYear'
+                    ? 'text-gray-900'
                     : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
                 }`}
               >
@@ -642,7 +641,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             {showDropdown && searchResults && (
               <div
                 ref={dropdownRef}
-                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
+                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50 search-results-dropdown"
               >
                 {/* Total Results Header */}
                 {(searchResults.results?.courses?.length > 0 ||
@@ -830,17 +829,19 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
             <button
               type="button"
-              onClick={toggleChristmasMode}
-              aria-pressed={isChristmasMode}
-              className={`hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors christmas-toggle-btn ${
-                isChristmasMode
-                  ? 'text-white border-white/60 bg-white/20 hover:bg-white/30'
+              onClick={() =>
+                setTheme(activeTheme === 'newYear' ? 'default' : 'newYear')
+              }
+              aria-pressed={activeTheme === 'newYear'}
+              className={`hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors newyear-toggle-btn ${
+                activeTheme === 'newYear'
+                  ? 'text-gray-900 border-gray-300 bg-gray-50 hover:bg-gray-100'
                   : 'text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              {isChristmasMode
-                ? 'Disable Christmas Mode'
-                : '🎄 Enable Christmas Mode'}
+              {activeTheme === 'newYear'
+                ? 'Disable New Year Theme'
+                : '🎆 Enable New Year Theme'}
             </button>
             {/* Credits Badge */}
             <button
@@ -864,8 +865,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              aria-label={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
-              title={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
+              aria-label="Notifications"
+              title="Notifications"
             >
               <BellDot className="h-5 w-5" />
               {unreadNotifications > 0 && (

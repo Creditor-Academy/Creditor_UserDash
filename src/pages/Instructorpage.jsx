@@ -35,7 +35,9 @@ import {
   FaChartLine,
   FaStar,
   FaCloud,
+  FaBullhorn,
 } from 'react-icons/fa';
+import SponsorAdsAdminPanel from '@/components/sponsorAds/SponsorAdsAdminPanel';
 
 const InstructorPage = () => {
   const { isInstructorOrAdmin, hasRole } = useAuth();
@@ -65,6 +67,7 @@ const InstructorPage = () => {
     if (path.includes('/support-tickets')) return 'tickets';
     if (path.includes('/assets')) return 'resources';
     if (path.includes('/payments')) return 'payments';
+    if (path.includes('/sponsor-ads')) return 'sponsorAds';
     if (path.includes('/feedback-analysis')) return 'feedback';
     if (path.includes('/storage-tokens') && hasRole('admin')) return 'storage';
     return 'lessons'; // default
@@ -153,6 +156,12 @@ const InstructorPage = () => {
 
     return `${usedText} / ${totalText}`;
   };
+
+  useEffect(() => {
+    if (location.pathname === '/instructor/sponsor-ads') {
+      navigate('/instructor/sponsor-ads/create', { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   // Navigation handlers
   const handleNavigation = (tab, path) => {
@@ -354,6 +363,18 @@ const InstructorPage = () => {
               <FaCloud /> Storage & Tokens
             </button>
           )}
+          <button
+            onClick={() =>
+              handleNavigation('sponsorAds', '/instructor/sponsor-ads/create')
+            }
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === 'sponsorAds'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <FaBullhorn /> Sponsor Ads
+          </button>
           <button
             onClick={() => setActiveTab('analytics')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -559,6 +580,11 @@ const InstructorPage = () => {
             {hasRole('admin') && activeTab === 'storage' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <StorageTokens />
+              </section>
+            )}
+            {activeTab === 'sponsorAds' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <SponsorAdsAdminPanel />
               </section>
             )}
             {activeTab === 'analytics' && (

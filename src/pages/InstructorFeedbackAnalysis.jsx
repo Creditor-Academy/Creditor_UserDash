@@ -181,8 +181,8 @@ export function InstructorFeedbackAnalysis() {
                   <SelectValue placeholder="Select a course..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {myCourses.map(course => (
-                    <SelectItem key={course.id} value={course.id}>
+                  {myCourses.map((course, index) => (
+                    <SelectItem key={course.id || index} value={course.id}>
                       <div className="flex items-center gap-2">
                         <span>{course.title}</span>
                         <Badge variant="outline" className="ml-2">

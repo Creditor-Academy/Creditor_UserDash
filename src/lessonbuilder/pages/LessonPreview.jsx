@@ -27,6 +27,14 @@ import devLogger from '@lessonbuilder/utils/devLogger';
 import ImmersiveReader from '@/components/courses/ImmersiveReader';
 import { getTtsToken } from '@/services/speechify';
 
+// Helper function to decode HTML entities
+const decodeHtmlEntities = text => {
+  if (!text) return '';
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
 const getImageCaptionHtml = block => {
   const captionHtml = (
     block.captionHtml ||
@@ -66,7 +74,7 @@ const generateImageHtml = block => {
     return `
       <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
         <div class="${imageOrder}">
-          <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+          <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded-lg shadow-lg" />
         </div>
         <div class="${textOrder}">
           ${captionBlock}
@@ -87,7 +95,7 @@ const generateImageHtml = block => {
   if (layout === 'full-width') {
     return `
       <div class="space-y-3">
-        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
+        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded" />
         ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
       </div>
     `;
@@ -100,7 +108,7 @@ const generateImageHtml = block => {
 
   return `
     <div class="${alignmentClass}">
-      <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
+      <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
       ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
     </div>
   `;
