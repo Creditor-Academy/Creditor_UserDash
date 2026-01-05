@@ -748,9 +748,11 @@ const ImageBlockComponent = forwardRef(
         }
 
         return `
-        <div class="${alignmentClass}">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full h-auto object-contain rounded-xl shadow-lg" style="max-height: min(60vh, 400px); width: auto; ${alignment === 'center' ? 'mx-auto' : ''}" />
-          ${textContent ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ''}
+        <div class="${alignmentClass} ${alignment === 'center' ? 'flex justify-center' : ''}">
+          <div class="max-w-lg">
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full h-auto object-contain rounded-xl shadow-lg" style="max-height: min(60vh, 400px); width: auto;" />
+            ${textContent ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ''}
+          </div>
         </div>
       `;
       }

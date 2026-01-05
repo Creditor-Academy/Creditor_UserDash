@@ -107,9 +107,11 @@ const generateImageHtml = block => {
   else if (alignment === 'right') alignmentClass = 'text-right';
 
   return `
-    <div class="${alignmentClass}">
-      <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
-      ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
+    <div class="${alignmentClass} ${alignment === 'center' ? 'flex justify-center' : ''}">
+      <div class="max-w-lg">
+        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg max-w-full" />
+        ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
+      </div>
     </div>
   `;
 };

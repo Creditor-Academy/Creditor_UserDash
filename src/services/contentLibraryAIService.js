@@ -36,8 +36,8 @@ class ContentLibraryAIService {
   }
 
   /**
-   * Generate simplified lesson content: 10x (Master Heading + Description + Divider)
-   * Used for quick course creation with progress display
+   * Generate enhanced lesson content with interactive templates
+   * Uses 12-15 blocks with mix of text, interactive (tabs, accordion, timeline), and dividers
    */
   async generateSimpleLessonContent(
     lessonTitle,
@@ -46,164 +46,527 @@ class ContentLibraryAIService {
     onProgress
   ) {
     console.log(
-      '🎯 Generating simplified lesson: 10x (Heading + Description + Divider)'
+      '🎯 Generating enhanced lesson: Mix of headings, descriptions, interactive templates (12-15 blocks)'
     );
 
     const blocks = [];
     let order = 0;
 
     try {
-      // Generate 10 sets of Master Heading + Description + Divider
-      for (let i = 0; i < 10; i++) {
-        const topicNumber = i + 1;
-        const randomGradient =
-          gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
+      // Add Introduction Section (Blocks 1-2)
+      const randomGradient =
+        gradientOptions[Math.floor(Math.random() * gradientOptions.length)];
+      blocks.push({
+        id: `intro-heading-${Date.now()}`,
+        type: 'text',
+        textType: 'master_heading',
+        content: lessonTitle,
+        gradient: randomGradient.id,
+        html_css: `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 24px 0; color: white; background: ${randomGradient.gradient}; padding: 20px; border-radius: 8px; text-align: center;">${lessonTitle}</h1>`,
+        order: order++,
+        metadata: {
+          variant: 'master_heading',
+          section: 'introduction',
+        },
+      });
 
-        // Topic prompt for OpenAI - more specific to avoid repetition
-        const topicPrompt = `Generate a unique, concise topic title (3-5 words) for section ${topicNumber} of 10 in a lesson about "${lessonTitle}". 
-        Section ${topicNumber} focus: ${this.getSectionFocus(topicNumber, lessonTitle)}
-        Return ONLY the title text, no quotes, no numbering, no extra formatting.`;
-        const topicTitle = await this.generateAIContent(topicPrompt, 10);
-
-        // 1. Master Heading with gradient and html_css
-        const gradientStyle =
-          randomGradient.gradient ||
-          'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        const headingBlock = {
-          id: `heading-${topicNumber}-${Date.now()}-${Math.random()}`,
-          type: 'text',
-          textType: 'master_heading',
-          content: topicTitle,
-          gradient: randomGradient.id,
-          html_css: `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 24px 0; color: white; background: ${gradientStyle}; padding: 20px; border-radius: 8px; text-align: center;">${topicTitle}</h1>`,
-          order: order++,
-          metadata: {
-            variant: 'master_heading',
-            gradient: randomGradient.name,
-            section: topicNumber,
-          },
-        };
-        blocks.push(headingBlock);
-
-        // Notify progress
-        if (onProgress) {
-          onProgress({
-            blockType: 'Master Heading',
-            content: topicTitle,
-            gradient: randomGradient.name,
-            section: topicNumber,
-            totalSections: 10,
-          });
-        }
-
-        // Small delay to show progress
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // 2. Detailed Educational Description
-        const descPrompt = `You are creating educational content for a professional online course.
-        
-        Course: "${courseTitle}"
-        Module: "${moduleTitle}"  
-        Lesson: "${lessonTitle}"
-        
-        For Section ${topicNumber}: "${topicTitle}" (Focus: ${this.getSectionFocus(topicNumber, lessonTitle)})
-        
-        Write a comprehensive 3-4 sentence educational description that:
-        - Explains what students will learn in this specific section
-        - Relates it to the overall lesson and module objectives
-        - Uses professional, engaging language
-        - Provides concrete learning outcomes or examples
-        - Avoids generic phrases like "getting started" or "provides an introduction"
-        
-        Write ONLY the description text, no quotes, no titles.`;
-        const description = await this.generateAIContent(descPrompt, 120);
-
-        const descBlock = {
-          id: `desc-${topicNumber}-${Date.now()}-${Math.random()}`,
-          type: 'text',
-          textType: 'paragraph',
-          content: description,
-          order: order++,
-          metadata: {
-            variant: 'description',
-            section: topicNumber,
-          },
-        };
-        blocks.push(descBlock);
-
-        // Notify progress
-        if (onProgress) {
-          onProgress({
-            blockType: 'Description',
-            content: description.substring(0, 50) + '...',
-            section: topicNumber,
-            totalSections: 10,
-          });
-        }
-
-        // Small delay to show progress
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // 3. Continue Divider - clickable button between sections
-        const dividerBlock = {
-          id: `divider-${topicNumber}-${Date.now()}-${Math.random()}`,
-          type: 'divider',
-          subtype: 'continue',
-          content: 'CONTINUE',
-          html_css: `<div style="width: 100%; padding: 24px 0;">
-        <div style="background-color: #2563eb; color: white; text-align: center; padding: 16px 32px; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; cursor: pointer; transition: background-color 0.2s; border: none;" onmouseover="this.style.backgroundColor='#1d4ed8'" onmouseout="this.style.backgroundColor='#2563eb'">
-          CONTINUE
-        </div>
-      </div>`,
-          order: order++,
-          metadata: {
-            variant: 'continue',
-            section: topicNumber,
-          },
-        };
-        blocks.push(dividerBlock);
-
-        // Notify progress
-        if (onProgress) {
-          onProgress({
-            blockType: 'Continue Button',
-            content: 'CONTINUE',
-            section: topicNumber,
-            totalSections: 10,
-          });
-        }
-
-        // Small delay before next section
-        await new Promise(resolve => setTimeout(resolve, 100));
+      if (onProgress) {
+        onProgress({
+          blockType: 'Master Heading',
+          content: lessonTitle,
+          totalSections: '12-15',
+        });
       }
 
-      // Add final "COMPLETE" continue divider
-      const completeDivider = {
-        id: `divider-complete-${Date.now()}-${Math.random()}`,
+      // Introduction paragraph
+      const introPrompt = `Write a compelling 2-3 sentence introduction for a lesson about "${lessonTitle}" in the course "${courseTitle}". Include what students will learn and why it matters.`;
+      const introContent = await this.generateAIContent(introPrompt, 100);
+      blocks.push({
+        id: `intro-para-${Date.now()}`,
+        type: 'text',
+        textType: 'paragraph',
+        content: introContent,
+        order: order++,
+        metadata: { variant: 'introduction', section: 'introduction' },
+      });
+
+      if (onProgress) {
+        onProgress({
+          blockType: 'Introduction',
+          content: introContent.substring(0, 50) + '...',
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Section 1: Key Concepts with TABS (Block 3)
+      blocks.push(
+        await this.generateInteractiveTabsBlock(
+          lessonTitle,
+          order++,
+          onProgress
+        )
+      );
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Section 2: Detailed Breakdown with ACCORDION (Block 4)
+      blocks.push(
+        await this.generateInteractiveAccordionBlock(
+          lessonTitle,
+          order++,
+          onProgress
+        )
+      );
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Section 3: Process/Steps with PROCESS template (Block 5)
+      blocks.push(
+        await this.generateInteractiveProcessBlock(
+          lessonTitle,
+          order++,
+          onProgress
+        )
+      );
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Section 4: Timeline (if applicable) (Block 6)
+      blocks.push(
+        await this.generateInteractiveTimelineBlock(
+          lessonTitle,
+          order++,
+          onProgress
+        )
+      );
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Section 5: Supporting Content with regular text blocks (Blocks 7-8)
+      const supportPrompt = `Write 2-3 key points about ${lessonTitle} that supplement the previous sections. Each point should be 1-2 sentences.`;
+      const supportContent = await this.generateAIContent(supportPrompt, 150);
+      blocks.push({
+        id: `support-para-${Date.now()}`,
+        type: 'text',
+        textType: 'paragraph',
+        content: supportContent,
+        order: order++,
+        metadata: { variant: 'supporting_content' },
+      });
+
+      if (onProgress) {
+        onProgress({
+          blockType: 'Supporting Content',
+          content: supportContent.substring(0, 50) + '...',
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Add one more statement for emphasis (Block 9)
+      const statementContent = await this.generateAIContent(
+        `Create one important key takeaway or insight about ${lessonTitle}`,
+        80
+      );
+      blocks.push({
+        id: `statement-key-${Date.now()}`,
+        type: 'statement',
+        statementType: 'statement-b',
+        content: statementContent,
+        order: order++,
+        metadata: { variant: 'key_takeaway' },
+      });
+
+      if (onProgress) {
+        onProgress({
+          blockType: 'Key Takeaway',
+          content: statementContent,
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Add practice tips with list (Block 10)
+      const listItems = [
+        'Practice with real-world examples',
+        'Review the key concepts regularly',
+        'Test your understanding with quizzes',
+        'Share learning with peers',
+      ];
+      blocks.push({
+        id: `tips-list-${Date.now()}`,
+        type: 'list',
+        listType: 'bulleted',
+        items: listItems,
+        order: order++,
+        metadata: {
+          variant: 'practice_tips',
+          title: 'Practice Tips',
+        },
+      });
+
+      if (onProgress) {
+        onProgress({
+          blockType: 'Practice Tips List',
+          content: 'Tips for mastering this lesson',
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Add divider (Block 11)
+      blocks.push({
+        id: `divider-middle-${Date.now()}`,
+        type: 'divider',
+        subtype: 'simple',
+        content: '',
+        order: order++,
+        metadata: { variant: 'divider' },
+      });
+
+      // Add assessment prompt (Block 12)
+      const assessmentPrompt = `Create a summary question to assess understanding of ${lessonTitle}. Make it thought-provoking and relevant.`;
+      const assessmentContent = await this.generateAIContent(
+        assessmentPrompt,
+        100
+      );
+      blocks.push({
+        id: `assessment-${Date.now()}`,
+        type: 'text',
+        textType: 'heading_paragraph',
+        content: `<h3>Self-Assessment Question</h3><p>${assessmentContent}</p>`,
+        order: order++,
+        metadata: { variant: 'self_assessment' },
+      });
+
+      if (onProgress) {
+        onProgress({
+          blockType: 'Self-Assessment',
+          content: assessmentContent.substring(0, 50) + '...',
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Final completion divider
+      blocks.push({
+        id: `divider-complete-${Date.now()}`,
         type: 'divider',
         subtype: 'continue',
         content: 'LESSON COMPLETE',
         html_css: `<div style="width: 100%; padding: 24px 0;">
-        <div style="background-color: #10b981; color: white; text-align: center; padding: 16px 32px; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; cursor: pointer; transition: background-color 0.2s; border: none;">
-          LESSON COMPLETE
+        <div style="background-color: #10b981; color: white; text-align: center; padding: 16px 32px; font-weight: 600; font-size: 18px; letter-spacing: 0.1em;">
+          ✓ LESSON COMPLETE
         </div>
       </div>`,
         order: order++,
         metadata: {
-          variant: 'continue',
+          variant: 'completion',
           type: 'completion',
         },
-      };
-      blocks.push(completeDivider);
+      });
 
       console.log(
-        `✅ Generated ${blocks.length} content blocks (10 sections + completion divider)`
+        `✅ Generated ${blocks.length} enhanced content blocks with interactive templates`
       );
       return blocks;
     } catch (error) {
-      console.error('❌ Error generating simplified content:', error);
+      console.error('❌ Error generating enhanced content:', error);
       return this.generateFallbackContent(lessonTitle);
     }
+  }
+
+  /**
+   * Generate interactive TABS block with HTML/CSS rendering
+   */
+  async generateInteractiveTabsBlock(lessonTitle, order, onProgress) {
+    const tabTitles = ['Concept 1', 'Concept 2', 'Concept 3'];
+
+    const tabsData = [];
+    for (const title of tabTitles) {
+      const content = await this.generateAIContent(
+        `Explain "${title}" in the context of ${lessonTitle} in 2-3 sentences.`,
+        100
+      );
+      tabsData.push({
+        title,
+        content,
+        image: null,
+        audio: null,
+      });
+    }
+
+    if (onProgress) {
+      onProgress({
+        blockType: 'Interactive Tabs',
+        content: `Compare: ${tabTitles.join(', ')}`,
+      });
+    }
+
+    // Generate HTML/CSS for tabs display
+    const htmlCss = this.generateTabsHTML(tabsData);
+
+    return {
+      id: `tabs-${Date.now()}`,
+      type: 'interactive',
+      interactiveType: 'tabs',
+      content: JSON.stringify(tabsData),
+      html_css: htmlCss,
+      order,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'tabs',
+        tabCount: 3,
+      },
+    };
+  }
+
+  /**
+   * Generate interactive ACCORDION block with HTML/CSS rendering
+   */
+  async generateInteractiveAccordionBlock(lessonTitle, order, onProgress) {
+    const sectionTitles = ['Overview', 'Deep Dive', 'Best Practices'];
+
+    const accordionData = [];
+    for (const title of sectionTitles) {
+      const content = await this.generateAIContent(
+        `Write detailed content for "${title}" section about ${lessonTitle}. 3-4 sentences with practical information.`,
+        120
+      );
+      accordionData.push({
+        title,
+        content,
+        image: null,
+        audio: null,
+      });
+    }
+
+    if (onProgress) {
+      onProgress({
+        blockType: 'Interactive Accordion',
+        content: 'Expandable sections with detailed information',
+      });
+    }
+
+    // Generate HTML/CSS for accordion display
+    const htmlCss = this.generateAccordionHTML(accordionData);
+
+    return {
+      id: `accordion-${Date.now()}`,
+      type: 'interactive',
+      interactiveType: 'accordion',
+      content: JSON.stringify(accordionData),
+      html_css: htmlCss,
+      order,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'accordion',
+        sectionCount: 3,
+      },
+    };
+  }
+
+  /**
+   * Generate interactive PROCESS block with HTML/CSS rendering
+   */
+  async generateInteractiveProcessBlock(lessonTitle, order, onProgress) {
+    const steps = ['Preparation', 'Implementation', 'Evaluation'];
+
+    const processData = [];
+    for (let i = 0; i < steps.length; i++) {
+      const description = await this.generateAIContent(
+        `Describe the "${steps[i]}" step for ${lessonTitle}. What should be done? Why is it important?`,
+        100
+      );
+      processData.push({
+        step: i + 1,
+        title: steps[i],
+        description,
+        image: null,
+      });
+    }
+
+    if (onProgress) {
+      onProgress({
+        blockType: 'Interactive Process',
+        content: `${steps.length}-step process for ${lessonTitle}`,
+      });
+    }
+
+    // Generate HTML/CSS for process display
+    const htmlCss = this.generateProcessHTML(processData);
+
+    return {
+      id: `process-${Date.now()}`,
+      type: 'interactive',
+      interactiveType: 'process',
+      content: JSON.stringify(processData),
+      html_css: htmlCss,
+      order,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'process',
+        stepCount: steps.length,
+      },
+    };
+  }
+
+  /**
+   * Generate interactive TIMELINE block with HTML/CSS rendering
+   */
+  async generateInteractiveTimelineBlock(lessonTitle, order, onProgress) {
+    const phases = ['Foundation', 'Development', 'Mastery'];
+
+    const timelineData = [];
+    for (let i = 0; i < phases.length; i++) {
+      const description = await this.generateAIContent(
+        `Describe the "${phases[i]}" phase in learning ${lessonTitle}. What are the key milestones?`,
+        100
+      );
+      timelineData.push({
+        id: String(i + 1),
+        date: `Phase ${i + 1}`,
+        title: phases[i],
+        description,
+        image: null,
+      });
+    }
+
+    if (onProgress) {
+      onProgress({
+        blockType: 'Interactive Timeline',
+        content: `Learning journey: ${phases.join(' → ')}`,
+      });
+    }
+
+    // Generate HTML/CSS for timeline display
+    const htmlCss = this.generateTimelineHTML(timelineData);
+
+    return {
+      id: `timeline-${Date.now()}`,
+      type: 'interactive',
+      interactiveType: 'timeline',
+      content: JSON.stringify(timelineData),
+      html_css: htmlCss,
+      order,
+      isAIGenerated: true,
+      metadata: {
+        variant: 'timeline',
+        phaseCount: phases.length,
+      },
+    };
+  }
+
+  /**
+   * Generate HTML/CSS for TABS template
+   */
+  generateTabsHTML(tabsData) {
+    const containerId = `tabs-${Date.now()}`;
+    const buttons = tabsData
+      .map(
+        (tab, index) =>
+          `<button class="tab-button px-4 py-3 font-medium text-gray-700 border-b-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-colors" onclick="switchTab('${containerId}', ${index})">${tab.title}</button>`
+      )
+      .join('');
+
+    const panels = tabsData
+      .map(
+        (tab, index) =>
+          `<div class="tab-panel ${index === 0 ? '' : 'hidden'} p-6">
+        <div class="text-gray-700 leading-relaxed">${tab.content}</div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg shadow-md p-4" id="${containerId}">
+      <div class="flex border-b border-gray-200 mb-6">
+        ${buttons}
+      </div>
+      <div class="tab-content">
+        ${panels}
+      </div>
+    </div>`;
+  }
+
+  /**
+   * Generate HTML/CSS for ACCORDION template
+   */
+  generateAccordionHTML(accordionData) {
+    const containerId = `accordion-${Date.now()}`;
+    const items = accordionData
+      .map(
+        (section, index) =>
+          `<div class="border-b border-gray-200 last:border-b-0">
+        <button class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors" onclick="toggleAccordion('${containerId}', ${index})">
+          <span class="font-semibold text-gray-900">${section.title}</span>
+          <svg class="w-5 h-5 text-gray-500 transition-transform" data-icon="${index}" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <div class="accordion-content max-h-0 overflow-hidden transition-all duration-300" data-content="${index}">
+          <div class="px-6 py-4 text-gray-700 leading-relaxed bg-gray-50">
+            ${section.content}
+          </div>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg shadow-md overflow-hidden" id="${containerId}">
+      ${items}
+    </div>`;
+  }
+
+  /**
+   * Generate HTML/CSS for PROCESS template
+   */
+  generateProcessHTML(processData) {
+    const items = processData
+      .map(
+        (step, index) =>
+          `<div class="flex gap-6 mb-6 relative">
+        <div class="flex flex-col items-center">
+          <div class="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-lg">${step.step}</div>
+          ${index < processData.length - 1 ? '<div class="w-1 h-16 bg-blue-200 mt-2"></div>' : ''}
+        </div>
+        <div class="flex-1 pt-2">
+          <h3 class="font-semibold text-lg text-gray-900 mb-2">${step.title}</h3>
+          <p class="text-gray-700 leading-relaxed">${step.description}</p>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg shadow-md p-8">
+      <div class="space-y-4">
+        ${items}
+      </div>
+    </div>`;
+  }
+
+  /**
+   * Generate HTML/CSS for TIMELINE template
+   */
+  generateTimelineHTML(timelineData) {
+    const items = timelineData
+      .map(
+        (phase, index) =>
+          `<div class="flex gap-6 mb-8 relative">
+        <div class="flex flex-col items-center">
+          <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">${phase.id}</div>
+          ${index < timelineData.length - 1 ? '<div class="w-0.5 h-20 bg-green-200 mt-2"></div>' : ''}
+        </div>
+        <div class="flex-1 pt-1">
+          <h4 class="font-semibold text-gray-900">${phase.title}</h4>
+          <p class="text-sm text-gray-500 mb-2">${phase.date}</p>
+          <p class="text-gray-700 leading-relaxed">${phase.description}</p>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg shadow-md p-8">
+      <div class="space-y-2">
+        ${items}
+      </div>
+    </div>`;
   }
 
   /**
@@ -678,6 +1041,121 @@ class ContentLibraryAIService {
         order: 1,
       },
     ];
+  }
+
+  /**
+   * Generate HTML/CSS for TABS template with Tailwind styling
+   */
+  generateTabsHTML(tabsData) {
+    const containerId = `tabs-${Date.now()}`;
+    const buttons = tabsData
+      .map(
+        (tab, index) =>
+          `<button class="tab-button px-4 py-3 font-medium text-gray-700 border-b-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-colors duration-200" onclick="switchTab('${containerId}', ${index})" style="flex: 1; text-align: center;">${tab.title}</button>`
+      )
+      .join('');
+
+    const panels = tabsData
+      .map(
+        (tab, index) =>
+          `<div class="tab-panel ${index === 0 ? 'block' : 'hidden'} p-6" style="display: ${index === 0 ? 'block' : 'none'};">
+        <div class="text-gray-700 leading-relaxed space-y-3">${tab.content}</div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg border border-gray-200 overflow-hidden" id="${containerId}">
+      <div class="flex border-b border-gray-200" style="background: #f9fafb;">
+        ${buttons}
+      </div>
+      <div class="tab-content">
+        ${panels}
+      </div>
+    </div>`;
+  }
+
+  /**
+   * Generate HTML/CSS for ACCORDION template with Tailwind styling
+   */
+  generateAccordionHTML(accordionData) {
+    const containerId = `accordion-${Date.now()}`;
+    const items = accordionData
+      .map(
+        (section, index) =>
+          `<div class="border-b border-gray-200 last:border-b-0">
+        <button class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200" onclick="toggleAccordion('${containerId}', ${index})" style="background: white;">
+          <span class="font-semibold text-gray-900">${section.title}</span>
+          <svg class="w-5 h-5 text-gray-500 transition-transform duration-200" data-icon="${index}" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <div class="accordion-content max-h-0 overflow-hidden transition-all duration-300" data-content="${index}" style="max-height: 0;">
+          <div class="px-6 py-4 text-gray-700 leading-relaxed" style="background: #f9fafb;">
+            ${section.content}
+          </div>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg border border-gray-200 overflow-hidden" id="${containerId}">
+      ${items}
+    </div>`;
+  }
+
+  /**
+   * Generate HTML/CSS for PROCESS template with Tailwind styling
+   */
+  generateProcessHTML(processData) {
+    const items = processData
+      .map(
+        (step, index) =>
+          `<div class="flex gap-6 mb-8 relative">
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-lg" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">${step.step}</div>
+          ${index < processData.length - 1 ? '<div class="w-1 h-20 bg-blue-200 mt-2" style="background: rgba(59, 130, 246, 0.2);"></div>' : ''}
+        </div>
+        <div class="flex-1 pt-2">
+          <h3 class="font-semibold text-lg text-gray-900 mb-2">${step.title}</h3>
+          <p class="text-gray-700 leading-relaxed">${step.description}</p>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg border border-gray-200 p-8">
+      <div class="space-y-4">
+        ${items}
+      </div>
+    </div>`;
+  }
+
+  /**
+   * Generate HTML/CSS for TIMELINE template with Tailwind styling
+   */
+  generateTimelineHTML(timelineData) {
+    const items = timelineData
+      .map(
+        (phase, index) =>
+          `<div class="flex gap-6 mb-8 relative">
+        <div class="flex flex-col items-center flex-shrink-0">
+          <div class="w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-sm" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">${phase.id}</div>
+          ${index < timelineData.length - 1 ? '<div class="w-0.5 h-20 bg-green-200" style="background: rgba(16, 185, 129, 0.2);"></div>' : ''}
+        </div>
+        <div class="flex-1 pt-1">
+          <h4 class="font-semibold text-gray-900">${phase.title}</h4>
+          <p class="text-sm text-gray-500 mb-2">${phase.date}</p>
+          <p class="text-gray-700 leading-relaxed">${phase.description}</p>
+        </div>
+      </div>`
+      )
+      .join('');
+
+    return `<div class="bg-white rounded-lg border border-gray-200 p-8">
+      <div class="space-y-2">
+        ${items}
+      </div>
+    </div>`;
   }
 }
 
