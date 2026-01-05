@@ -130,6 +130,7 @@ export async function createSponsorAd(adData) {
  * Get all sponsor ads
  * @returns {Promise<Array>} List of sponsor ads
  */
+
 export async function getAllSponsorAds() {
   try {
     // Disable retries for this endpoint - call once only
@@ -161,6 +162,7 @@ export async function getAllSponsorAds() {
  * Backend tracks impressions automatically on this request
  * @returns {Promise<Array>} Array of active ads
  */
+
 export async function fetchDashboardSponsorAds() {
   try {
     const response = await api.get('/api/user/dashboard/ads');
@@ -205,6 +207,7 @@ export async function trackSponsorAdClick(adId) {
  * @param {Object} adData - Updated ad data
  * @returns {Promise<Object>} Updated ad data
  */
+
 export async function updateSponsorAd(adId, adData) {
   try {
     let imageUrl = adData.image_url || null;

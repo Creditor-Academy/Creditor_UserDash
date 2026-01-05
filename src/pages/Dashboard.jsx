@@ -64,6 +64,8 @@ import CLogo from '@/assets/C-logo2.png';
 import OfferPopup from '@/components/offer/OfferPopup';
 import { useSponsorAds } from '@/contexts/SponsorAdsContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchDashboardSponsorAds } from '@/services/sponsorAdsService';
+
 export function Dashboard() {
   const importantUpdateStyles = `
     .important-updates-wrapper {
@@ -295,51 +297,73 @@ export function Dashboard() {
   const [bannerCarouselIndex, setBannerCarouselIndex] = useState(0);
   const [sidebarCarouselIndex, setSidebarCarouselIndex] = useState(0);
 
-  const dashboardBannerAds = useMemo(() => {
-    const activeAds = getActiveAdsByPlacement('dashboard_banner', {
-      role: userRole,
-    });
-    // Sort by LIFO (Last In First Out) - newest ads first
-    // Sort by startDate descending (newest first), then by ID descending as fallback
-    const sortedAds = [...activeAds].sort((a, b) => {
-      const dateA = new Date(a.startDate || 0).getTime();
-      const dateB = new Date(b.startDate || 0).getTime();
-      if (dateB !== dateA) {
-        return dateB - dateA; // Newer date first
+  const [dashboardBannerAds, setDashboardBannerAds] = useState([]);
+  const [adsLoading, setAdsLoading] = useState(true);
+  const [dashboardSidebarAds, setDashboardSidebarAds] = useState([]);
+
+  useEffect(() => {
+    const loadDashboardAds = async () => {
+      try {
+        const ads = await fetchDashboardSponsorAds();
+
+        const now = new Date();
+
+        // 🔹 SIDEBAR ADS
+        const sidebarAds = ads
+          .filter(ad => {
+            if (ad.position !== 'SIDEBAR') return false;
+            if (ad.status !== 'ACTIVE') return false;
+
+            const now = new Date();
+            const start = ad.start_date ? new Date(ad.start_date) : null;
+            const end = ad.end_date ? new Date(ad.end_date) : null;
+
+            if (start && now < start) return false;
+            if (end && now > end) return false;
+
+            return true;
+          })
+          .map(ad => ({
+            id: ad.id,
+            title: ad.title,
+            description: ad.description,
+            sponsorName: ad.sponsor_name,
+            mediaUrl: ad.video_url || ad.image_url, // ✅ REQUIRED
+            mediaType: ad.video_url ? 'video' : 'image', // ✅ REQUIRED
+            ctaText: ad.link_url ? 'Learn more' : '',
+            ctaUrl: ad.link_url,
+          }))
+          .slice(0, 5);
+
+        setDashboardSidebarAds(sidebarAds);
+
+        // 🔹 DASHBOARD BANNER ADS
+        const bannerAds = ads
+          .filter(ad => ad.position === 'DASHBOARD' && ad.status === 'ACTIVE')
+          .map(ad => ({
+            id: ad.id,
+            title: ad.title,
+            description: ad.description,
+            sponsorName: ad.sponsor_name,
+            mediaUrl: ad.image_url || ad.video_url,
+            mediaType: ad.video_url ? 'video' : 'image',
+            ctaUrl: ad.link_url,
+            ctaText: ad.link_url ? 'Learn more' : '',
+            tier: ad.tier || 'Gold',
+          }));
+
+        setDashboardBannerAds(bannerAds);
+      } catch (err) {
+        console.error(err);
       }
-      // If dates are equal, sort by ID descending (assuming higher ID = newer)
-      return (b.id || '').localeCompare(a.id || '');
-    });
-    return sortedAds.slice(0, 3); // Only show first 3 ads (newest 3)
-  }, [getActiveAdsByPlacement, userRole]);
+    };
 
-  const dashboardBannerAd = useMemo(
-    () => (dashboardBannerAds.length > 0 ? dashboardBannerAds[0] : null),
-    [dashboardBannerAds]
-  );
+    loadDashboardAds();
+  }, []);
 
-  const dashboardSidebarAds = useMemo(() => {
-    const activeAds = getActiveAdsByPlacement('dashboard_sidebar', {
-      role: userRole,
-    });
-    // Sort by LIFO (Last In First Out) - newest ads first
-    // Sort by startDate descending (newest first), then by ID descending as fallback
-    const sortedAds = [...activeAds].sort((a, b) => {
-      const dateA = new Date(a.startDate || 0).getTime();
-      const dateB = new Date(b.startDate || 0).getTime();
-      if (dateB !== dateA) {
-        return dateB - dateA; // Newer date first
-      }
-      // If dates are equal, sort by ID descending (assuming higher ID = newer)
-      return (b.id || '').localeCompare(a.id || '');
-    });
-    return sortedAds.slice(0, 3); // Only show first 3 ads (newest 3)
-  }, [getActiveAdsByPlacement, userRole]);
-
-  const dashboardSidebarAd = useMemo(
-    () => (dashboardSidebarAds.length > 0 ? dashboardSidebarAds[0] : null),
-    [dashboardSidebarAds]
-  );
+  useEffect(() => {
+    setSidebarCarouselIndex(0);
+  }, [dashboardSidebarAds.length]);
 
   const popupAd = useMemo(
     () => getPrimaryAdForPlacement('popup', { role: userRole }),
@@ -525,6 +549,7 @@ export function Dashboard() {
   const [selectedWebsitePack, setSelectedWebsitePack] = useState(
     WEBSITE_PACKS[0]
   );
+
   const [showWebsiteDetails, setShowWebsiteDetails] = useState(false);
   const [showWebsiteConfirmation, setShowWebsiteConfirmation] = useState(false);
   const [showWebsiteForm, setShowWebsiteForm] = useState(false);
@@ -1508,8 +1533,10 @@ export function Dashboard() {
                 )}
               </div>
               {/* Dashboard Banner Ads - Between Courses and Calendar */}
+
               {dashboardBannerAds.length > 0 && (
                 <div className="mb-6 relative">
+                  {/* Banner */}
                   <div className="relative overflow-hidden rounded-2xl">
                     <div
                       className="flex transition-transform duration-500 ease-in-out"
@@ -1528,45 +1555,25 @@ export function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Dots Indicator */}
+                  {/* 🔘 Banner Dots (MUST BE HERE) */}
                   {dashboardBannerAds.length > 1 && (
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                    <div className="absolute bottom-3 inset-x-0 z-20 flex justify-center items-center gap-2">
                       {dashboardBannerAds.map((_, index) => (
                         <button
                           key={index}
                           onClick={() => setBannerCarouselIndex(index)}
-                          className={`w-2 h-2 rounded-full transition-all ${
+                          aria-label={`Go to slide ${index + 1}`}
+                          className={`h-2 rounded-full transition-all duration-300 ${
                             index === bannerCarouselIndex
                               ? 'bg-white w-6'
-                              : 'bg-white/50 hover:bg-white/75'
+                              : 'bg-white/50 hover:bg-white/80 w-2'
                           }`}
-                          aria-label={`Go to ad ${index + 1}`}
                         />
                       ))}
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Latest Updates Section */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-800">Latest Updates</h3>
-                </div>
-                <DashboardCarousel />
-              </div> */}
-
-              {/* Your Progress */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-6">Your Progress Overview</h3>
-                <ProgressStats />
-              </div> */}
-
-              {/* Monthly Overview */}
-              {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-6">Monthly Learning Analytics</h3>
-                <MonthlyProgress />
-              </div> */}
             </div>
 
             {/* Right section - enhanced sidebar widgets */}
@@ -1592,7 +1599,6 @@ export function Dashboard() {
                     ))}
                   </div>
 
-                  {/* Dots Indicator for sidebar ads */}
                   {dashboardSidebarAds.length > 1 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
                       {dashboardSidebarAds.map((_, index) => (
@@ -1604,13 +1610,13 @@ export function Dashboard() {
                               ? 'bg-white w-4'
                               : 'bg-white/50 hover:bg-white/75 w-1.5'
                           }`}
-                          aria-label={`Go to ad ${index + 1}`}
                         />
                       ))}
                     </div>
                   )}
                 </div>
               )}
+
               {/* Announcements*/}
               {/*<div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
