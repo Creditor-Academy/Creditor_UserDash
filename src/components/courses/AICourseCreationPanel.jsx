@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Sparkles,
@@ -13,30 +13,30 @@ import {
   Upload,
   Book,
   Wand2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   generateAICourseOutline,
   generateSafeCourseOutline,
   createCompleteAICourse,
-} from '../../services/aiCourseService';
-import { generateComprehensiveCourse as generateShowcaseCourse } from '../../services/comprehensiveCourseGenerator';
+} from "../../services/aiCourseService";
+import { generateComprehensiveCourse as generateShowcaseCourse } from "../../services/comprehensiveCourseGenerator";
 import {
   createAICourse,
   createModule,
   createLesson,
   updateLessonContent,
-} from '../../services/courseService';
-import openAIService from '../../services/openAIService';
-import secureAIService from '../../services/secureAIService';
-import { uploadImage } from '@/services/imageUploadService';
-import { toast } from 'react-hot-toast';
+} from "../../services/courseService";
+import openAIService from "../../services/openAIService";
+import secureAIService from "../../services/secureAIService";
+import { uploadImage } from "@/services/imageUploadService";
+import { toast } from "react-hot-toast";
 import {
   uploadAICourseThumbnail,
   uploadAICourseReferences,
-} from '@/services/aiUploadService';
-import AITextEditor from './AITextEditor';
-import AIStreamingGeneration from './AIStreamingGeneration';
+} from "@/services/aiUploadService";
+import AITextEditor from "./AITextEditor";
+import AIStreamingGeneration from "./AIStreamingGeneration";
 import {
   AnalysisPhaseCard,
   ObjectivesPhaseCard,
@@ -46,80 +46,80 @@ import {
   ImplementationPhaseCard,
   BrandingPhaseCard,
   QualityPhaseCard,
-} from './ADDIEPhasesForms';
-import '@lessonbuilder/styles/AITextEditor.css';
+} from "./ADDIEPhasesForms";
+import "@lessonbuilder/styles/AITextEditor.css";
 
 const PHASES = [
   {
-    id: 'analysis',
-    label: 'Phase 1',
-    title: 'Analyze Purpose',
-    description: 'Goals, audience, constraints, and blueprint inputs.',
+    id: "analysis",
+    label: "Phase 1",
+    title: "Analyze Purpose",
+    description: "Goals, audience, constraints, and blueprint inputs.",
   },
   {
-    id: 'objectives',
-    label: 'Phase 2',
-    title: 'Define Objectives',
-    description: 'Bloom-aligned objectives and evidence of success.',
+    id: "objectives",
+    label: "Phase 2",
+    title: "Define Objectives",
+    description: "Bloom-aligned objectives and evidence of success.",
   },
   {
-    id: 'design',
-    label: 'Phase 3',
-    title: 'Instruction Design',
-    description: 'Map Gagné’s events and lesson flow.',
+    id: "design",
+    label: "Phase 3",
+    title: "Instruction Design",
+    description: "Map Gagné’s events and lesson flow.",
   },
   {
-    id: 'experience',
-    label: 'Phase 4',
-    title: 'Learner Experience',
-    description: 'VAK modalities, storytelling, adaptive paths.',
+    id: "experience",
+    label: "Phase 4",
+    title: "Learner Experience",
+    description: "VAK modalities, storytelling, adaptive paths.",
   },
   {
-    id: 'development',
-    label: 'Phase 5',
-    title: 'Development Plan',
-    description: 'Inputs, storyboard format, review cadence.',
+    id: "development",
+    label: "Phase 5",
+    title: "Development Plan",
+    description: "Inputs, storyboard format, review cadence.",
   },
   {
-    id: 'implementation',
-    label: 'Phase 6',
-    title: 'Implementation',
-    description: 'Delivery channels, analytics, evaluation plan.',
+    id: "implementation",
+    label: "Phase 6",
+    title: "Implementation",
+    description: "Delivery channels, analytics, evaluation plan.",
   },
   {
-    id: 'branding',
-    label: 'Phase 7',
-    title: 'Branding & Creative',
-    description: 'Tone, visual system, characters, media.',
+    id: "branding",
+    label: "Phase 7",
+    title: "Branding & Creative",
+    description: "Tone, visual system, characters, media.",
   },
   {
-    id: 'quality',
-    label: 'Phase 8',
-    title: 'Quality & Accuracy',
-    description: 'Validation rules, references, compliance notes.',
+    id: "quality",
+    label: "Phase 8",
+    title: "Quality & Accuracy",
+    description: "Validation rules, references, compliance notes.",
   },
 ];
 
 const createDefaultDesignPhases = () => ({
   analysis: {
-    mainGoal: '',
-    targetLearner: '',
-    problemToSolve: '',
-    businessOutcome: '',
-    learningConstraints: '',
-    complianceNeeds: '',
-    prerequisites: '',
-    courseLength: '',
-    successMeasures: '',
-    requiredResources: '',
-    courseTitle: '',
-    finalPerformance: '',
-    audienceProfile: '',
-    prerequisiteSkills: '',
-    totalDuration: '',
+    mainGoal: "",
+    targetLearner: "",
+    problemToSolve: "",
+    businessOutcome: "",
+    learningConstraints: "",
+    complianceNeeds: "",
+    prerequisites: "",
+    courseLength: "",
+    successMeasures: "",
+    requiredResources: "",
+    courseTitle: "",
+    finalPerformance: "",
+    audienceProfile: "",
+    prerequisiteSkills: "",
+    totalDuration: "",
     moduleCount: 4,
     lessonsPerModule: 3,
-    flowPreference: 'linear',
+    flowPreference: "linear",
     moduleList: [],
     moduleExperiencePlan: [],
   },
@@ -127,11 +127,11 @@ const createDefaultDesignPhases = () => ({
     overallObjectives: [],
     optionalObjectives: [],
     bloomTargets: {
-      course: 'apply',
+      course: "apply",
       byModule: {},
     },
-    evidencePlan: '',
-    bloomByModuleNotes: '',
+    evidencePlan: "",
+    bloomByModuleNotes: "",
     rememberGoals: {},
     understandGoals: {},
     applyGoals: {},
@@ -141,39 +141,39 @@ const createDefaultDesignPhases = () => ({
     autoGenerateLessonObjectives: true,
   },
   design: {
-    attentionStrategy: '',
-    objectivesAnnouncement: '',
-    priorKnowledgeActivation: '',
-    contentPresentation: '',
-    guidancePlan: '',
-    practicePlan: '',
-    feedbackPlan: '',
-    assessmentPlan: '',
-    retentionPlan: '',
+    attentionStrategy: "",
+    objectivesAnnouncement: "",
+    priorKnowledgeActivation: "",
+    contentPresentation: "",
+    guidancePlan: "",
+    practicePlan: "",
+    feedbackPlan: "",
+    assessmentPlan: "",
+    retentionPlan: "",
   },
   experience: {
-    deliveryMode: 'self_paced',
-    visualApproach: '',
-    auditoryApproach: '',
-    kinestheticApproach: '',
-    storytellingPlan: '',
-    practiceCadence: 'per_lesson',
+    deliveryMode: "self_paced",
+    visualApproach: "",
+    auditoryApproach: "",
+    kinestheticApproach: "",
+    storytellingPlan: "",
+    practiceCadence: "per_lesson",
     feedbackChannels: [],
     adaptivePaths: false,
-    brandStyle: '',
+    brandStyle: "",
     learningFormats: [],
     modalityStrategyByModule: {},
     autoBalanceModalities: true,
   },
   development: {
-    inputsProvided: '',
-    moduleStructureNotes: '',
-    storyboardFormat: 'slide-by-slide',
-    reviewCycle: 'Draft → Review → Revise',
-    localizationNeeds: '',
-    interactiveElements: '',
+    inputsProvided: "",
+    moduleStructureNotes: "",
+    storyboardFormat: "slide-by-slide",
+    reviewCycle: "Draft → Review → Revise",
+    localizationNeeds: "",
+    interactiveElements: "",
     autoAssessments: true,
-    mediaHandling: '',
+    mediaHandling: "",
     addieCoverage: {
       analysis: true,
       design: true,
@@ -182,63 +182,63 @@ const createDefaultDesignPhases = () => ({
       evaluation: false,
     },
     samPreferences: {
-      prototypingStyle: 'rapid',
-      feedbackCadence: 'per_module',
-      collaborationMode: 'collaborative',
+      prototypingStyle: "rapid",
+      feedbackCadence: "per_module",
+      collaborationMode: "collaborative",
     },
   },
   implementation: {
     deliveryChannels: [],
     analyticsNeeds: [],
     evaluationCriteria: [],
-    optimizationCadence: 'quarterly',
-    learnerInsights: '',
-    feedbackLoops: '',
+    optimizationCadence: "quarterly",
+    learnerInsights: "",
+    feedbackLoops: "",
     assessmentDataNeeds: [],
   },
   branding: {
-    tone: 'professional',
-    visualStyle: 'modern',
-    characters: '',
-    narrator: '',
-    musicStyle: '',
-    storytellingStyle: '',
+    tone: "professional",
+    visualStyle: "modern",
+    characters: "",
+    narrator: "",
+    musicStyle: "",
+    storytellingStyle: "",
     accessibilityGuidelines: true,
   },
   quality: {
-    accuracyBenchmark: '99%',
+    accuracyBenchmark: "99%",
     referenceCheck: true,
     humanValidation: true,
-    ambiguityHandling: 'ask',
+    ambiguityHandling: "ask",
     autoTagging: true,
     qualityChecklist: [],
-    complianceNotes: '',
+    complianceNotes: "",
   },
 });
 
 const createInitialCourseData = () => ({
-  courseName: '',
-  learningOutcomes: '',
-  targetAudience: '',
-  priorKnowledge: 'no',
-  priorKnowledgeDetails: '',
-  description: '',
-  duration: '',
-  difficulty: 'beginner',
+  courseName: "",
+  learningOutcomes: "",
+  targetAudience: "",
+  priorKnowledge: "no",
+  priorKnowledgeDetails: "",
+  description: "",
+  duration: "",
+  difficulty: "beginner",
   thumbnail: null,
   // Keep legacy fields for backwards compatibility
-  title: '',
-  subject: '',
-  objectives: '',
+  title: "",
+  subject: "",
+  objectives: "",
   // Blueprint-specific inputs (1.1–1.8)
-  blueprintCoursePurpose: '',
-  blueprintLearnerProfile: '',
-  blueprintLearningConstraints: '',
-  blueprintComplianceRequirements: '',
-  blueprintPriorKnowledge: '',
-  blueprintCourseStructure: '',
-  blueprintSuccessMeasurement: '',
-  blueprintRequiredResources: '',
+  blueprintCoursePurpose: "",
+  blueprintLearnerProfile: "",
+  blueprintLearningConstraints: "",
+  blueprintComplianceRequirements: "",
+  blueprintPriorKnowledge: "",
+  blueprintCourseStructure: "",
+  blueprintSuccessMeasurement: "",
+  blueprintRequiredResources: "",
   moduleCount: 4,
   lessonsPerModule: 3,
   designPhases: createDefaultDesignPhases(),
@@ -246,9 +246,9 @@ const createInitialCourseData = () => ({
 
 const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('outline');
+  const [activeTab, setActiveTab] = useState("outline");
   const [isMinimized, setIsMinimized] = useState(false);
-  const [activePhase, setActivePhase] = useState('analysis');
+  const [activePhase, setActivePhase] = useState("analysis");
   const [formStep, setFormStep] = useState(1);
   const [courseData, setCourseData] = useState(() => createInitialCourseData());
   const [isGenerating, setIsGenerating] = useState(false);
@@ -256,55 +256,55 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [generatedContent, setGeneratedContent] = useState({});
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [aiImageGenerating, setAiImageGenerating] = useState(false);
-  const [aiImageError, setAiImageError] = useState('');
-  const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [uploadMethod, setUploadMethod] = useState('upload'); // 'upload' or 'ai'
-  const [activeThumbnailTab, setActiveThumbnailTab] = useState('upload');
-  const [activeContentTab, setActiveContentTab] = useState('file');
+  const [aiImageError, setAiImageError] = useState("");
+  const [aiImagePrompt, setAiImagePrompt] = useState("");
+  const [uploadMethod, setUploadMethod] = useState("upload"); // 'upload' or 'ai'
+  const [activeThumbnailTab, setActiveThumbnailTab] = useState("upload");
+  const [activeContentTab, setActiveContentTab] = useState("file");
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [sourceContent, setSourceContent] = useState('');
+  const [sourceContent, setSourceContent] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [enableContentModeration, setEnableContentModeration] = useState(true);
-  const [creationProgress, setCreationProgress] = useState('');
+  const [creationProgress, setCreationProgress] = useState("");
   const [moderationResults, setModerationResults] = useState(null);
   const [showTextEditor, setShowTextEditor] = useState(false);
-  const [textEditorContent, setTextEditorContent] = useState('');
-  const [textEditorType, setTextEditorType] = useState('paragraph');
+  const [textEditorContent, setTextEditorContent] = useState("");
+  const [textEditorType, setTextEditorType] = useState("paragraph");
   const [generatedTextBlocks, setGeneratedTextBlocks] = useState([]);
-  const [generationMode, setGenerationMode] = useState('STANDARD');
+  const [generationMode, setGenerationMode] = useState("STANDARD");
   const [showStreamingModal, setShowStreamingModal] = useState(false);
   const [isStreamingGeneration, setIsStreamingGeneration] = useState(false);
   const [streamingMessages, setStreamingMessages] = useState([]);
   const [lastBlueprintHash, setLastBlueprintHash] = useState(null);
   const [lastBlueprintData, setLastBlueprintData] = useState(null);
-  const [lastImagePrompt, setLastImagePrompt] = useState('');
-  const [lastImageUrl, setLastImageUrl] = useState('');
+  const [lastImagePrompt, setLastImagePrompt] = useState("");
+  const [lastImageUrl, setLastImageUrl] = useState("");
   const [streamingProgress, setStreamingProgress] = useState(0);
   const [currentBlock, setCurrentBlock] = useState(null);
   const [createdCourseId, setCreatedCourseId] = useState(null);
   const [createdModuleId, setCreatedModuleId] = useState(null);
   const [createdLessonId, setCreatedLessonId] = useState(null);
-  const [generateThumbnails, setGenerateThumbnails] = useState('yes');
+  const [generateThumbnails, setGenerateThumbnails] = useState("yes");
   const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
   const [courseBlueprint, setCourseBlueprint] = useState(null);
   const [isGeneratingBlueprint, setIsGeneratingBlueprint] = useState(false);
-  const [blueprintError, setBlueprintError] = useState('');
+  const [blueprintError, setBlueprintError] = useState("");
   const [hasEnhancedBlueprint, setHasEnhancedBlueprint] = useState(false);
   const [quickArchitectConfig, setQuickArchitectConfig] = useState({
-    primaryPurpose: 'skill', // awareness | skill | behavior | compliance | certification | performance
-    learnerLevel: 'beginner', // beginner | intermediate | advanced
-    timeProfile: 'standard', // micro | standard | deep
-    deliveryContext: 'remote', // on_the_job | classroom | remote
-    successFocus: 'quiz_scores', // completion | quiz_scores | on_job | project | certification
+    primaryPurpose: "skill", // awareness | skill | behavior | compliance | certification | performance
+    learnerLevel: "beginner", // beginner | intermediate | advanced
+    timeProfile: "standard", // micro | standard | deep
+    deliveryContext: "remote", // on_the_job | classroom | remote
+    successFocus: "quiz_scores", // completion | quiz_scores | on_job | project | certification
   });
   const [architectStrategyConfig, setArchitectStrategyConfig] = useState({
-    bloomMaxLevel: 'apply', // remember | understand | apply | analyze | evaluate | create
-    deliveryMode: 'self_paced', // self_paced | blended | instructor_led | microlearning
-    vakEmphasis: 'balanced', // balanced | visual | auditory | kinesthetic
-    practiceFrequency: 'per_lesson', // per_lesson | per_module | milestones | ai_decides
-    assessmentPlacement: 'mixed', // after_each_lesson | end_of_module | final_only | mixed
-    mainAssessmentType: 'mcq', // mcq | simulation | reflection | mixed
-    implementationMode: 'lms', // lms | classroom | blended
+    bloomMaxLevel: "apply", // remember | understand | apply | analyze | evaluate | create
+    deliveryMode: "self_paced", // self_paced | blended | instructor_led | microlearning
+    vakEmphasis: "balanced", // balanced | visual | auditory | kinesthetic
+    practiceFrequency: "per_lesson", // per_lesson | per_module | milestones | ai_decides
+    assessmentPlacement: "mixed", // after_each_lesson | end_of_module | final_only | mixed
+    mainAssessmentType: "mcq", // mcq | simulation | reflection | mixed
+    implementationMode: "lms", // lms | classroom | blended
   });
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -312,7 +312,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   // Handle AI image prompt enhancement
   const handleEnhancePrompt = async () => {
     if (!aiImagePrompt?.trim()) {
-      toast.error('Please enter an image prompt first');
+      toast.error("Please enter an image prompt first");
       return;
     }
 
@@ -323,15 +323,15 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         maxTokens: 100,
         temperature: 0.5,
         systemPrompt:
-          'You are an image prompt engineer. Output ONLY the prompt text. Maximum 300 characters. NO headings. Start directly with the description.',
+          "You are an image prompt engineer. Output ONLY the prompt text. Maximum 300 characters. NO headings. Start directly with the description.",
         enhancePrompt: true, // Use backend prompt enhancement
       });
 
       setAiImagePrompt(enhancedPrompt);
-      toast.success('Image prompt enhanced successfully!');
+      toast.success("Image prompt enhanced successfully!");
     } catch (error) {
-      console.error('Image prompt enhancement error:', error);
-      toast.error('Failed to enhance image prompt: ' + error.message);
+      console.error("Image prompt enhancement error:", error);
+      toast.error("Failed to enhance image prompt: " + error.message);
     } finally {
       setIsEnhancingPrompt(false);
     }
@@ -358,11 +358,11 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       blueprintCourseStructure,
       blueprintSuccessMeasurement,
       blueprintRequiredResources,
-    ].some(value => value && value.trim().length > 0);
+    ].some((value) => value && value.trim().length > 0);
 
     if (!hasAnyInput) {
       toast.error(
-        'Fill at least one blueprint field (1.1–1.8) before enhancing.'
+        "Fill at least one blueprint field (1.1–1.8) before enhancing.",
       );
       return;
     }
@@ -376,14 +376,14 @@ Preserve the original meaning, constraints, and intent. Do NOT add new requireme
 Return ONLY valid JSON with the same keys you receive.`;
 
       const userPayload = {
-        coursePurpose: blueprintCoursePurpose || '',
-        targetLearnerProfile: blueprintLearnerProfile || '',
-        learningConstraints: blueprintLearningConstraints || '',
-        complianceRequirements: blueprintComplianceRequirements || '',
-        priorKnowledge: blueprintPriorKnowledge || '',
-        courseStructure: blueprintCourseStructure || '',
-        successMeasurement: blueprintSuccessMeasurement || '',
-        requiredResources: blueprintRequiredResources || '',
+        coursePurpose: blueprintCoursePurpose || "",
+        targetLearnerProfile: blueprintLearnerProfile || "",
+        learningConstraints: blueprintLearningConstraints || "",
+        complianceRequirements: blueprintComplianceRequirements || "",
+        priorKnowledge: blueprintPriorKnowledge || "",
+        courseStructure: blueprintCourseStructure || "",
+        successMeasurement: blueprintSuccessMeasurement || "",
+        requiredResources: blueprintRequiredResources || "",
       };
 
       const userPrompt = `Refine these blueprint fields while preserving meaning:
@@ -396,26 +396,26 @@ ${JSON.stringify(userPayload, null, 2)}`;
         {
           maxTokens: 1800,
           temperature: 0.4,
-        }
+        },
       );
 
-      if (!enhanced || typeof enhanced !== 'object') {
-        toast.error('Enhancement failed. Using original blueprint inputs.');
+      if (!enhanced || typeof enhanced !== "object") {
+        toast.error("Enhancement failed. Using original blueprint inputs.");
         return;
       }
 
       // Helper function to safely convert to string
-      const toString = value => {
-        if (value === null || value === undefined) return '';
-        if (typeof value === 'string') return value;
-        if (typeof value === 'object') {
+      const toString = (value) => {
+        if (value === null || value === undefined) return "";
+        if (typeof value === "string") return value;
+        if (typeof value === "object") {
           // If it's an object, try to extract meaningful text
           if (Array.isArray(value)) {
             return value
-              .map(item =>
-                typeof item === 'string' ? item : JSON.stringify(item)
+              .map((item) =>
+                typeof item === "string" ? item : JSON.stringify(item),
               )
-              .join(', ');
+              .join(", ");
           }
           // Try common object properties
           if (value.text) return String(value.text);
@@ -423,12 +423,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
           if (value.description) return String(value.description);
           if (value.value) return String(value.value);
           // Last resort: stringify but remove quotes
-          return JSON.stringify(value).replace(/^"|"$/g, '');
+          return JSON.stringify(value).replace(/^"|"$/g, "");
         }
         return String(value);
       };
 
-      setCourseData(prev => ({
+      setCourseData((prev) => ({
         ...prev,
         blueprintCoursePurpose:
           toString(enhanced.coursePurpose) || prev.blueprintCoursePurpose,
@@ -454,12 +454,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
       }));
 
       setHasEnhancedBlueprint(true);
-      toast.success('Blueprint inputs enhanced successfully.');
+      toast.success("Blueprint inputs enhanced successfully.");
     } catch (error) {
-      console.error('Blueprint enhancement error:', error);
+      console.error("Blueprint enhancement error:", error);
       toast.error(
         error.message ||
-          'Failed to enhance blueprint inputs. Please try again later.'
+          "Failed to enhance blueprint inputs. Please try again later.",
       );
     } finally {
       setIsEnhancingPrompt(false);
@@ -467,7 +467,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
   };
 
   // Handle text editor save
-  const handleTextEditorSave = textData => {
+  const handleTextEditorSave = (textData) => {
     const newBlock = {
       id: Date.now(),
       type: textData.type,
@@ -476,14 +476,14 @@ ${JSON.stringify(userPayload, null, 2)}`;
       createdAt: new Date().toISOString(),
     };
 
-    setGeneratedTextBlocks(prev => [...prev, newBlock]);
+    setGeneratedTextBlocks((prev) => [...prev, newBlock]);
     setShowTextEditor(false);
   };
 
-  const tabs = [{ id: 'outline', label: 'Course Outline', icon: BookOpen }];
+  const tabs = [{ id: "outline", label: "Course Outline", icon: BookOpen }];
 
   const updateDesignPhase = (phase, updates) => {
-    setCourseData(prev => ({
+    setCourseData((prev) => ({
       ...prev,
       designPhases: {
         ...prev.designPhases,
@@ -495,10 +495,10 @@ ${JSON.stringify(userPayload, null, 2)}`;
     }));
   };
 
-  const getPhaseMeta = phaseId =>
-    PHASES.find(phase => phase.id === phaseId) || PHASES[0];
+  const getPhaseMeta = (phaseId) =>
+    PHASES.find((phase) => phase.id === phaseId) || PHASES[0];
 
-  const renderPhaseComingSoon = phaseId => {
+  const renderPhaseComingSoon = (phaseId) => {
     const phase = getPhaseMeta(phaseId);
     return (
       <div className="bg-white border border-dashed border-gray-300 rounded-xl p-8 text-center space-y-3">
@@ -510,14 +510,14 @@ ${JSON.stringify(userPayload, null, 2)}`;
         </h3>
         <p className="text-sm text-gray-600 max-w-2xl mx-auto">
           This phase already powers the backend logic. We’re wiring the UI next
-          so you can guide AI on{' '}
+          so you can guide AI on{" "}
           <span className="font-medium">{phase.description}</span>. For now,
           keep shaping Phase 1 and generate a blueprint — your inputs will still
           flow into the AI pipeline.
         </p>
         <Button
           variant="outline"
-          onClick={() => setActivePhase('analysis')}
+          onClick={() => setActivePhase("analysis")}
           className="mt-2"
         >
           Back to Phase 1
@@ -539,9 +539,9 @@ ${JSON.stringify(userPayload, null, 2)}`;
         <input
           type="text"
           value={courseData.courseName}
-          onChange={e => {
+          onChange={(e) => {
             const value = e.target.value;
-            setCourseData(prev => ({
+            setCourseData((prev) => ({
               ...prev,
               courseName: value,
               title: value,
@@ -562,9 +562,9 @@ ${JSON.stringify(userPayload, null, 2)}`;
         </label>
         <textarea
           value={courseData.learningOutcomes}
-          onChange={e => {
+          onChange={(e) => {
             const value = e.target.value;
-            setCourseData(prev => ({
+            setCourseData((prev) => ({
               ...prev,
               learningOutcomes: value,
               objectives: value,
@@ -587,9 +587,9 @@ ${JSON.stringify(userPayload, null, 2)}`;
         <input
           type="text"
           value={courseData.targetAudience}
-          onChange={e => {
+          onChange={(e) => {
             const value = e.target.value;
-            setCourseData(prev => ({
+            setCourseData((prev) => ({
               ...prev,
               targetAudience: value,
               subject: value,
@@ -612,21 +612,21 @@ ${JSON.stringify(userPayload, null, 2)}`;
         <div className="flex gap-4 mb-3">
           <label
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-              courseData.priorKnowledge === 'no'
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                : 'border-gray-200 hover:border-gray-300'
+              courseData.priorKnowledge === "no"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : "border-gray-200 hover:border-gray-300"
             }`}
           >
             <input
               type="radio"
               name="priorKnowledge"
               value="no"
-              checked={courseData.priorKnowledge === 'no'}
-              onChange={e =>
-                setCourseData(prev => ({
+              checked={courseData.priorKnowledge === "no"}
+              onChange={(e) =>
+                setCourseData((prev) => ({
                   ...prev,
                   priorKnowledge: e.target.value,
-                  priorKnowledgeDetails: '',
+                  priorKnowledgeDetails: "",
                 }))
               }
               className="w-4 h-4 text-emerald-600"
@@ -636,18 +636,18 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
           <label
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-              courseData.priorKnowledge === 'yes'
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                : 'border-gray-200 hover:border-gray-300'
+              courseData.priorKnowledge === "yes"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                : "border-gray-200 hover:border-gray-300"
             }`}
           >
             <input
               type="radio"
               name="priorKnowledge"
               value="yes"
-              checked={courseData.priorKnowledge === 'yes'}
-              onChange={e =>
-                setCourseData(prev => ({
+              checked={courseData.priorKnowledge === "yes"}
+              onChange={(e) =>
+                setCourseData((prev) => ({
                   ...prev,
                   priorKnowledge: e.target.value,
                 }))
@@ -658,18 +658,18 @@ ${JSON.stringify(userPayload, null, 2)}`;
           </label>
         </div>
 
-        {courseData.priorKnowledge === 'yes' && (
+        {courseData.priorKnowledge === "yes" && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mt-3"
           >
             <input
               type="text"
               value={courseData.priorKnowledgeDetails}
-              onChange={e =>
-                setCourseData(prev => ({
+              onChange={(e) =>
+                setCourseData((prev) => ({
                   ...prev,
                   priorKnowledgeDetails: e.target.value,
                 }))
@@ -693,17 +693,17 @@ ${JSON.stringify(userPayload, null, 2)}`;
         <div className="flex gap-4">
           <label
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-              generateThumbnails === 'yes'
-                ? 'border-orange-500 bg-orange-50 text-orange-700'
-                : 'border-gray-200 hover:border-gray-300'
+              generateThumbnails === "yes"
+                ? "border-orange-500 bg-orange-50 text-orange-700"
+                : "border-gray-200 hover:border-gray-300"
             }`}
           >
             <input
               type="radio"
               name="generateThumbnails"
               value="yes"
-              checked={generateThumbnails === 'yes'}
-              onChange={e => setGenerateThumbnails(e.target.value)}
+              checked={generateThumbnails === "yes"}
+              onChange={(e) => setGenerateThumbnails(e.target.value)}
               className="w-4 h-4 text-orange-600"
             />
             <span className="font-medium">Yes</span>
@@ -711,17 +711,17 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
           <label
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-              generateThumbnails === 'no'
-                ? 'border-orange-500 bg-orange-50 text-orange-700'
-                : 'border-gray-200 hover:border-gray-300'
+              generateThumbnails === "no"
+                ? "border-orange-500 bg-orange-50 text-orange-700"
+                : "border-gray-200 hover:border-gray-300"
             }`}
           >
             <input
               type="radio"
               name="generateThumbnails"
               value="no"
-              checked={generateThumbnails === 'no'}
-              onChange={e => setGenerateThumbnails(e.target.value)}
+              checked={generateThumbnails === "no"}
+              onChange={(e) => setGenerateThumbnails(e.target.value)}
               className="w-4 h-4 text-orange-600"
             />
             <span className="font-medium">No</span>
@@ -742,8 +742,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
         </label>
         <textarea
           value={courseData.description}
-          onChange={e =>
-            setCourseData(prev => ({
+          onChange={(e) =>
+            setCourseData((prev) => ({
               ...prev,
               description: e.target.value,
             }))
@@ -762,8 +762,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
           </label>
           <select
             value={courseData.difficulty}
-            onChange={e =>
-              setCourseData(prev => ({
+            onChange={(e) =>
+              setCourseData((prev) => ({
                 ...prev,
                 difficulty: e.target.value,
               }))
@@ -783,8 +783,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
           <input
             type="text"
             value={courseData.duration}
-            onChange={e =>
-              setCourseData(prev => ({
+            onChange={(e) =>
+              setCourseData((prev) => ({
                 ...prev,
                 duration: e.target.value,
               }))
@@ -804,12 +804,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
           <input
             type="number"
             min="1"
-            value={courseData.moduleCount || ''}
-            onChange={e => {
+            value={courseData.moduleCount || ""}
+            onChange={(e) => {
               const value = parseInt(e.target.value, 10);
-              setCourseData(prev => ({
+              setCourseData((prev) => ({
                 ...prev,
-                moduleCount: Number.isNaN(value) ? '' : value,
+                moduleCount: Number.isNaN(value) ? "" : value,
               }));
             }}
             className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
@@ -824,12 +824,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
           <input
             type="number"
             min="1"
-            value={courseData.lessonsPerModule || ''}
-            onChange={e => {
+            value={courseData.lessonsPerModule || ""}
+            onChange={(e) => {
               const value = parseInt(e.target.value, 10);
-              setCourseData(prev => ({
+              setCourseData((prev) => ({
                 ...prev,
-                lessonsPerModule: Number.isNaN(value) ? '' : value,
+                lessonsPerModule: Number.isNaN(value) ? "" : value,
               }));
             }}
             className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
@@ -888,26 +888,26 @@ ${JSON.stringify(userPayload, null, 2)}`;
               <p className="font-semibold text-gray-700">Main course purpose</p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'awareness', label: 'Awareness / understanding' },
-                  { id: 'skill', label: 'Skill / procedure' },
-                  { id: 'behavior', label: 'Behavior change' },
-                  { id: 'compliance', label: 'Compliance' },
-                  { id: 'certification', label: 'Certification' },
-                  { id: 'performance', label: 'Performance KPI' },
-                ].map(option => (
+                  { id: "awareness", label: "Awareness / understanding" },
+                  { id: "skill", label: "Skill / procedure" },
+                  { id: "behavior", label: "Behavior change" },
+                  { id: "compliance", label: "Compliance" },
+                  { id: "certification", label: "Certification" },
+                  { id: "performance", label: "Performance KPI" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setQuickArchitectConfig(prev => ({
+                      setQuickArchitectConfig((prev) => ({
                         ...prev,
                         primaryPurpose: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       quickArchitectConfig.primaryPurpose === option.id
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300"
                     }`}
                   >
                     {option.label}
@@ -922,23 +922,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
               </p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'beginner', label: 'Beginner' },
-                  { id: 'intermediate', label: 'Intermediate' },
-                  { id: 'advanced', label: 'Advanced' },
-                ].map(option => (
+                  { id: "beginner", label: "Beginner" },
+                  { id: "intermediate", label: "Intermediate" },
+                  { id: "advanced", label: "Advanced" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setQuickArchitectConfig(prev => ({
+                      setQuickArchitectConfig((prev) => ({
                         ...prev,
                         learnerLevel: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       quickArchitectConfig.learnerLevel === option.id
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
                     }`}
                   >
                     {option.label}
@@ -953,23 +953,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
               </p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'micro', label: 'Microlearning (10–15 min)' },
-                  { id: 'standard', label: 'Standard (20–30 min)' },
-                  { id: 'deep', label: 'Deep dives (40–60 min)' },
-                ].map(option => (
+                  { id: "micro", label: "Microlearning (10–15 min)" },
+                  { id: "standard", label: "Standard (20–30 min)" },
+                  { id: "deep", label: "Deep dives (40–60 min)" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setQuickArchitectConfig(prev => ({
+                      setQuickArchitectConfig((prev) => ({
                         ...prev,
                         timeProfile: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       quickArchitectConfig.timeProfile === option.id
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                        ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
                     }`}
                   >
                     {option.label}
@@ -984,23 +984,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
               </p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'on_the_job', label: 'On-the-job' },
-                  { id: 'classroom', label: 'Classroom / workshop' },
-                  { id: 'remote', label: 'Remote / self-paced' },
-                ].map(option => (
+                  { id: "on_the_job", label: "On-the-job" },
+                  { id: "classroom", label: "Classroom / workshop" },
+                  { id: "remote", label: "Remote / self-paced" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setQuickArchitectConfig(prev => ({
+                      setQuickArchitectConfig((prev) => ({
                         ...prev,
                         deliveryContext: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       quickArchitectConfig.deliveryContext === option.id
-                        ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'
+                        ? "bg-sky-600 text-white border-sky-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-sky-300"
                     }`}
                   >
                     {option.label}
@@ -1013,25 +1013,25 @@ ${JSON.stringify(userPayload, null, 2)}`;
               <p className="font-semibold text-gray-700">Main success focus</p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'completion', label: 'Completion' },
-                  { id: 'quiz_scores', label: 'Quiz / test scores' },
-                  { id: 'on_job', label: 'On-the-job performance' },
-                  { id: 'project', label: 'Projects / assignments' },
-                  { id: 'certification', label: 'Certification / exam' },
-                ].map(option => (
+                  { id: "completion", label: "Completion" },
+                  { id: "quiz_scores", label: "Quiz / test scores" },
+                  { id: "on_job", label: "On-the-job performance" },
+                  { id: "project", label: "Projects / assignments" },
+                  { id: "certification", label: "Certification / exam" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setQuickArchitectConfig(prev => ({
+                      setQuickArchitectConfig((prev) => ({
                         ...prev,
                         successFocus: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       quickArchitectConfig.successFocus === option.id
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover-border-amber-300'
+                        ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover-border-amber-300"
                     }`}
                   >
                     {option.label}
@@ -1061,26 +1061,26 @@ ${JSON.stringify(userPayload, null, 2)}`;
               <p className="font-semibold text-gray-700">Highest Bloom level</p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'remember', label: 'Remember' },
-                  { id: 'understand', label: 'Understand' },
-                  { id: 'apply', label: 'Apply' },
-                  { id: 'analyze', label: 'Analyze' },
-                  { id: 'evaluate', label: 'Evaluate' },
-                  { id: 'create', label: 'Create' },
-                ].map(option => (
+                  { id: "remember", label: "Remember" },
+                  { id: "understand", label: "Understand" },
+                  { id: "apply", label: "Apply" },
+                  { id: "analyze", label: "Analyze" },
+                  { id: "evaluate", label: "Evaluate" },
+                  { id: "create", label: "Create" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         bloomMaxLevel: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.bloomMaxLevel === option.id
-                        ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'
+                        ? "bg-indigo-700 text-white border-indigo-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300"
                     }`}
                   >
                     {option.label}
@@ -1093,24 +1093,24 @@ ${JSON.stringify(userPayload, null, 2)}`;
               <p className="font-semibold text-gray-700">Delivery mode</p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'self_paced', label: 'Self-paced' },
-                  { id: 'blended', label: 'Blended' },
-                  { id: 'instructor_led', label: 'Instructor-led' },
-                  { id: 'microlearning', label: 'Microlearning' },
-                ].map(option => (
+                  { id: "self_paced", label: "Self-paced" },
+                  { id: "blended", label: "Blended" },
+                  { id: "instructor_led", label: "Instructor-led" },
+                  { id: "microlearning", label: "Microlearning" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         deliveryMode: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.deliveryMode === option.id
-                        ? 'bg-sky-700 text-white border-sky-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'
+                        ? "bg-sky-700 text-white border-sky-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-sky-300"
                     }`}
                   >
                     {option.label}
@@ -1125,24 +1125,24 @@ ${JSON.stringify(userPayload, null, 2)}`;
               </p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'balanced', label: 'Balanced (VAK)' },
-                  { id: 'visual', label: 'Visual-heavy' },
-                  { id: 'auditory', label: 'Auditory-heavy' },
-                  { id: 'kinesthetic', label: 'Hands-on / kinesthetic' },
-                ].map(option => (
+                  { id: "balanced", label: "Balanced (VAK)" },
+                  { id: "visual", label: "Visual-heavy" },
+                  { id: "auditory", label: "Auditory-heavy" },
+                  { id: "kinesthetic", label: "Hands-on / kinesthetic" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         vakEmphasis: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.vakEmphasis === option.id
-                        ? 'bg-purple-700 text-white border-purple-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                        ? "bg-purple-700 text-white border-purple-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
                     }`}
                   >
                     {option.label}
@@ -1155,24 +1155,24 @@ ${JSON.stringify(userPayload, null, 2)}`;
               <p className="font-semibold text-gray-700">Practice frequency</p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'per_lesson', label: 'After each lesson' },
-                  { id: 'per_module', label: 'End of each module' },
-                  { id: 'milestones', label: 'Only at key milestones' },
-                  { id: 'ai_decides', label: 'Let AI decide' },
-                ].map(option => (
+                  { id: "per_lesson", label: "After each lesson" },
+                  { id: "per_module", label: "End of each module" },
+                  { id: "milestones", label: "Only at key milestones" },
+                  { id: "ai_decides", label: "Let AI decide" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         practiceFrequency: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.practiceFrequency === option.id
-                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                        ? "bg-emerald-700 text-white border-emerald-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
                     }`}
                   >
                     {option.label}
@@ -1187,24 +1187,24 @@ ${JSON.stringify(userPayload, null, 2)}`;
               </p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'after_each_lesson', label: 'After each lesson' },
-                  { id: 'end_of_module', label: 'End of module only' },
-                  { id: 'final_only', label: 'Final assessment only' },
-                  { id: 'mixed', label: 'Mix of checks + final' },
-                ].map(option => (
+                  { id: "after_each_lesson", label: "After each lesson" },
+                  { id: "end_of_module", label: "End of module only" },
+                  { id: "final_only", label: "Final assessment only" },
+                  { id: "mixed", label: "Mix of checks + final" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         assessmentPlacement: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.assessmentPlacement === option.id
-                        ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                        ? "bg-rose-700 text-white border-rose-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-rose-300"
                     }`}
                   >
                     {option.label}
@@ -1219,24 +1219,24 @@ ${JSON.stringify(userPayload, null, 2)}`;
               </p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'mcq', label: 'MCQ / quizzes' },
-                  { id: 'simulation', label: 'Simulations / scenarios' },
-                  { id: 'reflection', label: 'Reflections / journals' },
-                  { id: 'mixed', label: 'Mixed types' },
-                ].map(option => (
+                  { id: "mcq", label: "MCQ / quizzes" },
+                  { id: "simulation", label: "Simulations / scenarios" },
+                  { id: "reflection", label: "Reflections / journals" },
+                  { id: "mixed", label: "Mixed types" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         mainAssessmentType: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.mainAssessmentType === option.id
-                        ? 'bg-amber-700 text-white border-amber-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                        ? "bg-amber-700 text-white border-amber-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-amber-300"
                     }`}
                   >
                     {option.label}
@@ -1249,23 +1249,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
               <p className="font-semibold text-gray-700">Implementation mode</p>
               <div className="flex flex-wrap gap-1">
                 {[
-                  { id: 'lms', label: 'LMS / platform' },
-                  { id: 'classroom', label: 'Classroom / ILT' },
-                  { id: 'blended', label: 'Blended delivery' },
-                ].map(option => (
+                  { id: "lms", label: "LMS / platform" },
+                  { id: "classroom", label: "Classroom / ILT" },
+                  { id: "blended", label: "Blended delivery" },
+                ].map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() =>
-                      setArchitectStrategyConfig(prev => ({
+                      setArchitectStrategyConfig((prev) => ({
                         ...prev,
                         implementationMode: option.id,
                       }))
                     }
                     className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                       architectStrategyConfig.implementationMode === option.id
-                        ? 'bg-slate-700 text-white border-slate-700 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-slate-300'
+                        ? "bg-slate-700 text-white border-slate-700 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-slate-300"
                     }`}
                   >
                     {option.label}
@@ -1297,7 +1297,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -1305,8 +1305,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
   }, [streamingMessages]);
 
   // Add streaming message
-  const addStreamingMessage = (text, type = 'ai') => {
-    setStreamingMessages(prev => [
+  const addStreamingMessage = (text, type = "ai") => {
+    setStreamingMessages((prev) => [
       ...prev,
       {
         id: Date.now() + Math.random(),
@@ -1317,17 +1317,17 @@ ${JSON.stringify(userPayload, null, 2)}`;
     ]);
   };
 
-  const trimPayload = obj => {
+  const trimPayload = (obj) => {
     const out = {};
     Object.entries(obj || {}).forEach(([k, v]) => {
-      if (v === '' || v === undefined || v === null) return;
+      if (v === "" || v === undefined || v === null) return;
       if (Array.isArray(v) && v.length === 0) return;
       out[k] = v;
     });
     return out;
   };
 
-  const computeBlueprintHash = blueprintInput => {
+  const computeBlueprintHash = (blueprintInput) => {
     try {
       return JSON.stringify(blueprintInput);
     } catch (e) {
@@ -1347,7 +1347,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
       // Step 1: Welcome
       addStreamingMessage(
         `🎓 Welcome! Creating "${courseData.courseName || courseData.title}"...`,
-        'ai'
+        "ai",
       );
       await delay(800);
       setStreamingProgress(10);
@@ -1357,14 +1357,14 @@ ${JSON.stringify(userPayload, null, 2)}`;
         `📋 Understanding your requirements...\n\n` +
           `👥 Audience: ${courseData.targetAudience}\n` +
           `🎯 Outcome: ${courseData.learningOutcomes}\n` +
-          `📚 Prerequisites: ${courseData.priorKnowledge === 'yes' ? courseData.priorKnowledgeDetails : 'None'}`,
-        'ai'
+          `📚 Prerequisites: ${courseData.priorKnowledge === "yes" ? courseData.priorKnowledgeDetails : "None"}`,
+        "ai",
       );
       await delay(1200);
       setStreamingProgress(30);
 
       // Step 3: Start generation
-      addStreamingMessage('🏗️ Building course structure...', 'ai');
+      addStreamingMessage("🏗️ Building course structure...", "ai");
       await delay(1000);
 
       // Trigger actual generation
@@ -1373,7 +1373,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
       setStreamingProgress(100);
       addStreamingMessage(
         '✅ Course generated successfully! Review below and click "Create Course" when ready.',
-        'success'
+        "success",
       );
 
       // Reset after a delay
@@ -1381,28 +1381,28 @@ ${JSON.stringify(userPayload, null, 2)}`;
         setIsStreamingGeneration(false);
       }, 2000);
     } catch (error) {
-      console.error('Generation error:', error);
-      addStreamingMessage('❌ Generation failed. Please try again.', 'error');
+      console.error("Generation error:", error);
+      addStreamingMessage("❌ Generation failed. Please try again.", "error");
       setIsStreamingGeneration(false);
     }
   };
 
   // Handle drag and drop events
-  const handleDragEnter = e => {
+  const handleDragEnter = (e) => {
     e.preventDefault();
     setIsDragging(true);
   };
 
-  const handleDragLeave = e => {
+  const handleDragLeave = (e) => {
     e.preventDefault();
     setIsDragging(false);
   };
 
-  const handleDragOver = e => {
+  const handleDragOver = (e) => {
     e.preventDefault();
   };
 
-  const handleDrop = e => {
+  const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
 
@@ -1412,67 +1412,67 @@ ${JSON.stringify(userPayload, null, 2)}`;
     }
   };
 
-  const handleFileSelect = async file => {
+  const handleFileSelect = async (file) => {
     try {
-      if (file && file.type.startsWith('image/')) {
-        console.log('🤖 Uploading AI course thumbnail via /api/ai endpoint...');
+      if (file && file.type.startsWith("image/")) {
+        console.log("🤖 Uploading AI course thumbnail via /api/ai endpoint...");
         const res = await uploadAICourseThumbnail(file, {
           public: true,
         });
         if (res?.success && res.imageUrl) {
-          setCourseData(prev => ({ ...prev, thumbnail: res.imageUrl }));
+          setCourseData((prev) => ({ ...prev, thumbnail: res.imageUrl }));
           console.log(
-            '✅ AI course thumbnail uploaded successfully via /api/ai:',
-            res.imageUrl
+            "✅ AI course thumbnail uploaded successfully via /api/ai:",
+            res.imageUrl,
           );
         }
       } else {
-        console.log('⚠️ Please select an image file');
+        console.log("⚠️ Please select an image file");
       }
     } catch (e) {
-      console.error('Thumbnail upload failed:', e);
-      console.error('❌ Failed to upload thumbnail:', e.message);
+      console.error("Thumbnail upload failed:", e);
+      console.error("❌ Failed to upload thumbnail:", e.message);
     }
   };
 
   // Handle file upload for source content
-  const handleSourceFileUpload = async e => {
+  const handleSourceFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     try {
       console.log(
-        '🤖 Uploading AI course reference files via /api/ai endpoint...'
+        "🤖 Uploading AI course reference files via /api/ai endpoint...",
       );
       const results = await uploadAICourseReferences(files, {
         public: true,
       });
 
-      const successfulUploads = results.filter(r => r.success && r.url);
-      setUploadedFiles(prev => [...prev, ...successfulUploads]);
+      const successfulUploads = results.filter((r) => r.success && r.url);
+      setUploadedFiles((prev) => [...prev, ...successfulUploads]);
 
       const successCount = successfulUploads.length;
       const totalCount = results.length;
 
       if (successCount === totalCount) {
         console.log(
-          `✅ All ${successCount} reference files uploaded successfully via /api/ai`
+          `✅ All ${successCount} reference files uploaded successfully via /api/ai`,
         );
       } else {
         console.warn(
-          `⚠️ Uploaded ${successCount}/${totalCount} reference files via /api/ai`
+          `⚠️ Uploaded ${successCount}/${totalCount} reference files via /api/ai`,
         );
       }
     } catch (err) {
-      console.error('Reference upload failed:', err);
-      console.error('❌ Failed to upload reference files:', err.message);
+      console.error("Reference upload failed:", err);
+      console.error("❌ Failed to upload reference files:", err.message);
     }
   };
 
-  const removeFile = index => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  const removeFile = (index) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleFileInput = e => {
+  const handleFileInput = (e) => {
     const file = e.target.files[0];
     if (file) {
       handleFileSelect(file);
@@ -1481,23 +1481,23 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
   const buildBlueprintFromQuickArchitect = (course, config) => {
     const title =
-      course.courseName?.trim() || course.title?.trim() || 'this course';
-    const audience = course.targetAudience?.trim() || 'the target learners';
+      course.courseName?.trim() || course.title?.trim() || "this course";
+    const audience = course.targetAudience?.trim() || "the target learners";
     const outcomes =
-      course.learningOutcomes?.trim() || course.objectives?.trim() || '';
-    const duration = course.duration?.trim() || '4 weeks';
-    const difficulty = course.difficulty || config.learnerLevel || 'beginner';
+      course.learningOutcomes?.trim() || course.objectives?.trim() || "";
+    const duration = course.duration?.trim() || "4 weeks";
+    const difficulty = course.difficulty || config.learnerLevel || "beginner";
 
-    let purposeSentence = '';
-    if (config.primaryPurpose === 'awareness') {
+    let purposeSentence = "";
+    if (config.primaryPurpose === "awareness") {
       purposeSentence = `This course is designed to build awareness and foundational understanding of ${title} for ${audience}.`;
-    } else if (config.primaryPurpose === 'skill') {
+    } else if (config.primaryPurpose === "skill") {
       purposeSentence = `This course is designed to develop practical, job-ready skills in ${title} for ${audience}.`;
-    } else if (config.primaryPurpose === 'behavior') {
+    } else if (config.primaryPurpose === "behavior") {
       purposeSentence = `This course is designed to change day-to-day behaviors and habits related to ${title} for ${audience}.`;
-    } else if (config.primaryPurpose === 'compliance') {
+    } else if (config.primaryPurpose === "compliance") {
       purposeSentence = `This course is designed to ensure ${audience} meet compliance and policy requirements related to ${title}.`;
-    } else if (config.primaryPurpose === 'certification') {
+    } else if (config.primaryPurpose === "certification") {
       purposeSentence = `This course is designed to prepare ${audience} to successfully clear a certification or formal assessment in ${title}.`;
     } else {
       purposeSentence = `This course is designed to improve performance and outcomes related to ${title} for ${audience}.`;
@@ -1505,58 +1505,58 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
     const outcomeSentence = outcomes
       ? `By the end of the course, learners will be able to ${outcomes}.`
-      : '';
+      : "";
 
     let constraintsParts = [];
-    if (config.timeProfile === 'micro') {
+    if (config.timeProfile === "micro") {
       constraintsParts.push(
-        'learn in short, focused microlearning segments (10–15 minutes each)'
+        "learn in short, focused microlearning segments (10–15 minutes each)",
       );
-    } else if (config.timeProfile === 'deep') {
+    } else if (config.timeProfile === "deep") {
       constraintsParts.push(
-        'engage in longer, deep-dive sessions for complex topics'
+        "engage in longer, deep-dive sessions for complex topics",
       );
     } else {
-      constraintsParts.push('learn through standard 20–30 minute lessons');
+      constraintsParts.push("learn through standard 20–30 minute lessons");
     }
 
-    if (config.deliveryContext === 'on_the_job') {
-      constraintsParts.push('apply learning directly on the job while working');
-    } else if (config.deliveryContext === 'classroom') {
+    if (config.deliveryContext === "on_the_job") {
+      constraintsParts.push("apply learning directly on the job while working");
+    } else if (config.deliveryContext === "classroom") {
       constraintsParts.push(
-        'participate in a structured classroom or workshop environment'
+        "participate in a structured classroom or workshop environment",
       );
     } else {
       constraintsParts.push(
-        'access the course remotely in a self-paced environment'
+        "access the course remotely in a self-paced environment",
       );
     }
 
     const constraintsSentence = `Learners are expected to ${constraintsParts.join(
-      ' and '
+      " and ",
     )}, using standard devices with typical internet access.`;
 
     const prereqSentence =
-      course.priorKnowledge === 'yes'
-        ? `Learners should already have the following prerequisite knowledge: ${course.priorKnowledgeDetails || 'basic familiarity with the domain'}.`
-        : 'No strict prerequisites are required beyond general digital literacy.';
+      course.priorKnowledge === "yes"
+        ? `Learners should already have the following prerequisite knowledge: ${course.priorKnowledgeDetails || "basic familiarity with the domain"}.`
+        : "No strict prerequisites are required beyond general digital literacy.";
 
-    let successSentence = '';
-    if (config.successFocus === 'completion') {
+    let successSentence = "";
+    if (config.successFocus === "completion") {
       successSentence =
-        'Success will primarily be measured through course completion rates and consistent engagement across all modules.';
-    } else if (config.successFocus === 'on_job') {
+        "Success will primarily be measured through course completion rates and consistent engagement across all modules.";
+    } else if (config.successFocus === "on_job") {
       successSentence =
-        'Success will be measured by on-the-job performance improvements, behavior change, and observable application of skills.';
-    } else if (config.successFocus === 'project') {
+        "Success will be measured by on-the-job performance improvements, behavior change, and observable application of skills.";
+    } else if (config.successFocus === "project") {
       successSentence =
-        'Success will be measured by the quality of project outputs, assignments, and practical deliverables produced by learners.';
-    } else if (config.successFocus === 'certification') {
+        "Success will be measured by the quality of project outputs, assignments, and practical deliverables produced by learners.";
+    } else if (config.successFocus === "certification") {
       successSentence =
-        'Success will be measured by learners’ performance in external or internal certification exams and high-stakes assessments.';
+        "Success will be measured by learners’ performance in external or internal certification exams and high-stakes assessments.";
     } else {
       successSentence =
-        'Success will be measured through formative and summative assessments, including quiz scores and performance on scenario-based tasks.';
+        "Success will be measured through formative and summative assessments, including quiz scores and performance on scenario-based tasks.";
     }
 
     const courseStructureSentence = `The course is planned to run for approximately ${duration}, with a structured path appropriate for ${difficulty} level learners.`;
@@ -1564,18 +1564,18 @@ ${JSON.stringify(userPayload, null, 2)}`;
     return {
       blueprintCoursePurpose: [purposeSentence, outcomeSentence]
         .filter(Boolean)
-        .join(' '),
+        .join(" "),
       blueprintLearnerProfile: `Primary audience: ${audience}. Typical experience level: ${difficulty}. Learners are expected to be motivated to improve their performance in ${title} and apply concepts in real-world situations.`,
       blueprintLearningConstraints: constraintsSentence,
       blueprintComplianceRequirements:
-        quickArchitectConfig.primaryPurpose === 'compliance'
-          ? 'This course must align with organizational policies and any applicable regulatory or compliance frameworks. The blueprint should flag any content that may require legal or compliance review.'
-          : 'There are no strict external compliance frameworks identified, but the course should still follow internal quality and accessibility standards.',
+        quickArchitectConfig.primaryPurpose === "compliance"
+          ? "This course must align with organizational policies and any applicable regulatory or compliance frameworks. The blueprint should flag any content that may require legal or compliance review."
+          : "There are no strict external compliance frameworks identified, but the course should still follow internal quality and accessibility standards.",
       blueprintPriorKnowledge: prereqSentence,
       blueprintCourseStructure: courseStructureSentence,
       blueprintSuccessMeasurement: successSentence,
       blueprintRequiredResources:
-        'Where available, the blueprint should reference existing SOPs, internal documents, slide decks, and job aids, and clearly indicate where AI-generated content will be primary.',
+        "Where available, the blueprint should reference existing SOPs, internal documents, slide decks, and job aids, and clearly indicate where AI-generated content will be primary.",
     };
   };
 
@@ -1583,19 +1583,19 @@ ${JSON.stringify(userPayload, null, 2)}`;
     try {
       const fields = buildBlueprintFromQuickArchitect(
         courseData,
-        quickArchitectConfig
+        quickArchitectConfig,
       );
-      setCourseData(prev => ({
+      setCourseData((prev) => ({
         ...prev,
         ...fields,
       }));
       toast.success(
-        'Architect blueprint fields filled from quick choices. You can still review or tweak the text below.'
+        "Architect blueprint fields filled from quick choices. You can still review or tweak the text below.",
       );
     } catch (error) {
-      console.error('Quick architect application error:', error);
+      console.error("Quick architect application error:", error);
       toast.error(
-        'Failed to apply quick architect settings. Please try again.'
+        "Failed to apply quick architect settings. Please try again.",
       );
     }
   };
@@ -1607,22 +1607,22 @@ ${JSON.stringify(userPayload, null, 2)}`;
     const audience = courseData.targetAudience?.trim();
 
     if (!courseTitle) {
-      toast.error('Course name is required to generate a blueprint');
+      toast.error("Course name is required to generate a blueprint");
       return;
     }
     if (!outcomes) {
       toast.error(
-        'Please describe what learners will be able to do before generating a blueprint'
+        "Please describe what learners will be able to do before generating a blueprint",
       );
       return;
     }
     if (!audience) {
-      toast.error('Please specify who this course is for');
+      toast.error("Please specify who this course is for");
       return;
     }
 
     setIsGeneratingBlueprint(true);
-    setBlueprintError('');
+    setBlueprintError("");
 
     try {
       const {
@@ -1641,7 +1641,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
         courseData.blueprintCourseStructure,
         courseData.blueprintSuccessMeasurement,
         courseData.blueprintRequiredResources,
-      ].some(value => value && value.trim().length > 0);
+      ].some((value) => value && value.trim().length > 0);
 
       // If no manual architect text has been provided, derive it automatically
       // from the Quick Architect selections so users don't need to type.
@@ -1660,7 +1660,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
       if (!hasBlueprintInputs) {
         const autoFields = buildBlueprintFromQuickArchitect(
           courseData,
-          quickArchitectConfig
+          quickArchitectConfig,
         );
         architectTextFields = {
           ...architectTextFields,
@@ -1679,7 +1679,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
       const moduleCount =
         (requestedModuleCount !== null &&
         requestedModuleCount !== undefined &&
-        requestedModuleCount !== ''
+        requestedModuleCount !== ""
           ? Number(requestedModuleCount)
           : null) ||
         phaseAnalysis.moduleCount ||
@@ -1687,7 +1687,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
       const lessonsPerModule =
         (requestedLessonsPerModule !== null &&
         requestedLessonsPerModule !== undefined &&
-        requestedLessonsPerModule !== ''
+        requestedLessonsPerModule !== ""
           ? Number(requestedLessonsPerModule)
           : null) ||
         phaseAnalysis.lessonsPerModule ||
@@ -1698,14 +1698,14 @@ ${JSON.stringify(userPayload, null, 2)}`;
         subjectDomain: courseData.subject || courseData.targetAudience,
         courseDescription:
           courseData.description?.trim() || courseData.learningOutcomes,
-        duration: courseData.duration || '4 weeks',
-        difficulty: courseData.difficulty || 'intermediate',
+        duration: courseData.duration || "4 weeks",
+        difficulty: courseData.difficulty || "intermediate",
         learningObjectives:
           courseData.learningOutcomes || courseData.objectives,
         targetAudience: courseData.targetAudience,
         priorKnowledge: {
-          required: courseData.priorKnowledge === 'yes',
-          details: courseData.priorKnowledgeDetails || '',
+          required: courseData.priorKnowledge === "yes",
+          details: courseData.priorKnowledgeDetails || "",
         },
         // Extended architect inputs (1.1–1.8)
         coursePurpose: architectTextFields.blueprintCoursePurpose,
@@ -1718,7 +1718,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
         successMeasurement: architectTextFields.blueprintSuccessMeasurement,
         requiredResources: architectTextFields.blueprintRequiredResources,
         // Add target structure to explicitly control module/lesson count
-        targetStructure: `${moduleCount} module${moduleCount !== 1 ? 's' : ''}, ${moduleCount * lessonsPerModule} lesson${moduleCount * lessonsPerModule !== 1 ? 's' : ''} per module`,
+        targetStructure: `${moduleCount} module${moduleCount !== 1 ? "s" : ""}, ${moduleCount * lessonsPerModule} lesson${moduleCount * lessonsPerModule !== 1 ? "s" : ""} per module`,
         moduleCount,
         lessonsPerModule,
         architectStrategyConfig,
@@ -1728,18 +1728,18 @@ ${JSON.stringify(userPayload, null, 2)}`;
         instructionalStrategies: phaseDevelopment.instructionalStrategies || [],
         deploymentConstraints: phaseImplementation.deploymentConstraints || [],
         supportNeeded: phaseImplementation.supportNeeded || [],
-        feedbackMechanism: phaseImplementation.feedbackMechanism || '',
+        feedbackMechanism: phaseImplementation.feedbackMechanism || "",
         learnerFeedbackGathering:
           phaseImplementation.feedbackCollection ||
           phaseImplementation.feedbackGathering ||
           [],
-        gagnesEvent1: phaseDesign.attentionStrategy || '',
-        gagnesEvent2: phaseDesign.objectivesAnnouncement || '',
-        gagnesEvent3: phaseDesign.priorKnowledgeActivation || '',
+        gagnesEvent1: phaseDesign.attentionStrategy || "",
+        gagnesEvent2: phaseDesign.objectivesAnnouncement || "",
+        gagnesEvent3: phaseDesign.priorKnowledgeActivation || "",
         gagnesEvent4: phaseDesign.contentPresentation || [],
         gagnesEvent5: phaseDesign.guidancePlan || [],
         gagnesEvent6: phaseDesign.practicePlan || [],
-        gagnesEvent7: phaseDesign.feedbackPlan || '',
+        gagnesEvent7: phaseDesign.feedbackPlan || "",
         gagnesEvent8: phaseDesign.assessmentPlan || [],
         gagnesEvent9: phaseDesign.retentionPlan || [],
         visualApproach:
@@ -1757,7 +1757,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
         // Keep full designPhases for any future use
         designPhases: designPhases || createDefaultDesignPhases(),
         // Model profile hint for backend routing (blueprint = high-fidelity)
-        modelProfile: 'blueprint',
+        modelProfile: "blueprint",
       };
 
       // Trim empty fields to reduce payload size
@@ -1771,7 +1771,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
         lastBlueprintData
       ) {
         setCourseBlueprint(lastBlueprintData);
-        toast.success('Using existing blueprint (no changes detected)');
+        toast.success("Using existing blueprint (no changes detected)");
         return lastBlueprintData;
       }
 
@@ -1779,7 +1779,7 @@ ${JSON.stringify(userPayload, null, 2)}`;
         await openAIService.generateCourseBlueprint(blueprintInput);
 
       if (!result?.success || !result.data) {
-        throw new Error(result?.error || 'Course blueprint generation failed');
+        throw new Error(result?.error || "Course blueprint generation failed");
       }
 
       setCourseBlueprint(result.data);
@@ -1818,8 +1818,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
                 description:
                   lesson.description ||
                   lesson.lessonDescription ||
-                  'AI-generated lesson content',
-              })
+                  "AI-generated lesson content",
+              }),
             );
 
             return {
@@ -1831,27 +1831,27 @@ ${JSON.stringify(userPayload, null, 2)}`;
               description:
                 module.description ||
                 module.moduleDescription ||
-                'AI-generated module content',
+                "AI-generated module content",
               lessons,
             };
           }),
         };
 
         setAiOutline(outlineFromBlueprint);
-        setGeneratedContent(prev => ({
+        setGeneratedContent((prev) => ({
           ...prev,
           outline: outlineFromBlueprint,
           comprehensive: true,
         }));
       }
 
-      toast.success('Master course blueprint generated successfully!');
+      toast.success("Master course blueprint generated successfully!");
       return result.data;
     } catch (error) {
-      console.error('Course blueprint generation error:', error);
+      console.error("Course blueprint generation error:", error);
       const message =
         error.message ||
-        'Failed to generate course blueprint. Please try again.';
+        "Failed to generate course blueprint. Please try again.";
       setBlueprintError(message);
       toast.error(message);
     } finally {
@@ -1877,8 +1877,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
       // If no blueprint yet, generate one (this will include all ADDIE answers)
       if (!blueprintModules) {
         addStreamingMessage(
-          '✨ Using your ADDIE answers to build the master blueprint...',
-          'ai'
+          "✨ Using your ADDIE answers to build the master blueprint...",
+          "ai",
         );
         const generatedBlueprint = await handleGenerateBlueprint();
         blueprintModules =
@@ -1891,14 +1891,14 @@ ${JSON.stringify(userPayload, null, 2)}`;
         if (generatedBlueprint?.meta?.courseTitle) {
           addStreamingMessage(
             `📘 Master Blueprint ready for "${generatedBlueprint.meta.courseTitle}"`,
-            'success'
+            "success",
           );
         }
       }
 
       if (blueprintModules) {
         console.log(
-          '📘 Using Master Course Blueprint to build comprehensive outline instead of standalone showcase course'
+          "📘 Using Master Course Blueprint to build comprehensive outline instead of standalone showcase course",
         );
 
         const outlineFromBlueprint = {
@@ -1921,8 +1921,8 @@ ${JSON.stringify(userPayload, null, 2)}`;
                 description:
                   lesson.description ||
                   lesson.lessonDescription ||
-                  'AI-generated lesson content',
-              })
+                  "AI-generated lesson content",
+              }),
             );
 
             return {
@@ -1934,72 +1934,72 @@ ${JSON.stringify(userPayload, null, 2)}`;
               description:
                 module.description ||
                 module.moduleDescription ||
-                'AI-generated module content',
+                "AI-generated module content",
               lessons,
             };
           }),
         };
 
         setAiOutline(outlineFromBlueprint);
-        setGeneratedContent(prev => ({
+        setGeneratedContent((prev) => ({
           ...prev,
           outline: outlineFromBlueprint,
           comprehensive: true,
         }));
 
         console.log(
-          `✅ Outline derived from blueprint with ${outlineFromBlueprint.modules.length} modules`
+          `✅ Outline derived from blueprint with ${outlineFromBlueprint.modules.length} modules`,
         );
         return;
       }
 
       // If still no blueprint modules, try a lightweight outline only (no showcase)
       console.log(
-        '⚠️ No blueprint modules found; generating lightweight outline...'
+        "⚠️ No blueprint modules found; generating lightweight outline...",
       );
       const fallbackResult = await generateAICourseOutline({
         title: courseData.title,
         subject: courseData.subject || courseData.title,
-        difficulty: courseData.difficulty || 'intermediate',
-        modelProfile: 'outline',
+        difficulty: courseData.difficulty || "intermediate",
+        modelProfile: "outline",
       });
 
       if (fallbackResult?.success && fallbackResult.data) {
         setAiOutline(fallbackResult.data);
-        setGeneratedContent(prev => ({
+        setGeneratedContent((prev) => ({
           ...prev,
           outline: fallbackResult.data,
           comprehensive: true,
         }));
-        console.log('✅ Lightweight outline generated as fallback');
+        console.log("✅ Lightweight outline generated as fallback");
         return;
       }
 
-      throw new Error('No blueprint modules and fallback outline failed');
+      throw new Error("No blueprint modules and fallback outline failed");
     } catch (error) {
-      console.error('❌ Comprehensive course generation error:', error);
-      console.error('Error details:', {
+      console.error("❌ Comprehensive course generation error:", error);
+      console.error("Error details:", {
         message: error.message,
         stack: error.stack,
         courseData: courseData,
       });
 
       // Fallback to basic generation if comprehensive fails
-      console.log('🔄 Falling back to basic course generation...');
+      console.log("🔄 Falling back to basic course generation...");
       try {
         const fallbackResult = await generateAICourseOutline({
           title: courseData.title,
           subject: courseData.subject || courseData.title,
-          difficulty: courseData.difficulty || 'intermediate',
-          modelProfile: 'outline', // hint backend to use mini model for speed
+          difficulty: courseData.difficulty || "intermediate",
+          modelProfile: "outline", // hint backend to use mini model for speed
         });
 
         if (fallbackResult.success) {
           setAiOutline(fallbackResult.data);
-          console.log('✅ Fallback course generation successful');
+          console.log("✅ Fallback course generation successful");
         }
       } catch (fallbackError) {
-        console.error('❌ Fallback generation also failed:', fallbackError);
+        console.error("❌ Fallback generation also failed:", fallbackError);
       }
     } finally {
       setIsGenerating(false);
@@ -2010,12 +2010,12 @@ ${JSON.stringify(userPayload, null, 2)}`;
 
   const generateAiThumbnail = async () => {
     if (!courseData.title.trim() && !aiImagePrompt.trim()) {
-      setAiImageError('Please enter a course title or image prompt');
+      setAiImageError("Please enter a course title or image prompt");
       return;
     }
 
     setAiImageGenerating(true);
-    setAiImageError('');
+    setAiImageError("");
 
     try {
       // Create a premium prompt based on course title if no prompt is provided
@@ -2040,8 +2040,8 @@ MOOD: Modern, inspiring, professional, engaging`;
 
       // Short-circuit if we already generated this prompt
       if (prompt === lastImagePrompt && lastImageUrl) {
-        console.log('♻️ Reusing cached thumbnail for same prompt');
-        setCourseData(prev => ({
+        console.log("♻️ Reusing cached thumbnail for same prompt");
+        setCourseData((prev) => ({
           ...prev,
           thumbnail: lastImageUrl,
         }));
@@ -2050,24 +2050,24 @@ MOOD: Modern, inspiring, professional, engaging`;
       }
 
       console.log(
-        '🎨 Generating AI thumbnail (Premium Quality):',
-        prompt.substring(0, 100) + '...'
+        "🎨 Generating AI thumbnail (Premium Quality):",
+        prompt.substring(0, 100) + "...",
       );
 
       // Use OpenAI service for image generation with premium quality settings
       const response = await openAIService.generateCourseImage(prompt, {
-        size: '1024x1024',
-        quality: 'standard',
+        size: "1024x1024",
+        quality: "standard",
       });
 
       // Check if we have a valid image URL (either from success or fallback)
       const imageUrl = response.data?.url || response.url;
 
       if (response.success && imageUrl) {
-        console.log('✅ AI image generated and uploaded to S3 by backend!');
+        console.log("✅ AI image generated and uploaded to S3 by backend!");
 
         // Use the S3 URL directly (already uploaded by backend)
-        setCourseData(prev => ({
+        setCourseData((prev) => ({
           ...prev,
           thumbnail: imageUrl,
         }));
@@ -2081,36 +2081,36 @@ MOOD: Modern, inspiring, professional, engaging`;
           `☁️ Uploaded to S3 automatically\n` +
           `📁 S3 URL: ${imageUrl.substring(0, 50)}...`;
 
-        console.log('✅ AI thumbnail generated and uploaded successfully');
-        setAiImageError('');
-        toast.success('AI thumbnail generated successfully!');
+        console.log("✅ AI thumbnail generated and uploaded successfully");
+        setAiImageError("");
+        toast.success("AI thumbnail generated successfully!");
       } else if (imageUrl) {
         // Partial success - we have an image but there might be issues
-        console.log('⚠️ AI image generated with warnings');
-        setCourseData(prev => ({ ...prev, thumbnail: imageUrl }));
+        console.log("⚠️ AI image generated with warnings");
+        setCourseData((prev) => ({ ...prev, thumbnail: imageUrl }));
         setAiImageError(
-          `Image generated with warnings: ${response.error || 'Check console for details'}`
+          `Image generated with warnings: ${response.error || "Check console for details"}`,
         );
-        toast.warning('AI thumbnail generated with warnings');
+        toast.warning("AI thumbnail generated with warnings");
       } else {
         // Complete failure - no image URL available
-        console.error('❌ AI image generation failed completely');
+        console.error("❌ AI image generation failed completely");
         setAiImageError(
           response.error ||
-            'Failed to generate AI image - no URL returned from backend'
+            "Failed to generate AI image - no URL returned from backend",
         );
-        toast.error('Failed to generate AI thumbnail');
+        toast.error("Failed to generate AI thumbnail");
       }
     } catch (error) {
       // Use improved error notification
-      const { showAIError } = await import('@/utils/aiErrorNotifications');
-      const errorInfo = showAIError(error, 'AI Image Generation', {
+      const { showAIError } = await import("@/utils/aiErrorNotifications");
+      const errorInfo = showAIError(error, "AI Image Generation", {
         showToast: true,
         logToConsole: true,
         includeDetails: true,
       });
       setAiImageError(errorInfo.userMessage);
-      console.error('AI thumbnail generation error details:', {
+      console.error("AI thumbnail generation error details:", {
         message: error.message,
         stack: error.stack,
         prompt:
@@ -2131,12 +2131,12 @@ MOOD: Modern, inspiring, professional, engaging`;
       courseData.learningOutcomes?.trim() || courseData.description?.trim();
 
     if (!courseTitle) {
-      toast.error('Course name is required');
+      toast.error("Course name is required");
       return;
     }
 
     if (!courseDesc) {
-      toast.error('Learning outcomes are required');
+      toast.error("Learning outcomes are required");
       return;
     }
 
@@ -2150,49 +2150,49 @@ MOOD: Modern, inspiring, professional, engaging`;
     setCreatedLessonId(null);
 
     try {
-      console.log('🚀 Creating AI course with real-time progress...');
-      console.log('📋 Course data:', {
+      console.log("🚀 Creating AI course with real-time progress...");
+      console.log("📋 Course data:", {
         courseTitle,
         courseDesc,
         generateThumbnails,
       });
 
       // Step 1: Create Course (10% progress)
-      addStreamingMessage('🎓 Creating course...', 'ai');
+      addStreamingMessage("🎓 Creating course...", "ai");
       setStreamingProgress(10);
 
       // Build course payload - only include thumbnail if it exists
       const coursePayload = {
         title: courseTitle,
         description: courseDesc,
-        difficulty: courseData.difficulty || 'beginner',
-        duration: courseData.duration?.trim() || '4 weeks',
+        difficulty: courseData.difficulty || "beginner",
+        duration: courseData.duration?.trim() || "4 weeks",
         max_students: 100,
         price: 0,
       };
 
       // Only add thumbnail if it has a valid value
-      if (courseData.thumbnail && courseData.thumbnail.trim() !== '') {
+      if (courseData.thumbnail && courseData.thumbnail.trim() !== "") {
         coursePayload.thumbnail = courseData.thumbnail;
       }
 
       const courseResult = await createAICourse(coursePayload);
 
-      console.log('✅ Course API response:', courseResult);
+      console.log("✅ Course API response:", courseResult);
 
       if (!courseResult) {
-        throw new Error('No response from course creation API');
+        throw new Error("No response from course creation API");
       }
 
       // Extract ID from nested data structure (backend returns {code, data, success, message})
       const newCourseId = courseResult.data?.id || courseResult.id;
 
       if (!newCourseId) {
-        console.error('❌ Course result missing ID:', courseResult);
-        throw new Error('Failed to create course - no ID returned');
+        console.error("❌ Course result missing ID:", courseResult);
+        throw new Error("Failed to create course - no ID returned");
       }
       setCreatedCourseId(newCourseId);
-      addStreamingMessage(`✅ Course created: "${courseTitle}"`, 'success');
+      addStreamingMessage(`✅ Course created: "${courseTitle}"`, "success");
       setStreamingProgress(20);
 
       const blueprintModules =
@@ -2209,30 +2209,30 @@ MOOD: Modern, inspiring, professional, engaging`;
             ? fallbackModules
             : [
                 {
-                  title: 'Module 1',
-                  description: 'AI-generated module content',
+                  title: "Module 1",
+                  description: "AI-generated module content",
                   lessons: [
                     {
-                      title: 'Lesson 1',
-                      description: 'AI-generated lesson content',
-                      duration: '15 min',
+                      title: "Lesson 1",
+                      description: "AI-generated lesson content",
+                      duration: "15 min",
                     },
                   ],
                 },
               ];
       const usingBlueprint = blueprintModules?.length > 0;
 
-      if (generateThumbnails === 'yes') {
+      if (generateThumbnails === "yes") {
         addStreamingMessage(
           `📚 Creating ${modulesToCreate.length} modules using ${
-            usingBlueprint ? 'blueprint' : 'outline'
+            usingBlueprint ? "blueprint" : "outline"
           } structure...`,
-          'ai'
+          "ai",
         );
       } else {
         addStreamingMessage(
-          '📚 Creating modules (without thumbnails)...',
-          'ai'
+          "📚 Creating modules (without thumbnails)...",
+          "ai",
         );
       }
       setStreamingProgress(30);
@@ -2251,7 +2251,7 @@ MOOD: Modern, inspiring, professional, engaging`;
         requestedModules || requestedLessonsPerModule
           ? modulesToCreate
               .slice(0, requestedModules || modulesToCreate.length)
-              .map(module => {
+              .map((module) => {
                 const lessons = module.lessons || [];
                 const limitedLessons = requestedLessonsPerModule
                   ? lessons.slice(0, requestedLessonsPerModule)
@@ -2273,7 +2273,7 @@ MOOD: Modern, inspiring, professional, engaging`;
         const moduleDescription =
           moduleData.moduleDescription ||
           moduleData.description ||
-          'Course module content';
+          "Course module content";
 
         try {
           let moduleThumbnail =
@@ -2281,53 +2281,53 @@ MOOD: Modern, inspiring, professional, engaging`;
 
           // Generate thumbnail if "yes" is selected and thumbnail doesn't exist
           if (
-            generateThumbnails === 'yes' &&
-            (!moduleThumbnail || moduleThumbnail.trim() === '')
+            generateThumbnails === "yes" &&
+            (!moduleThumbnail || moduleThumbnail.trim() === "")
           ) {
             try {
               addStreamingMessage(
                 `🎨 Generating thumbnail for ${moduleTitle}...`,
-                'ai'
+                "ai",
               );
               const { generateModuleThumbnailPrompt } = await import(
-                '@/services/comprehensiveCourseGenerator'
+                "@/services/comprehensiveCourseGenerator"
               );
               const { detectTopicContext } = await import(
-                '@/services/comprehensiveShowcaseLesson'
+                "@/services/comprehensiveShowcaseLesson"
               );
-              const openAIService = (await import('@/services/openAIService'))
+              const openAIService = (await import("@/services/openAIService"))
                 .default;
 
               const topicContext = detectTopicContext
                 ? detectTopicContext(courseTitle)
                 : {
-                    imageStyle: 'modern',
-                    domain: 'education',
-                    field: courseData.subject || 'general',
+                    imageStyle: "modern",
+                    domain: "education",
+                    field: courseData.subject || "general",
                     keywords: [],
                   };
               let thumbnailPrompt = await generateModuleThumbnailPrompt(
                 moduleTitle,
                 moduleDescription,
-                topicContext
+                topicContext,
               );
 
               // Safety check: Ensure prompt is under 1000 characters (backend limit)
               if (thumbnailPrompt && thumbnailPrompt.length > 950) {
                 thumbnailPrompt = thumbnailPrompt.substring(0, 950).trim();
                 console.warn(
-                  `⚠️ Truncated module thumbnail prompt to ${thumbnailPrompt.length} characters`
+                  `⚠️ Truncated module thumbnail prompt to ${thumbnailPrompt.length} characters`,
                 );
               }
 
               const imageResult = await openAIService.generateImage(
                 thumbnailPrompt,
                 {
-                  size: '1024x1024',
-                  quality: 'standard',
+                  size: "1024x1024",
+                  quality: "standard",
                   uploadToS3: true,
-                  folder: 'ai-thumbnails/modules',
-                }
+                  folder: "ai-thumbnails/modules",
+                },
               );
 
               if (imageResult?.success) {
@@ -2339,14 +2339,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                 if (imageUrl) {
                   moduleThumbnail = imageUrl;
                   console.log(
-                    `✅ Generated module thumbnail: ${moduleThumbnail}`
+                    `✅ Generated module thumbnail: ${moduleThumbnail}`,
                   );
                 }
               }
             } catch (thumbError) {
               console.warn(
                 `⚠️ Failed to generate module thumbnail:`,
-                thumbError
+                thumbError,
               );
               // Continue without thumbnail
             }
@@ -2357,20 +2357,20 @@ MOOD: Modern, inspiring, professional, engaging`;
             description: moduleDescription,
             order: i + 1,
             price: 0,
-            module_status: 'PUBLISHED',
+            module_status: "PUBLISHED",
           };
 
           if (
-            generateThumbnails === 'yes' &&
+            generateThumbnails === "yes" &&
             moduleThumbnail &&
-            moduleThumbnail.trim() !== ''
+            moduleThumbnail.trim() !== ""
           ) {
             modulePayload.thumbnail = moduleThumbnail;
           }
 
           console.log(
             `📋 Creating module ${i + 1} payload for ${moduleTitle}:`,
-            modulePayload
+            modulePayload,
           );
 
           const createdModule = await createModule(newCourseId, modulePayload);
@@ -2386,12 +2386,12 @@ MOOD: Modern, inspiring, professional, engaging`;
           });
 
           console.log(
-            `✅ Module ${moduleTitle} created successfully (ID ${createdModuleId})`
+            `✅ Module ${moduleTitle} created successfully (ID ${createdModuleId})`,
           );
         } catch (moduleError) {
           console.error(
             `❌ Failed to create module ${moduleTitle}:`,
-            moduleError
+            moduleError,
           );
           moduleErrors.push({
             moduleIndex: i,
@@ -2402,11 +2402,11 @@ MOOD: Modern, inspiring, professional, engaging`;
       }
 
       if (moduleErrors.length > 0) {
-        console.warn('⚠️ Module creation errors:', moduleErrors);
+        console.warn("⚠️ Module creation errors:", moduleErrors);
       }
 
       setStreamingProgress(45);
-      addStreamingMessage('📖 Creating lessons from blueprint...', 'ai');
+      addStreamingMessage("📖 Creating lessons from blueprint...", "ai");
       setStreamingProgress(55);
 
       const createdLessons = [];
@@ -2417,7 +2417,7 @@ MOOD: Modern, inspiring, professional, engaging`;
         const moduleLessons = module.originalLessons || [];
         const moduleTitle =
           module.title ||
-          `Module ${typeof module.moduleIndex === 'number' ? module.moduleIndex + 1 : 1}`;
+          `Module ${typeof module.moduleIndex === "number" ? module.moduleIndex + 1 : 1}`;
 
         for (let j = 0; j < moduleLessons.length; j++) {
           const lessonData = moduleLessons[j] || {};
@@ -2426,7 +2426,7 @@ MOOD: Modern, inspiring, professional, engaging`;
           const lessonDescription =
             lessonData.lessonDescription ||
             lessonData.description ||
-            'Lesson content';
+            "Lesson content";
 
           try {
             let lessonThumbnail =
@@ -2434,53 +2434,53 @@ MOOD: Modern, inspiring, professional, engaging`;
 
             // Generate thumbnail if "yes" is selected and thumbnail doesn't exist
             if (
-              generateThumbnails === 'yes' &&
-              (!lessonThumbnail || lessonThumbnail.trim() === '')
+              generateThumbnails === "yes" &&
+              (!lessonThumbnail || lessonThumbnail.trim() === "")
             ) {
               try {
                 addStreamingMessage(
                   `🎨 Generating thumbnail for ${lessonTitle}...`,
-                  'ai'
+                  "ai",
                 );
                 const { generateLessonThumbnailPrompt } = await import(
-                  '@/services/comprehensiveCourseGenerator'
+                  "@/services/comprehensiveCourseGenerator"
                 );
                 const { detectTopicContext } = await import(
-                  '@/services/comprehensiveShowcaseLesson'
+                  "@/services/comprehensiveShowcaseLesson"
                 );
-                const openAIService = (await import('@/services/openAIService'))
+                const openAIService = (await import("@/services/openAIService"))
                   .default;
 
                 const topicContext = detectTopicContext
                   ? detectTopicContext(courseTitle)
                   : {
-                      imageStyle: 'modern',
-                      domain: 'education',
-                      field: courseData.subject || 'general',
+                      imageStyle: "modern",
+                      domain: "education",
+                      field: courseData.subject || "general",
                       keywords: [],
                     };
                 let thumbnailPrompt = await generateLessonThumbnailPrompt(
                   lessonTitle,
                   lessonDescription,
-                  topicContext
+                  topicContext,
                 );
 
                 // Safety check: Ensure prompt is under 1000 characters (backend limit)
                 if (thumbnailPrompt && thumbnailPrompt.length > 950) {
                   thumbnailPrompt = thumbnailPrompt.substring(0, 950).trim();
                   console.warn(
-                    `⚠️ Truncated lesson thumbnail prompt to ${thumbnailPrompt.length} characters`
+                    `⚠️ Truncated lesson thumbnail prompt to ${thumbnailPrompt.length} characters`,
                   );
                 }
 
                 const imageResult = await openAIService.generateImage(
                   thumbnailPrompt,
                   {
-                    size: '1024x1024',
-                    quality: 'standard',
+                    size: "1024x1024",
+                    quality: "standard",
                     uploadToS3: true,
-                    folder: 'ai-thumbnails/lessons',
-                  }
+                    folder: "ai-thumbnails/lessons",
+                  },
                 );
 
                 if (imageResult?.success) {
@@ -2492,14 +2492,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                   if (imageUrl) {
                     lessonThumbnail = imageUrl;
                     console.log(
-                      `✅ Generated lesson thumbnail: ${lessonThumbnail}`
+                      `✅ Generated lesson thumbnail: ${lessonThumbnail}`,
                     );
                   }
                 }
               } catch (thumbError) {
                 console.warn(
                   `⚠️ Failed to generate lesson thumbnail:`,
-                  thumbError
+                  thumbError,
                 );
                 // Continue without thumbnail
               }
@@ -2509,15 +2509,15 @@ MOOD: Modern, inspiring, professional, engaging`;
               title: lessonTitle,
               description: lessonDescription,
               order: j + 1,
-              status: 'PUBLISHED',
-              duration: lessonData.duration || '15 min',
-              content: lessonData.content || '',
+              status: "PUBLISHED",
+              duration: lessonData.duration || "15 min",
+              content: lessonData.content || "",
             };
 
             if (
-              generateThumbnails === 'yes' &&
+              generateThumbnails === "yes" &&
               lessonThumbnail &&
-              lessonThumbnail.trim() !== ''
+              lessonThumbnail.trim() !== ""
             ) {
               lessonPayload.thumbnail = lessonThumbnail;
             }
@@ -2525,7 +2525,7 @@ MOOD: Modern, inspiring, professional, engaging`;
             const lessonResult = await createLesson(
               newCourseId,
               moduleId,
-              lessonPayload
+              lessonPayload,
             );
             const createdLessonId =
               lessonResult?.data?.id || lessonResult?.id || null;
@@ -2546,7 +2546,7 @@ MOOD: Modern, inspiring, professional, engaging`;
           } catch (lessonError) {
             console.error(
               `❌ Failed to create lesson ${lessonTitle}:`,
-              lessonError
+              lessonError,
             );
             lessonErrors.push({
               moduleId,
@@ -2558,7 +2558,7 @@ MOOD: Modern, inspiring, professional, engaging`;
       }
 
       if (lessonErrors.length > 0) {
-        console.warn('⚠️ Lesson creation errors:', lessonErrors);
+        console.warn("⚠️ Lesson creation errors:", lessonErrors);
       }
 
       if (createdModules.length > 0) {
@@ -2566,7 +2566,7 @@ MOOD: Modern, inspiring, professional, engaging`;
       }
 
       if (!createdLessons.length) {
-        throw new Error('No lessons were created for this course');
+        throw new Error("No lessons were created for this course");
       }
 
       const finalCreatedLesson = createdLessons[0];
@@ -2577,21 +2577,21 @@ MOOD: Modern, inspiring, professional, engaging`;
         setCreatedLessonId(newLessonId);
         addStreamingMessage(
           `✅ Created ${createdLessons.length} lessons`,
-          'success'
+          "success",
         );
       }
       setStreamingProgress(60);
 
       // Step 4: Generate Lesson Content for ALL lessons (60-95% progress)
       addStreamingMessage(
-        '✨ Generating lesson content blocks for all lessons...',
-        'ai'
+        "✨ Generating lesson content blocks for all lessons...",
+        "ai",
       );
       setStreamingProgress(65);
 
       // Import universal AI lesson service
       const universalAILessonService = (
-        await import('@/services/universalAILessonService')
+        await import("@/services/universalAILessonService")
       ).default;
 
       const totalLessons = createdLessons.length;
@@ -2604,22 +2604,22 @@ MOOD: Modern, inspiring, professional, engaging`;
       let currentProgress = contentStartProgress;
 
       // Helper function to safely convert blueprint fields to strings
-      const safeBlueprintString = value => {
-        if (!value) return '';
-        if (typeof value === 'string') return value;
-        if (typeof value === 'object') {
+      const safeBlueprintString = (value) => {
+        if (!value) return "";
+        if (typeof value === "string") return value;
+        if (typeof value === "object") {
           if (Array.isArray(value)) {
             return value
-              .map(item =>
-                typeof item === 'string' ? item : JSON.stringify(item)
+              .map((item) =>
+                typeof item === "string" ? item : JSON.stringify(item),
               )
-              .join(', ');
+              .join(", ");
           }
           if (value.text) return String(value.text);
           if (value.content) return String(value.content);
           if (value.description) return String(value.description);
           if (value.value) return String(value.value);
-          return JSON.stringify(value).replace(/^"|"$/g, '');
+          return JSON.stringify(value).replace(/^"|"$/g, "");
         }
         return String(value);
       };
@@ -2628,8 +2628,8 @@ MOOD: Modern, inspiring, professional, engaging`;
       const aiCourseContext = {
         title: courseTitle,
         description: courseDesc,
-        difficulty: courseData.difficulty || 'beginner',
-        duration: courseData.duration?.trim() || '4 weeks',
+        difficulty: courseData.difficulty || "beginner",
+        duration: courseData.duration?.trim() || "4 weeks",
         targetAudience: courseData.targetAudience,
         learningOutcomes: courseData.learningOutcomes,
         // Preserve ADDIE phase inputs so lesson generation can align to all 7 phases
@@ -2637,60 +2637,71 @@ MOOD: Modern, inspiring, professional, engaging`;
         blueprint: {
           coursePurpose: safeBlueprintString(courseData.blueprintCoursePurpose),
           learnerProfile: safeBlueprintString(
-            courseData.blueprintLearnerProfile
+            courseData.blueprintLearnerProfile,
           ),
           learningConstraints: safeBlueprintString(
-            courseData.blueprintLearningConstraints
+            courseData.blueprintLearningConstraints,
           ),
           complianceRequirements: safeBlueprintString(
-            courseData.blueprintComplianceRequirements
+            courseData.blueprintComplianceRequirements,
           ),
           priorKnowledge: safeBlueprintString(
-            courseData.blueprintPriorKnowledge
+            courseData.blueprintPriorKnowledge,
           ),
           courseStructure: safeBlueprintString(
-            courseData.blueprintCourseStructure
+            courseData.blueprintCourseStructure,
           ),
           successMeasurement: safeBlueprintString(
-            courseData.blueprintSuccessMeasurement
+            courseData.blueprintSuccessMeasurement,
           ),
           requiredResources: safeBlueprintString(
-            courseData.blueprintRequiredResources
+            courseData.blueprintRequiredResources,
           ),
         },
       };
 
       // Configure generation options based on mode
       let generationOptions = {};
-      if (generationMode === 'QUICK') {
-        generationOptions = {
-          simple: true,
-          useContentLibrary: false,
-          mode: 'quick',
-        };
-      } else if (generationMode === 'STANDARD') {
+      if (generationMode === "QUICK") {
         generationOptions = {
           useBlueprintStructure: true, // Use 15-section blueprint structure
-          mode: 'standard',
+          useAddiePhases: true, // Use 7-phase ADDIE framework
+          mode: "quick",
+          includeAssessments: false,
+          includeImages: false,
+        };
+      } else if (generationMode === "STANDARD") {
+        generationOptions = {
+          useBlueprintStructure: true, // Use 15-section blueprint structure
+          useAddiePhases: true, // Use 7-phase ADDIE framework
+          mode: "standard",
           includeAssessments: true,
           includeSummary: true,
           includeImages: false,
         };
-      } else if (generationMode === 'COMPLETE') {
+      } else if (generationMode === "COMPLETE") {
         generationOptions = {
           useBlueprintStructure: true, // Use 15-section blueprint structure
-          mode: 'complete',
-        };
-      } else if (generationMode === 'PREMIUM') {
-        generationOptions = {
-          useBlueprintStructure: true, // Use 15-section blueprint structure
-          mode: 'premium',
+          useAddiePhases: true, // Use 7-phase ADDIE framework
+          mode: "complete",
+          includeAssessments: true,
+          includeSummary: true,
           includeImages: true,
+        };
+      } else if (generationMode === "PREMIUM") {
+        generationOptions = {
+          useBlueprintStructure: true, // Use 15-section blueprint structure
+          useAddiePhases: true, // Use 7-phase ADDIE framework
+          mode: "premium",
+          includeAssessments: true,
+          includeSummary: true,
+          includeImages: true,
+          includeInteractive: true,
         };
       } else {
         generationOptions = {
           useBlueprintStructure: true, // Default to blueprint structure
-          useContentLibrary: false, // Don't use content library by default
+          useAddiePhases: true, // Default to 7-phase ADDIE framework
         };
       }
 
@@ -2711,22 +2722,22 @@ MOOD: Modern, inspiring, professional, engaging`;
         const moduleTitleForLesson =
           createdLesson.moduleTitle ||
           `Module ${
-            typeof createdLesson.moduleIndex === 'number'
+            typeof createdLesson.moduleIndex === "number"
               ? createdLesson.moduleIndex + 1
               : 1
           }`;
 
         if (!lessonId) {
           console.warn(
-            '⚠️ Skipping content generation for lesson with missing ID:',
-            createdLesson
+            "⚠️ Skipping content generation for lesson with missing ID:",
+            createdLesson,
           );
           continue;
         }
 
         addStreamingMessage(
           `✨ Generating content for lesson ${index + 1}/${totalLessons}: "${lessonTitle}"`,
-          'ai'
+          "ai",
         );
 
         // Build minimal lesson/module data for generator
@@ -2741,7 +2752,7 @@ MOOD: Modern, inspiring, professional, engaging`;
             lessonInfo,
             moduleInfo,
             aiCourseContext,
-            generationOptions
+            generationOptions,
           );
 
           // Convert blocks into lesson content payload (content + metadata)
@@ -2757,22 +2768,22 @@ MOOD: Modern, inspiring, professional, engaging`;
 
           currentProgress += perLessonProgress;
           setStreamingProgress(
-            Math.min(contentEndProgress, Math.round(currentProgress))
+            Math.min(contentEndProgress, Math.round(currentProgress)),
           );
         } catch (contentError) {
           console.error(
             `❌ Failed to generate content for lesson "${lessonTitle}":`,
-            contentError
+            contentError,
           );
           addStreamingMessage(
             `⚠️ Skipped content for lesson "${lessonTitle}" due to an error.`,
-            'error'
+            "error",
           );
         }
       }
 
       // Step 5: Finalize (95-100%)
-      addStreamingMessage('💾 Lesson content saved for all lessons', 'success');
+      addStreamingMessage("💾 Lesson content saved for all lessons", "success");
       setStreamingProgress(100);
       setCurrentBlock(null);
 
@@ -2783,12 +2794,12 @@ MOOD: Modern, inspiring, professional, engaging`;
       addStreamingMessage(
         `🎉 Course "${courseTitle}" created successfully!\n\n` +
           `📊 Summary:\n` +
-          `• ${moduleCount} module${moduleCount !== 1 ? 's' : ''} created\n` +
+          `• ${moduleCount} module${moduleCount !== 1 ? "s" : ""} created\n` +
           `• ${summaryLessonCount} lesson${
-            summaryLessonCount !== 1 ? 's' : ''
+            summaryLessonCount !== 1 ? "s" : ""
           } with AI-generated content\n` +
           `• Ready to view in lesson editor`,
-        'success'
+        "success",
       );
 
       // Notify parent component
@@ -2798,7 +2809,7 @@ MOOD: Modern, inspiring, professional, engaging`;
 
       const primaryModuleId = createdModules[0]?.id || null;
 
-      console.log('✅ Course creation complete:', {
+      console.log("✅ Course creation complete:", {
         courseId: newCourseId,
         moduleId: primaryModuleId,
         lessonId: newLessonId,
@@ -2807,7 +2818,7 @@ MOOD: Modern, inspiring, professional, engaging`;
       // Auto-navigate to lesson editor after 2 seconds
       setTimeout(() => {
         const lessonEditorUrl = `/dashboard/courses/${newCourseId}/module/${primaryModuleId}/lesson/${newLessonId}/builder`;
-        console.log('🔀 Navigating to lesson editor:', lessonEditorUrl);
+        console.log("🔀 Navigating to lesson editor:", lessonEditorUrl);
 
         // Use React Router navigate with lesson data state
         navigate(lessonEditorUrl, {
@@ -2821,10 +2832,10 @@ MOOD: Modern, inspiring, professional, engaging`;
         });
       }, 2000);
     } catch (error) {
-      console.error('❌ Failed to create AI course:', error);
+      console.error("❌ Failed to create AI course:", error);
       addStreamingMessage(
         `❌ Error: ${error.message}\n\nPlease try again or contact support.`,
-        'error'
+        "error",
       );
       setStreamingProgress(0);
       setCurrentBlock(null);
@@ -2844,13 +2855,13 @@ MOOD: Modern, inspiring, professional, engaging`;
   useEffect(() => {
     if (!isOpen) {
       const hasThumbnail =
-        !!courseData.thumbnail && courseData.thumbnail.trim() !== '';
+        !!courseData.thumbnail && courseData.thumbnail.trim() !== "";
       const hasBlueprint = !!courseBlueprint;
       const hasSavedWork = hasThumbnail || hasBlueprint || hasEnhancedBlueprint;
 
       setIsMinimized(false);
-      setActiveThumbnailTab('upload');
-      setAiImageError('');
+      setActiveThumbnailTab("upload");
+      setAiImageError("");
 
       // If no meaningful work was done, reset the session so the next open is fresh
       if (!hasSavedWork) {
@@ -2858,9 +2869,9 @@ MOOD: Modern, inspiring, professional, engaging`;
         setAiOutline(null);
         setGeneratedContent({});
         setCourseBlueprint(null);
-        setBlueprintError('');
+        setBlueprintError("");
         setFormStep(1);
-        setGenerationMode('STANDARD');
+        setGenerationMode("STANDARD");
         setCreatedCourseId(null);
         setCreatedModuleId(null);
         setCreatedLessonId(null);
@@ -2868,7 +2879,7 @@ MOOD: Modern, inspiring, professional, engaging`;
         setStreamingProgress(0);
         setIsStreamingGeneration(false);
         setIsCreatingCourse(false);
-        setAiImagePrompt('');
+        setAiImagePrompt("");
         setHasEnhancedBlueprint(false);
       }
     }
@@ -2897,23 +2908,23 @@ MOOD: Modern, inspiring, professional, engaging`;
 
           {/* Panel */}
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: isMinimized ? 'calc(100% - 4rem)' : 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            initial={{ x: "100%" }}
+            animate={{ x: isMinimized ? "calc(100% - 4rem)" : 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
             className={`fixed top-0 right-0 bottom-0 h-screen bg-white shadow-2xl z-50 flex ${
-              isMinimized ? 'w-16' : 'w-full max-w-4xl'
+              isMinimized ? "w-16" : "w-full max-w-4xl"
             }`}
             style={{ margin: 0, padding: 0 }}
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Minimize/Expand Button */}
             <button
               onClick={() => setIsMinimized(!isMinimized)}
               title={
                 isMinimized
-                  ? 'Expand AI Course Creator'
-                  : 'Collapse AI Course Creator'
+                  ? "Expand AI Course Creator"
+                  : "Collapse AI Course Creator"
               }
               className="absolute top-4 -left-10 bg-gray-700 text-white p-2 rounded-l-lg hover:bg-gray-600 transition-colors z-10"
             >
@@ -2927,7 +2938,7 @@ MOOD: Modern, inspiring, professional, engaging`;
             {isMinimized ? (
               // Minimized view - just show tabs
               <div className="flex flex-col items-center py-4 space-y-6 w-full">
-                {tabs.map(tab => {
+                {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
@@ -2938,8 +2949,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                       }}
                       className={`p-2 rounded-lg transition-colors ${
                         activeTab === tab.id
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-200'
+                          ? "bg-purple-600 text-white"
+                          : "text-gray-600 hover:bg-gray-200"
                       }`}
                       title={tab.label}
                     >
@@ -2984,16 +2995,16 @@ MOOD: Modern, inspiring, professional, engaging`;
                               src={courseData.thumbnail}
                               alt="Course Thumbnail"
                               className="w-full h-full object-cover"
-                              onError={e => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                e.target.nextSibling.style.display = "flex";
                               }}
                             />
                           ) : null}
                           <div
-                            className={`absolute inset-0 flex items-center justify-center ${courseData.thumbnail ? 'hidden' : 'flex'}`}
+                            className={`absolute inset-0 flex items-center justify-center ${courseData.thumbnail ? "hidden" : "flex"}`}
                             style={{
-                              display: courseData.thumbnail ? 'none' : 'flex',
+                              display: courseData.thumbnail ? "none" : "flex",
                             }}
                           >
                             <span className="text-white text-sm font-medium">
@@ -3005,27 +3016,27 @@ MOOD: Modern, inspiring, professional, engaging`;
                         {/* Course info */}
                         <div className="p-4">
                           <h4 className="font-semibold text-gray-900 mb-1">
-                            {courseData.title || 'Course Title'}
+                            {courseData.title || "Course Title"}
                           </h4>
                           <p className="text-sm text-gray-500 mb-3">
-                            {courseData.subject || 'Subject Domain'}
+                            {courseData.subject || "Subject Domain"}
                           </p>
 
                           <p className="text-sm text-gray-600 line-clamp-2">
                             {courseData.description ||
-                              'Course description will appear here...'}
+                              "Course description will appear here..."}
                           </p>
 
                           {/* Stats */}
                           <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                             <div className="flex items-center text-sm text-gray-500">
                               <span>
-                                Duration: {courseData.duration || 'N/A'}
+                                Duration: {courseData.duration || "N/A"}
                               </span>
                             </div>
                             <div className="flex items-center text-sm text-gray-500">
                               <span>
-                                Level: {courseData.difficulty || 'Beginner'}
+                                Level: {courseData.difficulty || "Beginner"}
                               </span>
                             </div>
                           </div>
@@ -3047,18 +3058,18 @@ MOOD: Modern, inspiring, professional, engaging`;
                               <p className="text-sm font-semibold text-gray-900">
                                 {courseBlueprint.meta?.courseTitle ||
                                   courseData.title ||
-                                  'Course Blueprint'}
+                                  "Course Blueprint"}
                               </p>
                               <p className="text-xs text-gray-500">
                                 {courseBlueprint.meta?.subjectDomain ||
                                   courseData.subject ||
-                                  'Subject Domain'}
+                                  "Subject Domain"}
                               </p>
                             </div>
 
                             <p className="text-xs text-gray-600 line-clamp-3">
                               {courseBlueprint.purpose?.overview ||
-                                'The course blueprint overview will appear here once generated.'}
+                                "The course blueprint overview will appear here once generated."}
                             </p>
 
                             <div className="grid grid-cols-3 gap-3 text-center text-xs">
@@ -3074,7 +3085,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                   {courseBlueprint.structure?.modules?.reduce(
                                     (total, module) =>
                                       total + (module.lessons?.length || 0),
-                                    0
+                                    0,
                                   ) || 0}
                                 </div>
                                 <div className="text-gray-600">Lessons</div>
@@ -3092,16 +3103,16 @@ MOOD: Modern, inspiring, professional, engaging`;
 
                             <div className="border-top border-gray-100 pt-2 mt-1 text-xs text-gray-500">
                               <div>
-                                Persona:{' '}
+                                Persona:{" "}
                                 {courseBlueprint.learnerPersona
                                   ?.primaryAudience ||
                                   courseData.targetAudience ||
-                                  'Not specified'}
+                                  "Not specified"}
                               </div>
                               <div>
-                                Tone:{' '}
+                                Tone:{" "}
                                 {courseBlueprint.branding?.tone ||
-                                  'Professional, friendly'}
+                                  "Professional, friendly"}
                               </div>
                             </div>
                           </div>
@@ -3121,7 +3132,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                               </span>
                             </>
                           ) : (
-                            'Generated Outline'
+                            "Generated Outline"
                           )}
                         </h3>
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -3147,7 +3158,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       {aiOutline.modules?.reduce(
                                         (total, module) =>
                                           total + (module.lessons?.length || 0),
-                                        0
+                                        0,
                                       ) || 0}
                                     </div>
                                     <div className="text-xs text-gray-600">
@@ -3164,9 +3175,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                               lessonTotal +
                                               (lesson.imagePrompts?.length ||
                                                 0),
-                                            0
+                                            0,
                                           ) || 0),
-                                        0
+                                        0,
                                       ) || 0}
                                     </div>
                                     <div className="text-xs text-gray-600">
@@ -3180,23 +3191,23 @@ MOOD: Modern, inspiring, professional, engaging`;
                             <div className="space-y-3 max-h-96 overflow-y-auto">
                               {aiOutline.modules?.map((module, index) => (
                                 <div
-                                  key={`${module?.moduleTitle || module?.module_title || module?.title || 'module'}-${index}`}
+                                  key={`${module?.moduleTitle || module?.module_title || module?.title || "module"}-${index}`}
                                   className={`border-l-2 pl-3 ${
                                     generatedContent?.comprehensive
-                                      ? 'border-gradient-to-b from-indigo-500 to-purple-500'
-                                      : 'border-purple-500'
+                                      ? "border-gradient-to-b from-indigo-500 to-purple-500"
+                                      : "border-purple-500"
                                   }`}
                                 >
                                   <p className="font-medium text-gray-900 text-sm">
                                     {module?.moduleTitle ||
                                       module?.module_title ||
                                       module?.title ||
-                                      'Untitled Module'}
+                                      "Untitled Module"}
                                   </p>
                                   <p className="text-xs text-gray-600 mb-1">
                                     {module?.moduleDescription ||
                                       module?.description ||
-                                      'Module description'}
+                                      "Module description"}
                                   </p>
 
                                   {/* Enhanced lesson display for comprehensive courses */}
@@ -3210,7 +3221,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                             key={lessonIndex}
                                             className="text-xs text-gray-500 pl-2 border-l border-gray-200"
                                           >
-                                            •{' '}
+                                            •{" "}
                                             {lesson.lessonTitle ||
                                               lesson.lesson_title ||
                                               lesson.title}
@@ -3238,9 +3249,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                   ) : (
                                     <p className="text-xs text-gray-600">
                                       {module?.lessons?.length > 0
-                                        ? `${module.lessons.length} lesson${module.lessons.length > 1 ? 's' : ''}: ${module.lessons[0]?.lessonTitle || module.lessons[0]?.lesson_title || module.lessons[0]?.title || 'Lesson 1'}`
+                                        ? `${module.lessons.length} lesson${module.lessons.length > 1 ? "s" : ""}: ${module.lessons[0]?.lessonTitle || module.lessons[0]?.lesson_title || module.lessons[0]?.title || "Lesson 1"}`
                                         : module?.lesson?.lesson_title ||
-                                          'No lessons yet'}
+                                          "No lessons yet"}
                                     </p>
                                   )}
                                 </div>
@@ -3256,7 +3267,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                   <div className="w-1/2 flex flex-col">
                     {/* Tab Navigation */}
                     <div className="bg-gray-100 flex border-b border-gray-200">
-                      {tabs.map(tab => {
+                      {tabs.map((tab) => {
                         const Icon = tab.icon;
                         return (
                           <button
@@ -3264,8 +3275,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                               activeTab === tab.id
-                                ? 'bg-white text-purple-600 border-b-2 border-purple-600'
-                                : 'text-gray-600 hover:text-gray-900'
+                                ? "bg-white text-purple-600 border-b-2 border-purple-600"
+                                : "text-gray-600 hover:text-gray-900"
                             }`}
                           >
                             <Icon className="w-4 h-4" />
@@ -3275,7 +3286,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                       })}
                     </div>
                     <div className="flex-1 overflow-y-auto p-6">
-                      {activeTab === 'outline' && (
+                      {activeTab === "outline" && (
                         <div className="space-y-6">
                           {/* Inline Streaming Generation UI */}
                           {isStreamingGeneration && (
@@ -3329,7 +3340,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         {currentBlock.content}
                                       </p>
                                       <div className="mt-2 text-xs text-gray-500">
-                                        Section {currentBlock.section} of{' '}
+                                        Section {currentBlock.section} of{" "}
                                         {currentBlock.totalSections}
                                       </div>
                                     </div>
@@ -3347,11 +3358,11 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       animate={{ opacity: 1, y: 0 }}
                                       transition={{ duration: 0.3 }}
                                       className={`p-4 rounded-lg border ${
-                                        message.type === 'success'
-                                          ? 'bg-green-50 border-green-200'
-                                          : message.type === 'error'
-                                            ? 'bg-red-50 border-red-200'
-                                            : 'bg-indigo-50 border-indigo-200'
+                                        message.type === "success"
+                                          ? "bg-green-50 border-green-200"
+                                          : message.type === "error"
+                                            ? "bg-red-50 border-red-200"
+                                            : "bg-indigo-50 border-indigo-200"
                                       }`}
                                     >
                                       <p className="text-sm text-gray-800 whitespace-pre-line">
@@ -3404,9 +3415,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     <input
                                       type="text"
                                       value={courseData.courseName}
-                                      onChange={e => {
+                                      onChange={(e) => {
                                         const value = e.target.value;
-                                        setCourseData(prev => ({
+                                        setCourseData((prev) => ({
                                           ...prev,
                                           courseName: value,
                                           title: value, // Sync legacy field
@@ -3428,9 +3439,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     </label>
                                     <textarea
                                       value={courseData.learningOutcomes}
-                                      onChange={e => {
+                                      onChange={(e) => {
                                         const value = e.target.value;
-                                        setCourseData(prev => ({
+                                        setCourseData((prev) => ({
                                           ...prev,
                                           learningOutcomes: value,
                                           objectives: value, // Sync legacy field
@@ -3453,9 +3464,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     <input
                                       type="text"
                                       value={courseData.targetAudience}
-                                      onChange={e => {
+                                      onChange={(e) => {
                                         const value = e.target.value;
-                                        setCourseData(prev => ({
+                                        setCourseData((prev) => ({
                                           ...prev,
                                           targetAudience: value,
                                           subject: value, // Sync legacy field
@@ -3478,9 +3489,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     <div className="flex gap-4 mb-3">
                                       <label
                                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                          courseData.priorKnowledge === 'no'
-                                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          courseData.priorKnowledge === "no"
+                                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <input
@@ -3488,13 +3499,13 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           name="priorKnowledge"
                                           value="no"
                                           checked={
-                                            courseData.priorKnowledge === 'no'
+                                            courseData.priorKnowledge === "no"
                                           }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
+                                          onChange={(e) =>
+                                            setCourseData((prev) => ({
                                               ...prev,
                                               priorKnowledge: e.target.value,
-                                              priorKnowledgeDetails: '',
+                                              priorKnowledgeDetails: "",
                                             }))
                                           }
                                           className="w-4 h-4 text-emerald-600"
@@ -3504,9 +3515,9 @@ MOOD: Modern, inspiring, professional, engaging`;
 
                                       <label
                                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                          courseData.priorKnowledge === 'yes'
-                                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          courseData.priorKnowledge === "yes"
+                                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <input
@@ -3514,10 +3525,10 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           name="priorKnowledge"
                                           value="yes"
                                           checked={
-                                            courseData.priorKnowledge === 'yes'
+                                            courseData.priorKnowledge === "yes"
                                           }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
+                                          onChange={(e) =>
+                                            setCourseData((prev) => ({
                                               ...prev,
                                               priorKnowledge: e.target.value,
                                             }))
@@ -3528,10 +3539,10 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       </label>
                                     </div>
 
-                                    {courseData.priorKnowledge === 'yes' && (
+                                    {courseData.priorKnowledge === "yes" && (
                                       <motion.div
                                         initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
+                                        animate={{ opacity: 1, height: "auto" }}
                                         exit={{ opacity: 0, height: 0 }}
                                         className="mt-3"
                                       >
@@ -3540,8 +3551,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           value={
                                             courseData.priorKnowledgeDetails
                                           }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
+                                          onChange={(e) =>
+                                            setCourseData((prev) => ({
                                               ...prev,
                                               priorKnowledgeDetails:
                                                 e.target.value,
@@ -3567,19 +3578,19 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     <div className="flex gap-4">
                                       <label
                                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                          generateThumbnails === 'yes'
-                                            ? 'border-orange-500 bg-orange-50 text-orange-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          generateThumbnails === "yes"
+                                            ? "border-orange-500 bg-orange-50 text-orange-700"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <input
                                           type="radio"
                                           name="generateThumbnails"
                                           value="yes"
-                                          checked={generateThumbnails === 'yes'}
-                                          onChange={e =>
+                                          checked={generateThumbnails === "yes"}
+                                          onChange={(e) =>
                                             setGenerateThumbnails(
-                                              e.target.value
+                                              e.target.value,
                                             )
                                           }
                                           className="w-4 h-4 text-orange-600"
@@ -3589,19 +3600,19 @@ MOOD: Modern, inspiring, professional, engaging`;
 
                                       <label
                                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                          generateThumbnails === 'no'
-                                            ? 'border-orange-500 bg-orange-50 text-orange-700'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          generateThumbnails === "no"
+                                            ? "border-orange-500 bg-orange-50 text-orange-700"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <input
                                           type="radio"
                                           name="generateThumbnails"
                                           value="no"
-                                          checked={generateThumbnails === 'no'}
-                                          onChange={e =>
+                                          checked={generateThumbnails === "no"}
+                                          onChange={(e) =>
                                             setGenerateThumbnails(
-                                              e.target.value
+                                              e.target.value,
                                             )
                                           }
                                           className="w-4 h-4 text-orange-600"
@@ -3625,8 +3636,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     </label>
                                     <textarea
                                       value={courseData.description}
-                                      onChange={e =>
-                                        setCourseData(prev => ({
+                                      onChange={(e) =>
+                                        setCourseData((prev) => ({
                                           ...prev,
                                           description: e.target.value,
                                         }))
@@ -3645,8 +3656,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       </label>
                                       <select
                                         value={courseData.difficulty}
-                                        onChange={e =>
-                                          setCourseData(prev => ({
+                                        onChange={(e) =>
+                                          setCourseData((prev) => ({
                                             ...prev,
                                             difficulty: e.target.value,
                                           }))
@@ -3672,8 +3683,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <input
                                         type="text"
                                         value={courseData.duration}
-                                        onChange={e =>
-                                          setCourseData(prev => ({
+                                        onChange={(e) =>
+                                          setCourseData((prev) => ({
                                             ...prev,
                                             duration: e.target.value,
                                           }))
@@ -3690,7 +3701,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       onClick={() => {
                                         if (!courseData.courseName.trim()) {
                                           toast.error(
-                                            'Please enter a course name'
+                                            "Please enter a course name",
                                           );
                                           return;
                                         }
@@ -3698,13 +3709,13 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           !courseData.learningOutcomes.trim()
                                         ) {
                                           toast.error(
-                                            'Please describe what learners will be able to do'
+                                            "Please describe what learners will be able to do",
                                           );
                                           return;
                                         }
                                         if (!courseData.targetAudience.trim()) {
                                           toast.error(
-                                            'Please specify who this course is for'
+                                            "Please specify who this course is for",
                                           );
                                           return;
                                         }
@@ -3739,9 +3750,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           type="number"
                                           min="1"
                                           max="20"
-                                          value={courseData.moduleCount || ''}
-                                          onChange={e =>
-                                            setCourseData(prev => ({
+                                          value={courseData.moduleCount || ""}
+                                          onChange={(e) =>
+                                            setCourseData((prev) => ({
                                               ...prev,
                                               moduleCount: e.target.value
                                                 ? parseInt(e.target.value)
@@ -3761,10 +3772,10 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           min="1"
                                           max="20"
                                           value={
-                                            courseData.lessonsPerModule || ''
+                                            courseData.lessonsPerModule || ""
                                           }
-                                          onChange={e =>
-                                            setCourseData(prev => ({
+                                          onChange={(e) =>
+                                            setCourseData((prev) => ({
                                               ...prev,
                                               lessonsPerModule: e.target.value
                                                 ? parseInt(e.target.value)
@@ -3802,43 +3813,43 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'awareness',
+                                              id: "awareness",
                                               label:
-                                                'Awareness / understanding',
+                                                "Awareness / understanding",
                                             },
                                             {
-                                              id: 'skill',
-                                              label: 'Skill / procedure',
+                                              id: "skill",
+                                              label: "Skill / procedure",
                                             },
                                             {
-                                              id: 'behavior',
-                                              label: 'Behavior change',
+                                              id: "behavior",
+                                              label: "Behavior change",
                                             },
                                             {
-                                              id: 'compliance',
-                                              label: 'Compliance',
+                                              id: "compliance",
+                                              label: "Compliance",
                                             },
                                             {
-                                              id: 'certification',
-                                              label: 'Certification',
+                                              id: "certification",
+                                              label: "Certification",
                                             },
                                             {
-                                              id: 'performance',
-                                              label: 'Performance KPI',
+                                              id: "performance",
+                                              label: "Performance KPI",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setQuickArchitectConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     primaryPurpose: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
-                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.primaryPurpose === option.id ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}`}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.primaryPurpose === option.id ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300"}`}
                                             >
                                               {option.label}
                                             </button>
@@ -3853,30 +3864,30 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'beginner',
-                                              label: 'Beginner',
+                                              id: "beginner",
+                                              label: "Beginner",
                                             },
                                             {
-                                              id: 'intermediate',
-                                              label: 'Intermediate',
+                                              id: "intermediate",
+                                              label: "Intermediate",
                                             },
                                             {
-                                              id: 'advanced',
-                                              label: 'Advanced',
+                                              id: "advanced",
+                                              label: "Advanced",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setQuickArchitectConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     learnerLevel: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
-                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.learnerLevel === option.id ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'}`}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.learnerLevel === option.id ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"}`}
                                             >
                                               {option.label}
                                             </button>
@@ -3891,31 +3902,31 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'micro',
+                                              id: "micro",
                                               label:
-                                                'Microlearning (10–15 min)',
+                                                "Microlearning (10–15 min)",
                                             },
                                             {
-                                              id: 'standard',
-                                              label: 'Standard (20–30 min)',
+                                              id: "standard",
+                                              label: "Standard (20–30 min)",
                                             },
                                             {
-                                              id: 'deep',
-                                              label: 'Deep dives (40–60 min)',
+                                              id: "deep",
+                                              label: "Deep dives (40–60 min)",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setQuickArchitectConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     timeProfile: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
-                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.timeProfile === option.id ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'}`}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.timeProfile === option.id ? "bg-purple-600 text-white border-purple-600 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"}`}
                                             >
                                               {option.label}
                                             </button>
@@ -3930,30 +3941,30 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'on_the_job',
-                                              label: 'On-the-job',
+                                              id: "on_the_job",
+                                              label: "On-the-job",
                                             },
                                             {
-                                              id: 'classroom',
-                                              label: 'Classroom / workshop',
+                                              id: "classroom",
+                                              label: "Classroom / workshop",
                                             },
                                             {
-                                              id: 'remote',
-                                              label: 'Remote / self-paced',
+                                              id: "remote",
+                                              label: "Remote / self-paced",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setQuickArchitectConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     deliveryContext: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
-                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.deliveryContext === option.id ? 'bg-sky-600 text-white border-sky-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'}`}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.deliveryContext === option.id ? "bg-sky-600 text-white border-sky-600 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:border-sky-300"}`}
                                             >
                                               {option.label}
                                             </button>
@@ -3968,38 +3979,38 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'completion',
-                                              label: 'Completion',
+                                              id: "completion",
+                                              label: "Completion",
                                             },
                                             {
-                                              id: 'quiz_scores',
-                                              label: 'Quiz / test scores',
+                                              id: "quiz_scores",
+                                              label: "Quiz / test scores",
                                             },
                                             {
-                                              id: 'on_job',
-                                              label: 'On-the-job performance',
+                                              id: "on_job",
+                                              label: "On-the-job performance",
                                             },
                                             {
-                                              id: 'project',
-                                              label: 'Projects / assignments',
+                                              id: "project",
+                                              label: "Projects / assignments",
                                             },
                                             {
-                                              id: 'certification',
-                                              label: 'Certification / exam',
+                                              id: "certification",
+                                              label: "Certification / exam",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setQuickArchitectConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     successFocus: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
-                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.successFocus === option.id ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'}`}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${quickArchitectConfig.successFocus === option.id ? "bg-amber-600 text-white border-amber-600 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:border-amber-300"}`}
                                             >
                                               {option.label}
                                             </button>
@@ -4032,33 +4043,33 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'remember',
-                                              label: 'Remember',
+                                              id: "remember",
+                                              label: "Remember",
                                             },
                                             {
-                                              id: 'understand',
-                                              label: 'Understand',
+                                              id: "understand",
+                                              label: "Understand",
                                             },
-                                            { id: 'apply', label: 'Apply' },
-                                            { id: 'analyze', label: 'Analyze' },
+                                            { id: "apply", label: "Apply" },
+                                            { id: "analyze", label: "Analyze" },
                                             {
-                                              id: 'evaluate',
-                                              label: 'Evaluate',
+                                              id: "evaluate",
+                                              label: "Evaluate",
                                             },
-                                            { id: 'create', label: 'Create' },
-                                          ].map(option => (
+                                            { id: "create", label: "Create" },
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     bloomMaxLevel: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
-                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${architectStrategyConfig.bloomMaxLevel === option.id ? 'bg-indigo-700 text-white border-indigo-700 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-300'}`}
+                                              className={`px-2 py-1 rounded-full border text-[11px] transition-all ${architectStrategyConfig.bloomMaxLevel === option.id ? "bg-indigo-700 text-white border-indigo-700 shadow-sm" : "bg-white text-gray-700 border-gray-200 hover:border-indigo-300"}`}
                                             >
                                               {option.label}
                                             </button>
@@ -4073,38 +4084,38 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'self_paced',
-                                              label: 'Self-paced',
+                                              id: "self_paced",
+                                              label: "Self-paced",
                                             },
                                             {
-                                              id: 'blended',
-                                              label: 'Blended',
+                                              id: "blended",
+                                              label: "Blended",
                                             },
                                             {
-                                              id: 'instructor_led',
-                                              label: 'Instructor-led',
+                                              id: "instructor_led",
+                                              label: "Instructor-led",
                                             },
                                             {
-                                              id: 'microlearning',
-                                              label: 'Microlearning',
+                                              id: "microlearning",
+                                              label: "Microlearning",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     deliveryMode: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 architectStrategyConfig.deliveryMode ===
                                                 option.id
-                                                  ? 'bg-sky-700 text-white border-sky-700 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-sky-300'
+                                                  ? "bg-sky-700 text-white border-sky-700 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-sky-300"
                                               }`}
                                             >
                                               {option.label}
@@ -4120,38 +4131,38 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'balanced',
-                                              label: 'Balanced (VAK)',
+                                              id: "balanced",
+                                              label: "Balanced (VAK)",
                                             },
                                             {
-                                              id: 'visual',
-                                              label: 'Visual-heavy',
+                                              id: "visual",
+                                              label: "Visual-heavy",
                                             },
                                             {
-                                              id: 'auditory',
-                                              label: 'Auditory-heavy',
+                                              id: "auditory",
+                                              label: "Auditory-heavy",
                                             },
                                             {
-                                              id: 'kinesthetic',
-                                              label: 'Hands-on / kinesthetic',
+                                              id: "kinesthetic",
+                                              label: "Hands-on / kinesthetic",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     vakEmphasis: option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 architectStrategyConfig.vakEmphasis ===
                                                 option.id
-                                                  ? 'bg-purple-700 text-white border-purple-700 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                                  ? "bg-purple-700 text-white border-purple-700 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
                                               }`}
                                             >
                                               {option.label}
@@ -4167,39 +4178,39 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'per_lesson',
-                                              label: 'After each lesson',
+                                              id: "per_lesson",
+                                              label: "After each lesson",
                                             },
                                             {
-                                              id: 'per_module',
-                                              label: 'End of each module',
+                                              id: "per_module",
+                                              label: "End of each module",
                                             },
                                             {
-                                              id: 'milestones',
-                                              label: 'Only at key milestones',
+                                              id: "milestones",
+                                              label: "Only at key milestones",
                                             },
                                             {
-                                              id: 'ai_decides',
-                                              label: 'Let AI decide',
+                                              id: "ai_decides",
+                                              label: "Let AI decide",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     practiceFrequency:
                                                       option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 architectStrategyConfig.practiceFrequency ===
                                                 option.id
-                                                  ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                                                  ? "bg-emerald-700 text-white border-emerald-700 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
                                               }`}
                                             >
                                               {option.label}
@@ -4215,39 +4226,39 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'after_each_lesson',
-                                              label: 'After each lesson',
+                                              id: "after_each_lesson",
+                                              label: "After each lesson",
                                             },
                                             {
-                                              id: 'end_of_module',
-                                              label: 'End of module only',
+                                              id: "end_of_module",
+                                              label: "End of module only",
                                             },
                                             {
-                                              id: 'final_only',
-                                              label: 'Final assessment only',
+                                              id: "final_only",
+                                              label: "Final assessment only",
                                             },
                                             {
-                                              id: 'mixed',
-                                              label: 'Mix of checks + final',
+                                              id: "mixed",
+                                              label: "Mix of checks + final",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     assessmentPlacement:
                                                       option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 architectStrategyConfig.assessmentPlacement ===
                                                 option.id
-                                                  ? 'bg-rose-700 text-white border-rose-700 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                                  ? "bg-rose-700 text-white border-rose-700 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-rose-300"
                                               }`}
                                             >
                                               {option.label}
@@ -4263,39 +4274,39 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'mcq',
-                                              label: 'MCQ / quizzes',
+                                              id: "mcq",
+                                              label: "MCQ / quizzes",
                                             },
                                             {
-                                              id: 'simulation',
-                                              label: 'Simulations / scenarios',
+                                              id: "simulation",
+                                              label: "Simulations / scenarios",
                                             },
                                             {
-                                              id: 'reflection',
-                                              label: 'Reflections / journals',
+                                              id: "reflection",
+                                              label: "Reflections / journals",
                                             },
                                             {
-                                              id: 'mixed',
-                                              label: 'Mixed types',
+                                              id: "mixed",
+                                              label: "Mixed types",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     mainAssessmentType:
                                                       option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 architectStrategyConfig.mainAssessmentType ===
                                                 option.id
-                                                  ? 'bg-amber-700 text-white border-amber-700 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                                                  ? "bg-amber-700 text-white border-amber-700 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-amber-300"
                                               }`}
                                             >
                                               {option.label}
@@ -4311,35 +4322,35 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <div className="flex flex-wrap gap-1">
                                           {[
                                             {
-                                              id: 'lms',
-                                              label: 'LMS / platform',
+                                              id: "lms",
+                                              label: "LMS / platform",
                                             },
                                             {
-                                              id: 'classroom',
-                                              label: 'Classroom / ILT',
+                                              id: "classroom",
+                                              label: "Classroom / ILT",
                                             },
                                             {
-                                              id: 'blended',
-                                              label: 'Blended delivery',
+                                              id: "blended",
+                                              label: "Blended delivery",
                                             },
-                                          ].map(option => (
+                                          ].map((option) => (
                                             <button
                                               key={option.id}
                                               type="button"
                                               onClick={() =>
                                                 setArchitectStrategyConfig(
-                                                  prev => ({
+                                                  (prev) => ({
                                                     ...prev,
                                                     implementationMode:
                                                       option.id,
-                                                  })
+                                                  }),
                                                 )
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 architectStrategyConfig.implementationMode ===
                                                 option.id
-                                                  ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-slate-300'
+                                                  ? "bg-slate-800 text-white border-slate-800 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-slate-300"
                                               }`}
                                             >
                                               {option.label}
@@ -4371,15 +4382,15 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Text/Reading',
-                                            'Video',
-                                            'Infographics',
-                                            'Interactive simulations',
-                                            'Case studies',
-                                            'Hands-on exercises',
-                                            'Podcasts/Audio',
-                                            'Animations',
-                                          ].map(option => (
+                                            "Text/Reading",
+                                            "Video",
+                                            "Infographics",
+                                            "Interactive simulations",
+                                            "Case studies",
+                                            "Hands-on exercises",
+                                            "Podcasts/Audio",
+                                            "Animations",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4391,12 +4402,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'development',
-                                                  { contentTypes: updated }
+                                                  "development",
+                                                  { contentTypes: updated },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4405,8 +4416,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.development
                                                     ?.contentTypes || []
                                                 ).includes(option)
-                                                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                                  ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-rose-300"
                                               }`}
                                             >
                                               {option}
@@ -4421,14 +4432,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Static images',
-                                            'Animated graphics',
-                                            'Short-form video',
-                                            'Long-form video',
-                                            'Interactive elements',
-                                            '3D models',
-                                            'AR/VR',
-                                          ].map(option => (
+                                            "Static images",
+                                            "Animated graphics",
+                                            "Short-form video",
+                                            "Long-form video",
+                                            "Interactive elements",
+                                            "3D models",
+                                            "AR/VR",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4440,12 +4451,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'development',
-                                                  { mediaFormats: updated }
+                                                  "development",
+                                                  { mediaFormats: updated },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4454,8 +4465,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.development
                                                     ?.mediaFormats || []
                                                 ).includes(option)
-                                                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                                  ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-rose-300"
                                               }`}
                                             >
                                               {option}
@@ -4470,15 +4481,15 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Problem-based learning',
-                                            'Case-based learning',
-                                            'Scenario-based learning',
-                                            'Storytelling',
-                                            'Gamification',
-                                            'Peer learning',
-                                            'Mentoring',
-                                            'Scaffolding',
-                                          ].map(option => (
+                                            "Problem-based learning",
+                                            "Case-based learning",
+                                            "Scenario-based learning",
+                                            "Storytelling",
+                                            "Gamification",
+                                            "Peer learning",
+                                            "Mentoring",
+                                            "Scaffolding",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4491,15 +4502,15 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'development',
+                                                  "development",
                                                   {
                                                     instructionalStrategies:
                                                       updated,
-                                                  }
+                                                  },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4509,8 +4520,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.instructionalStrategies ||
                                                   []
                                                 ).includes(option)
-                                                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-rose-300'
+                                                  ? "bg-rose-600 text-white border-rose-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-rose-300"
                                               }`}
                                             >
                                               {option}
@@ -4542,14 +4553,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Internet connectivity',
-                                            'Device compatibility',
-                                            'Bandwidth limitations',
-                                            'Offline access needed',
-                                            'Mobile-first requirement',
-                                            'Accessibility requirements',
-                                            'Language localization',
-                                          ].map(option => (
+                                            "Internet connectivity",
+                                            "Device compatibility",
+                                            "Bandwidth limitations",
+                                            "Offline access needed",
+                                            "Mobile-first requirement",
+                                            "Accessibility requirements",
+                                            "Language localization",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4562,15 +4573,15 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'implementation',
+                                                  "implementation",
                                                   {
                                                     deploymentConstraints:
                                                       updated,
-                                                  }
+                                                  },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4580,8 +4591,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.deploymentConstraints ||
                                                   []
                                                 ).includes(option)
-                                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                                                  ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-amber-300"
                                               }`}
                                             >
                                               {option}
@@ -4596,14 +4607,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Instructor support',
-                                            'Peer support',
-                                            'Help desk/FAQ',
-                                            'Tutoring',
-                                            'Mentoring',
-                                            'Community forums',
-                                            'Live chat support',
-                                          ].map(option => (
+                                            "Instructor support",
+                                            "Peer support",
+                                            "Help desk/FAQ",
+                                            "Tutoring",
+                                            "Mentoring",
+                                            "Community forums",
+                                            "Live chat support",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4615,12 +4626,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'implementation',
-                                                  { supportNeeded: updated }
+                                                  "implementation",
+                                                  { supportNeeded: updated },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4629,8 +4640,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.implementation
                                                     ?.supportNeeded || []
                                                 ).includes(option)
-                                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-300'
+                                                  ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-amber-300"
                                               }`}
                                             >
                                               {option}
@@ -4665,12 +4676,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Automated feedback',
-                                            'Instructor feedback',
-                                            'Peer feedback',
-                                            'Self-reflection',
-                                            'Combination of above',
-                                          ].map(option => (
+                                            "Automated feedback",
+                                            "Instructor feedback",
+                                            "Peer feedback",
+                                            "Self-reflection",
+                                            "Combination of above",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4682,12 +4693,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'implementation',
-                                                  { feedbackMechanism: updated }
+                                                  "implementation",
+                                                  {
+                                                    feedbackMechanism: updated,
+                                                  },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4696,8 +4709,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.implementation
                                                     ?.feedbackMechanism || []
                                                 ).includes(option)
-                                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
                                               }`}
                                             >
                                               {option}
@@ -4712,13 +4725,13 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Post-course survey',
-                                            'Satisfaction rating',
-                                            'Learning outcome assessment',
-                                            'On-the-job performance tracking',
-                                            'Learner interviews',
-                                            'Focus groups',
-                                          ].map(option => (
+                                            "Post-course survey",
+                                            "Satisfaction rating",
+                                            "Learning outcome assessment",
+                                            "On-the-job performance tracking",
+                                            "Learner interviews",
+                                            "Focus groups",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -4730,14 +4743,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'implementation',
+                                                  "implementation",
                                                   {
                                                     feedbackCollection: updated,
-                                                  }
+                                                  },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -4746,8 +4759,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.implementation
                                                     ?.feedbackCollection || []
                                                 ).includes(option)
-                                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300"
                                               }`}
                                             >
                                               {option}
@@ -4785,25 +4798,25 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Story',
-                                            'Fact',
-                                            'Problem',
-                                            'Visual',
-                                            'Question',
-                                          ].map(option => (
+                                            "Story",
+                                            "Fact",
+                                            "Problem",
+                                            "Visual",
+                                            "Question",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   attentionStrategy: option,
                                                 })
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 courseData.designPhases?.design
                                                   ?.attentionStrategy === option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -4818,17 +4831,17 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Clear outcomes',
-                                            'Syllabus',
-                                            'Module-level',
-                                            'Lesson-level',
-                                            'With criteria',
-                                          ].map(option => (
+                                            "Clear outcomes",
+                                            "Syllabus",
+                                            "Module-level",
+                                            "Lesson-level",
+                                            "With criteria",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   objectivesAnnouncement:
                                                     option,
                                                 })
@@ -4837,8 +4850,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 courseData.designPhases?.design
                                                   ?.objectivesAnnouncement ===
                                                 option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -4853,17 +4866,17 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Pre-test',
-                                            'Discussion',
-                                            'Case link',
-                                            'Warm-up',
-                                            'Knowledge check',
-                                          ].map(option => (
+                                            "Pre-test",
+                                            "Discussion",
+                                            "Case link",
+                                            "Warm-up",
+                                            "Knowledge check",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   priorKnowledgeActivation:
                                                     option,
                                                 })
@@ -4872,8 +4885,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 courseData.designPhases?.design
                                                   ?.priorKnowledgeActivation ===
                                                 option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -4888,18 +4901,18 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Lecture',
-                                            'Reading',
-                                            'Video',
-                                            'Tutorial',
-                                            'Infographic',
-                                            'Animation',
-                                          ].map(option => (
+                                            "Lecture",
+                                            "Reading",
+                                            "Video",
+                                            "Tutorial",
+                                            "Infographic",
+                                            "Animation",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   contentPresentation: option,
                                                 })
                                               }
@@ -4907,8 +4920,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 courseData.designPhases?.design
                                                   ?.contentPresentation ===
                                                 option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -4923,26 +4936,26 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Instructions',
-                                            'Visuals',
-                                            'Job aids',
-                                            'Examples',
-                                            'Hints',
-                                            'Narration',
-                                          ].map(option => (
+                                            "Instructions",
+                                            "Visuals",
+                                            "Job aids",
+                                            "Examples",
+                                            "Hints",
+                                            "Narration",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   guidancePlan: option,
                                                 })
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 courseData.designPhases?.design
                                                   ?.guidancePlan === option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -4957,25 +4970,25 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Guided practice',
-                                            'Independent',
-                                            'Simulations',
-                                            'Role-plays',
-                                            'Scenarios',
-                                          ].map(option => (
+                                            "Guided practice",
+                                            "Independent",
+                                            "Simulations",
+                                            "Role-plays",
+                                            "Scenarios",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   practicePlan: option,
                                                 })
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 courseData.designPhases?.design
                                                   ?.practicePlan === option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -4990,25 +5003,25 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Immediate',
-                                            'Delayed',
-                                            'Corrective',
-                                            'Confirmatory',
-                                            'Coaching',
-                                          ].map(option => (
+                                            "Immediate",
+                                            "Delayed",
+                                            "Corrective",
+                                            "Confirmatory",
+                                            "Coaching",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   feedbackPlan: option,
                                                 })
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 courseData.designPhases?.design
                                                   ?.feedbackPlan === option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -5023,25 +5036,25 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Quiz',
-                                            'Project',
-                                            'Practical task',
-                                            'Reflection',
-                                            'Portfolio',
-                                          ].map(option => (
+                                            "Quiz",
+                                            "Project",
+                                            "Practical task",
+                                            "Reflection",
+                                            "Portfolio",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   assessmentPlan: option,
                                                 })
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 courseData.designPhases?.design
                                                   ?.assessmentPlan === option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -5056,25 +5069,25 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Assignments',
-                                            'Real-world app',
-                                            'Summary/review',
-                                            'Job aids',
-                                            'Follow-up',
-                                          ].map(option => (
+                                            "Assignments",
+                                            "Real-world app",
+                                            "Summary/review",
+                                            "Job aids",
+                                            "Follow-up",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
                                               onClick={() =>
-                                                updateDesignPhase('design', {
+                                                updateDesignPhase("design", {
                                                   retentionPlan: option,
                                                 })
                                               }
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
                                                 courseData.designPhases?.design
                                                   ?.retentionPlan === option
-                                                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300'
+                                                  ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-orange-300"
                                               }`}
                                             >
                                               {option}
@@ -5109,14 +5122,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Infographics',
-                                            'Diagrams/flowcharts',
-                                            'Color-coded',
-                                            'Mind maps',
-                                            'Charts/graphs',
-                                            'Video demos',
-                                            'Annotated images',
-                                          ].map(option => (
+                                            "Infographics",
+                                            "Diagrams/flowcharts",
+                                            "Color-coded",
+                                            "Mind maps",
+                                            "Charts/graphs",
+                                            "Video demos",
+                                            "Annotated images",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -5128,12 +5141,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'experience',
-                                                  { visualApproaches: updated }
+                                                  "experience",
+                                                  { visualApproaches: updated },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -5142,8 +5155,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.experience
                                                     ?.visualApproaches || []
                                                 ).includes(option)
-                                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                                  ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
                                               }`}
                                             >
                                               {option}
@@ -5158,14 +5171,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Narration/voiceover',
-                                            'Podcasts',
-                                            'Audio explanations',
-                                            'Discussions',
-                                            'Verbal instructions',
-                                            'Music/sound effects',
-                                            'Interviews',
-                                          ].map(option => (
+                                            "Narration/voiceover",
+                                            "Podcasts",
+                                            "Audio explanations",
+                                            "Discussions",
+                                            "Verbal instructions",
+                                            "Music/sound effects",
+                                            "Interviews",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -5177,14 +5190,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'experience',
+                                                  "experience",
                                                   {
                                                     auditoryApproaches: updated,
-                                                  }
+                                                  },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -5193,8 +5206,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.experience
                                                     ?.auditoryApproaches || []
                                                 ).includes(option)
-                                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                                  ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
                                               }`}
                                             >
                                               {option}
@@ -5209,14 +5222,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {[
-                                            'Hands-on exercises',
-                                            'Interactive simulations',
-                                            'Virtual labs',
-                                            'Role-plays',
-                                            'Physical demos',
-                                            'Drag-and-drop',
-                                            'Real-world practice',
-                                          ].map(option => (
+                                            "Hands-on exercises",
+                                            "Interactive simulations",
+                                            "Virtual labs",
+                                            "Role-plays",
+                                            "Physical demos",
+                                            "Drag-and-drop",
+                                            "Real-world practice",
+                                          ].map((option) => (
                                             <button
                                               key={option}
                                               type="button"
@@ -5229,15 +5242,15 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 const updated =
                                                   current.includes(option)
                                                     ? current.filter(
-                                                        c => c !== option
+                                                        (c) => c !== option,
                                                       )
                                                     : [...current, option];
                                                 updateDesignPhase(
-                                                  'experience',
+                                                  "experience",
                                                   {
                                                     kinestheticApproaches:
                                                       updated,
-                                                  }
+                                                  },
                                                 );
                                               }}
                                               className={`px-2 py-1 rounded-full border text-[11px] transition-all ${
@@ -5247,8 +5260,8 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                     ?.kinestheticApproaches ||
                                                   []
                                                 ).includes(option)
-                                                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                                                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+                                                  ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                                                  : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
                                               }`}
                                             >
                                               {option}
@@ -5301,12 +5314,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          setGenerationMode('QUICK')
+                                          setGenerationMode("QUICK")
                                         }
                                         className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                          generationMode === 'QUICK'
-                                            ? 'border-purple-500 bg-purple-50'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          generationMode === "QUICK"
+                                            ? "border-purple-500 bg-purple-50"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <div className="font-semibold text-sm text-gray-900">
@@ -5320,12 +5333,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          setGenerationMode('STANDARD')
+                                          setGenerationMode("STANDARD")
                                         }
                                         className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                          generationMode === 'STANDARD'
-                                            ? 'border-purple-500 bg-purple-50'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          generationMode === "STANDARD"
+                                            ? "border-purple-500 bg-purple-50"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <div className="font-semibold text-sm text-gray-900">
@@ -5339,12 +5352,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          setGenerationMode('COMPLETE')
+                                          setGenerationMode("COMPLETE")
                                         }
                                         className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                          generationMode === 'COMPLETE'
-                                            ? 'border-purple-500 bg-purple-50'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          generationMode === "COMPLETE"
+                                            ? "border-purple-500 bg-purple-50"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <div className="font-semibold text-sm text-gray-900">
@@ -5358,12 +5371,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          setGenerationMode('PREMIUM')
+                                          setGenerationMode("PREMIUM")
                                         }
                                         className={`p-3 border-2 rounded-lg text-left transition-all ${
-                                          generationMode === 'PREMIUM'
-                                            ? 'border-purple-500 bg-purple-50'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                          generationMode === "PREMIUM"
+                                            ? "border-purple-500 bg-purple-50"
+                                            : "border-gray-200 hover:border-gray-300"
                                         }`}
                                       >
                                         <div className="font-semibold text-sm text-gray-900">
@@ -5390,12 +5403,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <button
                                           type="button"
                                           className={`py-2 px-4 text-sm font-medium ${
-                                            activeContentTab === 'file'
-                                              ? 'text-purple-600 border-b-2 border-purple-600'
-                                              : 'text-gray-500 hover:text-gray-700'
+                                            activeContentTab === "file"
+                                              ? "text-purple-600 border-b-2 border-purple-600"
+                                              : "text-gray-500 hover:text-gray-700"
                                           }`}
                                           onClick={() =>
-                                            setActiveContentTab('file')
+                                            setActiveContentTab("file")
                                           }
                                         >
                                           Upload Files
@@ -5403,12 +5416,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <button
                                           type="button"
                                           className={`py-2 px-4 text-sm font-medium ${
-                                            activeContentTab === 'url'
-                                              ? 'text-purple-600 border-b-2 border-purple-600'
-                                              : 'text-gray-500 hover:text-gray-700'
+                                            activeContentTab === "url"
+                                              ? "text-purple-600 border-b-2 border-purple-600"
+                                              : "text-gray-500 hover:text-gray-700"
                                           }`}
                                           onClick={() =>
-                                            setActiveContentTab('url')
+                                            setActiveContentTab("url")
                                           }
                                         >
                                           Paste URLs
@@ -5417,7 +5430,7 @@ MOOD: Modern, inspiring, professional, engaging`;
 
                                       {/* Tab Content */}
                                       <div className="pt-3">
-                                        {activeContentTab === 'file' ? (
+                                        {activeContentTab === "file" ? (
                                           <div className="space-y-3">
                                             {/* File Upload Area */}
                                             <input
@@ -5436,7 +5449,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                 <Upload className="w-8 h-8 text-gray-400 mb-3" />
                                                 <p className="text-sm text-gray-600 mb-1">
                                                   Drag & drop any source
-                                                  materials or{' '}
+                                                  materials or{" "}
                                                   <span className="text-purple-600 font-medium">
                                                     choose file
                                                   </span>
@@ -5491,7 +5504,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                                         <X className="w-4 h-4" />
                                                       </Button>
                                                     </div>
-                                                  )
+                                                  ),
                                                 )}
                                               </div>
                                             )}
@@ -5500,7 +5513,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           <div className="space-y-3">
                                             <textarea
                                               value={sourceContent}
-                                              onChange={e =>
+                                              onChange={(e) =>
                                                 setSourceContent(e.target.value)
                                               }
                                               placeholder="Paste text or URLs you want me to reference"
@@ -5528,12 +5541,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <button
                                         type="button"
                                         className={`py-2 px-4 text-sm font-medium ${
-                                          activeThumbnailTab === 'upload'
-                                            ? 'text-purple-600 border-b-2 border-purple-600'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                          activeThumbnailTab === "upload"
+                                            ? "text-purple-600 border-b-2 border-purple-600"
+                                            : "text-gray-500 hover:text-gray-700"
                                         }`}
                                         onClick={() =>
-                                          setActiveThumbnailTab('upload')
+                                          setActiveThumbnailTab("upload")
                                         }
                                       >
                                         Upload Image
@@ -5541,12 +5554,12 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       <button
                                         type="button"
                                         className={`py-2 px-4 text-sm font-medium ${
-                                          activeThumbnailTab === 'ai'
-                                            ? 'text-purple-600 border-b-2 border-purple-600'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                          activeThumbnailTab === "ai"
+                                            ? "text-purple-600 border-b-2 border-purple-600"
+                                            : "text-gray-500 hover:text-gray-700"
                                         }`}
                                         onClick={() =>
-                                          setActiveThumbnailTab('ai')
+                                          setActiveThumbnailTab("ai")
                                         }
                                       >
                                         Generate with AI
@@ -5554,9 +5567,9 @@ MOOD: Modern, inspiring, professional, engaging`;
                                     </div>
 
                                     {/* Tab Content */}
-                                    {activeThumbnailTab === 'upload' ? (
+                                    {activeThumbnailTab === "upload" ? (
                                       <div
-                                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging ? 'border-purple-500 bg-purple-50' : 'border-gray-300 hover:border-gray-400'}`}
+                                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging ? "border-purple-500 bg-purple-50" : "border-gray-300 hover:border-gray-400"}`}
                                         onDragEnter={handleDragEnter}
                                         onDragOver={handleDragOver}
                                         onDragLeave={handleDragLeave}
@@ -5576,7 +5589,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         <p className="text-sm text-gray-600 mb-1">
                                           {courseData.thumbnail
                                             ? courseData.thumbnail
-                                            : 'Drag & drop an image or click to browse'}
+                                            : "Drag & drop an image or click to browse"}
                                         </p>
                                         <p className="text-xs text-gray-500">
                                           PNG, JPG up to 5MB
@@ -5592,10 +5605,10 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           </div>
                                           <textarea
                                             value={aiImagePrompt}
-                                            onChange={e =>
+                                            onChange={(e) =>
                                               setAiImagePrompt(e.target.value)
                                             }
-                                            placeholder={`Describe the image you want to generate for "${courseData.title || 'your course'}" - include details like subject matter, style, and mood for better results.`}
+                                            placeholder={`Describe the image you want to generate for "${courseData.title || "your course"}" - include details like subject matter, style, and mood for better results.`}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                             rows={3}
                                           />
@@ -5618,7 +5631,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                               Generating...
                                             </>
                                           ) : (
-                                            'Generate AI Thumbnail'
+                                            "Generate AI Thumbnail"
                                           )}
                                         </button>
                                         {aiImageError && (
@@ -5645,7 +5658,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                         // Validate required fields
                                         if (!courseData.courseName.trim()) {
                                           toast.error(
-                                            'Please enter a course name'
+                                            "Please enter a course name",
                                           );
                                           return;
                                         }
@@ -5653,13 +5666,13 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           !courseData.learningOutcomes.trim()
                                         ) {
                                           toast.error(
-                                            'Please describe what learners will be able to do'
+                                            "Please describe what learners will be able to do",
                                           );
                                           return;
                                         }
                                         if (!courseData.targetAudience.trim()) {
                                           toast.error(
-                                            'Please specify who this course is for'
+                                            "Please specify who this course is for",
                                           );
                                           return;
                                         }
@@ -5715,14 +5728,14 @@ MOOD: Modern, inspiring, professional, engaging`;
                                 <div className="space-y-6">
                                   {/* Phase Navigation */}
                                   <div className="flex gap-2 overflow-x-auto pb-2">
-                                    {PHASES.map(phase => (
+                                    {PHASES.map((phase) => (
                                       <button
                                         key={phase.id}
                                         onClick={() => setActivePhase(phase.id)}
                                         className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
                                           activePhase === phase.id
-                                            ? 'bg-purple-600 text-white shadow-lg'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            ? "bg-purple-600 text-white shadow-lg"
+                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                                         }`}
                                       >
                                         <div className="font-medium text-sm">
@@ -5737,49 +5750,49 @@ MOOD: Modern, inspiring, professional, engaging`;
 
                                   {/* Phase Content */}
                                   <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
-                                    {activePhase === 'analysis' && (
+                                    {activePhase === "analysis" && (
                                       <AnalysisPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'objectives' && (
+                                    {activePhase === "objectives" && (
                                       <ObjectivesPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'design' && (
+                                    {activePhase === "design" && (
                                       <InstructionDesignPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'experience' && (
+                                    {activePhase === "experience" && (
                                       <LearnerExperiencePhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'development' && (
+                                    {activePhase === "development" && (
                                       <DevelopmentPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'implementation' && (
+                                    {activePhase === "implementation" && (
                                       <ImplementationPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'branding' && (
+                                    {activePhase === "branding" && (
                                       <BrandingPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
                                       />
                                     )}
-                                    {activePhase === 'quality' && (
+                                    {activePhase === "quality" && (
                                       <QualityPhaseCard
                                         courseData={courseData}
                                         updateDesignPhase={updateDesignPhase}
@@ -5801,7 +5814,7 @@ MOOD: Modern, inspiring, professional, engaging`;
                                       onClick={() => {
                                         if (!courseData.courseName.trim()) {
                                           toast.error(
-                                            'Please enter a course name'
+                                            "Please enter a course name",
                                           );
                                           return;
                                         }
@@ -5809,13 +5822,13 @@ MOOD: Modern, inspiring, professional, engaging`;
                                           !courseData.learningOutcomes.trim()
                                         ) {
                                           toast.error(
-                                            'Please describe what learners will be able to do'
+                                            "Please describe what learners will be able to do",
                                           );
                                           return;
                                         }
                                         if (!courseData.targetAudience.trim()) {
                                           toast.error(
-                                            'Please specify who this course is for'
+                                            "Please specify who this course is for",
                                           );
                                           return;
                                         }
@@ -5857,8 +5870,8 @@ MOOD: Modern, inspiring, professional, engaging`;
             isOpen={showStreamingModal}
             onClose={() => setShowStreamingModal(false)}
             courseData={courseData}
-            onComplete={generatedData => {
-              console.log('Course generation complete:', generatedData);
+            onComplete={(generatedData) => {
+              console.log("Course generation complete:", generatedData);
               setShowStreamingModal(false);
               // Trigger the actual course generation
               generateCourseOutline();
