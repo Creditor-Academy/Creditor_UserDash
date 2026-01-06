@@ -27,74 +27,182 @@ const UPCOMING_COURSES = [
 
   // Become Private
   {
-    id: 'become-private-act-of-expatriation-oath-of-allegiance',
-    title: 'ACT OF EXPATRIATION AND OATH OF ALLEGIANCE',
+    id: 'lession-6',
+    title: 'Certificate of Assumed Name',
     course: 'Become Private',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)ACT+OF+EXPATRIATION+AND+OATH+OF+ALLEGIANCE.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/40.png',
   },
   {
-    id: 'become-private-declaration-of-copyright',
+    id: 'lession-7',
+    title: 'Act Of Expatriation And Oath Of Allegiance',
+    course: 'Become Private',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/62.png',
+  },
+  {
+    id: 'lession-8',
     title: 'Declaration of Copyright',
     course: 'Become Private',
     image:
       'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Declaration+of+Copyright.png',
   },
   {
-    id: 'become-private-power-of-attorney-in-fact',
+    id: 'lession-9',
     title: 'POWER OF ATTORNEY IN FACT',
     course: 'Become Private',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)POWER+OF+ATTORNEY+IN+FACT.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/131.png',
   },
   {
-    id: 'become-private-cancellation-all-prior-powers-of-attorney',
+    id: 'lession-10',
     title: 'Cancellation of All Prior Powers of Attorney',
     course: 'Become Private',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Cancellation+of+All+Prior+Powers+of+Attorney.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/46.png',
   },
 
-  // Business Credit
+  // Master Class: Step-1
   {
-    id: 'business-credit-tier-3-credit-unions-community-banks',
-    title: 'Tier 3 – Credit Unions and Community Banks',
-    course: 'Business Credit',
+    id: 'm1-lession-4',
+    title: 'Filling Business Trust',
+    course: 'Master Class: Step-1',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+3+%E2%80%93+Credit+Unions+and+Community+Banks.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/13.png',
   },
   {
-    id: 'business-credit-tier-4-high-limit-non-pg-revolving-cards',
-    title: 'Tier 4 – High-Limit Non-PG Revolving Store Cards & Fleet Cards',
-    course: 'Business Credit',
+    id: 'm1-lession-5',
+    title: 'Building Sovereignty, Private Wealth, and Financial Freedom with Creditor Academy + Chart Write like a Boss 2 Heygen videos',
+    course: 'Master Class: Step-1',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+4+%E2%80%93+High-Limit+Non-PG+Revolving+Store+Cards+%26+Fleet+Cards.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/125.png',
   },
   {
-    id: 'business-credit-tier-5-cash-flow-revenue-based-financing',
+    id: 'm1-lession-7',
+    title: 'Building Credit, Merchant Accounts, and Protecting Intellectual Property in the New Digital Economy',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/34.png',
+  },
+  {
+    id: 'm1-lession-8',
+    title: 'Bank Account Setup, Credit Disputes, and Strategic Financial Management',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/147.png',
+  },
+  {
+    id: 'm1-lession-9',
     title:
-      'Tier 5 – True Cash-Flow & Revenue-Based Financing (No Collateral, No PG)',
-    course: 'Business Credit',
+      'Fiduciary Duty, Contract Management, Bank Account Setup, and Community Support',
+    course: 'Master Class: Step-1',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+5+%E2%80%93+True+Cash-Flow+%26+Revenue-Based+Financing+(No+Collateral%2C+No+PG).png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/42.png',
+  },
+  {
+    id: 'm1-lession-10',
+    title:
+      'From Paperwork to Practicality: Taking Action Through Private Banking',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/111.png',
+  },
+  {
+    id: 'm1-lession-11',
+    title:
+      'Bank Accounts, Accounting & Credit: Your Road to Corporate-Level Power',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/140.png',
+  },
+  {
+    id: 'm1-lession-12',
+    title:
+      'Why Foundation Matters More Than Information in the Private',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Lesson+12+.png',
+  },
+  {
+    id: 'm1-lession-13',
+    title:
+      'Step One - Unincorporated Business Trust, Removing Liability, and Building Commerce',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/105.png',
+  },
+  {
+    id: 'm1-lession-14',
+    title:
+      'Private Sovereignty, Business Trusts, Credit Validation, and Financial Empowerment Strategies',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/129.png',
+  },
+  {
+    id: 'm1-lession-15',
+    title:
+      'Building Financial Sovereignty Through Private Business Trusts, Credit Optimization, and Merchant Accounts',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/96.png',
+  },
+  {
+    id: 'm1-lession-16',
+    title:
+      'From Unincorporated Business Trusts to Credit Optimization and Marketing Strategies',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/114.png',
+  },
+  {
+    id: 'm1-lession-17',
+    title:
+      'The Big Problem No One Sees — And the Private Solution No One Talks Abouts',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/138.png',
+  },
+  {
+    id: 'm1-lession-18',
+    title:
+      'Digital ID, Business Licenses & Control: How the Private Sets You Free ',
+    course: 'Master Class: Step-1',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/134.png',
   },
 
-  // Operate Private
+  // Master Class: Step-2
   {
-    id: 'operate-private-advantages-business-trust',
-    title: 'Advantages of the Business Trust',
-    course: 'Operate Private',
+    id: 'm2-lession-2',
+    title: 'Tax Strategies, Business Trusts, and Financial Empowerment',
+    course: 'Master Class: Step-2',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(OP)Advantages+of+the+Business+Trust.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/74.png',
   },
   {
-    id: 'operate-private-business-trust-structure-governance',
-    title: 'The Business Trust – Structure & Governance',
-    course: 'Operate Private',
+    id: 'm2-lession-3',
+    title: 'Overcoming Merchant Account Challenges, Status Correction, and Building Financial Freedom',
+    course: 'Master Class: Step-2',
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(OP)The+Business+Trust+%E2%80%93+Structure+%26+Governance.png',
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/70.png',
+  },
+  {
+    id: 'm2-lession-4',
+    title: 'EIN Setup, Unincorporated Business Associations, and Banking Strategies for Financial Empowerment',
+    course: 'Master Class: Step-2',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/82.png',
+  },
+  {
+    id: 'm2-lession-5',
+    title: 'Business Trusts, Credit Building, Tax Strategies, and Status Correction',
+    course: 'Master Class: Step-2',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/86.png',
   },
 ];
+
 
 function UpcomingCourses() {
   const scrollRef = useRef(null);
@@ -292,3 +400,6 @@ function UpcomingCourses() {
 }
 
 export default UpcomingCourses;
+
+
+ 
