@@ -362,352 +362,115 @@
 //   );
 // }
 
-import React, { useState, useEffect } from 'react';
+"use client";
+import { motion } from "framer-motion";
+import { GraduationCap, Bot, BarChart3, Gamepad2 } from "lucide-react";
 
-const HeroSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isHeroVisible, setIsHeroVisible] = useState(false);
-  const [isContentVisible, setIsContentVisible] = useState(false);
-  const [isMarketplaceVisible, setIsMarketplaceVisible] = useState(false);
-  const [isCTAVisible, setIsCTAVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-    const timer = setTimeout(() => {
-      setIsHeroVisible(true);
-    }, 300);
-    const timer2 = setTimeout(() => {
-      setIsContentVisible(true);
-    }, 500);
-    const timer3 = setTimeout(() => {
-      setIsMarketplaceVisible(true);
-    }, 700);
-    const timer4 = setTimeout(() => {
-      setIsCTAVisible(true);
-    }, 900);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-    };
-  }, []);
-
+export default function HeroSection() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Animated blue nodes */}
-        <div className="absolute top-20 left-20 w-4 h-4 bg-blue-400 rounded-full animate-pulse"></div>
-        <div className="absolute top-40 right-40 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
-        <div className="absolute bottom-40 left-1/4 w-5 h-5 bg-indigo-400 rounded-full animate-pulse"></div>
-        <div className="absolute top-1/3 right-1/3 w-3 h-3 bg-sky-300 rounded-full animate-ping"></div>
+    <section className="relative min-h-screen overflow-hidden bg-[#050b1a] text-white">
 
-        {/* Animated blue grid lines */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(96,165,250,0.05)_0%,rgba(30,64,175,0)_70%)]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(96,165,250,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(96,165,250,0.08)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+      {/* Ambient Glow */}
+      <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[140px]" />
+      <div className="absolute bottom-0 right-0 h-[400px] w-[400px] bg-indigo-500/20 blur-[120px]" />
 
-        {/* Soft glowing light effects */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-2000"></div>
-        <div className="absolute top-40 left-1/2 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-4000"></div>
+      <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+        {/* LEFT — VALUE PROPOSITION */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="space-y-8"
+        >
+          <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1 text-sm text-blue-300">
+            World’s First L&D E-Commerce Marketplace
+          </span>
+
+          <h1 className="text-5xl xl:text-6xl font-semibold leading-tight tracking-tight">
+            Build, Buy & Deploy <br />
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+              Learning Like a Product
+            </span>
+          </h1>
+
+          <p className="max-w-xl text-lg text-white/70">
+            Athena helps L&D teams browse AI-powered tools, customize training
+            experiences, and launch enterprise learning in hours — not months.
+          </p>
+
+          <div className="flex flex-wrap gap-4">
+            <a href="/contact" className="rounded-xl bg-blue-600 px-7 py-3 font-medium hover:bg-blue-500 transition">
+              Start Free Trial
+            </a>
+
+            <a
+              href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-white/20 px-7 py-3 font-medium hover:bg-white/10 transition"
+            >
+              Book a Demo
+            </a>
+          </div>
+        </motion.div>
+
+        {/* RIGHT — ATHENA FEATURE STACK */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.1 }}
+          className="relative"
+        >
+          <div className="rounded-3xl border border-white/15 bg-white/5 backdrop-blur-xl p-8 shadow-2xl">
+
+            <h3 className="mb-6 text-sm uppercase tracking-widest text-white/50">
+              Athena Feature Stack
+            </h3>
+
+            <div className="space-y-5">
+              {[
+                {
+                  icon: GraduationCap,
+                  title: "SCORM Course Builders",
+                  desc: "Create compliant, interactive courses at scale",
+                },
+                {
+                  icon: Bot,
+                  title: "AI Virtual Instructors",
+                  desc: "Deliver lifelike, always-on learning support",
+                },
+                {
+                  icon: Gamepad2,
+                  title: "Gamified LMS",
+                  desc: "Increase engagement and completion rates",
+                },
+                {
+                  icon: BarChart3,
+                  title: "Advanced Analytics",
+                  desc: "Measure performance, ROI, and learner impact",
+                },
+              ].map(({ icon: Icon, title, desc }) => (
+                <div
+                  key={title}
+                  className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 hover:bg-white/5 transition"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 group-hover:bg-blue-600/30 transition">
+                    <Icon size={20} />
+                  </div>
+
+                  <div>
+                    <p className="font-medium">{title}</p>
+                    <p className="text-sm text-white/60">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </motion.div>
+
       </div>
-
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-[#6fa4f7]/95 backdrop-blur-md border-b border-blue-300">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="text-white font-bold text-2xl">Athena Software</div>
-          </div>
-          <div className="flex space-x-6">
-            <button className="text-white/90 font-medium hover:text-white transition-colors">
-              Products
-            </button>
-            <button className="text-white/90 font-medium hover:text-white transition-colors">
-              Solutions
-            </button>
-            <button className="text-white/90 font-medium hover:text-white transition-colors">
-              Pricing
-            </button>
-            <button className="px-4 py-2 text-white font-medium hover:text-blue-100 transition-colors">
-              Sign In
-            </button>
-            <button className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30">
-              Get Started
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Hero Section */}
-      <section className="relative z-10 w-full py-4 md:py-10 bg-gradient-to-br from-[#1e3a8a] to-[#3b82f6]">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            {/* Left Column - Headlines and CTAs */}
-            <div className="lg:w-1/2">
-              {/* Top Badge */}
-              <div
-                className={`mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              >
-                <span className="inline-flex items-center px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium">
-                  <span className="mr-2">🚀</span>
-                  World’s First L&D E-Commerce Marketplace
-                </span>
-              </div>
-
-              {/* Main Headline */}
-              <h1
-                className={`text-4xl md:text-5xl font-bold mb-6 text-white transition-all duration-700 ${isHeroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              >
-                <span className="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                  Athena Software
-                </span>
-              </h1>
-
-              <h2
-                className={`text-2xl md:text-2xl font-bold mb-6 text-white transition-all duration-700 ${isHeroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              >
-                The world's first all-in-one E-commerce marketplace built
-                exclusively for Instructional Designers, Training Teams, and
-                Learning & Development professionals.
-              </h2>
-
-              {/* CTA Buttons */}
-              <div
-                className={`flex flex-col sm:flex-row gap-4 transition-all duration-700 ${isCTAVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              >
-                <a
-                  href="/contact"
-                  className="px-6 py-3 bg-white text-[#3b82f6] font-semibold rounded-lg hover:bg-blue-50 transition-all shadow-md shadow-white/20"
-                >
-                  Start Free Trial
-                </a>
-                <button className="px-6 py-3 bg-[#3b82f6]/80 text-white font-semibold rounded-lg hover:bg-[#3b82f6] transition-all">
-                  Browse Marketplace
-                </button>
-                <a
-                  href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 text-white font-medium hover:text-blue-100 transition-colors"
-                >
-                  Book a Personalized Demo
-                </a>
-              </div>
-            </div>
-
-            {/* Right Column - AI Feature Flow / Timeline */}
-            <div className="lg:w-1/2">
-              <div
-                className={`relative transition-all duration-700 ${isMarketplaceVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              >
-                <div className="space-y-6">
-                  {/* Feature 1 */}
-                  <div className="relative p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-                    <div className="flex items-start">
-                      <div className="w-12 h-12 rounded-full bg-[#3b82f6] flex items-center justify-center mr-4 flex-shrink-0">
-                        <span className="text-white text-lg">📚</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white mb-1">
-                          SCORM Course Builders
-                        </h4>
-                        <p className="text-white/80 text-sm">
-                          Compliant content creation tools
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Connector */}
-                  <div className="flex justify-center">
-                    <div className="w-1 h-8 bg-white/30 rounded-full"></div>
-                  </div>
-
-                  {/* Feature 2 */}
-                  <div className="relative p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-                    <div className="flex items-start">
-                      <div className="w-12 h-12 rounded-full bg-[#3b82f6] flex items-center justify-center mr-4 flex-shrink-0">
-                        <span className="text-white text-lg">👨‍🏫</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white mb-1">
-                          Virtual Instructors
-                        </h4>
-                        <p className="text-white/80 text-sm">
-                          Lifelike AI agents for engagement
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Connector */}
-                  <div className="flex justify-center">
-                    <div className="w-1 h-8 bg-white/30 rounded-full"></div>
-                  </div>
-
-                  {/* Feature 3 */}
-                  <div className="relative p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
-                    <div className="flex items-start">
-                      <div className="w-12 h-12 rounded-full bg-[#3b82f6] flex items-center justify-center mr-4 flex-shrink-0">
-                        <span className="text-white text-lg">📊</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white mb-1">
-                          Analytics Dashboard
-                        </h4>
-                        <p className="text-white/80 text-sm">
-                          Performance insights & actionable data
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Athena Exists Section */}
-      <section className="py-16 bg-gradient-to-b from-[#f0f9ff] to-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
-              <h3 className="text-3xl md:text-4xl font-bold text-[#1e293b] mb-4">
-                The Athena Difference
-              </h3>
-              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                Transform your learning & development with AI-powered solutions
-                that accelerate growth and drive results
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <p className="text-lg text-[#1e293b] mb-8">
-                  Imagine an Amazon-style digital superstore where you can
-                  instantly shop for every AI-powered tool you need — from
-                  SCORM-compliant course builders and stunning visual designers
-                  to lifelike virtual instructors, interactive digital books,
-                  gamified LMS, and 24/7 AI agents — all under one roof.
-                </p>
-
-                <div className="space-y-6">
-                  <div className="flex items-start">
-                    <div className="w-12 h-12 rounded-full bg-[#dbeafe] flex items-center justify-center mr-4 flex-shrink-0">
-                      <span className="text-[#3b82f6] text-xl">✓</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl text-[#1e293b] mb-1">
-                        No more juggling 10 different subscriptions
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <div className="w-12 h-12 rounded-full bg-[#dbeafe] flex items-center justify-center mr-4 flex-shrink-0">
-                      <span className="text-[#3b82f6] text-xl">✓</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl text-[#1e293b] mb-1">
-                        No more hiring expensive designers, developers, or
-                        specialists
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start">
-                    <div className="w-12 h-12 rounded-full bg-[#dbeafe] flex items-center justify-center mr-4 flex-shrink-0">
-                      <span className="text-[#3b82f6] text-xl">✓</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-xl text-[#1e293b] mb-1">
-                        No more waiting months for content
-                      </h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-[#dbeafe] rounded-full mb-4">
-                    <span className="text-2xl">⚡</span>
-                  </div>
-                  <h4 className="font-bold text-xl text-[#1e293b]">
-                    Instant Deployment
-                  </h4>
-                </div>
-                <p className="text-gray-600 text-center mb-6">
-                  With Athena, you browse, select, customize, and deploy
-                  world-class learning experiences in minutes.
-                </p>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-[#1e293b] font-semibold">
-                      Cost Reduction
-                    </span>
-                    <span className="text-[#3b82f6] font-bold text-lg">
-                      80%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-[#1e293b] font-semibold">
-                      Time Acceleration
-                    </span>
-                    <span className="text-[#3b82f6] font-bold text-lg">
-                      Hours vs Months
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefit Strip */}
-      <section className="py-16 bg-gradient-to-r from-[#1e40af] to-[#3b82f6] relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        ></div>
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group transform hover:-translate-y-1">
-              <div className="text-4xl font-bold text-white mb-2 group-hover:text-blue-200 transition-all duration-300 animate-pulse">
-                5-10
-              </div>
-              <p className="text-white/90 group-hover:text-white transition-all duration-300">
-                Replace tools with one ecosystem
-              </p>
-            </div>
-            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group transform hover:-translate-y-1">
-              <div className="text-4xl font-bold text-white mb-2 group-hover:text-blue-200 transition-all duration-300 animate-pulse">
-                80%
-              </div>
-              <p className="text-white/90 group-hover:text-white transition-all duration-300">
-                Cut L&D costs by up to 80%
-              </p>
-            </div>
-            <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 hover:bg-white/15 transition-all duration-300 group transform hover:-translate-y-1">
-              <div className="text-4xl font-bold text-white mb-2 group-hover:text-blue-200 transition-all duration-300 animate-pulse">
-                Hours
-              </div>
-              <p className="text-white/90 group-hover:text-white transition-all duration-300">
-                Launch training in hours, not months
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    </section>
   );
-};
-
-export default HeroSection;
+}

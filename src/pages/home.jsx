@@ -19,7 +19,7 @@ import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
 import MonetizeSection from '../components/homepage/MonetizeSection.jsx';
 import LearningPathways from '../components/homepage/LearningPathways.jsx';
 import CTA from '../components/homepage/cta.jsx';
-import NewYearCountdown from '../components/homepage/NewYearCountdown';
+// import NewYearCountdown from '../components/homepage/NewYearCountdown';
 // import AthenaStandsout from '../components/homepage/AthenaStandsout.jsx';
 import ComparisonSection from '../components/homepage/comparsion';
 import Instructional from '../components/homepage/Instructional';
@@ -28,17 +28,19 @@ import WhyTraining from '../components/homepage/whytraing';
 const Home = () => {
   return (
     <>
-      <NewYearCountdown />
+      {/* <NewYearCountdown /> */}
       <Navbar />
       <HeroSection />
       <KeyCapabilities />
       <Features />
+     
       <Buildfeature />
       <Pricing />
-      <MonetizeSection />
       <WhyTraining />
-      <Instructional />
       <ComparisonSection />
+      {/* <MonetizeSection /> */}
+      
+      <Instructional />
       <CTA />
       {/* <Ready /> */}
       <Footer />

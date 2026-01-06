@@ -1,350 +1,340 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+/* =========================
+   LOCAL IMAGES
+========================= */
+import lessonEditor from "../../assets/Lesson.webp";
+import canva from "../../assets/analytics.webp";
+import vilt from "../../assets/community.webp";
+import bookSmart from "../../assets/instruct.jpg";
+import webex from "../../assets/chris.jpg";
+import aiAgents from "../../assets/Agent.png";
+import lms from "../../assets/dashboard.webp";
+import websiteBuilder from "../../assets/Courseanalytics.png";
 
-// LEARNING MODALITIES DATA
+/* =========================
+   FLAGSHIP PRODUCTS
+========================= */
 const features = [
   {
-    title: "eLearning",
-    desc: "Self-paced digital courses with interactive content, multimedia elements, and adaptive learning paths for maximum engagement.",
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop&crop=center",
+    title: "Athena AI & Non-AI Lesson Editor",
+    short: "Create SCORM-compliant courses up to 80% faster",
+    who: "Corporate L&D, universities, colleges, NGOs, designers",
+    apt: "Compliance, onboarding, upskilling, academics",
+    ai: [
+      "AI + manual drag-and-drop editor",
+      "Auto outlines, quizzes & translations",
+      "Full SCORM & accessibility compliance",
+    ],
+    whyID: "Rapid prototyping with enterprise-grade quality — no coding.",
+    whyLD: "Faster rollouts, LMS-ready output, easy updates.",
+    pricing: "From $29/month · Free Trial",
+    image: lessonEditor,
   },
   {
-    title: "Web-Based Training (WBT)",
-    desc: "Browser-accessible training modules with real-time collaboration tools and cloud-based content delivery.",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop&crop=center",
+    title: "Athena AI",
+    short: "Professional learning visuals without designers",
+    who: "Teachers, students, creators, L&D teams",
+    apt: "Slides, infographics, PDFs, visuals",
+    ai: [
+      "Education-ready templates",
+      "AI layout & illustration generation",
+      "Instant brand matching",
+    ],
+    whyID: "Create stunning visuals instantly — zero design skills.",
+    whyLD: "Higher engagement with reusable creative assets.",
+    pricing: "Freemium · Pro from $19/month",
+    image: canva,
   },
   {
-    title: "Virtual Instructor-Led Training (VILT)",
-    desc: "Live online sessions with interactive features, breakout rooms, and real-time feedback for immersive learning experiences.",
-    image: "https://images.unsplash.com/photo-1587560699334-cc4ff634909a?w=400&h=300&fit=crop&crop=center",
+    title: "Virtual Instructor AI Platform",
+    short: "Live virtual training at global scale",
+    who: "Corporates, universities, training providers",
+    apt: "Virtual instructor-led training (VILT)",
+    ai: [
+      "Polls, breakout rooms & recordings",
+      "AI transcription & summaries",
+      "Sentiment & engagement insights",
+    ],
+    whyID: "Improve sessions using real-time AI feedback.",
+    whyLD: "70% prep-time reduction with global reach.",
+    pricing: "From $49/month · Book Demo",
+    image: vilt,
   },
   {
-    title: "Instructor-Led Training (ILT)",
-    desc: "Traditional classroom settings enhanced with digital tools, blended learning approaches, and comprehensive instructor support.",
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop&crop=center",
+    title: "Athena Book SMART AI",
+    short: "Convert PDFs into interactive digital books",
+    who: "Publishers, authors, knowledge teams",
+    apt: "Textbooks, manuals, training guides",
+    ai: [
+      "PDF upload & conversion",
+      "AI layout & content updates",
+      "Embedded media & quizzes",
+    ],
+    whyID: "Add interactivity without rewriting content.",
+    whyLD: "Always-current learning materials.",
+    pricing: "One-Time or Subscription",
+    image: bookSmart,
   },
   {
-    title: "Microlearning",
-    desc: "Bite-sized learning modules designed for quick consumption, perfect for busy schedules and just-in-time knowledge delivery.",
-    image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=300&fit=crop&crop=center",
+    title: "Webinar by Athena",
+    short: "Analytics-driven webinars & sessions",
+    who: "Coaches, speakers, L&D leaders",
+    apt: "Webinars, workshops, group training",
+    ai: [
+      "Attention & emotion tracking",
+      "AI sentiment scoring",
+      "Automated insights",
+    ],
+    whyID: "Evidence-based session improvements.",
+    whyLD: "Clear ROI & measurable engagement.",
+    pricing: "From $39/month",
+    image: webex,
   },
   {
-    title: "Gamified Learning",
-    desc: "Interactive learning experiences with points, badges, leaderboards, and challenges that motivate learners through game mechanics.",
-    image: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop&crop=center",
+    title: "Athena AI Agents",
+    short: "24/7 lifelike learner & customer support",
+    who: "Support teams, helpdesks",
+    apt: "Query handling, escalation",
+    ai: [
+      "Custom avatars & voice cloning",
+      "Multilingual contextual memory",
+      "Human escalation",
+    ],
+    whyID: "Add personalized support to learning flows.",
+    whyLD: "70%+ staffing reduction with instant ROI.",
+    pricing: "Pay-Per-Use Credits",
+    image: aiAgents,
+  },
+  {
+    title: "Athena LMS / LXP",
+    short: "Manage complete learner journeys",
+    who: "Corporates, universities, NGOs",
+    apt: "Certifications, compliance, analytics",
+    ai: [
+      "AI learning paths",
+      "Gamification & analytics",
+      "Dropout prediction",
+    ],
+    whyID: "Instant gamification without dev work.",
+    whyLD: "Higher completions & compliance visibility.",
+    pricing: "Enterprise Plans",
+    image: lms,
+  },
+  {
+    title: "Athena Website & LMS Builder",
+    short: "Launch branded academies in hours",
+    who: "Businesses, startups, coaches",
+    apt: "Training portals & academies",
+    ai: [
+      "No-code drag & drop",
+      "AI layouts, SEO & copy",
+      "Tool integrations",
+    ],
+    whyID: "Full ownership without IT dependency.",
+    whyLD: "Scale branded platforms effortlessly.",
+    pricing: "From $19/month",
+    image: websiteBuilder,
   },
 ];
 
-
 export default function Features() {
-  const [activeIdx, setActiveIdx] = useState(4);
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [activeIdx, setActiveIdx] = useState(0);
   const ref = useRef(null);
-  useInView(ref, { once: true, margin: "-20%" });
+  const sliderRef = useRef(null);
+  useInView(ref, { once: true });
 
+  // Navigate slider
+  const goToPrev = () => setActiveIdx((prev) => (prev === 0 ? features.length - 1 : prev - 1));
+  const goToNext = () => setActiveIdx((prev) => (prev === features.length - 1 ? 0 : prev + 1));
+
+  // Auto-scroll slider on mobile when activeIdx changes
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Card size variables - responsive
-  const cardWidth = windowWidth < 768 ? 80 : windowWidth < 1024 ? 100 : 120;
-  const cardHeight = windowWidth < 768 ? 100 : windowWidth < 1024 ? 120 : 140;
-  const selectedScale = 1.14;
-  const hoverScale = 1.09;
-
-  const thumbVariants = {
-    rest: { scale: 1 },
-    hover: { scale: hoverScale },
-    selected: { scale: selectedScale },
-  };
-
-  // Main styles - responsive
-  const sectionStyle = {
-    position: "relative",
-    width: "100%",
-    minHeight: windowWidth < 768 ? "400px" : "520px",
-    boxShadow: "0 6px 32px rgba(80,120,210,0.07)",
-    padding: windowWidth < 768 ? "40px 16px 30px 16px" : windowWidth < 1024 ? "50px 20px 35px 20px" : "60px 20px 40px 20px",
-    background: "white",
-    overflow: "hidden",
-    boxSizing: "border-box"
-  };
-  const svgStyle = {
-    pointerEvents: "none",
-    position: "absolute",
-    top: 0, left: 0,
-    width: "100%", height: "100%",
-    opacity: 0.10, zIndex: 1
-  };
-  const headerStyle = {
-    position: "relative",
-    zIndex: 5,
-    textAlign: "center",
-    marginBottom: 14,
-    marginTop: 16,
-  };
-  const badgeStyle = {
-    display: "inline-block",
-    padding: "3px 14px",
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "#4833d4",
-    background: "#ebebff",
-    borderRadius: "16px",
-    letterSpacing: "0.04em"
-  };
-  const titleStyle = {
-    fontSize: windowWidth < 768 ? "1.5rem" : windowWidth < 1024 ? "1.8rem" : "2.13rem",
-    fontWeight: 700,
-    color: "#17183a",
-    margin: "8px 0 0 0",
-    letterSpacing: "-1px",
-    lineHeight: 1.13,
-    display: "block"
-  };
-  const underlineStyle = {
-    width: "82px",
-    height: "6px",
-    background: "#5956e9",
-    margin: "12px auto 0 auto",
-    borderRadius: "8px",
-  };
-  const subtitleStyle = {
-    fontSize: windowWidth < 768 ? "1rem" : windowWidth < 1024 ? "1.1rem" : "1.19rem",
-    fontWeight: 600,
-    color: "#363d51",
-    margin: "19px 0 7px 0"
-  };
-  const descStyle = {
-    color: "#565779",
-    fontSize: windowWidth < 768 ? "0.9rem" : windowWidth < 1024 ? "0.95rem" : "1.05rem",
-    lineHeight: 1.52,
-    padding: windowWidth < 768 ? "0 16px" : "0"
-  };
-  const flexWrapStyle = {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: windowWidth < 768 ? "16px" : "26px",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    flexDirection: windowWidth < 768 ? "column" : "row"
-  };
-  const gridStyle = {
-    display: "grid",
-    gridTemplateColumns: windowWidth < 768 ? `repeat(2, ${cardWidth}px)` : windowWidth < 1024 ? `repeat(3, ${cardWidth}px)` : `repeat(3, ${cardWidth}px)`,
-    gap: windowWidth < 768 ? "8px" : "12px",
-    marginBottom: windowWidth < 768 ? "20px" : "30px",
-    justifyContent: "center"
-  };
-  const thumbButton = (selected) => ({
-    width: cardWidth,
-    height: cardHeight,
-    borderRadius: "22px",
-    overflow: "hidden",
-    cursor: "pointer",
-    transition: "all 0.18s cubic-bezier(.29,1.13,.8,1)",
-    border: selected ? "2.7px solid #4F46E5" : "none",
-    boxShadow: selected
-      ? "0 8px 28px rgba(88,115,255,0.16)"
-      : "0 2px 12px rgba(70,110,185,0.06)",
-    filter: selected ? "brightness(1.02)" : "none",
-    background: "transparent",
-    outline: "none",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-  });
-  const thumbImageStyle = {
-    width: windowWidth < 768 ? "70px" : windowWidth < 1024 ? "85px" : "96px",
-    height: windowWidth < 768 ? "80px" : windowWidth < 1024 ? "95px" : "106px",
-    objectFit: "cover",
-    borderRadius: "14px",
-    display: "block",
-  };
-  const featuresButtonStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    fontWeight: 700,
-    fontSize: windowWidth < 768 ? "1rem" : "1.25rem",
-    background: "#574ff2",
-    color: "#fff",
-    borderRadius: "14px",
-    padding: windowWidth < 768 ? "12px 24px" : "17px 42px",
-    textDecoration: "none",
-    letterSpacing: "0.02em",
-    boxShadow: "0 4px 24px rgba(87,77,242,0.09)"
-  };
-  const rightPanelStyle = {
-    flex: 1,
-    minWidth: windowWidth < 768 ? "100%" : windowWidth < 1024 ? "350px" : "420px",
-    borderRadius: "28px",
-    background: "linear-gradient(135deg,rgba(127,177,255,0.13) 0%,rgba(255,255,255,0.82) 80%)",
-    boxShadow: "0 8px 36px rgba(58,82,180,0.06)",
-    padding: windowWidth < 768 ? "24px 20px" : windowWidth < 1024 ? "32px 28px" : "44px 40px",
-    display: "flex",
-    alignItems: "center",
-    gap: windowWidth < 768 ? "20px" : "40px",
-    marginLeft: windowWidth < 768 ? 0 : 24,
-    marginTop: windowWidth < 768 ? "20px" : 3,
-    maxWidth: windowWidth < 768 ? "100%" : "680px",
-    flexDirection: windowWidth < 768 ? "column" : "row"
-  };
-  const squareImageWrap = {
-    minWidth: windowWidth < 768 ? "120px" : windowWidth < 1024 ? "150px" : "180px",
-    maxWidth: windowWidth < 768 ? "140px" : windowWidth < 1024 ? "170px" : "200px",
-    aspectRatio: "1 / 1",
-    borderRadius: "19px",
-    overflow: "hidden",
-    marginRight: windowWidth < 768 ? 0 : windowWidth < 1024 ? "24px" : "36px",
-    marginBottom: windowWidth < 768 ? "16px" : 0,
-    background: "linear-gradient(135deg,#f7fcff 0 63%,rgba(139,214,255,0.08) 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  };
-  const mainImage = {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    borderRadius: "16px"
-  };
-  const rightTitle = {
-    fontWeight: 700,
-    fontSize: "1.6rem",
-    color: "#11153c",
-    marginBottom: 14
-  };
-  const rightDesc = {
-    fontSize: "1.15rem",
-    color: "#222855",
-    marginBottom: 26,
-    lineHeight: 1.55
-  };
-  const dotRow = {
-    display: "flex",
-    alignItems: "center",
-    marginTop: 4
-  };
-  const dot = (selected) => ({
-    width: 16,
-    height: 16,
-    marginRight: 7,
-    borderRadius: "50%",
-    background: selected ? "#574ff2" : "#c9cedd",
-    opacity: selected ? 1 : 0.41,
-    border: "none",
-    cursor: "pointer",
-    transition: "background 0.15s"
-  });
-  const indexLabel = {
-    fontSize: "1.05rem",
-    marginLeft: 13,
-    color: "#6c7287"
-  };
+    if (sliderRef.current) {
+      const container = sliderRef.current;
+      const activeButton = container.children[activeIdx];
+      if (activeButton) {
+        const scrollLeft = activeButton.offsetLeft - container.offsetWidth / 2 + activeButton.offsetWidth / 2;
+        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+      }
+    }
+  }, [activeIdx]);
 
   return (
-    <section ref={ref} style={sectionStyle}>
-      {/* SVG Wave */}
-      <svg style={svgStyle} xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1440 320">
-        <path fill="#b6d4fe" fillOpacity="0.28"
-          d="M0,96L48,85.3C96,75,192,53,288,58.7C384,64,480,96,576,117.3C672,139,768,149,864,138.7C960,128,1056,96,1152,80C1248,64,1344,64,1392,64L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" />
-      </svg>
+    <section
+      ref={ref}
+      className="relative bg-[#050b1a] px-4 py-12 md:py-20 overflow-hidden"
+    >
+      {/* Ambient Glow - matching hero section */}
+      <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[140px]" />
+      <div className="absolute bottom-0 right-0 h-[400px] w-[400px] bg-indigo-500/20 blur-[120px]" />
 
-      {/* Header */}
-      <div style={headerStyle}>
-        <span style={badgeStyle}>LEARNING MODALITIES</span>
-        <h2 style={titleStyle}>
-          Designed for <span style={{ color: "#5956e9" }}>All Learning Modalities</span>
+      {/* HEADER */}
+      <div className="relative z-10 max-w-5xl mx-auto text-center mb-8 md:mb-12 px-2">
+        <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs md:text-sm text-blue-300">
+          OUR FLAGSHIP PRODUCTS
+        </span>
+        <h2 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-semibold text-white tracking-tight">
+          AI-Powered Powerhouses for Learning & Training
         </h2>
-        <div style={underlineStyle}></div>
-        <div style={subtitleStyle}>Comprehensive Learning Solutions for Every Need</div>
-        <div style={descStyle}>
-          From traditional classroom settings to cutting-edge digital experiences, Athena supports <span style={{ color: "#5956e9", fontWeight: 600 }}>every learning style</span> and&nbsp;
-          <span style={{ color: "#5956e9", fontWeight: 600 }}>delivery method</span> to ensure maximum&nbsp;
-          <span style={{ color: "#5956e9", fontWeight: 600 }}>engagement</span> and retention.
-        </div>
+        <p className="mt-3 text-sm md:text-base text-white/70 max-w-xl mx-auto">
+          Buy individually, bundle for savings, or subscribe — one unified AI marketplace.
+        </p>
       </div>
 
-      {/* Layout */}
-      <div style={flexWrapStyle}>
-        {/* Thumbnails */}
-        <div style={{ 
-          flex: "0 0 auto", 
-          maxWidth: windowWidth < 768 ? "100%" : "600px", 
-          minWidth: windowWidth < 768 ? "100%" : "450px", 
-          display: "flex", 
-          flexDirection: "column", 
-          alignItems: "center" 
-        }}>
-          <div style={gridStyle}>
-            {features.map((feature, idx) => (
-              <motion.button
-                key={feature.title}
-                style={thumbButton(idx === activeIdx)}
+      {/* MAIN */}
+      <div className="relative z-10 max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-12">
+        
+        {/* LEFT SELECTOR — MOBILE SLIDER WITH ARROWS, DESKTOP GRID */}
+        <div className="w-full lg:w-auto">
+          {/* Mobile Slider Container */}
+          <div className="relative lg:hidden">
+            {/* Left Arrow */}
+            <button
+              onClick={goToPrev}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-white hover:bg-white/20 transition"
+              aria-label="Previous"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            {/* Slider */}
+            <div
+              ref={sliderRef}
+              className="flex gap-3 overflow-x-auto snap-x snap-mandatory py-2 px-12 scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {features.map((f, idx) => (
+                <motion.button
+                  key={f.title}
+                  onClick={() => setActiveIdx(idx)}
+                  whileTap={{ scale: 0.95 }}
+                  className={`snap-center flex-shrink-0
+                    h-20 w-20 sm:h-24 sm:w-24 rounded-xl overflow-hidden border-2 transition-all duration-300
+                    ${
+                      idx === activeIdx
+                        ? "border-blue-400 ring-2 ring-blue-400/40 shadow-lg scale-110"
+                        : "border-white/15 hover:border-white/30 bg-white/5 opacity-60"
+                    }`}
+                >
+                  <img
+                    src={f.image}
+                    alt={f.title}
+                    className="h-full w-full object-cover"
+                  />
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Right Arrow */}
+            <button
+              onClick={goToNext}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-white hover:bg-white/20 transition"
+              aria-label="Next"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          {/* Dot Indicators - Mobile Only */}
+          <div className="flex justify-center gap-1.5 mt-4 lg:hidden">
+            {features.map((_, idx) => (
+              <button
+                key={idx}
                 onClick={() => setActiveIdx(idx)}
-                onMouseEnter={() => setActiveIdx(idx)}
-                aria-label={`View ${feature.title}`}
-                whileHover={idx === activeIdx ? "selected" : "hover"}
-                animate={idx === activeIdx ? "selected" : "rest"}
-                variants={thumbVariants}
-                transition={{ type: "spring", stiffness: 240, damping: 18 }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  idx === activeIdx 
+                    ? "w-6 bg-blue-400" 
+                    : "w-2 bg-white/30 hover:bg-white/50"
+                }`}
+                aria-label={`Go to feature ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Desktop Grid */}
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-x-4 lg:gap-y-3">
+            {features.map((f, idx) => (
+              <motion.button
+                key={f.title}
+                onClick={() => setActiveIdx(idx)}
+                whileHover={{ scale: 1.08 }}
+                className={`h-28 w-28 rounded-2xl overflow-hidden border transition
+                  ${
+                    idx === activeIdx
+                      ? "border-blue-400 ring-2 ring-blue-400/30 shadow-lg"
+                      : "border-white/15 hover:border-white/30 bg-white/5"
+                  }`}
               >
-                <img src={feature.image} alt={feature.title} style={thumbImageStyle} />
+                <img
+                  src={f.image}
+                  alt={f.title}
+                  className="h-full w-full object-cover"
+                />
               </motion.button>
             ))}
           </div>
-          <a href="/product" style={featuresButtonStyle}>
-            Explore All Modalities
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" style={{ marginLeft: 8 }}>
-              <path fill="#fff" fillRule="evenodd" d="M8.58 13.087a.83.83 0 0 1-1.174-1.174l3.455-3.456H6.332a.83.83 0 0 1 0-1.66h7.222a.83.83 0 0 1 .83.83v7.222a.83.83 0 1 1-1.66 0v-4.53l-3.454 3.456Z" clipRule="evenodd"/></svg>
-          </a>
         </div>
-        {/* Right feature "card" */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeIdx}
-            style={rightPanelStyle}
-            initial={{ opacity: 0, x: 32, scale: 0.99 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -20, scale: 0.985 }}
-            transition={{ duration: 0.37, type: "spring" }}
-          >
+
+        {/* RIGHT CARD */}
+        <div className="flex-1 w-full">
+          <AnimatePresence mode="wait">
             <motion.div
-              style={squareImageWrap}
-              initial={{ opacity: 0, y: 10 }}
+              key={activeIdx}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12, duration: 0.43 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              className="rounded-2xl md:rounded-3xl border border-white/15 bg-white/5 backdrop-blur-xl p-5 sm:p-6 md:p-8 shadow-2xl"
             >
-              <img
-                src={features[activeIdx].image}
-                alt={features[activeIdx].title}
-                style={mainImage}
-              />
-            </motion.div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={rightTitle}>{features[activeIdx].title}</div>
-              <div style={rightDesc}>{features[activeIdx].desc}</div>
-              <div style={dotRow}>
-                {features.map((_, idx) => (
-                  <button
-                    key={idx}
-                    style={dot(idx === activeIdx)}
-                    aria-label={`View feature ${idx + 1}`}
-                    onClick={() => setActiveIdx(idx)}
-                  ></button>
-                ))}
-                <span style={indexLabel}>{activeIdx + 1} of {features.length}</span>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-tight">
+                {features[activeIdx].title}
+              </h3>
+
+              <p className="mt-1 text-sm md:text-base font-medium bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                {features[activeIdx].short}
+              </p>
+
+              <div className="mt-3 md:mt-4 text-xs sm:text-sm text-white/70 space-y-1">
+                <div><strong className="text-white">Who:</strong> {features[activeIdx].who}</div>
+                <div><strong className="text-white">Apt for:</strong> {features[activeIdx].apt}</div>
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+
+              <div className="mt-3 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
+                {features[activeIdx].ai.map((item) => (
+                  <span
+                    key={item}
+                    className="text-[10px] sm:text-xs bg-blue-600/20 text-blue-300 border border-white/10 px-2 sm:px-3 py-1 rounded-full"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-4 md:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                <div className="rounded-xl md:rounded-2xl border border-white/10 bg-black/30 p-3 md:p-4 text-xs sm:text-sm hover:bg-white/5 transition">
+                  <strong className="text-white text-xs sm:text-sm">Why Instructional Designers</strong>
+                  <p className="mt-1 text-white/60">{features[activeIdx].whyID}</p>
+                </div>
+                <div className="rounded-xl md:rounded-2xl border border-white/10 bg-black/30 p-3 md:p-4 text-xs sm:text-sm hover:bg-white/5 transition">
+                  <strong className="text-white text-xs sm:text-sm">Why L&D Teams</strong>
+                  <p className="mt-1 text-white/60">{features[activeIdx].whyLD}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 md:mt-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <span className="text-sm md:text-base font-medium bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                  {features[activeIdx].pricing}
+                </span>
+                <button className="w-full sm:w-auto rounded-xl bg-blue-600 text-white px-5 md:px-6 py-2.5 text-sm font-medium hover:bg-blue-500 transition">
+                  Book Demo
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </section>
   );
