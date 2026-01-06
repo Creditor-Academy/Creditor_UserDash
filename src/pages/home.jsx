@@ -1,7 +1,7 @@
 import React from 'react';
 import Navbar from '../components/navbar.jsx';
 import Footer from '../components/Footer.jsx';
-import Hero from '../components/homepage/herosection.jsx';
+import HeroSection from '../components/homepage/herosection.jsx';
 import About from '../components/homepage/about.jsx';
 // import AboutHero from '../../components/homepage/AboutHero';
 // import AboutFeatures from '../../components/homepage/AboutFeatures';
@@ -19,31 +19,30 @@ import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
 import MonetizeSection from '../components/homepage/MonetizeSection.jsx';
 import LearningPathways from '../components/homepage/LearningPathways.jsx';
 import CTA from '../components/homepage/cta.jsx';
-import NewYearCountdown from '../components/homepage/NewYearCountdown';
+// import NewYearCountdown from '../components/homepage/NewYearCountdown';
 // import AthenaStandsout from '../components/homepage/AthenaStandsout.jsx';
+import ComparisonSection from '../components/homepage/comparsion';
+import Instructional from '../components/homepage/Instructional';
+import WhyTraining from '../components/homepage/whytraing';
 
 const Home = () => {
   return (
     <>
-      <NewYearCountdown />
+      {/* <NewYearCountdown /> */}
       <Navbar />
-      <Hero />
-      {/* <About/> */}
+      <HeroSection />
       <KeyCapabilities />
-      {/* <AthenaStandsout /> */}
-      <MonetizeSection />
+      <Features />
+     
       <Buildfeature />
       <Pricing />
-      <Video />
-      {/* <PromotionalSection /> */}
-      <Customerpay />
-      {/* <HowWork /> */}
-      {/* <Features /> */}
-      {/* <LearningSection /> */}
-      {/* <LearningPathways /> */}
-      {/* <Testimonial />
-      <CTA /> */}
-      <Ready />
+      <WhyTraining />
+      <ComparisonSection />
+      {/* <MonetizeSection /> */}
+      
+      <Instructional />
+      <CTA />
+      {/* <Ready /> */}
       <Footer />
     </>
   );

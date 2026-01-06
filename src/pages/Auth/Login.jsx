@@ -46,6 +46,152 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SignUp } from '@/pages/Auth/SignUp';
 import { storeAccessToken } from '@/services/tokenService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import snowImage from '@/assets/snow.png';
+import decorImage from '@/assets/decor.png';
+import loImage from '@/assets/lo.png';
+
+// Countdown Component with Premium Animations
+function NewYearCountdown() {
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+  const [prevTimeLeft, setPrevTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
+  const [phase, setPhase] = useState('countdown'); // 'countdown' or 'welcome'
+
+  useEffect(() => {
+    // Set target date to January 1, 2026 at 00:00:00
+    const targetDate = new Date('2026-01-01T00:00:00').getTime();
+    // Phase 2 ends on January 3, 2026 at 23:59:59
+    const phase2EndDate = new Date('2026-01-03T23:59:59').getTime();
+
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+
+      // Check if we're in Phase 2 (Jan 1-3)
+      if (now >= targetDate && now <= phase2EndDate) {
+        setPhase(prev => (prev !== 'welcome' ? 'welcome' : prev));
+        return;
+      }
+
+      // Check if countdown has ended but we're past Phase 2
+      if (now > phase2EndDate) {
+        setPhase(prev => (prev !== 'welcome' ? 'welcome' : prev));
+        return;
+      }
+
+      const difference = targetDate - now;
+
+      if (difference <= 0) {
+        setPhase(prev => (prev !== 'welcome' ? 'welcome' : prev));
+        return;
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+      setTimeLeft(prev => {
+        setPrevTimeLeft(prev);
+        return { days, hours, minutes, seconds };
+      });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []); // Empty deps - only run once on mount
+
+  const formatNumber = num => String(num).padStart(2, '0');
+
+  // Phase 2: Welcome Message (morphs from countdown)
+  if (phase === 'welcome') {
+    return (
+      <div className="countdown-message">
+        <h2 className="countdown-welcome-title">Welcome to the New Year</h2>
+        <p className="countdown-welcome-subtitle">
+          Fresh goals. Focused learning.
+        </p>
+      </div>
+    );
+  }
+
+  // Phase 1: Countdown with Premium Animations - Flip Clock Style
+  const renderFlipCard = (value, label, prevValue, shouldAnimate) => {
+    const digits = formatNumber(value).split('');
+    const prevDigits = formatNumber(prevValue).split('');
+
+    return (
+      <div className="countdown-flip-group">
+        <div className="countdown-flip-cards">
+          {digits.map((digit, index) => (
+            <div
+              key={`${label}-${index}-${digit}`}
+              className={`countdown-flip-card ${shouldAnimate && prevDigits[index] !== digit ? 'flip-animate' : ''}`}
+            >
+              <div className="flip-card-inner">
+                <div className="flip-card-front">
+                  <span className="flip-digit">{digit}</span>
+                </div>
+                <div className="flip-card-back">
+                  <span className="flip-digit">{prevDigits[index] || '0'}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <span className="countdown-label">{label}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="countdown-container">
+      <div className="countdown-display">
+        {renderFlipCard(
+          timeLeft.days,
+          'DAYS',
+          prevTimeLeft.days,
+          prevTimeLeft.days !== timeLeft.days
+        )}
+        <span className="countdown-separator">:</span>
+        {renderFlipCard(
+          timeLeft.hours,
+          'HOURS',
+          prevTimeLeft.hours,
+          prevTimeLeft.hours !== timeLeft.hours
+        )}
+        <span className="countdown-separator">:</span>
+        {renderFlipCard(
+          timeLeft.minutes,
+          'MINUTES',
+          prevTimeLeft.minutes,
+          prevTimeLeft.minutes !== timeLeft.minutes
+        )}
+        <span className="countdown-separator">:</span>
+        {renderFlipCard(
+          timeLeft.seconds,
+          'SECONDS',
+          prevTimeLeft.seconds,
+          true
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -89,22 +235,22 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
           <CheckCircle className="h-8 w-8 text-green-600" />
         </div>
         <div>
-          <h3 className="text-xl font-semibold text-slate-800 mb-2">
+          <h3 className="text-xl font-semibold text-white mb-2">
             Check Your Email
           </h3>
-          <p className="text-slate-600">
+          <p className="text-white/80">
             We've sent a password reset link to{' '}
-            <span className="font-medium text-slate-800">{email}</span>
+            <span className="font-medium text-white">{email}</span>
           </p>
         </div>
         <div className="space-y-3">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-white/70">
             Didn't receive the email? Check your spam folder or try again.
           </p>
           <Button
             onClick={() => setIsEmailSent(false)}
             variant="outline"
-            className="w-full"
+            className="w-full border-white/20 text-white hover:bg-white/10"
           >
             Try Again
           </Button>
@@ -116,10 +262,10 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-xl font-semibold text-slate-800 mb-2">
-          Forgot Pasword?
+        <h3 className="text-xl font-semibold text-white mb-2">
+          Forgot Password?
         </h3>
-        <p className="text-slate-600">
+        <p className="text-white/80">
           Enter your email address and we'll send you a link to reset your
           password.
         </p>
@@ -129,12 +275,12 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
         <div className="space-y-2">
           <Label
             htmlFor="forgot-email"
-            className="text-sm font-medium text-slate-700"
+            className="text-sm font-medium text-white/90"
           >
             Email Address
           </Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
             <Input
               id="forgot-email"
               type="email"
@@ -143,14 +289,14 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
               onChange={e => onEmailChange(e.target.value)}
               disabled={isLoading}
               required
-              className="h-11 pl-10 pr-4 border-slate-200 focus:border-blue-500"
+              className="h-11 pl-10 pr-4 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400"
             />
           </div>
         </div>
 
         <Button
           type="submit"
-          className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+          className="w-full h-11 login-newyear-button font-medium"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -168,7 +314,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
         <Button
           onClick={onBack}
           variant="ghost"
-          className="text-slate-600 hover:text-slate-800"
+          className="text-white/80 hover:text-white hover:bg-white/10"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Sign In
@@ -184,16 +330,10 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [animateCard, setAnimateCard] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-  useEffect(() => {
-    // Trigger card animation on mount
-    setAnimateCard(true);
-  }, []);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -273,43 +413,67 @@ export function Login() {
   const currentYear = 2026;
 
   return (
-    <div className="min-h-screen relative overflow-hidden login-newyear-bg">
+    <div
+      className="min-h-screen relative overflow-hidden login-newyear-bg"
+      style={{
+        '--snow-image': `url(${snowImage})`,
+      }}
+    >
       {/* Subtle Sparkles Background */}
       <div className="login-sparkles-container" aria-hidden="true"></div>
 
       <div className="relative flex min-h-screen z-10">
+        {/* Left Side - Message Card */}
+        <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-8 lg:p-12">
+          {/* Decor Image - Top Left Corner */}
+          <img
+            src={decorImage}
+            alt="Decorative ornament"
+            className="login-decor-image"
+          />
+          {/* Main Image on Left Side */}
+          <img
+            src={loImage}
+            alt="Learning professionals"
+            className="login-left-image"
+          />
+          <div className="login-message-card">
+            <div className="countdown-wrapper">
+              <NewYearCountdown />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Message - Shown only on small screens */}
+        <div className="lg:hidden absolute top-8 left-0 right-0 px-6 z-10 text-center">
+          <h1 className="login-message-headline-mobile">
+            <span className="headline-small">New year.</span>
+            <span className="headline-script-mobile">
+              same commitment to learning.
+            </span>
+          </h1>
+        </div>
+
         {/* Login Card - Right Side */}
-        <div className="w-full lg:w-1/2 lg:ml-auto relative flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full lg:w-1/2 relative flex items-center justify-center p-4 sm:p-6 lg:p-8">
           {/* Card */}
           <div className="w-full max-w-md relative z-10">
-            <Card
-              className={`login-newyear-card transition-all duration-700 ${animateCard ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-            >
-              {/* New Year Badge */}
-              <div className="absolute -top-3 right-6 z-20">
-                <div className="login-newyear-badge">
-                  <span className="text-xs">🎆</span>
-                  <span className="text-xs font-semibold ml-1">
-                    New Year Edition
-                  </span>
-                </div>
-              </div>
-
-              <CardHeader className="space-y-3 pb-6 pt-8">
+            <Card className="login-newyear-card">
+              <CardHeader className="space-y-3 pb-6 pt-8 relative z-10 login-newyear-card-header-accent">
                 <div className="flex justify-center mb-2 relative">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border border-white/20">
                     <Shield className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl font-bold text-center text-gray-900">
+                <CardTitle className="text-2xl font-bold text-center text-white">
                   Welcome to a New Year of Learning
                 </CardTitle>
-                <CardDescription className="text-center text-gray-600 text-base leading-relaxed">
+                <CardDescription className="text-center text-white/80 text-base leading-relaxed">
                   Start fresh. Set goals. Build skills that matter.
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 relative z-10">
                 {showSignUp ? (
                   <SignUp onBack={() => setShowSignUp(false)} />
                 ) : showForgotPassword ? (
@@ -322,11 +486,11 @@ export function Login() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Email Field */}
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-slate-700">
+                      <Label htmlFor="email" className="text-white/90">
                         User ID
                       </Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
                         <Input
                           id="email"
                           type="email"
@@ -335,7 +499,7 @@ export function Login() {
                           onChange={e => setEmail(e.target.value)}
                           disabled={isLoading}
                           required
-                          className="pl-10 h-11 border-slate-200 focus:border-blue-500"
+                          className="pl-10 h-11 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400"
                         />
                       </div>
                     </div>
@@ -343,20 +507,20 @@ export function Login() {
                     {/* Password Field */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="password" className="text-slate-700">
+                        <Label htmlFor="password" className="text-white/90">
                           Password
                         </Label>
                         <button
                           type="button"
                           onClick={() => setShowForgotPassword(true)}
-                          className="text-xs font-medium transition-colors text-blue-600 hover:text-blue-700"
+                          className="text-xs font-medium transition-colors text-blue-300 hover:text-blue-200"
                           disabled={isLoading}
                         >
                           Forgot password?
                         </button>
                       </div>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
                         <Input
                           id="password"
                           type={showPassword ? 'text' : 'password'}
@@ -365,11 +529,11 @@ export function Login() {
                           onChange={e => setPassword(e.target.value)}
                           disabled={isLoading}
                           required
-                          className="pl-10 pr-10 h-11 border-slate-200 focus:border-blue-500"
+                          className="pl-10 pr-10 h-11 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400"
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/80 focus:outline-none transition-colors"
                           tabIndex={-1}
                           onClick={() => setShowPassword(v => !v)}
                         >

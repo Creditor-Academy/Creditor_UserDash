@@ -169,8 +169,8 @@ const Footer = () => (
           <address style={styles.address}>
             Athena LMS
             <br />
-            Creditor Academy PMA,12315 NE 97th ST APT E 
-            Kirkland, WA 98033, United States.
+            Creditor Academy PMA,12315 NE 97th ST APT E Kirkland, WA 98033,
+            United States.
             <br />
             <br />
             GF-20, Omaxe Square, Jasola District
@@ -324,7 +324,27 @@ const Footer = () => (
           style={{ display: 'flex', alignItems: 'center', gap: 18 }}
         >
           <div style={styles.copyright}>
-            © 2025 Athena LMS. All rights reserved.
+            © 2025 Athena Software • All Rights Reserved •{' '}
+            <a
+              href="/privacy-athena"
+              style={{ color: '#225e95', textDecoration: 'none' }}
+            >
+              Privacy Policy
+            </a>{' '}
+            •{' '}
+            <a
+              href="/term-athena"
+              style={{ color: '#225e95', textDecoration: 'none' }}
+            >
+              Terms of Service
+            </a>{' '}
+            •{' '}
+            <a
+              href="mailto:support@athenasoftware.com"
+              style={{ color: '#225e95', textDecoration: 'none' }}
+            >
+              support@athenasoftware.com
+            </a>
           </div>
 
           <div style={styles.socialRow} aria-label="social links">
