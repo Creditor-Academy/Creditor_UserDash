@@ -4,13 +4,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Book,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Home,
   Users,
-  BookText,
-  BarChart,
   MessageSquare,
   HelpCircle,
   FileQuestion,
@@ -19,7 +16,6 @@ import {
   Gamepad2,
   GraduationCap,
   Library,
-  School,
   Bot,
   CreditCard,
   CalendarDays,
@@ -43,7 +39,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
-import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
+import caTextLogo from "@/assets/CA_text_logo.png";
+import caManLogo from "@/assets/CA_man_logo.png";
 
 const SidebarItem = ({
   icon: Icon,
@@ -54,7 +51,6 @@ const SidebarItem = ({
   dropdownContent,
   onNavigate,
   external,
-  activeTheme,
 }) => {
   const handleClick = () => {
     if (external) {
@@ -73,16 +69,8 @@ const SidebarItem = ({
         className={cn(
           "sidebar-menu-item flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left",
           active
-            ? cn(
-                "sidebar-menu-item-active border-l-4 shadow-sm font-medium",
-                activeTheme === "newYear"
-                  ? "text-slate-900"
-                  : "bg-blue-50 text-blue-600 border-blue-500",
-              )
-            : cn(
-                "text-gray-600 hover:text-gray-900",
-                activeTheme === "newYear" ? "" : "hover:bg-gray-50",
-              ),
+            ? cn("bg-blue-50 text-blue-600 border-blue-500")
+            : cn("text-gray-600 hover:text-gray-900"),
         )}
       >
         <Icon size={collapsed ? 24 : 20} />
@@ -105,18 +93,8 @@ const SidebarItem = ({
                   "sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left",
                   collapsed ? "justify-center px-2" : "",
                   active
-                    ? cn(
-                        "sidebar-menu-item-active border-l-4 shadow-md font-semibold",
-                        activeTheme === "newYear"
-                          ? "text-slate-900"
-                          : "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600",
-                      )
-                    : cn(
-                        "text-gray-600 hover:text-gray-900",
-                        activeTheme === "newYear"
-                          ? ""
-                          : "hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm",
-                      ),
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600 shadow-md font-semibold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm",
                 )}
               >
                 <Icon
@@ -124,9 +102,7 @@ const SidebarItem = ({
                   className={cn(
                     "transition-all duration-200",
                     active
-                      ? activeTheme === "newYear"
-                        ? "text-[color:var(--newyear-secondary)]"
-                        : "text-blue-700"
+                      ? "text-blue-700"
                       : "text-gray-500 group-hover:text-gray-700",
                   )}
                 />
@@ -135,9 +111,7 @@ const SidebarItem = ({
                     className={cn(
                       "sidebar-menu-label transition-colors duration-200",
                       active
-                        ? activeTheme === "newYear"
-                          ? "font-semibold text-[color:var(--newyear-primary)]"
-                          : "font-semibold text-blue-700"
+                        ? "font-semibold text-blue-700"
                         : "text-gray-700 group-hover:text-gray-900",
                     )}
                   >
@@ -150,21 +124,11 @@ const SidebarItem = ({
                 to={href}
                 onClick={handleClick}
                 className={cn(
-                  "sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group",
+                  "sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left",
                   collapsed ? "justify-center px-2" : "",
                   active
-                    ? cn(
-                        "sidebar-menu-item-active border-l-4 shadow-md font-semibold",
-                        activeTheme === "newYear"
-                          ? "text-slate-900"
-                          : "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600",
-                      )
-                    : cn(
-                        "text-gray-600 hover:text-gray-900",
-                        activeTheme === "newYear"
-                          ? ""
-                          : "hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm",
-                      ),
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600 shadow-md font-semibold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm",
                 )}
               >
                 <Icon
@@ -172,9 +136,7 @@ const SidebarItem = ({
                   className={cn(
                     "transition-all duration-200",
                     active
-                      ? activeTheme === "newYear"
-                        ? "text-[color:var(--newyear-secondary)]"
-                        : "text-blue-700"
+                      ? "text-blue-700"
                       : "text-gray-500 group-hover:text-gray-700",
                   )}
                 />
@@ -183,9 +145,7 @@ const SidebarItem = ({
                     className={cn(
                       "sidebar-menu-label transition-colors duration-200",
                       active
-                        ? activeTheme === "newYear"
-                          ? "font-semibold text-[color:var(--newyear-primary)]"
-                          : "font-semibold text-blue-700"
+                        ? "font-semibold text-blue-700"
                         : "text-gray-700 group-hover:text-gray-900",
                     )}
                   >
@@ -217,7 +177,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState("Creditor Academy");
   const [logoUrl, setLogoUrl] = useState(null);
-  const { activeTheme } = useContext(SeasonalThemeContext);
+  // const { activeTheme } = useContext(SeasonalThemeContext);
 
   // Fetch organization name and logo from user profile
   useEffect(() => {
@@ -272,7 +232,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
 
     fetchOrganizationData();
   }, [userProfile]);
-  const isNewYear = activeTheme === "newYear";
+  // const isNewYear = activeTheme === "newYear";
 
   const getNewYearAccentForLabel = (sidebarLabel) => {
     switch (sidebarLabel) {
@@ -391,10 +351,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       {/* Header */}
       <div
         className={cn(
-          "sidebar-header relative flex items-center border-b border-gray-200 p-4 pr-0 shadow-md",
-          activeTheme === "newYear"
-            ? "newyear-sidebar-header"
-            : "bg-gradient-to-r from-blue-600 to-blue-700",
+          "sidebar-header relative flex items-center p-4 pr-0 shadow-md",
+          "bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800",
           collapsed ? "justify-center" : "justify-between",
         )}
       >
@@ -484,12 +442,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setCollapsed(false)}
-                className={cn(
-                  "h-8 w-8 bg-white hover:bg-gray-50 border border-gray-200 rounded-full shadow-lg",
-                  activeTheme === "newYear"
-                    ? "text-[color:var(--newyear-secondary)]"
-                    : "text-blue-600",
-                )}
+                className="h-8 w-8 bg-white hover:bg-gray-50 border border-gray-200 rounded-full shadow-lg text-blue-600"
               >
                 <ChevronRight size={16} />
               </Button>
@@ -516,7 +469,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -528,7 +480,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard/courses")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -540,7 +491,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard/groups")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -552,7 +502,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard/catalog")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -564,7 +513,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard/attendance")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -577,7 +525,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard/messages")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -591,7 +538,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   )}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
 
@@ -602,7 +548,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   label="Creditor Card"
                   collapsed={collapsed}
                   onNavigate={handleCreditorCardClick}
-                  activeTheme={activeTheme}
                 />
               </motion.div>
             </>
@@ -620,12 +565,8 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   className={cn(
                     "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors",
                     moreOpen
-                      ? activeTheme === "newYear"
-                        ? "bg-[color:var(--newyear-bg)] text-[color:var(--newyear-primary)]"
-                        : "bg-blue-50 text-blue-700"
-                      : activeTheme === "newYear"
-                        ? "bg-white text-[color:var(--newyear-primary)] hover:bg-[color:var(--newyear-bg)]"
-                        : "bg-white text-gray-700 hover:bg-gray-50",
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-white text-gray-700 hover:bg-gray-50",
                   )}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -659,7 +600,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   active={isActive("/dashboard/chatbot")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
-                  activeTheme={activeTheme}
                 />
                 <SidebarItem
                   icon={Gamepad2}
@@ -669,7 +609,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                   external={true}
-                  activeTheme={activeTheme}
                 />
                 {/* Less control now unified with the More link above; hide duplicate */}
               </div>
@@ -697,7 +636,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 active={isActive("/instructor")}
                 collapsed={collapsed}
                 onNavigate={handleNavigate}
-                activeTheme={activeTheme}
               />
             </motion.div>
           )}

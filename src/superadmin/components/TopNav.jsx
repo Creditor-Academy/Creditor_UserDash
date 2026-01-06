@@ -16,7 +16,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { darkTheme, lightTheme } from "../theme/colors";
-import { fetchNotifications } from "../../services/notificationService";
+import {
+  fetchSuperadminNotifications,
+  markAllSuperadminNotificationsRead,
+} from "../../services/notificationService";
 
 // Helper function to get initials from name
 const getInitials = (name) => {
@@ -56,14 +59,23 @@ export default function TopNav() {
     return d.toLocaleString();
   };
 
-  const normalizeNotification = (n, idx) => ({
-    id: n?.id || n?._id || idx,
-    title: n?.title || n?.subject || "Notification",
-    message: n?.message || n?.body || n?.description || "",
-    time: formatTime(n?.createdAt || n?.time || n?.timestamp),
-    read: n?.read ?? n?.is_read ?? false,
-    type: n?.type || n?.category || "system",
-  });
+  const normalizeNotification = (n, idx) => {
+    const rawType = n?.type || n?.category || "system";
+    const lowered =
+      typeof rawType === "string" ? rawType.toLowerCase() : "system";
+    let type = lowered;
+    if (lowered.includes("payment")) type = "payment";
+    else if (lowered.includes("ticket")) type = "ticket";
+
+    return {
+      id: n?.id || n?._id || idx,
+      title: n?.title || n?.subject || "Notification",
+      message: n?.message || n?.body || n?.description || "",
+      time: formatTime(n?.createdAt || n?.time || n?.timestamp),
+      read: n?.read ?? n?.is_read ?? false,
+      type,
+    };
+  };
 
   // Fetch user profile data
   useEffect(() => {
@@ -129,7 +141,7 @@ export default function TopNav() {
     const loadNotifications = async () => {
       try {
         setNotificationLoading(true);
-        const res = await fetchNotifications();
+        const res = await fetchSuperadminNotifications();
         if (!isMounted) return;
         const raw =
           res?.data?.data || res?.data?.notifications || res?.data || [];
@@ -160,10 +172,20 @@ export default function TopNav() {
     window.location.href = "/login";
   };
 
-  const handleClearAllNotifications = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, read: true })),
-    );
+  const handleClearAllNotifications = async () => {
+    try {
+      setNotificationLoading(true);
+      await markAllSuperadminNotificationsRead();
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, read: true })),
+      );
+      setNotificationError(null);
+    } catch (err) {
+      console.error("Error marking all notifications read:", err);
+      setNotificationError("Failed to mark all notifications as read");
+    } finally {
+      setNotificationLoading(false);
+    }
   };
 
   const handleMarkAsRead = (id) => {
@@ -176,16 +198,17 @@ export default function TopNav() {
 
   const notificationTabs = [
     { key: "all", label: "All" },
-    { key: "unread", label: "Payments" },
-    { key: "system", label: "Tickets" },
-    // { key: 'user', label: 'Users' },
-    // { key: 'security', label: 'Security' },
+    { key: "payment", label: "Payments" },
+    { key: "ticket", label: "Tickets" },
   ];
 
   const filteredNotifications = notifications.filter((notification) => {
     if (activeNotificationTab === "all") return true;
-    if (activeNotificationTab === "unread") return !notification.read;
-    return notification.type === activeNotificationTab;
+    if (activeNotificationTab === "payment")
+      return notification.type === "payment";
+    if (activeNotificationTab === "ticket")
+      return notification.type === "ticket";
+    return true;
   });
 
   const unreadCount = notifications.filter((n) => !n.read).length;

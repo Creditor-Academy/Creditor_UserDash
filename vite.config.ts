@@ -1,43 +1,43 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
-import path from 'path';
-import { componentTagger } from 'lovable-tagger';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
+import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: '::',
+    host: "::",
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:9000',
+      "/api": {
+        target: "http://localhost:9000",
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
+          proxy.on("error", (err, _req, _res) => {
+            console.log("proxy error", err);
           });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
+          proxy.on("proxyReq", (proxyReq, req, _res) => {
+            console.log("Sending Request to the Target:", req.method, req.url);
           });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
+          proxy.on("proxyRes", (proxyRes, req, _res) => {
             console.log(
-              'Received Response from the Target:',
+              "Received Response from the Target:",
               proxyRes.statusCode,
-              req.url
+              req.url,
             );
           });
         },
       },
     },
     cors: {
-      origin: ['http://localhost:8080', 'http://localhost:9000'],
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      origin: ["http://localhost:8080", "http://localhost:9000"],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'X-Requested-With',
-        'Accept',
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
       ],
       credentials: true,
       maxAge: 3600,
@@ -49,23 +49,23 @@ export default defineConfig(({ mode }) => ({
     },
     watch: {
       usePolling: false,
-      ignored: ['**/node_modules/**', '**/.git/**'],
+      ignored: ["**/node_modules/**", "**/.git/**"],
     },
   },
   preview: {
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     port: 8080,
     allowedHosts: [
-      'www.lmsathena.com',
-      'lmsathena.com',
-      'api.lmsathena.com',
-      '54.198.69.32',
-      'https://creditor.onrender.com',
-      'https://creditor-frontend-p6lt.onrender.com',
+      "www.lmsathena.com",
+      "lmsathena.com",
+      "api.lmsathena.com",
+      "54.198.69.32",
+      "https://creditor.onrender.com",
+      "https://creditor-frontend-p6lt.onrender.com",
     ],
     cors: true,
   },
-  base: '/',
+  base: "/",
   plugins: [
     react(),
     // Temporarily disabled componentTagger to fix infinite refresh
@@ -74,21 +74,21 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@lessonbuilder': path.resolve(__dirname, './src/lessonbuilder'),
+      "@": path.resolve(__dirname, "./src"),
+      "@lessonbuilder": path.resolve(__dirname, "./src/lessonbuilder"),
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'http://localhost:9000'
+    "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
+      "http://localhost:9000",
     ),
     // AI Service API Keys - Injected at build time
-    'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
-      process.env.VITE_OPENAI_API_KEY || ''
+    "import.meta.env.VITE_OPENAI_API_KEY": JSON.stringify(
+      process.env.VITE_OPENAI_API_KEY || "",
     ),
     // Optional: Add other API keys if needed
-    'import.meta.env.VITE_HUGGINGFACE_API_KEY': JSON.stringify(
-      process.env.VITE_HUGGINGFACE_API_KEY || ''
+    "import.meta.env.VITE_HUGGINGFACE_API_KEY": JSON.stringify(
+      process.env.VITE_HUGGINGFACE_API_KEY || "",
     ),
   },
 }));

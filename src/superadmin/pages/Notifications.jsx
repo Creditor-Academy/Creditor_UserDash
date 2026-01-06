@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   CheckCircle2,
@@ -11,50 +11,12 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { darkTheme, lightTheme } from "../theme/colors";
+import {
+  fetchSuperadminNotifications,
+  markAllSuperadminNotificationsRead,
+} from "../../services/notificationService";
 
-const notificationSeeds = [
-  {
-    id: 1,
-    title: "System Update Available",
-    message:
-      "A new system update has been released. Please review the changelog.",
-    time: "2 hours ago",
-    read: false,
-    type: "system",
-  },
-  {
-    id: 2,
-    title: "Payment Received",
-    message: "Your latest invoice has been paid successfully.",
-    time: "3 hours ago",
-    read: false,
-    type: "payment",
-  },
-  {
-    id: 3,
-    title: "New User Registration",
-    message: "John Doe has completed verification.",
-    time: "5 hours ago",
-    read: true,
-    type: "user",
-  },
-  {
-    id: 4,
-    title: "Security Alert",
-    message: "Unusual login activity detected. Please review access logs.",
-    time: "1 day ago",
-    read: false,
-    type: "security",
-  },
-  {
-    id: 5,
-    title: "Support Reply",
-    message: "A support agent replied to your chat thread.",
-    time: "2 days ago",
-    read: true,
-    type: "chats",
-  },
-];
+const notificationSeeds = [];
 
 const tabs = [
   { key: "all", label: "All" },
@@ -80,6 +42,8 @@ export default function Notifications() {
   const colors = theme === "dark" ? darkTheme : lightTheme;
   const [activeTab, setActiveTab] = useState("all");
   const [items, setItems] = useState(notificationSeeds);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const filtered = useMemo(() => {
     if (activeTab === "all") return items;
@@ -89,8 +53,18 @@ export default function Notifications() {
 
   const unreadCount = items.filter((n) => !n.read).length;
 
-  const handleMarkAllRead = () => {
-    setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      setLoading(true);
+      await markAllSuperadminNotificationsRead();
+      setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+      setError(null);
+    } catch (e) {
+      console.error("Failed to mark all read:", e);
+      setError("Failed to mark all notifications as read");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMarkRead = (id) => {
@@ -100,6 +74,35 @@ export default function Notifications() {
   };
 
   const badges = badgeMap(colors);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchSuperadminNotifications();
+        if (!mounted) return;
+        const raw =
+          res?.data?.data || res?.data?.notifications || res?.data || [];
+        const mapped = Array.isArray(raw)
+          ? raw.map((n, idx) => normalizeNotification(n, idx))
+          : [];
+        setItems(mapped);
+        setError(null);
+      } catch (e) {
+        if (!mounted) return;
+        console.error("Failed to fetch notifications:", e);
+        setError("Failed to load notifications");
+        setItems([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-8">

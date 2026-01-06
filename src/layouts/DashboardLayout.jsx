@@ -5,7 +5,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import BackButton from "@/components/navigation/BackButton";
 import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
-import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 // Create a context for the sidebar state
 export const SidebarContext = React.createContext({
@@ -18,16 +17,6 @@ export function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
-  const [activeTheme, setActiveTheme] = useState(() => {
-    if (typeof window === "undefined") return "newYear";
-    try {
-      const saved = localStorage.getItem("dashboardSeasonalTheme");
-      // Default to 'newYear' if not set
-      return saved === null ? "newYear" : saved;
-    } catch {
-      return "newYear";
-    }
-  });
 
   // Only show back button on specific pages where navigation back makes sense
   const pathsWithBackButton = [
@@ -59,106 +48,74 @@ export function DashboardLayout() {
     setSidebarCollapsed(immersive);
   }, [location.pathname]);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    // Remove old Christmas theme class if present
-    document.body.classList.remove("christmas-theme");
-    // Apply New Year theme class
-    document.body.classList.toggle("newyear-theme", activeTheme === "newYear");
-    return () => {
-      document.body.classList.remove("newyear-theme");
-    };
-  }, [activeTheme]);
-
-  const setTheme = (theme) => {
-    try {
-      localStorage.setItem("dashboardSeasonalTheme", theme);
-      // Dispatch custom event so other components can detect the change
-      window.dispatchEvent(
-        new CustomEvent("localStorageChange", {
-          detail: { key: "dashboardSeasonalTheme", value: theme },
-        }),
-      );
-    } catch {
-      /* storage unavailable */
-    }
-    setActiveTheme(theme);
-  };
-
   return (
-    <SeasonalThemeContext.Provider value={{ activeTheme, setTheme }}>
-      <SidebarContext.Provider
-        value={{ sidebarCollapsed, setSidebarCollapsed }}
-      >
+    <SidebarContext.Provider value={{ sidebarCollapsed, setSidebarCollapsed }}>
+      <div className="dashboard-shell flex min-h-screen w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-gray-50 to-white">
+        {/* Sidebar - mobile drawer and desktop fixed */}
         <div
-          className={`dashboard-shell flex min-h-screen w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-gray-50 to-white ${
-            activeTheme === "newYear" ? "newyear-theme" : ""
-          }`}
+          className={
+            `fixed top-0 left-0 h-screen z-30 
+              bg-blue-700 text-white
+              transform transition-transform duration-300 ` +
+            `${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} ` +
+            `lg:translate-x-0`
+          }
         >
-          {/* Sidebar - mobile drawer and desktop fixed */}
-          <div
-            className={
-              `fixed top-0 left-0 h-screen z-30 transform transition-transform duration-300 ` +
-              `${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} ` +
-              `lg:translate-x-0`
-            }
-          >
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              setCollapsed={setSidebarCollapsed}
-              onCreditorCardClick={() => setCreditModalOpen(true)}
-            />
-          </div>
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            setCollapsed={setSidebarCollapsed}
+            onCreditorCardClick={() => setCreditModalOpen(true)}
+          />
+        </div>
 
-          {/* Mobile overlay */}
-          {isMobileSidebarOpen && (
-            <div
-              className="fixed inset-0 z-20 bg-black/40 lg:hidden"
-              onClick={() => setIsMobileSidebarOpen(false)}
-              aria-hidden="true"
-            />
-          )}
-
-          {/* Main content area */}
+        {/* Mobile overlay */}
+        {isMobileSidebarOpen && (
           <div
-            className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[17rem]"}`}
+            className="fixed inset-0 z-20 bg-black/40 lg:hidden"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Main content area */}
+        <div
+          className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[17rem]"}`}
+        >
+          {/* Header - fixed at the top */}
+          <header
+            className={`fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-14 sm:h-16 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[17rem]"}`}
           >
-            {/* Header - fixed at the top */}
-            <header
-              className={`fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-14 sm:h-16 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[17rem]"}`}
-            >
-              <DashboardHeader
-                sidebarCollapsed={sidebarCollapsed}
-                onMobileMenuClick={() => setIsMobileSidebarOpen(true)}
-              />
-            </header>
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto overscroll-contain pt-14 sm:pt-16">
-              <div className="max-w-7xl mx-auto w-full min-w-0">
-                {showBackButton && (
-                  <div className="px-6 pt-6">
-                    <BackButton />
-                  </div>
-                )}
-                <motion.main
-                  className="p-4 sm:p-5 lg:p-6 pt-3 sm:pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                  <Outlet />
-                </motion.main>
-              </div>
+            <DashboardHeader
+              sidebarCollapsed={sidebarCollapsed}
+              onMobileMenuClick={() => setIsMobileSidebarOpen(true)}
+            />
+          </header>
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto overscroll-contain pt-14 sm:pt-16">
+            <div className="max-w-7xl mx-auto w-full min-w-0">
+              {showBackButton && (
+                <div className="px-6 pt-6">
+                  <BackButton />
+                </div>
+              )}
+              <motion.main
+                className="p-4 sm:p-5 lg:p-6 pt-3 sm:pt-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                <Outlet />
+              </motion.main>
             </div>
           </div>
         </div>
-        {/* Credit Purchase Modal */}
-        <CreditPurchaseModal
-          open={creditModalOpen}
-          onClose={() => setCreditModalOpen(false)}
-        />
-      </SidebarContext.Provider>
-    </SeasonalThemeContext.Provider>
+      </div>
+      {/* Credit Purchase Modal */}
+      <CreditPurchaseModal
+        open={creditModalOpen}
+        onClose={() => setCreditModalOpen(false)}
+      />
+    </SidebarContext.Provider>
   );
 }
 
