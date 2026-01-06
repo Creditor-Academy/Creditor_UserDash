@@ -16,7 +16,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { darkTheme, lightTheme } from "../theme/colors";
-import { fetchNotifications } from "../../services/notificationService";
+import {
+  fetchSuperadminNotifications,
+  markAllSuperadminNotificationsRead,
+} from "../../services/notificationService";
 
 // Helper function to get initials from name
 const getInitials = (name) => {
@@ -129,7 +132,7 @@ export default function TopNav() {
     const loadNotifications = async () => {
       try {
         setNotificationLoading(true);
-        const res = await fetchNotifications();
+        const res = await fetchSuperadminNotifications();
         if (!isMounted) return;
         const raw =
           res?.data?.data || res?.data?.notifications || res?.data || [];
@@ -160,10 +163,20 @@ export default function TopNav() {
     window.location.href = "/login";
   };
 
-  const handleClearAllNotifications = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, read: true })),
-    );
+  const handleClearAllNotifications = async () => {
+    try {
+      setNotificationLoading(true);
+      await markAllSuperadminNotificationsRead();
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, read: true })),
+      );
+      setNotificationError(null);
+    } catch (err) {
+      console.error("Error marking all notifications read:", err);
+      setNotificationError("Failed to mark all notifications as read");
+    } finally {
+      setNotificationLoading(false);
+    }
   };
 
   const handleMarkAsRead = (id) => {
