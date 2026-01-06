@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   Clock,
@@ -17,46 +17,46 @@ import {
   Sparkles,
   Calendar,
   Box,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { toast } from '@/hooks/use-toast';
-import devLogger from '@lessonbuilder/utils/devLogger';
-import ImmersiveReader from '@/components/courses/ImmersiveReader';
-import { getTtsToken } from '@/services/speechify';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
+import devLogger from "@lessonbuilder/utils/devLogger";
+import ImmersiveReader from "@/components/courses/ImmersiveReader";
+import { getTtsToken } from "@/services/speechify";
 
 // Helper function to decode HTML entities
-const decodeHtmlEntities = text => {
-  if (!text) return '';
-  const textarea = document.createElement('textarea');
+const decodeHtmlEntities = (text) => {
+  if (!text) return "";
+  const textarea = document.createElement("textarea");
   textarea.innerHTML = text;
   return textarea.value;
 };
 
-const getImageCaptionHtml = block => {
+const getImageCaptionHtml = (block) => {
   const captionHtml = (
     block.captionHtml ||
     block.details?.caption_html ||
     block.text ||
-    ''
+    ""
   ).toString();
   const captionPlain = (
     block.caption ||
     block.imageDescription ||
     block.details?.caption ||
-    ''
+    ""
   ).toString();
   return captionHtml.trim() ? captionHtml : captionPlain;
 };
 
-const generateImageHtml = block => {
-  const imageUrl = block.imageUrl || block.image_url || '';
-  if (!imageUrl) return '';
+const generateImageHtml = (block) => {
+  const imageUrl = block.imageUrl || block.image_url || "";
+  if (!imageUrl) return "";
 
-  const layout = block.layout || 'centered';
-  const alignment = block.alignment || 'left';
+  const layout = block.layout || "centered";
+  const alignment = block.alignment || "left";
   const caption =
     (block.captionHtml && block.captionHtml.trim()) ||
     (block.caption && block.caption.toString()) ||
@@ -64,17 +64,17 @@ const generateImageHtml = block => {
 
   const captionBlock = caption
     ? `<div class="text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>`
-    : '';
+    : "";
 
-  if (layout === 'side-by-side') {
-    const imageFirst = alignment === 'left';
-    const imageOrder = imageFirst ? 'order-1' : 'order-2';
-    const textOrder = imageFirst ? 'order-2' : 'order-1';
+  if (layout === "side-by-side") {
+    const imageFirst = alignment === "left";
+    const imageOrder = imageFirst ? "order-1" : "order-2";
+    const textOrder = imageFirst ? "order-2" : "order-1";
 
     return `
       <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
         <div class="${imageOrder}">
-          <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded-lg shadow-lg" />
+          <img src="${imageUrl}" alt="${block.imageTitle || "Image"}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded-lg shadow-lg" />
         </div>
         <div class="${textOrder}">
           ${captionBlock}
@@ -83,34 +83,34 @@ const generateImageHtml = block => {
     `;
   }
 
-  if (layout === 'overlay') {
+  if (layout === "overlay") {
     return `
       <div class="relative rounded-xl overflow-hidden">
-        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-        ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div></div>` : ''}
+        <img src="${imageUrl}" alt="${block.imageTitle || "Image"}" class="w-full h-96 object-cover" />
+        ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div></div>` : ""}
       </div>
     `;
   }
 
-  if (layout === 'full-width') {
+  if (layout === "full-width") {
     return `
       <div class="space-y-3">
-        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded" />
-        ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
+        <img src="${imageUrl}" alt="${block.imageTitle || "Image"}" style="max-height: min(60vh, 400px); width: 100%; object-fit: contain;" class="rounded" />
+        ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ""}
       </div>
     `;
   }
 
   // centered/default
-  let alignmentClass = 'text-center';
-  if (alignment === 'left') alignmentClass = 'text-left';
-  else if (alignment === 'right') alignmentClass = 'text-right';
+  let alignmentClass = "text-center";
+  if (alignment === "left") alignmentClass = "text-left";
+  else if (alignment === "right") alignmentClass = "text-right";
 
   return `
-    <div class="${alignmentClass} ${alignment === 'center' ? 'flex justify-center' : ''}">
+    <div class="${alignmentClass} ${alignment === "center" ? "flex justify-center" : ""}">
       <div class="max-w-lg">
-        <img src="${imageUrl}" alt="${block.imageTitle || 'Image'}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg max-w-full" />
-        ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ''}
+        <img src="${imageUrl}" alt="${block.imageTitle || "Image"}" style="max-height: min(60vh, 400px); width: auto; object-fit: contain;" class="rounded-xl shadow-lg max-w-full" />
+        ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${caption}</div></div>` : ""}
       </div>
     </div>
   `;
@@ -133,14 +133,14 @@ const LessonPreview = () => {
   const videoRef = useRef(null);
   const [isVideoOutOfView, setIsVideoOutOfView] = useState(false);
   const [isReaderOpen, setIsReaderOpen] = useState(false);
-  const [readerContent, setReaderContent] = useState('');
-  const [readerTitle, setReaderTitle] = useState('');
+  const [readerContent, setReaderContent] = useState("");
+  const [readerTitle, setReaderTitle] = useState("");
 
   useEffect(() => {
-    let styleEl = document.getElementById('lesson-preview-image-list-style');
+    let styleEl = document.getElementById("lesson-preview-image-list-style");
     if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'lesson-preview-image-list-style';
+      styleEl = document.createElement("style");
+      styleEl.id = "lesson-preview-image-list-style";
       styleEl.textContent = `
         .image-block-preview ol {
           list-style-type: decimal;
@@ -214,8 +214,8 @@ const LessonPreview = () => {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [lessonData, currentSection]);
 
   // Header visibility based on scroll direction
@@ -237,73 +237,73 @@ const LessonPreview = () => {
       setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleHeaderScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleHeaderScroll);
+    window.addEventListener("scroll", handleHeaderScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleHeaderScroll);
   }, [lastScrollY]);
 
   // Setup Process carousel functions for preview mode
   useEffect(() => {
     // Process carousel navigation functions (based on quotes carousel logic)
-    window.processCarouselPrev = button => {
-      devLogger.debug('Process Carousel Prev clicked');
-      const carousel = button.closest('.process-carousel');
+    window.processCarouselPrev = (button) => {
+      devLogger.debug("Process Carousel Prev clicked");
+      const carousel = button.closest(".process-carousel");
       if (!carousel) {
-        devLogger.debug('No process carousel found for prev button');
+        devLogger.debug("No process carousel found for prev button");
         return;
       }
 
-      const slides = carousel.querySelectorAll('.process-step');
-      const dots = carousel.querySelectorAll('.process-carousel-dot');
-      let currentIndex = parseInt(carousel.dataset.current || '0');
+      const slides = carousel.querySelectorAll(".process-step");
+      const dots = carousel.querySelectorAll(".process-carousel-dot");
+      let currentIndex = parseInt(carousel.dataset.current || "0");
 
       devLogger.debug(
-        'Process carousel prev - current index:',
+        "Process carousel prev - current index:",
         currentIndex,
-        'total slides:',
-        slides.length
+        "total slides:",
+        slides.length,
       );
       const newIndex = currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
       showProcessCarouselSlide(carousel, slides, dots, newIndex);
     };
 
-    window.processCarouselNext = button => {
-      devLogger.debug('Process Carousel Next clicked');
-      const carousel = button.closest('.process-carousel');
+    window.processCarouselNext = (button) => {
+      devLogger.debug("Process Carousel Next clicked");
+      const carousel = button.closest(".process-carousel");
       if (!carousel) {
-        devLogger.debug('No process carousel found for next button');
+        devLogger.debug("No process carousel found for next button");
         return;
       }
 
-      const slides = carousel.querySelectorAll('.process-step');
-      const dots = carousel.querySelectorAll('.process-carousel-dot');
-      let currentIndex = parseInt(carousel.dataset.current || '0');
+      const slides = carousel.querySelectorAll(".process-step");
+      const dots = carousel.querySelectorAll(".process-carousel-dot");
+      let currentIndex = parseInt(carousel.dataset.current || "0");
 
       devLogger.debug(
-        'Process carousel next - current index:',
+        "Process carousel next - current index:",
         currentIndex,
-        'total slides:',
-        slides.length
+        "total slides:",
+        slides.length,
       );
       const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
       showProcessCarouselSlide(carousel, slides, dots, newIndex);
     };
 
     window.processCarouselGoTo = (button, index) => {
-      devLogger.debug('Process Carousel GoTo clicked');
-      const carousel = button.closest('.process-carousel');
+      devLogger.debug("Process Carousel GoTo clicked");
+      const carousel = button.closest(".process-carousel");
       if (!carousel) {
-        devLogger.debug('No process carousel found for goTo button');
+        devLogger.debug("No process carousel found for goTo button");
         return;
       }
 
-      const slides = carousel.querySelectorAll('.process-step');
-      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      const slides = carousel.querySelectorAll(".process-step");
+      const dots = carousel.querySelectorAll(".process-carousel-dot");
 
       devLogger.debug(
-        'Process carousel goTo - target index:',
+        "Process carousel goTo - target index:",
         index,
-        'total slides:',
-        slides.length
+        "total slides:",
+        slides.length,
       );
       showProcessCarouselSlide(carousel, slides, dots, index);
     };
@@ -311,11 +311,11 @@ const LessonPreview = () => {
     const showProcessCarouselSlide = (carousel, slides, dots, index) => {
       slides.forEach((slide, i) => {
         if (i === index) {
-          slide.classList.remove('hidden');
-          slide.classList.add('block');
+          slide.classList.remove("hidden");
+          slide.classList.add("block");
         } else {
-          slide.classList.remove('block');
-          slide.classList.add('hidden');
+          slide.classList.remove("block");
+          slide.classList.add("hidden");
         }
       });
 
@@ -323,35 +323,35 @@ const LessonPreview = () => {
         // Normalize: remove all known active/inactive styles first
         dot.classList.remove(
           // inactive variants
-          'bg-gray-300',
-          'hover:bg-gray-400',
-          'bg-slate-300',
-          'hover:bg-slate-400',
-          'hover:scale-105',
+          "bg-gray-300",
+          "hover:bg-gray-400",
+          "bg-slate-300",
+          "hover:bg-slate-400",
+          "hover:scale-105",
           // active variants
-          'bg-white',
-          'scale-110',
-          'shadow-md',
-          'bg-gradient-to-r',
-          'from-blue-500',
-          'to-purple-500'
+          "bg-white",
+          "scale-110",
+          "shadow-md",
+          "bg-gradient-to-r",
+          "from-blue-500",
+          "to-purple-500",
         );
 
         if (i === index) {
           // Active state: use gradient styling like quotes carousel
           dot.classList.add(
-            'bg-gradient-to-r',
-            'from-blue-500',
-            'to-purple-500',
-            'scale-110',
-            'shadow-md'
+            "bg-gradient-to-r",
+            "from-blue-500",
+            "to-purple-500",
+            "scale-110",
+            "shadow-md",
           );
         } else {
           // Inactive state: use slate gray like quotes carousel
           dot.classList.add(
-            'bg-slate-300',
-            'hover:bg-slate-400',
-            'hover:scale-105'
+            "bg-slate-300",
+            "hover:bg-slate-400",
+            "hover:scale-105",
           );
         }
       });
@@ -360,14 +360,14 @@ const LessonPreview = () => {
     };
 
     // Add keyboard navigation support
-    window.addEventListener('keydown', event => {
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         const focusedElement = document.activeElement;
-        const processContainer = focusedElement?.closest('.process-carousel');
+        const processContainer = focusedElement?.closest(".process-carousel");
 
         if (processContainer && processContainer.id) {
           event.preventDefault();
-          if (event.key === 'ArrowLeft') {
+          if (event.key === "ArrowLeft") {
             window.processCarouselPrev &&
               window.processCarouselPrev({ closest: () => processContainer });
           } else {
@@ -379,8 +379,8 @@ const LessonPreview = () => {
     });
 
     // Add click navigation to process content area
-    window.addEventListener('click', event => {
-      const processContainer = event.target?.closest('.process-carousel');
+    window.addEventListener("click", (event) => {
+      const processContainer = event.target?.closest(".process-carousel");
       if (processContainer && processContainer.id) {
         // Focus the container for keyboard navigation
         processContainer.focus();
@@ -401,12 +401,12 @@ const LessonPreview = () => {
       setError(null);
 
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
       const response = await fetch(`${baseUrl}/api/lessoncontent/${lessonId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -415,7 +415,7 @@ const LessonPreview = () => {
       }
 
       const responseData = await response.json();
-      devLogger.debug('Fetched lesson data:', responseData);
+      devLogger.debug("Fetched lesson data:", responseData);
 
       // Extract the actual data from the API response
       const data = responseData.data || responseData;
@@ -430,8 +430,8 @@ const LessonPreview = () => {
           data.lesson?.title ||
           data.title ||
           data.lesson_title ||
-          'Untitled Lesson',
-        description: data.description || data.lesson_description || '',
+          "Untitled Lesson",
+        description: data.description || data.lesson_description || "",
         // duration: data.duration || data.estimated_duration || '30 min',
         // difficulty: data.difficulty || data.level || 'Intermediate',
         // instructor: data.instructor || data.author || data.created_by || 'Course Instructor',
@@ -439,8 +439,8 @@ const LessonPreview = () => {
         headingSections: parsedContent.headingSections || [],
         allContent: parsedContent.allContent || [],
         objectives: data.objectives || data.learning_objectives || [],
-        introduction: data.introduction || data.lesson_introduction || '',
-        summary: data.summary || data.lesson_summary || '',
+        introduction: data.introduction || data.lesson_introduction || "",
+        summary: data.summary || data.lesson_summary || "",
         lessonOrder: data.lesson?.order || data.order || 1,
         totalLessons: 9, // This could be passed from parent or calculated
       };
@@ -458,59 +458,60 @@ const LessonPreview = () => {
         setCurrentSection(parsedContent.headingSections[0].id);
       }
     } catch (err) {
-      devLogger.error('Error fetching lesson content:', err);
+      devLogger.error("Error fetching lesson content:", err);
       setError(err.message);
       toast({
-        title: 'Error',
-        description: 'Failed to load lesson content. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load lesson content. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const parseLessonContent = content => {
+  const parseLessonContent = (content) => {
     const allContent = [];
     const headingSections = [];
 
     if (!content || !Array.isArray(content)) {
-      devLogger.debug('Content is not an array or is empty:', content);
-      devLogger.debug('Final parsed content result:', {
+      devLogger.debug("Content is not an array or is empty:", content);
+      devLogger.debug("Final parsed content result:", {
         totalAllContent: allContent.length,
         youtubeInAllContent: allContent.filter(
-          block => block.type === 'youtube'
+          (block) => block.type === "youtube",
         ).length,
         allContentYoutubeIds: allContent
-          .filter(block => block.type === 'youtube')
-          .map(block => block.id),
+          .filter((block) => block.type === "youtube")
+          .map((block) => block.id),
         headingSections: headingSections.length,
       });
       return { allContent, headingSections };
     }
 
-    devLogger.debug('Parsing lesson content:', {
+    devLogger.debug("Parsing lesson content:", {
       totalBlocks: content.length,
-      textBlocks: content.filter(block => block.type === 'text').length,
+      textBlocks: content.filter((block) => block.type === "text").length,
       masterHeadingBlocks: content.filter(
-        block => block.type === 'text' && block.textType === 'master_heading'
+        (block) => block.type === "text" && block.textType === "master_heading",
       ).length,
       masterHeadingDetails: content
         .filter(
-          block => block.type === 'text' && block.textType === 'master_heading'
+          (block) =>
+            block.type === "text" && block.textType === "master_heading",
         )
-        .map(block => ({
+        .map((block) => ({
           id: block.block_id || block.id,
           textType: block.textType,
           hasHtmlCss: !!block.html_css,
           htmlPreview: block.html_css
-            ? block.html_css.substring(0, 50) + '...'
-            : 'None',
+            ? block.html_css.substring(0, 50) + "..."
+            : "None",
         })),
-      allBlockTypes: content.map(block => ({
+      allBlockTypes: content.map((block) => ({
         id: block.id || block.block_id,
         type: block.type,
-        textType: block.textType || block.text_type || 'none',
+        textType: block.textType || block.text_type || "none",
       })),
     });
 
@@ -526,19 +527,19 @@ const LessonPreview = () => {
     });
 
     if (duplicateBlocks.length > 0) {
-      devLogger.warn('Found duplicate blocks:', duplicateBlocks);
+      devLogger.warn("Found duplicate blocks:", duplicateBlocks);
     }
 
     // Filter out duplicate blocks based on ID
     const uniqueContent = content.filter((block, index) => {
       const blockId = block.id || block.block_id;
       const firstIndex = content.findIndex(
-        b => (b.id || b.block_id) === blockId
+        (b) => (b.id || b.block_id) === blockId,
       );
       const isDuplicate = firstIndex !== index;
 
       if (isDuplicate) {
-        devLogger.warn('Found duplicate block:', {
+        devLogger.warn("Found duplicate block:", {
           blockId,
           type: block.type,
           index,
@@ -551,7 +552,7 @@ const LessonPreview = () => {
 
     if (uniqueContent.length !== content.length) {
       devLogger.warn(
-        `Filtered out ${content.length - uniqueContent.length} duplicate blocks`
+        `Filtered out ${content.length - uniqueContent.length} duplicate blocks`,
       );
     }
 
@@ -578,45 +579,45 @@ const LessonPreview = () => {
       // CRITICAL: Ensure list blocks are NEVER added to headingSections
       // Check if block is actually a list (even if incorrectly typed)
       const isListBlock =
-        block.type === 'list' ||
+        block.type === "list" ||
         block.listType ||
         block.list_type ||
         block.details?.listType ||
         block.details?.list_type ||
         (() => {
           // Check content structure for list indicators
-          const content = block.content || block.details?.content || '';
-          if (typeof content === 'string') {
+          const content = block.content || block.details?.content || "";
+          if (typeof content === "string") {
             try {
               const parsed = JSON.parse(content);
               return (
                 parsed &&
-                typeof parsed === 'object' &&
+                typeof parsed === "object" &&
                 parsed.items &&
                 Array.isArray(parsed.items)
               );
             } catch (e) {
               // Not JSON, check for list HTML patterns
               return (
-                content.includes('<ol') ||
-                content.includes('<ul') ||
-                content.includes('list-decimal') ||
-                content.includes('list-disc') ||
-                content.includes('numbered-list') ||
-                content.includes('bulleted-list')
+                content.includes("<ol") ||
+                content.includes("<ul") ||
+                content.includes("list-decimal") ||
+                content.includes("list-disc") ||
+                content.includes("numbered-list") ||
+                content.includes("bulleted-list")
               );
             }
           }
           return (
             content &&
-            typeof content === 'object' &&
+            typeof content === "object" &&
             content.items &&
             Array.isArray(content.items)
           );
         })();
 
       // Handle different block types based on your API structure
-      if (block.type === 'text' && !isListBlock) {
+      if (block.type === "text" && !isListBlock) {
         // Check if it's a heading type - check both textType and text_type fields
         const textType = block.textType || block.text_type;
         // Extract content from multiple possible locations
@@ -627,54 +628,54 @@ const LessonPreview = () => {
           block.text ||
           block.details?.title ||
           block.title ||
-          '';
+          "";
 
         // CRITICAL: Only show master_heading in sidebar - NEVER list items or numbered content
         // Additional validation to prevent numbered list items from being treated as headings
         const isNumberedListItem = /^\d+[\.)]\s+/.test(
-          content.replace(/<[^>]*>/g, '').trim()
+          content.replace(/<[^>]*>/g, "").trim(),
         );
         const isListContent =
-          content.includes('<li') ||
-          content.includes('<ol') ||
-          content.includes('<ul') ||
-          content.includes('list-item');
+          content.includes("<li") ||
+          content.includes("<ol") ||
+          content.includes("<ul") ||
+          content.includes("list-item");
 
         if (
-          textType === 'master_heading' &&
+          textType === "master_heading" &&
           !isNumberedListItem &&
           !isListContent
         ) {
           // Extract heading text from html_css field for master headings
-          let headingText = '';
+          let headingText = "";
 
           // First try to get text from html_css field (where master heading content is stored)
           // CRITICAL: Extract only h1 text content, not all HTML content
           if (block.html_css) {
             try {
               // Create a temporary DOM element to parse HTML
-              const tempDiv = document.createElement('div');
+              const tempDiv = document.createElement("div");
               tempDiv.innerHTML = block.html_css;
 
               // Try to find h1 element first (most specific)
-              const h1Element = tempDiv.querySelector('h1');
+              const h1Element = tempDiv.querySelector("h1");
               if (h1Element) {
                 headingText = (
                   h1Element.textContent ||
                   h1Element.innerText ||
-                  ''
+                  ""
                 ).trim();
               } else {
                 // Fallback: if no h1, try to extract from first text node
                 // This handles cases where h1 might be nested or styled differently
                 const textContent =
-                  tempDiv.textContent || tempDiv.innerText || '';
+                  tempDiv.textContent || tempDiv.innerText || "";
                 headingText = textContent.trim();
 
                 // If extracted text is too long (likely contains other content),
                 // try to get first line or first 100 chars
                 if (headingText.length > 100) {
-                  const firstLine = headingText.split('\n')[0].trim();
+                  const firstLine = headingText.split("\n")[0].trim();
                   headingText =
                     firstLine.length > 0
                       ? firstLine
@@ -682,34 +683,34 @@ const LessonPreview = () => {
                 }
               }
             } catch (error) {
-              devLogger.warn('Error parsing master heading HTML:', error);
+              devLogger.warn("Error parsing master heading HTML:", error);
               // Fallback to simple tag stripping
-              headingText = block.html_css.replace(/<[^>]*>/g, '').trim();
+              headingText = block.html_css.replace(/<[^>]*>/g, "").trim();
             }
           }
 
           // Fallback to content field if html_css doesn't have text
           if (!headingText && content) {
             try {
-              const tempDiv = document.createElement('div');
+              const tempDiv = document.createElement("div");
               tempDiv.innerHTML = content;
-              const h1Element = tempDiv.querySelector('h1');
+              const h1Element = tempDiv.querySelector("h1");
               if (h1Element) {
                 headingText = (
                   h1Element.textContent ||
                   h1Element.innerText ||
-                  ''
+                  ""
                 ).trim();
               } else {
-                headingText = content.replace(/<[^>]*>/g, '').trim();
+                headingText = content.replace(/<[^>]*>/g, "").trim();
               }
             } catch (error) {
-              headingText = content.replace(/<[^>]*>/g, '').trim();
+              headingText = content.replace(/<[^>]*>/g, "").trim();
             }
           }
 
           // Final fallback to section number
-          if (!headingText || headingText === '') {
+          if (!headingText || headingText === "") {
             headingText = `Section ${index + 1}`;
           }
 
@@ -720,22 +721,22 @@ const LessonPreview = () => {
               title: headingText,
               index: index,
               textType: textType,
-            }
+            },
           );
 
           // Final validation: Ensure this is NOT a list item or numbered content
-          const cleanHeadingText = headingText.replace(/<[^>]*>/g, '').trim();
+          const cleanHeadingText = headingText.replace(/<[^>]*>/g, "").trim();
           const isNumberedContent = /^\d+[\.)]\s+/.test(cleanHeadingText);
           const looksLikeListItem =
             cleanHeadingText.length < 100 &&
             (cleanHeadingText.match(/^\d+[\.)]/) ||
-              cleanHeadingText.startsWith('•') ||
-              cleanHeadingText.startsWith('-'));
+              cleanHeadingText.startsWith("•") ||
+              cleanHeadingText.startsWith("-"));
 
           // CRITICAL: Additional validation - ensure master heading text is not from another block
           // Master headings should be short, descriptive titles, not long content
           const isTooLong = cleanHeadingText.length > 150;
-          const hasMultipleLines = cleanHeadingText.includes('\n');
+          const hasMultipleLines = cleanHeadingText.includes("\n");
           const hasMultipleSentences =
             (cleanHeadingText.match(/[.!?]/g) || []).length > 1;
 
@@ -752,10 +753,10 @@ const LessonPreview = () => {
             headingSections.push({
               ...blockData,
               title: headingText,
-              type: 'heading',
+              type: "heading",
             });
           } else {
-            devLogger.warn('Skipping numbered/list content from outline:', {
+            devLogger.warn("Skipping numbered/list content from outline:", {
               blockId,
               headingText: cleanHeadingText,
               isNumberedContent,
@@ -771,16 +772,16 @@ const LessonPreview = () => {
             type: block.type,
             textType: textType,
             content: content,
-            htmlCss: block.html_css || '',
+            htmlCss: block.html_css || "",
             style: block.style || {},
           });
           processedIds.add(blockId);
         } else {
-          devLogger.warn('Skipping duplicate text block:', blockId);
+          devLogger.warn("Skipping duplicate text block:", blockId);
         }
-      } else if (block.type === 'statement') {
+      } else if (block.type === "statement") {
         // Handle statement blocks
-        const content = block.details?.content || block.content || '';
+        const content = block.details?.content || block.content || "";
         const statementType =
           block.details?.statement_type || block.statementType;
 
@@ -788,12 +789,12 @@ const LessonPreview = () => {
 
         allContent.push({
           ...blockData,
-          type: 'statement',
+          type: "statement",
           statementType: statementType,
           content: content,
-          htmlCss: block.html_css || '',
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'image') {
+      } else if (block.type === "image") {
         const normalizedBlock = {
           ...block,
           imageUrl:
@@ -801,24 +802,24 @@ const LessonPreview = () => {
             block.image_url ||
             block.details?.image_url ||
             block.url ||
-            '',
+            "",
           imageTitle:
             block.imageTitle ||
             block.image_title ||
             block.details?.alt_text ||
-            '',
-          layout: block.layout || block.details?.layout || 'centered',
-          alignment: block.alignment || block.details?.alignment || 'left',
+            "",
+          layout: block.layout || block.details?.layout || "centered",
+          alignment: block.alignment || block.details?.alignment || "left",
           captionHtml:
             block.details?.caption_html ||
             block.captionHtml ||
             block.text ||
-            '',
+            "",
           caption:
             block.imageDescription ||
             block.image_description ||
             block.details?.caption ||
-            '',
+            "",
         };
 
         const htmlContent =
@@ -828,34 +829,34 @@ const LessonPreview = () => {
         allContent.push({
           ...blockData,
           ...normalizedBlock,
-          type: 'image',
+          type: "image",
           imageDescription: normalizedBlock.caption,
           text: normalizedBlock.captionHtml,
           htmlCss: htmlContent,
         });
-      } else if (block.type === 'video') {
+      } else if (block.type === "video") {
         allContent.push({
           ...blockData,
-          type: 'video',
+          type: "video",
           videoTitle:
             block.videoTitle ||
             block.video_title ||
             block.details?.videoTitle ||
-            '',
+            "",
           videoDescription:
             block.videoDescription ||
             block.video_description ||
             block.details?.videoDescription ||
-            '',
+            "",
           videoUrl:
             block.videoUrl ||
             block.video_url ||
             block.details?.videoUrl ||
             block.url ||
-            '',
-          htmlCss: block.html_css || '',
+            "",
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'quote') {
+      } else if (block.type === "quote") {
         // Detect quote type from HTML content if not available
         let quoteType =
           block.quoteType || block.quote_type || block.details?.quoteType;
@@ -865,127 +866,127 @@ const LessonPreview = () => {
 
           // Quote Carousel - has carousel controls and multiple quotes
           if (
-            htmlContent.includes('quote-carousel') ||
-            htmlContent.includes('carousel-dot') ||
-            htmlContent.includes('carousel-prev') ||
-            htmlContent.includes('carousel-next')
+            htmlContent.includes("quote-carousel") ||
+            htmlContent.includes("carousel-dot") ||
+            htmlContent.includes("carousel-prev") ||
+            htmlContent.includes("carousel-next")
           ) {
-            quoteType = 'quote_carousel';
+            quoteType = "quote_carousel";
           }
           // Quote on Image - has background image with overlay
           else if (
-            htmlContent.includes('background-image:') ||
-            (htmlContent.includes('bg-gradient-to-t from-black') &&
-              htmlContent.includes('absolute inset-0'))
+            htmlContent.includes("background-image:") ||
+            (htmlContent.includes("bg-gradient-to-t from-black") &&
+              htmlContent.includes("absolute inset-0"))
           ) {
-            quoteType = 'quote_on_image';
+            quoteType = "quote_on_image";
           }
           // Quote C - has author image with horizontal layout
           else if (
-            htmlContent.includes('flex items-center space-x-8') ||
-            (htmlContent.includes('rounded-full object-cover') &&
-              htmlContent.includes('w-16 h-16'))
+            htmlContent.includes("flex items-center space-x-8") ||
+            (htmlContent.includes("rounded-full object-cover") &&
+              htmlContent.includes("w-16 h-16"))
           ) {
-            quoteType = 'quote_c';
+            quoteType = "quote_c";
           }
           // Quote D - has specific styling with slate background
           else if (
-            htmlContent.includes('text-left max-w-3xl') ||
-            htmlContent.includes('bg-gradient-to-br from-slate-50')
+            htmlContent.includes("text-left max-w-3xl") ||
+            htmlContent.includes("bg-gradient-to-br from-slate-50")
           ) {
-            quoteType = 'quote_d';
+            quoteType = "quote_d";
           }
           // Quote B - has large text and thin font
           else if (
-            htmlContent.includes('text-3xl md:text-4xl') ||
-            htmlContent.includes('font-thin')
+            htmlContent.includes("text-3xl md:text-4xl") ||
+            htmlContent.includes("font-thin")
           ) {
-            quoteType = 'quote_b';
+            quoteType = "quote_b";
           }
           // Quote A - default style
           else {
-            quoteType = 'quote_a';
+            quoteType = "quote_a";
           }
         } else if (!quoteType) {
-          quoteType = 'quote_a'; // fallback
+          quoteType = "quote_a"; // fallback
         }
 
         allContent.push({
           ...blockData,
-          type: 'quote',
-          content: block.content || block.details?.content || '',
+          type: "quote",
+          content: block.content || block.details?.content || "",
           quoteType: quoteType,
-          htmlCss: block.html_css || '',
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'list' || isListBlock) {
+      } else if (block.type === "list" || isListBlock) {
         // CRITICAL: List blocks should NEVER be added to headingSections
         // They should only appear in allContent for rendering
         allContent.push({
           ...blockData,
-          type: 'list',
-          content: block.content || block.details?.content || '',
+          type: "list",
+          content: block.content || block.details?.content || "",
           listType:
             block.listType ||
             block.list_type ||
             block.details?.listType ||
             block.details?.list_type ||
-            'bulleted',
-          htmlCss: block.html_css || '',
+            "bulleted",
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'pdf') {
+      } else if (block.type === "pdf") {
         allContent.push({
           ...blockData,
-          type: 'pdf',
+          type: "pdf",
           pdfTitle:
-            block.pdfTitle || block.pdf_title || block.details?.pdfTitle || '',
+            block.pdfTitle || block.pdf_title || block.details?.pdfTitle || "",
           pdfDescription:
             block.pdfDescription ||
             block.pdf_description ||
             block.details?.pdfDescription ||
-            '',
+            "",
           pdfUrl:
             block.pdfUrl ||
             block.pdf_url ||
             block.details?.pdfUrl ||
             block.url ||
-            '',
-          htmlCss: block.html_css || '',
+            "",
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'table') {
+      } else if (block.type === "table") {
         allContent.push({
           ...blockData,
-          type: 'table',
-          content: block.content || block.details?.content || '',
+          type: "table",
+          content: block.content || block.details?.content || "",
           tableData:
             block.tableData ||
             block.table_data ||
             block.details?.tableData ||
-            '',
-          htmlCss: block.html_css || '',
+            "",
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'embed') {
+      } else if (block.type === "embed") {
         allContent.push({
           ...blockData,
-          type: 'embed',
+          type: "embed",
           embedTitle:
             block.embedTitle ||
             block.embed_title ||
             block.details?.embedTitle ||
-            '',
+            "",
           embedDescription:
             block.embedDescription ||
             block.embed_description ||
             block.details?.embedDescription ||
-            '',
+            "",
           embedCode:
             block.embedCode ||
             block.embed_code ||
             block.details?.embedCode ||
             block.content ||
-            '',
-          htmlCss: block.html_css || '',
+            "",
+          htmlCss: block.html_css || "",
         });
-      } else if (block.type === 'divider') {
+      } else if (block.type === "divider") {
         const normalizedSubtype =
           block.subtype ||
           block.details?.subtype ||
@@ -993,13 +994,13 @@ const LessonPreview = () => {
           block.dividerType ||
           block.divider_type ||
           block.details?.dividerType ||
-          'divider';
+          "divider";
         allContent.push({
           ...blockData,
-          type: 'divider',
+          type: "divider",
           subtype: normalizedSubtype,
-          content: block.content || '',
-          htmlCss: block.html_css || '',
+          content: block.content || "",
+          htmlCss: block.html_css || "",
         });
       } else {
         // Handle other block types - add all blocks to content
@@ -1007,40 +1008,40 @@ const LessonPreview = () => {
         const mightBeList =
           isListBlock ||
           (block.content &&
-            typeof block.content === 'string' &&
-            (block.content.includes('<ol') ||
-              block.content.includes('<ul') ||
-              block.content.includes('list-decimal') ||
-              block.content.includes('list-disc')));
+            typeof block.content === "string" &&
+            (block.content.includes("<ol") ||
+              block.content.includes("<ul") ||
+              block.content.includes("list-decimal") ||
+              block.content.includes("list-disc")));
 
         allContent.push({
           ...blockData,
-          type: mightBeList ? 'list' : block.type || 'text',
-          content: block.content || block.details?.content || '',
+          type: mightBeList ? "list" : block.type || "text",
+          content: block.content || block.details?.content || "",
           textType: mightBeList
             ? undefined
             : block.textType ||
               block.text_type ||
               block.statement_type ||
-              'paragraph',
+              "paragraph",
           listType: mightBeList
-            ? block.listType || block.list_type || 'bulleted'
+            ? block.listType || block.list_type || "bulleted"
             : undefined,
-          htmlCss: block.html_css || '',
+          htmlCss: block.html_css || "",
         });
       }
     });
 
-    devLogger.debug('Final parsed content result:', {
+    devLogger.debug("Final parsed content result:", {
       totalAllContent: allContent.length,
       totalHeadingSections: headingSections.length,
-      headingSectionTitles: headingSections.map(h => h.title),
+      headingSectionTitles: headingSections.map((h) => h.title),
       masterHeadingBlocks: allContent.filter(
-        block => block.type === 'text' && block.textType === 'master_heading'
+        (block) => block.type === "text" && block.textType === "master_heading",
       ),
       allTextBlocks: allContent
-        .filter(block => block.type === 'text')
-        .map(block => ({
+        .filter((block) => block.type === "text")
+        .map((block) => ({
           id: block.id,
           textType: block.textType,
           hasContent: !!block.content,
@@ -1054,17 +1055,17 @@ const LessonPreview = () => {
   };
 
   // Build pages based on master headings and continue dividers
-  const computePages = allContent => {
+  const computePages = (allContent) => {
     if (!Array.isArray(allContent) || allContent.length === 0) return [];
     const pages = [];
     const headingIndices = allContent
       .map((b, idx) => ({ b, idx }))
-      .filter(({ b }) => b.type === 'text' && b.textType === 'master_heading')
+      .filter(({ b }) => b.type === "text" && b.textType === "master_heading")
       .map(({ idx }) => idx);
 
     if (headingIndices.length === 0) {
       const continueIdx = allContent.findIndex(
-        b => b.type === 'divider' && b.subtype === 'continue'
+        (b) => b.type === "divider" && b.subtype === "continue",
       );
       const endExclusive =
         continueIdx >= 0 ? continueIdx + 1 : allContent.length;
@@ -1080,8 +1081,8 @@ const LessonPreview = () => {
         const block = allContent[i];
         if (
           block &&
-          block.type === 'divider' &&
-          String(block.subtype).toLowerCase() === 'continue'
+          block.type === "divider" &&
+          String(block.subtype).toLowerCase() === "continue"
         ) {
           endExclusive = i + 1;
           break;
@@ -1092,12 +1093,12 @@ const LessonPreview = () => {
     return pages;
   };
 
-  const handleSectionClick = sectionId => {
+  const handleSectionClick = (sectionId) => {
     setCurrentSection(sectionId);
     setSidebarOpen(false);
     // Find the page that contains this section
     const targetIndex =
-      lessonData?.headingSections?.findIndex(s => s.id === sectionId) ?? -1;
+      lessonData?.headingSections?.findIndex((s) => s.id === sectionId) ?? -1;
     if (targetIndex > -1) {
       setCurrentPage(targetIndex);
     }
@@ -1107,12 +1108,12 @@ const LessonPreview = () => {
       const elementPosition = sectionElement.getBoundingClientRect().top;
       const offsetPosition =
         elementPosition + window.pageYOffset - headerOffset;
-      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
   };
 
   const handleContinue = () => {
-    setCompletedSections(prev => {
+    setCompletedSections((prev) => {
       const done = new Set(prev);
       const currentHeading = lessonData?.headingSections?.[currentPage]?.id;
       if (currentHeading) done.add(currentHeading);
@@ -1131,26 +1132,26 @@ const LessonPreview = () => {
           const elementPosition = el.getBoundingClientRect().top;
           const offsetPosition =
             elementPosition + window.pageYOffset - headerOffset;
-          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
         } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }
       }, 0);
     }
   };
 
-  const markSectionComplete = sectionId => {
-    setCompletedSections(prev => new Set([...prev, sectionId]));
+  const markSectionComplete = (sectionId) => {
+    setCompletedSections((prev) => new Set([...prev, sectionId]));
   };
 
   const handleBackToBuilder = () => {
     navigate(
-      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/builder`
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/builder`,
     );
   };
 
-  const getReaderHtmlForBlock = block => {
-    if (!block) return '';
+  const getReaderHtmlForBlock = (block) => {
+    if (!block) return "";
 
     if (block.htmlCss && block.htmlCss.trim()) {
       return block.htmlCss;
@@ -1158,46 +1159,46 @@ const LessonPreview = () => {
 
     // Prefer rich content fields per block type
     switch (block.type) {
-      case 'text':
-      case 'statement':
-      case 'list':
-      case 'quote':
-      case 'table':
-      case 'embed':
-      case 'divider':
-      case 'audio':
-        return block.content || '';
-      case 'image': {
+      case "text":
+      case "statement":
+      case "list":
+      case "quote":
+      case "table":
+      case "embed":
+      case "divider":
+      case "audio":
+        return block.content || "";
+      case "image": {
         const caption =
-          block.captionHtml || block.caption || block.imageDescription || '';
-        return caption ? `<p>${caption}</p>` : '';
+          block.captionHtml || block.caption || block.imageDescription || "";
+        return caption ? `<p>${caption}</p>` : "";
       }
-      case 'video': {
+      case "video": {
         const text =
-          block.videoDescription || block.videoTitle || block.content || '';
-        return text ? `<p>${text}</p>` : '';
+          block.videoDescription || block.videoTitle || block.content || "";
+        return text ? `<p>${text}</p>` : "";
       }
-      case 'youtube': {
+      case "youtube": {
         const text =
-          block.videoDescription || block.videoTitle || block.content || '';
-        return text ? `<p>${text}</p>` : '';
+          block.videoDescription || block.videoTitle || block.content || "";
+        return text ? `<p>${text}</p>` : "";
       }
-      case 'pdf': {
-        const text = block.pdfDescription || block.pdfTitle || '';
-        return text ? `<p>${text}</p>` : '';
+      case "pdf": {
+        const text = block.pdfDescription || block.pdfTitle || "";
+        return text ? `<p>${text}</p>` : "";
       }
       default:
-        return block.content || '';
+        return block.content || "";
     }
   };
 
-  const handleReadBlock = async block => {
+  const handleReadBlock = async (block) => {
     const html = getReaderHtmlForBlock(block);
 
     if (!html || !html.trim()) {
       toast({
-        title: 'Nothing to read',
-        description: 'This content block does not contain readable text.',
+        title: "Nothing to read",
+        description: "This content block does not contain readable text.",
       });
       return;
     }
@@ -1205,23 +1206,23 @@ const LessonPreview = () => {
     try {
       // Call immersive reader token API (backend integration)
       const { token, subdomain } = await getTtsToken();
-      console.debug('[ImmersiveReader] TTS token acquired', {
+      console.debug("[ImmersiveReader] TTS token acquired", {
         hasToken: !!token,
         subdomain,
       });
 
-      setReaderTitle(lessonData?.title || 'Lesson Reader');
+      setReaderTitle(lessonData?.title || "Lesson Reader");
       setReaderContent(html);
       setIsReaderOpen(true);
     } catch (error) {
-      console.error('[ImmersiveReader] Failed to start reader:', error);
+      console.error("[ImmersiveReader] Failed to start reader:", error);
       toast({
-        title: 'Immersive Reader unavailable',
+        title: "Immersive Reader unavailable",
         description:
           error?.userMessage ||
           error?.message ||
-          'Unable to start Immersive Reader. Please try again.',
-        variant: 'destructive',
+          "Unable to start Immersive Reader. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -1229,66 +1230,66 @@ const LessonPreview = () => {
   // Setup carousel functionality for quote carousels
   useEffect(() => {
     // Global carousel navigation functions
-    window.carouselPrev = button => {
-      devLogger.debug('Carousel Prev clicked');
+    window.carouselPrev = (button) => {
+      devLogger.debug("Carousel Prev clicked");
       const carousel = button.closest('[class*="quote-carousel"]');
       if (!carousel) {
-        devLogger.debug('No carousel found for prev button');
+        devLogger.debug("No carousel found for prev button");
         return;
       }
 
-      const slides = carousel.querySelectorAll('.quote-slide');
-      const dots = carousel.querySelectorAll('.carousel-dot');
-      let currentIndex = parseInt(carousel.dataset.current || '0');
+      const slides = carousel.querySelectorAll(".quote-slide");
+      const dots = carousel.querySelectorAll(".carousel-dot");
+      let currentIndex = parseInt(carousel.dataset.current || "0");
 
       devLogger.debug(
-        'Carousel prev - current index:',
+        "Carousel prev - current index:",
         currentIndex,
-        'total slides:',
-        slides.length
+        "total slides:",
+        slides.length,
       );
       const newIndex = currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
       showCarouselSlide(carousel, slides, dots, newIndex);
     };
 
-    window.carouselNext = button => {
-      devLogger.debug('Carousel Next clicked');
+    window.carouselNext = (button) => {
+      devLogger.debug("Carousel Next clicked");
       const carousel = button.closest('[class*="quote-carousel"]');
       if (!carousel) {
-        devLogger.debug('No carousel found for next button');
+        devLogger.debug("No carousel found for next button");
         return;
       }
 
-      const slides = carousel.querySelectorAll('.quote-slide');
-      const dots = carousel.querySelectorAll('.carousel-dot');
-      let currentIndex = parseInt(carousel.dataset.current || '0');
+      const slides = carousel.querySelectorAll(".quote-slide");
+      const dots = carousel.querySelectorAll(".carousel-dot");
+      let currentIndex = parseInt(carousel.dataset.current || "0");
 
       devLogger.debug(
-        'Carousel next - current index:',
+        "Carousel next - current index:",
         currentIndex,
-        'total slides:',
-        slides.length
+        "total slides:",
+        slides.length,
       );
       const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
       showCarouselSlide(carousel, slides, dots, newIndex);
     };
 
     window.carouselGoTo = (button, index) => {
-      devLogger.debug('Carousel GoTo clicked, index:', index);
+      devLogger.debug("Carousel GoTo clicked, index:", index);
       const carousel = button.closest('[class*="quote-carousel"]');
       if (!carousel) {
-        devLogger.debug('No carousel found for goTo button');
+        devLogger.debug("No carousel found for goTo button");
         return;
       }
 
-      const slides = carousel.querySelectorAll('.quote-slide');
-      const dots = carousel.querySelectorAll('.carousel-dot');
+      const slides = carousel.querySelectorAll(".quote-slide");
+      const dots = carousel.querySelectorAll(".carousel-dot");
 
       devLogger.debug(
-        'Carousel goTo - target index:',
+        "Carousel goTo - target index:",
         index,
-        'total slides:',
-        slides.length
+        "total slides:",
+        slides.length,
       );
       showCarouselSlide(carousel, slides, dots, index);
     };
@@ -1296,11 +1297,11 @@ const LessonPreview = () => {
     const showCarouselSlide = (carousel, slides, dots, index) => {
       slides.forEach((slide, i) => {
         if (i === index) {
-          slide.classList.remove('hidden');
-          slide.classList.add('block');
+          slide.classList.remove("hidden");
+          slide.classList.add("block");
         } else {
-          slide.classList.remove('block');
-          slide.classList.add('hidden');
+          slide.classList.remove("block");
+          slide.classList.add("hidden");
         }
       });
 
@@ -1308,36 +1309,36 @@ const LessonPreview = () => {
         // Normalize: remove all known active/inactive styles first
         dot.classList.remove(
           // inactive variants
-          'bg-gray-300',
-          'hover:bg-gray-400',
-          'bg-slate-300',
-          'hover:bg-slate-400',
-          'hover:scale-105',
+          "bg-gray-300",
+          "hover:bg-gray-400",
+          "bg-slate-300",
+          "hover:bg-slate-400",
+          "hover:scale-105",
           // active variants
-          'bg-indigo-500',
-          'scale-110',
-          'shadow-md',
-          'bg-gradient-to-r',
-          'from-blue-500',
-          'to-purple-500'
+          "bg-indigo-500",
+          "scale-110",
+          "shadow-md",
+          "bg-gradient-to-r",
+          "from-blue-500",
+          "to-purple-500",
         );
 
         if (i === index) {
           // Active state: support both simple indigo and gradient style
           // Prefer the gradient look used in generated HTML
           dot.classList.add(
-            'bg-gradient-to-r',
-            'from-blue-500',
-            'to-purple-500',
-            'scale-110',
-            'shadow-md'
+            "bg-gradient-to-r",
+            "from-blue-500",
+            "to-purple-500",
+            "scale-110",
+            "shadow-md",
           );
         } else {
           // Inactive state: match the slate gray used in generated HTML
           dot.classList.add(
-            'bg-slate-300',
-            'hover:bg-slate-400',
-            'hover:scale-105'
+            "bg-slate-300",
+            "hover:bg-slate-400",
+            "hover:scale-105",
           );
         }
       });
@@ -1364,7 +1365,7 @@ const LessonPreview = () => {
       const timer = setTimeout(() => {
         // Re-setup carousel functions for any new carousels
         if (window.carouselPrev && window.carouselNext && window.carouselGoTo) {
-          devLogger.debug('Carousel functions are available');
+          devLogger.debug("Carousel functions are available");
         }
       }, 100);
 
@@ -1374,95 +1375,95 @@ const LessonPreview = () => {
 
   // Enable interactive checkbox lists in preview
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     if (!lessonData) return;
 
     const containers = Array.from(
-      document.querySelectorAll('.checkbox-container')
+      document.querySelectorAll(".checkbox-container"),
     );
     if (containers.length === 0) return;
 
     const updateVisualState = (container, isChecked) => {
-      const hiddenCheckbox = container.querySelector('.checkbox-item');
-      const visualCheckbox = container.querySelector('.checkbox-visual');
+      const hiddenCheckbox = container.querySelector(".checkbox-item");
+      const visualCheckbox = container.querySelector(".checkbox-visual");
       const wrapper =
-        container.closest('.checkbox-wrapper') || container.parentElement;
+        container.closest(".checkbox-wrapper") || container.parentElement;
       const textElement =
-        wrapper?.querySelector('.checkbox-text') ||
-        wrapper?.querySelector('.flex-1') ||
-        container.parentElement?.parentElement?.querySelector('.checkbox-text');
+        wrapper?.querySelector(".checkbox-text") ||
+        wrapper?.querySelector(".flex-1") ||
+        container.parentElement?.parentElement?.querySelector(".checkbox-text");
 
       if (visualCheckbox && !visualCheckbox.dataset.enhanced) {
         visualCheckbox.classList.add(
-          'flex',
-          'items-center',
-          'justify-center',
-          'text-white',
-          'text-xs',
-          'font-semibold',
-          'leading-none'
+          "flex",
+          "items-center",
+          "justify-center",
+          "text-white",
+          "text-xs",
+          "font-semibold",
+          "leading-none",
         );
         if (!visualCheckbox.textContent.trim()) {
-          visualCheckbox.textContent = '✓';
+          visualCheckbox.textContent = "✓";
         }
-        visualCheckbox.dataset.enhanced = 'true';
+        visualCheckbox.dataset.enhanced = "true";
       }
 
       if (hiddenCheckbox) {
         hiddenCheckbox.checked = isChecked;
       }
 
-      container.setAttribute('data-checked', isChecked ? 'true' : 'false');
-      container.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+      container.setAttribute("data-checked", isChecked ? "true" : "false");
+      container.setAttribute("aria-checked", isChecked ? "true" : "false");
 
       if (visualCheckbox) {
-        visualCheckbox.classList.toggle('opacity-100', isChecked);
-        visualCheckbox.classList.toggle('opacity-0', !isChecked);
+        visualCheckbox.classList.toggle("opacity-100", isChecked);
+        visualCheckbox.classList.toggle("opacity-0", !isChecked);
       }
 
       if (textElement) {
-        textElement.classList.toggle('line-through', isChecked);
+        textElement.classList.toggle("line-through", isChecked);
         if (isChecked) {
-          textElement.classList.add('text-gray-500');
-          textElement.classList.remove('text-gray-800');
+          textElement.classList.add("text-gray-500");
+          textElement.classList.remove("text-gray-800");
         } else {
-          textElement.classList.remove('text-gray-500');
-          textElement.classList.add('text-gray-800');
+          textElement.classList.remove("text-gray-500");
+          textElement.classList.add("text-gray-800");
         }
       }
     };
 
-    const toggleContainer = container => {
+    const toggleContainer = (container) => {
       if (!container) return;
-      const hiddenCheckbox = container.querySelector('.checkbox-item');
+      const hiddenCheckbox = container.querySelector(".checkbox-item");
       const currentChecked =
-        hiddenCheckbox && typeof hiddenCheckbox.checked === 'boolean'
+        hiddenCheckbox && typeof hiddenCheckbox.checked === "boolean"
           ? hiddenCheckbox.checked
-          : container.getAttribute('data-checked') === 'true' ||
-            container.getAttribute('aria-checked') === 'true';
+          : container.getAttribute("data-checked") === "true" ||
+            container.getAttribute("aria-checked") === "true";
       const newChecked = !currentChecked;
       updateVisualState(container, newChecked);
     };
 
-    const handleContainerClick = event => {
+    const handleContainerClick = (event) => {
       event.preventDefault();
       event.stopPropagation();
       toggleContainer(event.currentTarget);
     };
 
-    const handleContainerKeyDown = event => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
+    const handleContainerKeyDown = (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       event.stopPropagation();
       toggleContainer(event.currentTarget);
     };
 
-    const handleWrapperClick = event => {
-      if (event.target.closest('.checkbox-container')) {
+    const handleWrapperClick = (event) => {
+      if (event.target.closest(".checkbox-container")) {
         return;
       }
       const container = event.currentTarget.querySelector(
-        '.checkbox-container'
+        ".checkbox-container",
       );
       if (!container) return;
       event.preventDefault();
@@ -1470,32 +1471,32 @@ const LessonPreview = () => {
       toggleContainer(container);
     };
 
-    containers.forEach(container => {
-      container.addEventListener('click', handleContainerClick);
-      container.addEventListener('keydown', handleContainerKeyDown);
+    containers.forEach((container) => {
+      container.addEventListener("click", handleContainerClick);
+      container.addEventListener("keydown", handleContainerKeyDown);
 
-      const hiddenCheckbox = container.querySelector('.checkbox-item');
+      const hiddenCheckbox = container.querySelector(".checkbox-item");
       const initialChecked =
-        hiddenCheckbox && typeof hiddenCheckbox.checked === 'boolean'
+        hiddenCheckbox && typeof hiddenCheckbox.checked === "boolean"
           ? hiddenCheckbox.checked
-          : container.getAttribute('data-checked') === 'true' ||
-            container.getAttribute('aria-checked') === 'true';
+          : container.getAttribute("data-checked") === "true" ||
+            container.getAttribute("aria-checked") === "true";
       updateVisualState(container, Boolean(initialChecked));
     });
 
-    const wrappers = Array.from(document.querySelectorAll('.checkbox-wrapper'));
-    wrappers.forEach(wrapper => {
-      wrapper.addEventListener('click', handleWrapperClick);
+    const wrappers = Array.from(document.querySelectorAll(".checkbox-wrapper"));
+    wrappers.forEach((wrapper) => {
+      wrapper.addEventListener("click", handleWrapperClick);
     });
 
     return () => {
-      containers.forEach(container => {
-        container.removeEventListener('click', handleContainerClick);
-        container.removeEventListener('keydown', handleContainerKeyDown);
+      containers.forEach((container) => {
+        container.removeEventListener("click", handleContainerClick);
+        container.removeEventListener("keydown", handleContainerKeyDown);
       });
 
-      wrappers.forEach(wrapper => {
-        wrapper.removeEventListener('click', handleWrapperClick);
+      wrappers.forEach((wrapper) => {
+        wrapper.removeEventListener("click", handleWrapperClick);
       });
     };
   }, [lessonData, currentPage]);
@@ -1519,7 +1520,7 @@ const LessonPreview = () => {
 
             {/* Shimmer Navigation Menu */}
             <nav className="flex-1 overflow-y-auto px-6 pb-6 space-y-2">
-              {[1, 2, 3, 4, 5].map(index => (
+              {[1, 2, 3, 4, 5].map((index) => (
                 <div key={index} className="w-full p-3 rounded-lg bg-blue-700">
                   <div className="flex items-center">
                     <div className="w-5 h-5 rounded-full bg-blue-500 animate-pulse mr-3"></div>
@@ -1536,7 +1537,7 @@ const LessonPreview = () => {
           {/* Shimmer Fixed Header */}
           <header
             className="fixed right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80"
-            style={{ left: '320px' }}
+            style={{ left: "320px" }}
           >
             <div className="flex items-center justify-between px-6 py-3">
               {/* Left Section */}
@@ -1645,7 +1646,7 @@ const LessonPreview = () => {
   }
 
   const currentSectionData =
-    lessonData.headingSections.find(s => s.id === currentSection) ||
+    lessonData.headingSections.find((s) => s.id === currentSection) ||
     lessonData.headingSections[0];
 
   // Progress based on completed master headings
@@ -1677,7 +1678,7 @@ const LessonPreview = () => {
         {/* Fixed Sidebar */}
         {sidebarVisible && (
           <div
-            className={`fixed inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-blue-600 to-blue-800 text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-hidden`}
+            className={`fixed inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-blue-600 to-blue-800 text-white transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-hidden`}
           >
             <div className="flex items-center justify-between p-4 border-b border-blue-500 lg:hidden">
               <h2 className="text-lg font-semibold">Lesson Navigation</h2>
@@ -1704,13 +1705,13 @@ const LessonPreview = () => {
                 {/* Section Progress */}
                 {totalSections > 0 && (
                   <div className="text-sm opacity-75 mb-3">
-                    Section{' '}
+                    Section{" "}
                     {Math.max(
                       1,
                       lessonData.headingSections.findIndex(
-                        s => s.id === currentSection
-                      ) + 1
-                    )}{' '}
+                        (s) => s.id === currentSection,
+                      ) + 1,
+                    )}{" "}
                     of {totalSections}
                   </div>
                 )}
@@ -1730,8 +1731,8 @@ const LessonPreview = () => {
               <nav
                 className="sidebar-nav flex-1 overflow-y-auto px-6 pb-6 space-y-2"
                 style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#60a5fa #1e40af',
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#60a5fa #1e40af",
                 }}
               >
                 {lessonData.headingSections &&
@@ -1742,8 +1743,8 @@ const LessonPreview = () => {
                       onClick={() => handleSectionClick(section.id)}
                       className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
                         currentSection === section.id
-                          ? 'bg-white text-blue-800'
-                          : 'hover:bg-blue-700'
+                          ? "bg-white text-blue-800"
+                          : "hover:bg-blue-700"
                       }`}
                     >
                       <div className="flex items-center">
@@ -1773,15 +1774,13 @@ const LessonPreview = () => {
         )}
 
         {/* Main Content */}
-        <div
-          className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'lg:ml-80' : 'lg:ml-0'}`}
-        >
+        <div className={`flex-1 ${sidebarVisible ? "lg:ml-80" : "lg:ml-0"}`}>
           {/* Fixed Header */}
           <header
             className={`fixed right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80 transition-all duration-300 ${
-              isHeaderVisible ? 'top-0' : '-top-20'
+              isHeaderVisible ? "top-0" : "-top-20"
             }`}
-            style={{ left: sidebarVisible ? '320px' : '0' }}
+            style={{ left: sidebarVisible ? "320px" : "0" }}
           >
             <div className="flex items-center justify-between px-6 py-3">
               {/* Left Section - Navigation */}
@@ -1791,7 +1790,7 @@ const LessonPreview = () => {
                   size="sm"
                   onClick={() => setSidebarVisible(!sidebarVisible)}
                   className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 transition-colors"
-                  title={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+                  title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
                 >
                   <Menu className="h-4 w-4 text-gray-600" />
                 </Button>
@@ -1844,13 +1843,13 @@ const LessonPreview = () => {
                     variant="outline"
                     className="bg-gray-50/80 text-gray-700 border-gray-300 text-xs px-2.5 py-1 font-medium"
                   >
-                    Section{' '}
+                    Section{" "}
                     {Math.max(
                       1,
                       lessonData.headingSections.findIndex(
-                        s => s.id === currentSection
-                      ) + 1
-                    )}{' '}
+                        (s) => s.id === currentSection,
+                      ) + 1,
+                    )}{" "}
                     of {totalSections}
                   </Badge>
                 )}
@@ -1859,25 +1858,21 @@ const LessonPreview = () => {
           </header>
 
           {/* Content Area */}
-          <main
-            className={`transition-all duration-300 pt-20 ${sidebarVisible ? 'p-6' : 'px-12 py-8'}`}
-          >
+          <main className={`pt-20 ${sidebarVisible ? "p-6" : "px-12 py-8"}`}>
             <div
-              className={`mx-auto transition-all duration-300 ${sidebarVisible ? 'max-w-4xl' : 'max-w-7xl'}`}
+              className={`mx-auto ${sidebarVisible ? "max-w-4xl" : "max-w-7xl"}`}
             >
               {/* Display paginated lesson content */}
-              <div
-                className={`transition-all duration-300 ${sidebarVisible ? 'space-y-6' : 'space-y-8'}`}
-              >
+              <div className={`${sidebarVisible ? "space-y-6" : "space-y-8"}`}>
                 {lessonData.allContent && lessonData.allContent.length > 0 ? (
                   lessonData.allContent.map((block, index) => {
-                    if (block.type === 'youtube') {
+                    if (block.type === "youtube") {
                       devLogger.debug(`Rendering YouTube block ${index}:`, {
                         id: block.id,
                         index,
                         totalBlocks: lessonData.allContent.length,
                         youtubeBlocks: lessonData.allContent.filter(
-                          b => b.type === 'youtube'
+                          (b) => b.type === "youtube",
                         ).length,
                       });
                     }
@@ -1890,21 +1885,21 @@ const LessonPreview = () => {
                         : lessonData.allContent.length;
                     if (index < visibleStart || index >= visibleEnd)
                       return null;
-                    if (block.type !== 'youtube') {
+                    if (block.type !== "youtube") {
                       devLogger.debug(`Rendering block ${index}:`, block);
                     }
                     return (
                       <div
                         key={`${block.id || block.block_id || index}-${block.type}`}
                         id={
-                          block.textType === 'master_heading'
+                          block.textType === "master_heading"
                             ? `section-${block.id}`
                             : undefined
                         }
-                        className={`transition-all duration-300 ${sidebarVisible ? 'mb-6' : 'mb-8'}`}
+                        className={`transition-all duration-300 ${sidebarVisible ? "mb-6" : "mb-8"}`}
                       >
                         {/* Statement Content - Use HTML/CSS from API */}
-                        {block.type === 'statement' && (
+                        {block.type === "statement" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -1923,7 +1918,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* Text Content - Use HTML/CSS from API */}
-                        {block.type === 'text' && (
+                        {block.type === "text" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -1933,7 +1928,7 @@ const LessonPreview = () => {
                               />
                             ) : (
                               <div className="prose prose-lg max-w-none">
-                                {block.textType === 'heading' && (
+                                {block.textType === "heading" && (
                                   <h1 className="text-3xl font-bold text-gray-900 mb-4">
                                     <div
                                       dangerouslySetInnerHTML={{
@@ -1942,7 +1937,7 @@ const LessonPreview = () => {
                                     />
                                   </h1>
                                 )}
-                                {block.textType === 'master_heading' && (
+                                {block.textType === "master_heading" && (
                                   <h1 className="text-4xl font-bold text-gray-900 mb-6">
                                     <div
                                       dangerouslySetInnerHTML={{
@@ -1951,7 +1946,7 @@ const LessonPreview = () => {
                                     />
                                   </h1>
                                 )}
-                                {block.textType === 'subheading' && (
+                                {block.textType === "subheading" && (
                                   <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                                     <div
                                       dangerouslySetInnerHTML={{
@@ -1960,23 +1955,23 @@ const LessonPreview = () => {
                                     />
                                   </h2>
                                 )}
-                                {block.textType === 'heading_paragraph' && (
+                                {block.textType === "heading_paragraph" && (
                                   <div>
                                     {(() => {
-                                      const parts = block.content.split('|||');
+                                      const parts = block.content.split("|||");
                                       return (
                                         <>
                                           <h1 className="text-3xl font-bold text-gray-900 mb-4">
                                             <div
                                               dangerouslySetInnerHTML={{
-                                                __html: parts[0] || '',
+                                                __html: parts[0] || "",
                                               }}
                                             />
                                           </h1>
                                           <div className="text-gray-700 leading-relaxed">
                                             <div
                                               dangerouslySetInnerHTML={{
-                                                __html: parts[1] || '',
+                                                __html: parts[1] || "",
                                               }}
                                             />
                                           </div>
@@ -1985,23 +1980,23 @@ const LessonPreview = () => {
                                     })()}
                                   </div>
                                 )}
-                                {block.textType === 'subheading_paragraph' && (
+                                {block.textType === "subheading_paragraph" && (
                                   <div>
                                     {(() => {
-                                      const parts = block.content.split('|||');
+                                      const parts = block.content.split("|||");
                                       return (
                                         <>
                                           <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                                             <div
                                               dangerouslySetInnerHTML={{
-                                                __html: parts[0] || '',
+                                                __html: parts[0] || "",
                                               }}
                                             />
                                           </h2>
                                           <div className="text-gray-700 leading-relaxed">
                                             <div
                                               dangerouslySetInnerHTML={{
-                                                __html: parts[1] || '',
+                                                __html: parts[1] || "",
                                               }}
                                             />
                                           </div>
@@ -2010,7 +2005,7 @@ const LessonPreview = () => {
                                     })()}
                                   </div>
                                 )}
-                                {(block.textType === 'paragraph' ||
+                                {(block.textType === "paragraph" ||
                                   !block.textType) && (
                                   <div className="text-gray-700 leading-relaxed text-lg">
                                     <div
@@ -2026,7 +2021,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* Image Content - Use HTML/CSS from API */}
-                        {block.type === 'image' && (
+                        {block.type === "image" && (
                           <div
                             className="image-block-preview"
                             dangerouslySetInnerHTML={{
@@ -2038,11 +2033,11 @@ const LessonPreview = () => {
                         )}
 
                         {/* Video Content */}
-                        {block.type === 'video' && (
+                        {block.type === "video" && (
                           <>
                             {(() => {
                               devLogger.debug(
-                                'Rendering video block in LessonPreview:',
+                                "Rendering video block in LessonPreview:",
                                 {
                                   id: block.id,
                                   videoUrl: block.videoUrl,
@@ -2055,9 +2050,9 @@ const LessonPreview = () => {
                                     : 0,
                                   renderingMethod:
                                     block.htmlCss && block.htmlCss.trim()
-                                      ? 'html_css'
-                                      : 'fallback',
-                                }
+                                      ? "html_css"
+                                      : "fallback",
+                                },
                               );
                               return null;
                             })()}
@@ -2065,8 +2060,8 @@ const LessonPreview = () => {
                               <div
                                 dangerouslySetInnerHTML={{
                                   __html: block.htmlCss
-                                    .replace(/max-width:\s*600px;?/gi, '')
-                                    .replace(/max-width:\s*\d+px;?/gi, ''),
+                                    .replace(/max-width:\s*600px;?/gi, "")
+                                    .replace(/max-width:\s*\d+px;?/gi, ""),
                                 }}
                               />
                             ) : (
@@ -2075,15 +2070,15 @@ const LessonPreview = () => {
                                 const videoUrl =
                                   block.videoUrl ||
                                   block.details?.video_url ||
-                                  '';
+                                  "";
                                 const videoTitle =
                                   block.videoTitle ||
                                   block.details?.caption ||
-                                  '';
+                                  "";
                                 const videoDescription =
                                   block.videoDescription ||
                                   block.details?.description ||
-                                  '';
+                                  "";
 
                                 if (videoUrl && videoUrl.trim()) {
                                   return (
@@ -2104,8 +2099,8 @@ const LessonPreview = () => {
                                           controls
                                           className="w-full"
                                           style={{
-                                            maxHeight: '70vh',
-                                            minHeight: '300px',
+                                            maxHeight: "70vh",
+                                            minHeight: "300px",
                                           }}
                                           preload="metadata"
                                         >
@@ -2163,11 +2158,11 @@ const LessonPreview = () => {
                         )}
 
                         {/* YouTube Content */}
-                        {block.type === 'youtube' && (
+                        {block.type === "youtube" && (
                           <>
                             {(() => {
                               devLogger.debug(
-                                'Rendering YouTube block in LessonPreview:',
+                                "Rendering YouTube block in LessonPreview:",
                                 {
                                   id: block.id,
                                   videoTitle: block.videoTitle,
@@ -2177,19 +2172,19 @@ const LessonPreview = () => {
                                     ? block.htmlCss.length
                                     : 0,
                                   htmlCssPreview: block.htmlCss
-                                    ? block.htmlCss.substring(0, 100) + '...'
-                                    : 'None',
+                                    ? block.htmlCss.substring(0, 100) + "..."
+                                    : "None",
                                   renderingMethod:
                                     block.htmlCss && block.htmlCss.trim()
-                                      ? 'html_css'
-                                      : 'fallback',
+                                      ? "html_css"
+                                      : "fallback",
                                   willRenderHtml: !!(
                                     block.htmlCss && block.htmlCss.trim()
                                   ),
                                   willRenderFallback: !(
                                     block.htmlCss && block.htmlCss.trim()
                                   ),
-                                }
+                                },
                               );
                               return null;
                             })()}
@@ -2212,7 +2207,7 @@ const LessonPreview = () => {
                                       <iframe
                                         src={block.embedUrl}
                                         title={
-                                          block.videoTitle || 'YouTube Video'
+                                          block.videoTitle || "YouTube Video"
                                         }
                                         frameBorder="0"
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -2233,17 +2228,17 @@ const LessonPreview = () => {
                         )}
 
                         {/* Quote Content */}
-                        {block.type === 'quote' && (
+                        {block.type === "quote" && (
                           <>
                             {(() => {
                               // Debug logging for quote blocks
-                              devLogger.debug('Rendering quote block:', {
+                              devLogger.debug("Rendering quote block:", {
                                 id: block.id,
                                 quoteType: block.quoteType,
                                 hasHtmlCss: !!block.htmlCss,
                                 htmlPreview: block.htmlCss
-                                  ? block.htmlCss.substring(0, 100) + '...'
-                                  : 'No HTML',
+                                  ? block.htmlCss.substring(0, 100) + "..."
+                                  : "No HTML",
                               });
                               return null;
                             })()}
@@ -2268,7 +2263,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* List Content */}
-                        {block.type === 'list' && (
+                        {block.type === "list" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -2289,7 +2284,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* PDF Content */}
-                        {block.type === 'pdf' && (
+                        {block.type === "pdf" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -2313,7 +2308,7 @@ const LessonPreview = () => {
                                   <iframe
                                     src={block.pdfUrl}
                                     className="w-full h-96 border-none rounded-lg"
-                                    title={block.pdfTitle || 'PDF Document'}
+                                    title={block.pdfTitle || "PDF Document"}
                                   />
                                 )}
                               </div>
@@ -2322,7 +2317,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* Table Content */}
-                        {block.type === 'table' && (
+                        {block.type === "table" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -2343,7 +2338,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* Embed Content */}
-                        {block.type === 'embed' && (
+                        {block.type === "embed" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -2376,10 +2371,10 @@ const LessonPreview = () => {
                         )}
 
                         {/* Divider Content */}
-                        {block.type === 'divider' && (
+                        {block.type === "divider" && (
                           <>
                             {String(block.subtype).toLowerCase() ===
-                            'continue' ? (
+                            "continue" ? (
                               <div
                                 className="cursor-pointer"
                                 onClick={handleContinue}
@@ -2421,7 +2416,7 @@ const LessonPreview = () => {
                         )}
 
                         {/* Audio Content */}
-                        {block.type === 'audio' && (
+                        {block.type === "audio" && (
                           <>
                             {block.htmlCss ? (
                               <div
@@ -2443,18 +2438,18 @@ const LessonPreview = () => {
 
                         {/* Other Content Types - Fallback for any unhandled block types */}
                         {![
-                          'text',
-                          'statement',
-                          'image',
-                          'video',
-                          'quote',
-                          'list',
-                          'pdf',
-                          'table',
-                          'embed',
-                          'divider',
-                          'youtube',
-                          'audio',
+                          "text",
+                          "statement",
+                          "image",
+                          "video",
+                          "quote",
+                          "list",
+                          "pdf",
+                          "table",
+                          "embed",
+                          "divider",
+                          "youtube",
+                          "audio",
                         ].includes(block.type) && (
                           <>
                             {block.htmlCss ? (
@@ -2528,8 +2523,8 @@ const LessonPreview = () => {
                               </span>
                               <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
                                 <Calendar className="h-4 w-4 text-gray-500" />
-                                Estimated duration:{' '}
-                                {lessonData.duration || '30 min'}
+                                Estimated duration:{" "}
+                                {lessonData.duration || "30 min"}
                               </span>
                             </div>
 
