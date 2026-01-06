@@ -19,13 +19,13 @@ import KeyCapabilities from "../components/homepage/KeyCapabilities.jsx";
 import MonetizeSection from "../components/homepage/MonetizeSection.jsx";
 import LearningPathways from "../components/homepage/LearningPathways.jsx";
 import CTA from "../components/homepage/cta.jsx";
-import NewYearCountdown from "../components/homepage/NewYearCountdown";
+// import NewYearCountdown from '../components/homepage/NewYearCountdown';
 // import AthenaStandsout from '../components/homepage/AthenaStandsout.jsx';
 
 const Home = () => {
   return (
     <>
-      <NewYearCountdown />
+      {/* <NewYearCountdown /> */}
       <Navbar />
       <Hero />
       {/* <About/> */}

@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Search,
-  Calendar,
-  Mail,
   BellDot,
   BookOpen,
   Loader2,
@@ -13,15 +11,16 @@ import {
   AlertCircle,
   Users,
   User,
-  Menu,
   Menu as MenuIcon,
 } from "lucide-react";
+
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
 import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
 import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
+
 import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
 import {
@@ -31,13 +30,12 @@ import {
   fetchUserProfile,
   fetchPublicUserProfile,
 } from "@/services/userService";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications } from "@/services/notificationService";
 import { useCredits } from "@/contexts/CreditsContext";
-import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
-  const { activeTheme, setTheme } = useContext(SeasonalThemeContext);
   const { isInstructorOrAdmin, hasRole } = useAuth();
   const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -580,11 +578,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   return (
     <>
-      <header
-        className={`app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95 relative ${
-          activeTheme === "newYear" ? "newyear-app-header" : ""
-        }`}
-      >
+      <header className="app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm">
         <div className="h-16 flex items-center justify-between px-4 sm:px-6">
           {/* Left: Mobile menu + Logo */}
           <div className="flex items-center gap-3">
@@ -605,13 +599,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1
-                className={`text-base sm:text-lg font-bold ${
-                  activeTheme === "newYear"
-                    ? "text-gray-900"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                }`}
-              >
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 LMS Athena
               </h1>
             </button>
@@ -828,24 +816,6 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setTheme(activeTheme === "newYear" ? "default" : "newYear")
-              }
-              aria-pressed={activeTheme === "newYear"}
-              className={`hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors newyear-toggle-btn ${
-                activeTheme === "newYear"
-                  ? "text-gray-900 border-gray-300 bg-gray-50 hover:bg-gray-100"
-                  : "text-gray-700 border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {activeTheme === "newYear"
-                ? "Disable New Year Theme"
-                : "🎆 Enable New Year Theme"}
-            </button>
-            {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
               className="group relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-1.5 sm:gap-2 shadow-sm hover:shadow transition-all"
