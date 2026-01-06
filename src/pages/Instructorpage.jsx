@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import CourseLessonsPage from './CourseLessonsPage';
-import AddEvent from './AddEvent';
-import AddCatelog from './AddCatelog';
-import AddUsersForm from './AddUsersPage';
-import ManageUsers from './ManageUsers';
-import AddQuiz from './AddQuiz';
-import AddGroups from './AddGroups';
-import SupportTickets from './Support';
-import Resources from '@/components/Resources';
-import AdminPayments from '@/components/credits/AdminPayments';
-import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
-import InstructorFeedbackAnalysis from '@/pages/InstructorFeedbackAnalysis';
-import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
-import StorageTokens from './StorageTokens';
-import CompactTokenDisplay from '@/components/courses/CompactTokenDisplay'; // commented AI token box reference
-import Sidebar from '@/components/layout/Sidebar';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import { api } from '@/services/apiClient';
-import { useUser } from '@/contexts/UserContext';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import CourseLessonsPage from "./CourseLessonsPage";
+import AddEvent from "./AddEvent";
+import AddCatelog from "./AddCatelog";
+import AddUsersForm from "./AddUsersPage";
+import ManageUsers from "./ManageUsers";
+import AddQuiz from "./AddQuiz";
+import AddGroups from "./AddGroups";
+import SupportTickets from "./Support";
+import Resources from "@/components/Resources";
+import AdminPayments from "@/components/credits/AdminPayments";
+import CourseActivityAnalytics from "@/pages/CourseActivityAnalytics";
+import InstructorFeedbackAnalysis from "@/pages/InstructorFeedbackAnalysis";
+import PrivateGroupsAdmin from "@/components/messages/PrivateGroupsAdmin";
+import StorageTokens from "./StorageTokens";
+import CompactTokenDisplay from "@/components/courses/CompactTokenDisplay"; // commented AI token box reference
+import Sidebar from "@/components/layout/Sidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { api } from "@/services/apiClient";
+import { useUser } from "@/contexts/UserContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   FaBook,
   FaUsers,
@@ -36,8 +36,8 @@ import {
   FaStar,
   FaCloud,
   FaBullhorn,
-} from 'react-icons/fa';
-import SponsorAdsAdminPanel from '@/components/sponsorAds/SponsorAdsAdminPanel';
+} from "react-icons/fa";
+import SponsorAdsAdminPanel from "@/components/sponsorAds/SponsorAdsAdminPanel";
 
 const InstructorPage = () => {
   const { isInstructorOrAdmin, hasRole } = useAuth();
@@ -45,8 +45,8 @@ const InstructorPage = () => {
   const isAllowed = isInstructorOrAdmin();
   const [collapsed, setCollapsed] = useState(true); // Start with sidebar collapsed
   const [userManagementView, setUserManagementView] = useState(() => {
-    const saved = localStorage.getItem('userManagementView');
-    return saved || 'add';
+    const saved = localStorage.getItem("userManagementView");
+    return saved || "add";
   });
   const [storageUsage, setStorageUsage] = useState({ used: null, total: null });
   const [isStorageLoading, setIsStorageLoading] = useState(false);
@@ -57,26 +57,26 @@ const InstructorPage = () => {
   // Determine active tab from URL
   const getActiveTabFromPath = () => {
     const path = location.pathname;
-    if (path.includes('/course-old')) return 'lessons';
-    if (path.includes('/user-management')) return 'users';
-    if (path.includes('/course-catalog')) return 'catalog';
-    if (path.includes('/create-quiz')) return 'quiz';
-    if (path.includes('/course-management')) return 'lessons';
-    if (path.includes('/group-management')) return 'groups';
-    if (path.includes('/event-management')) return 'events';
-    if (path.includes('/support-tickets')) return 'tickets';
-    if (path.includes('/assets')) return 'resources';
-    if (path.includes('/payments')) return 'payments';
-    if (path.includes('/sponsor-ads')) return 'sponsorAds';
-    if (path.includes('/feedback-analysis')) return 'feedback';
-    if (path.includes('/storage-tokens') && hasRole('admin')) return 'storage';
-    return 'lessons'; // default
+    if (path.includes("/course-old")) return "lessons";
+    if (path.includes("/user-management")) return "users";
+    if (path.includes("/course-catalog")) return "catalog";
+    if (path.includes("/create-quiz")) return "quiz";
+    if (path.includes("/course-management")) return "lessons";
+    if (path.includes("/group-management")) return "groups";
+    if (path.includes("/event-management")) return "events";
+    if (path.includes("/support-tickets")) return "tickets";
+    if (path.includes("/assets")) return "resources";
+    if (path.includes("/payments")) return "payments";
+    if (path.includes("/sponsor-ads")) return "sponsorAds";
+    if (path.includes("/feedback-analysis")) return "feedback";
+    if (path.includes("/storage-tokens") && hasRole("admin")) return "storage";
+    return "lessons"; // default
   };
 
   const [activeTab, setActiveTab] = useState(getActiveTabFromPath());
 
   useEffect(() => {
-    localStorage.setItem('userManagementView', userManagementView);
+    localStorage.setItem("userManagementView", userManagementView);
   }, [userManagementView]);
 
   // Update active tab when URL changes
@@ -85,16 +85,16 @@ const InstructorPage = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    const isStorageRoute = location.pathname.includes('/storage-tokens');
-    if (isStorageRoute && !hasRole('admin')) {
-      navigate('/instructor/payments', { replace: true });
+    const isStorageRoute = location.pathname.includes("/storage-tokens");
+    if (isStorageRoute && !hasRole("admin")) {
+      navigate("/instructor/payments", { replace: true });
     }
   }, [location.pathname, hasRole, navigate]);
 
   // Redirect to default section if on base instructor path
   useEffect(() => {
-    if (location.pathname === '/instructor') {
-      navigate('/instructor/course-management', { replace: true });
+    if (location.pathname === "/instructor") {
+      navigate("/instructor/course-management", { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -105,7 +105,7 @@ const InstructorPage = () => {
       userProfile?.org_id ||
       userProfile?.organizationId ||
       userProfile?.organization?.id ||
-      localStorage.getItem('orgId');
+      localStorage.getItem("orgId");
 
     if (!orgId) return;
 
@@ -119,7 +119,7 @@ const InstructorPage = () => {
         const total = Number(data.storage_limit) || 0;
         setStorageUsage({ used, total });
       } catch (error) {
-        console.error('Failed to fetch storage usage for header', error);
+        console.error("Failed to fetch storage usage for header", error);
       } finally {
         setIsStorageLoading(false);
       }
@@ -158,8 +158,8 @@ const InstructorPage = () => {
   };
 
   useEffect(() => {
-    if (location.pathname === '/instructor/sponsor-ads') {
-      navigate('/instructor/sponsor-ads/create', { replace: true });
+    if (location.pathname === "/instructor/sponsor-ads") {
+      navigate("/instructor/sponsor-ads/create", { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -167,6 +167,11 @@ const InstructorPage = () => {
   const handleNavigation = (tab, path) => {
     setActiveTab(tab);
     navigate(path);
+  };
+
+  const handleStorageNavigation = () => {
+    if (!hasRole("admin")) return;
+    handleNavigation("storage", "/instructor/storage-tokens");
   };
   if (!isAllowed) {
     return (
@@ -211,7 +216,7 @@ const InstructorPage = () => {
       <div
         className="fixed top-0 h-screen z-[2] bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-52"
         style={{
-          left: collapsed ? '4.5rem' : '17rem',
+          left: collapsed ? "4.5rem" : "17rem",
         }}
       >
         {/* Sub Sidebar Header */}
@@ -226,12 +231,12 @@ const InstructorPage = () => {
         <div className="flex flex-col p-4 gap-3 text-sm">
           <button
             onClick={() =>
-              handleNavigation('lessons', '/instructor/course-management')
+              handleNavigation("lessons", "/instructor/course-management")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'lessons'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "lessons"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaFileAlt /> Course Management
@@ -250,34 +255,34 @@ const InstructorPage = () => {
           </button> */}
           <button
             onClick={() =>
-              handleNavigation('users', '/instructor/user-management')
+              handleNavigation("users", "/instructor/user-management")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'users'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "users"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaUsers /> User Management
           </button>
           <button
             onClick={() =>
-              handleNavigation('catalog', '/instructor/course-catalog')
+              handleNavigation("catalog", "/instructor/course-catalog")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'catalog'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "catalog"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaBookOpen /> Course Catalog
           </button>
           <button
-            onClick={() => handleNavigation('quiz', '/instructor/create-quiz')}
+            onClick={() => handleNavigation("quiz", "/instructor/create-quiz")}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'quiz'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "quiz"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaEdit /> Manage Assessments
@@ -285,79 +290,79 @@ const InstructorPage = () => {
 
           <button
             onClick={() =>
-              handleNavigation('groups', '/instructor/group-management')
+              handleNavigation("groups", "/instructor/group-management")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'groups'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "groups"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaUsers /> Group Management
           </button>
           <button
             onClick={() =>
-              handleNavigation('events', '/instructor/event-management')
+              handleNavigation("events", "/instructor/event-management")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'events'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "events"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaCalendarAlt /> Event Management
           </button>
           <button
             onClick={() =>
-              handleNavigation('tickets', '/instructor/support-tickets')
+              handleNavigation("tickets", "/instructor/support-tickets")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'tickets'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "tickets"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaTicketAlt /> Support Tickets
           </button>
           <button
-            onClick={() => handleNavigation('resources', '/instructor/assets')}
+            onClick={() => handleNavigation("resources", "/instructor/assets")}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'resources'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "resources"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaImages /> Assets
           </button>
           <button
-            onClick={() => handleNavigation('payments', '/instructor/payments')}
+            onClick={() => handleNavigation("payments", "/instructor/payments")}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'payments'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "payments"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaCreditCard /> Payments
           </button>
           <button
-            onClick={() => setActiveTab('feedback')}
+            onClick={() => setActiveTab("feedback")}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'feedback'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "feedback"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaStar /> Feedback Analysis
           </button>
-          {hasRole('admin') && (
+          {hasRole("admin") && (
             <button
               onClick={() =>
-                handleNavigation('storage', '/instructor/storage-tokens')
+                handleNavigation("storage", "/instructor/storage-tokens")
               }
               className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                activeTab === 'storage'
-                  ? 'bg-blue-100 text-blue-700 font-semibold'
-                  : 'hover:bg-gray-100 text-gray-700'
+                activeTab === "storage"
+                  ? "bg-blue-100 text-blue-700 font-semibold"
+                  : "hover:bg-gray-100 text-gray-700"
               }`}
             >
               <FaCloud /> Storage & Tokens
@@ -365,32 +370,32 @@ const InstructorPage = () => {
           )}
           <button
             onClick={() =>
-              handleNavigation('sponsorAds', '/instructor/sponsor-ads/create')
+              handleNavigation("sponsorAds", "/instructor/sponsor-ads/create")
             }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'sponsorAds'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "sponsorAds"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaBullhorn /> Sponsor Ads
           </button>
           <button
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => setActiveTab("analytics")}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'analytics'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "analytics"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaChartLine /> Course Analytics
           </button>
           <button
-            onClick={() => setActiveTab('adminPrivateGroups')}
+            onClick={() => setActiveTab("adminPrivateGroups")}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === 'adminPrivateGroups'
-                ? 'bg-blue-100 text-blue-700 font-semibold'
-                : 'hover:bg-gray-100 text-gray-700'
+              activeTab === "adminPrivateGroups"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "hover:bg-gray-100 text-gray-700"
             }`}
           >
             <FaUsers /> Private Groups (Admin)
@@ -403,16 +408,16 @@ const InstructorPage = () => {
         className="flex-1 flex flex-col min-h-screen transition-all duration-300"
         style={{
           marginLeft: collapsed
-            ? 'calc(4.5rem + 13rem)'
-            : 'calc(17rem + 13rem)',
+            ? "calc(4.5rem + 13rem)"
+            : "calc(17rem + 13rem)",
         }}
       >
         <header
           className="fixed top-0 left-0 right-0 z-[3] bg-white border-b border-gray-200 h-16 transition-all duration-300"
           style={{
             marginLeft: collapsed
-              ? 'calc(4.5rem + 13rem)'
-              : 'calc(17rem + 13rem)',
+              ? "calc(4.5rem + 13rem)"
+              : "calc(17rem + 13rem)",
           }}
         >
           <div className="max-w-7xl mx-auto w-full">
@@ -424,9 +429,9 @@ const InstructorPage = () => {
         <div
           className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-[3] transition-all duration-300"
           style={{
-            top: '4rem',
-            left: collapsed ? 'calc(4.5rem + 13rem)' : 'calc(17rem + 13rem)',
-            right: '0',
+            top: "4rem",
+            left: collapsed ? "calc(4.5rem + 13rem)" : "calc(17rem + 13rem)",
+            right: "0",
           }}
         >
           <div className="max-w-7xl mx-auto w-full px-6 py-5">
@@ -449,11 +454,29 @@ const InstructorPage = () => {
               </div>
               {/* AI token box (CompactTokenDisplay) retained for reference */}
 
-              <div className="flex-shrink-0">
+              <div
+                className={`flex-shrink-0 ${
+                  hasRole("admin")
+                    ? "cursor-pointer"
+                    : "cursor-not-allowed opacity-80"
+                }`}
+                onClick={hasRole("admin") ? handleStorageNavigation : undefined}
+                role="button"
+                aria-label="AI Tokens"
+              >
                 <CompactTokenDisplay />
               </div>
 
-              <div className="flex-shrink-0">
+              <div
+                className={`flex-shrink-0 ${
+                  hasRole("admin")
+                    ? "cursor-pointer"
+                    : "cursor-not-allowed opacity-80"
+                }`}
+                onClick={hasRole("admin") ? handleStorageNavigation : undefined}
+                role="button"
+                aria-label="Storage & Tokens"
+              >
                 {/* AI token chip temporarily replaced with storage usage */}
                 <div className="px-4 py-2 rounded-xl border border-gray-200 bg-white shadow-sm flex items-center gap-2">
                   <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-semibold">
@@ -467,12 +490,12 @@ const InstructorPage = () => {
                       <span className="text-sm text-gray-600">Loading…</span>
                     ) : formatStorageDisplay(
                         storageUsage.used,
-                        storageUsage.total
+                        storageUsage.total,
                       ) ? (
                       <span className="text-sm font-semibold text-gray-900">
                         {formatStorageDisplay(
                           storageUsage.used,
-                          storageUsage.total
+                          storageUsage.total,
                         )}
                       </span>
                     ) : (
@@ -486,7 +509,7 @@ const InstructorPage = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" style={{ paddingTop: '8rem' }}>
+        <div className="flex-1 overflow-y-auto" style={{ paddingTop: "8rem" }}>
           <div className="max-w-7xl mx-auto w-full px-6 pb-14 pt-6">
             {/* Tabs Content */}
             {/* Course Management temporarily disabled */}
@@ -496,31 +519,31 @@ const InstructorPage = () => {
               </section>
             )} */}
 
-            {activeTab === 'users' && (
+            {activeTab === "users" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex gap-2 mb-4">
                   <button
-                    onClick={() => setUserManagementView('add')}
+                    onClick={() => setUserManagementView("add")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                      userManagementView === 'add'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      userManagementView === "add"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     <FaUsers /> Add Users
                   </button>
                   <button
-                    onClick={() => setUserManagementView('manage')}
+                    onClick={() => setUserManagementView("manage")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                      userManagementView === 'manage'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      userManagementView === "manage"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     <FaUsers /> Manage Users
                   </button>
                 </div>
-                {userManagementView === 'add' ? (
+                {userManagementView === "add" ? (
                   <AddUsersForm />
                 ) : (
                   <ManageUsers />
@@ -528,71 +551,71 @@ const InstructorPage = () => {
               </section>
             )}
 
-            {activeTab === 'catalog' && (
+            {activeTab === "catalog" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddCatelog />
               </section>
             )}
 
-            {activeTab === 'quiz' && (
+            {activeTab === "quiz" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddQuiz />
               </section>
             )}
 
-            {activeTab === 'lessons' && (
+            {activeTab === "lessons" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CourseLessonsPage />
               </section>
             )}
 
-            {activeTab === 'groups' && (
+            {activeTab === "groups" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddGroups />
               </section>
             )}
 
-            {activeTab === 'events' && (
+            {activeTab === "events" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddEvent />
               </section>
             )}
-            {activeTab === 'tickets' && (
+            {activeTab === "tickets" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <SupportTickets />
               </section>
             )}
-            {activeTab === 'resources' && (
+            {activeTab === "resources" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <Resources />
               </section>
             )}
-            {activeTab === 'payments' && (
+            {activeTab === "payments" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AdminPayments />
               </section>
             )}
-            {activeTab === 'feedback' && (
+            {activeTab === "feedback" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <InstructorFeedbackAnalysis />
               </section>
             )}
-            {hasRole('admin') && activeTab === 'storage' && (
+            {hasRole("admin") && activeTab === "storage" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <StorageTokens />
               </section>
             )}
-            {activeTab === 'sponsorAds' && (
+            {activeTab === "sponsorAds" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <SponsorAdsAdminPanel />
               </section>
             )}
-            {activeTab === 'analytics' && (
+            {activeTab === "analytics" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CourseActivityAnalytics />
               </section>
             )}
-            {activeTab === 'adminPrivateGroups' && (
+            {activeTab === "adminPrivateGroups" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <PrivateGroupsAdmin />
               </section>

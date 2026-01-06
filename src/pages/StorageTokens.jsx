@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { FaCloud, FaShoppingCart, FaArrowUp, FaBolt } from 'react-icons/fa';
-import { X } from 'lucide-react';
-import { api } from '@/services/apiClient';
-import { useUser } from '@/contexts/UserContext';
+import React, { useEffect, useMemo, useState } from "react";
+import { FaCloud, FaShoppingCart, FaArrowUp, FaBolt } from "react-icons/fa";
+import { X } from "lucide-react";
+import { api } from "@/services/apiClient";
+import { useUser } from "@/contexts/UserContext";
 
-const formatNumber = value => value.toLocaleString();
+const formatNumber = (value) => value.toLocaleString();
 
 const ProgressBar = ({ percent, color }) => (
   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -77,21 +77,21 @@ const StorageTokens = () => {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isBuyStorageModalOpen, setIsBuyStorageModalOpen] = useState(false);
   const [isBuyTokensModalOpen, setIsBuyTokensModalOpen] = useState(false);
-  const [storageAmount, setStorageAmount] = useState('');
-  const [tokensAmount, setTokensAmount] = useState('');
+  const [storageAmount, setStorageAmount] = useState("");
+  const [tokensAmount, setTokensAmount] = useState("");
 
   const orgId =
     userProfile?.organization_id ||
     userProfile?.org_id ||
     userProfile?.organizationId ||
     userProfile?.organization?.id ||
-    localStorage.getItem('orgId') ||
-    '997be751-2e1b-4751-80af-3b29f81e0eb0';
+    localStorage.getItem("orgId") ||
+    "997be751-2e1b-4751-80af-3b29f81e0eb0";
 
   useEffect(() => {
     const fetchOrg = async () => {
       if (!orgId) {
-        setError('Organization not found. Please log in again.');
+        setError("Organization not found. Please log in again.");
         return;
       }
       try {
@@ -101,10 +101,10 @@ const StorageTokens = () => {
         const data = response?.data?.data || response?.data;
         setOrgData(data);
       } catch (err) {
-        console.error('Failed to fetch organization usage', err);
+        console.error("Failed to fetch organization usage", err);
         setError(
           err?.response?.data?.message ||
-            'Unable to load storage and token usage right now.'
+            "Unable to load storage and token usage right now.",
         );
       } finally {
         setLoading(false);
@@ -134,7 +134,7 @@ const StorageTokens = () => {
       rawTotal: total,
       used: usedGB, // Keep as number for calculations
       total: totalGB, // Keep as number for calculations
-      unit: 'GB',
+      unit: "GB",
     };
   }, [orgData]);
 
@@ -147,7 +147,7 @@ const StorageTokens = () => {
       total,
       usedInMillions: used / 1_000_000,
       totalInMillions: total / 1_000_000,
-      unit: 'M',
+      unit: "M",
     };
   }, [orgData]);
 
@@ -160,7 +160,7 @@ const StorageTokens = () => {
               Account Usage
             </p>
             <h2 className="text-2xl font-bold">
-              {orgData?.name || 'Storage & AI Tokens'}
+              {orgData?.name || "Storage & AI Tokens"}
             </h2>
             <p className="text-blue-100 mt-1">
               Track limits and add capacity without leaving the dashboard.
@@ -203,7 +203,7 @@ const StorageTokens = () => {
         >
           <div
             className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-white"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Buy AI Tokens</h2>
@@ -224,101 +224,37 @@ const StorageTokens = () => {
                     Current AI Tokens
                   </p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {tokens.usedInMillions.toFixed(2)}M /{' '}
+                    {tokens.usedInMillions.toFixed(2)}M /{" "}
                     {tokens.totalInMillions.toFixed(2)}M tokens
                   </p>
                 </div>
               )}
 
-              {/* Token Amount Input */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Token Amount (in millions)
-                </label>
-                <input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={tokensAmount}
-                  onChange={e => setTokensAmount(e.target.value)}
-                  placeholder="Enter tokens to buy (e.g., 0.5, 1, 2)"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Pricing: $17 per 1M tokens. Enter the number of millions you
-                  want to purchase.
+              {/* Contact Sales Message */}
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <p className="text-sm text-gray-700 font-semibold">
+                  Kindly contact our sales team for AI token purchases.
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Email:{" "}
+                  <a
+                    className="text-blue-600 font-semibold"
+                    href="mailto:support@creditoracademy.com"
+                  >
+                    support@creditoracademy.com
+                  </a>
                 </p>
               </div>
 
-              {/* Price Calculation */}
-              {tokensAmount && Number(tokensAmount) > 0 && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-purple-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      Tokens:
-                    </span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {Number(tokensAmount).toFixed(2)}M
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      Price per 1M:
-                    </span>
-                    <span className="text-lg font-bold text-gray-900">
-                      $17.00
-                    </span>
-                  </div>
-                  <div className="border-t border-purple-200 pt-2 mt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-bold text-gray-900">
-                        Total Amount:
-                      </span>
-                      <span className="text-2xl font-bold text-purple-700">
-                        $
-                        {(Number(tokensAmount) * 17).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Button */}
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    if (!tokensAmount || Number(tokensAmount) <= 0) {
-                      alert('Please enter a valid token amount');
-                      return;
-                    }
-                    // Handle payment here
-                    console.log(
-                      'Processing payment for',
-                      tokensAmount,
-                      'M tokens'
-                    );
-                    alert(
-                      `Payment processing for ${Number(tokensAmount).toFixed(
-                        2
-                      )}M tokens ($${(Number(tokensAmount) * 17).toFixed(2)})`
-                    );
-                  }}
-                  disabled={!tokensAmount || Number(tokensAmount) <= 0}
-                  className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Proceed to Payment
-                </button>
-              </div>
+              {/* Payment Button commented out intentionally */}
+              {/* Previous purchase flow removed as requested */}
             </div>
 
             <div className="mt-4 flex justify-end gap-3">
               <button
                 onClick={() => {
                   setIsBuyTokensModalOpen(false);
-                  setTokensAmount('');
+                  setTokensAmount("");
                 }}
                 className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-colors"
               >
@@ -370,7 +306,7 @@ const StorageTokens = () => {
         >
           <div
             className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-white"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">
@@ -393,7 +329,7 @@ const StorageTokens = () => {
                     Plan Type
                   </p>
                   <p className="text-lg font-bold text-gray-900">
-                    {orgData.plan || 'N/A'}
+                    {orgData.plan || "N/A"}
                   </p>
                 </div>
 
@@ -403,11 +339,11 @@ const StorageTokens = () => {
                     Price
                   </p>
                   <p className="text-xl font-bold text-gray-900">
-                    {orgData.plan === 'YEARLY'
-                      ? '$1,999/year'
-                      : orgData.plan === 'MONTHLY'
-                        ? '$99/month'
-                        : 'N/A'}
+                    {orgData.plan === "YEARLY"
+                      ? "$1,999/year"
+                      : orgData.plan === "MONTHLY"
+                        ? "$99/month"
+                        : "N/A"}
                   </p>
                 </div>
 
@@ -419,7 +355,7 @@ const StorageTokens = () => {
                   <p className="text-base font-semibold text-gray-900">
                     {orgData.storage_limit
                       ? `${Number(orgData.storage_limit)} GB`
-                      : 'N/A'}
+                      : "N/A"}
                   </p>
                 </div>
 
@@ -429,7 +365,7 @@ const StorageTokens = () => {
                     User Limit
                   </p>
                   <p className="text-base font-semibold text-gray-900">
-                    {orgData.user_limit || 'Unlimited'}
+                    {orgData.user_limit || "Unlimited"}
                   </p>
                 </div>
 
@@ -440,14 +376,14 @@ const StorageTokens = () => {
                   </p>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      orgData.status === 'ACTIVE'
-                        ? 'bg-green-100 text-green-800'
-                        : orgData.status === 'SUSPENDED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
+                      orgData.status === "ACTIVE"
+                        ? "bg-green-100 text-green-800"
+                        : orgData.status === "SUSPENDED"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {orgData.status || 'N/A'}
+                    {orgData.status || "N/A"}
                   </span>
                 </div>
               </div>
@@ -466,17 +402,17 @@ const StorageTokens = () => {
                       Renew your plan
                     </p>
                     <p className="text-xl font-bold text-gray-900">
-                      {orgData.plan === 'YEARLY'
-                        ? '$1,999/year'
-                        : orgData.plan === 'MONTHLY'
-                          ? '$99/month'
-                          : 'N/A'}
+                      {orgData.plan === "YEARLY"
+                        ? "$1,999/year"
+                        : orgData.plan === "MONTHLY"
+                          ? "$99/month"
+                          : "N/A"}
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       // Handle renew plan action here
-                      console.log('Renew plan');
+                      console.log("Renew plan");
                       // You can add navigation or API call here
                     }}
                     className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
@@ -507,7 +443,7 @@ const StorageTokens = () => {
         >
           <div
             className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-white"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Buy Storage</h2>
@@ -533,85 +469,31 @@ const StorageTokens = () => {
                 </div>
               )}
 
-              {/* Storage Amount Input */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Storage Amount (GB)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={storageAmount}
-                  onChange={e => setStorageAmount(e.target.value)}
-                  placeholder="Enter storage amount (e.g., 1, 2, 3)"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter the amount of storage you want to purchase in GB
+              {/* Contact Sales Message */}
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <p className="text-sm text-gray-700 font-semibold">
+                  Kindly contact our sales team for storage purchases.
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Email:{" "}
+                  <a
+                    className="text-blue-600 font-semibold"
+                    href="mailto:support@creditoracademy.com"
+                  >
+                    support@creditoracademy.com
+                  </a>
                 </p>
               </div>
 
-              {/* Price Calculation */}
-              {storageAmount && Number(storageAmount) > 0 && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      Storage Amount:
-                    </span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {storageAmount} GB
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      Price per GB:
-                    </span>
-                    <span className="text-lg font-bold text-gray-900">
-                      $10/GB
-                    </span>
-                  </div>
-                  <div className="border-t border-green-200 pt-2 mt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-bold text-gray-900">
-                        Total Amount:
-                      </span>
-                      <span className="text-2xl font-bold text-green-700">
-                        ${(Number(storageAmount) * 10).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Button */}
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    if (!storageAmount || Number(storageAmount) <= 0) {
-                      alert('Please enter a valid storage amount');
-                      return;
-                    }
-                    // Handle payment here
-                    console.log('Processing payment for', storageAmount, 'GB');
-                    // You can integrate payment gateway here
-                    alert(
-                      `Payment processing for ${storageAmount} GB ($${Number(storageAmount) * 10})`
-                    );
-                  }}
-                  disabled={!storageAmount || Number(storageAmount) <= 0}
-                  className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Proceed to Payment
-                </button>
-              </div>
+              {/* Payment Button commented out intentionally */}
+              {/* Previous purchase flow removed as requested */}
             </div>
 
             <div className="mt-4 flex justify-end gap-3">
               <button
                 onClick={() => {
                   setIsBuyStorageModalOpen(false);
-                  setStorageAmount('');
+                  setStorageAmount("");
                 }}
                 className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-colors"
               >
