@@ -82,6 +82,12 @@ export default defineConfig(({ mode }) => ({
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify(
       "http://localhost:9000",
     ),
+    "import.meta.env.VITE_SUPERADMIN_API_BASE_URL": JSON.stringify(
+      "https://saas-backend-coki.onrender.com",
+    ),
+    "import.meta.env.VITE_SUPERADMIN_MARK_READ_BASE_URL": JSON.stringify(
+      "http://localhost:9000",
+    ),
     // AI Service API Keys - Injected at build time
     "import.meta.env.VITE_OPENAI_API_KEY": JSON.stringify(
       process.env.VITE_OPENAI_API_KEY || "",
