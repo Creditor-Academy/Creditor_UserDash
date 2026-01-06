@@ -76,7 +76,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'http://localhost:9000'
+      'https://private-chat-creditor-backend.onrender.com'
     ),
   },
 }));
