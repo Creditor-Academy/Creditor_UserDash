@@ -1,98 +1,210 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from 'lucide-react';
+import React, { useRef, useState, useEffect } from "react";
+import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from "lucide-react";
 
 const UPCOMING_COURSES = [
   // SOV 101
   {
-    id: 'sov-101-the-shift-post-civil-war-legal-reconstruction',
-    title: 'The Shift — Post-Civil War Legal Reconstruction',
-    course: 'SOV 101',
+    id: "sov-101-the-shift-post-civil-war-legal-reconstruction",
+    title: "The Shift — Post-Civil War Legal Reconstruction",
+    course: "SOV 101",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)The+Shift+%E2%80%94+Post-Civil+War+Legal+Reconstruction.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)The+Shift+%E2%80%94+Post-Civil+War+Legal+Reconstruction.png",
   },
   {
-    id: 'sov-101-understanding-legal-identity-public-administration',
-    title: 'Understanding Legal Identity and Public Administration',
-    course: 'SOV 101',
+    id: "sov-101-understanding-legal-identity-public-administration",
+    title: "Understanding Legal Identity and Public Administration",
+    course: "SOV 101",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)Understanding+Legal+Identity+and+Public+Administration.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)Understanding+Legal+Identity+and+Public+Administration.png",
   },
   {
-    id: 'sov-101-commerce-banking-control',
-    title: 'Commerce, Banking, and Control',
-    course: 'SOV 101',
+    id: "sov-101-commerce-banking-control",
+    title: "Commerce, Banking, and Control",
+    course: "SOV 101",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)Commerce%2C+Banking%2C+and+Control.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(SOV)Commerce%2C+Banking%2C+and+Control.png",
   },
 
   // Become Private
   {
-    id: 'become-private-act-of-expatriation-oath-of-allegiance',
-    title: 'ACT OF EXPATRIATION AND OATH OF ALLEGIANCE',
-    course: 'Become Private',
+    id: "lession-6",
+    title: "Certificate of Assumed Name",
+    course: "Become Private",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)ACT+OF+EXPATRIATION+AND+OATH+OF+ALLEGIANCE.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/40.png",
   },
   {
-    id: 'become-private-declaration-of-copyright',
-    title: 'Declaration of Copyright',
-    course: 'Become Private',
+    id: "lession-7",
+    title: "Act Of Expatriation And Oath Of Allegiance",
+    course: "Become Private",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Declaration+of+Copyright.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/62.png",
   },
   {
-    id: 'become-private-power-of-attorney-in-fact',
-    title: 'POWER OF ATTORNEY IN FACT',
-    course: 'Become Private',
+    id: "lession-8",
+    title: "Declaration of Copyright",
+    course: "Become Private",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)POWER+OF+ATTORNEY+IN+FACT.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Declaration+of+Copyright.png",
   },
   {
-    id: 'become-private-cancellation-all-prior-powers-of-attorney',
-    title: 'Cancellation of All Prior Powers of Attorney',
-    course: 'Become Private',
+    id: "lession-9",
+    title: "POWER OF ATTORNEY IN FACT",
+    course: "Become Private",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BP)Cancellation+of+All+Prior+Powers+of+Attorney.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/131.png",
+  },
+  {
+    id: "lession-10",
+    title: "Cancellation of All Prior Powers of Attorney",
+    course: "Become Private",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/46.png",
   },
 
-  // Business Credit
+  // Master Class: Step-1
   {
-    id: 'business-credit-tier-3-credit-unions-community-banks',
-    title: 'Tier 3 – Credit Unions and Community Banks',
-    course: 'Business Credit',
+    id: "m1-lession-4",
+    title: "Filling Business Trust",
+    course: "Master Class: Step-1",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+3+%E2%80%93+Credit+Unions+and+Community+Banks.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/13.png",
   },
   {
-    id: 'business-credit-tier-4-high-limit-non-pg-revolving-cards',
-    title: 'Tier 4 – High-Limit Non-PG Revolving Store Cards & Fleet Cards',
-    course: 'Business Credit',
-    image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+4+%E2%80%93+High-Limit+Non-PG+Revolving+Store+Cards+%26+Fleet+Cards.png',
-  },
-  {
-    id: 'business-credit-tier-5-cash-flow-revenue-based-financing',
+    id: "m1-lession-5",
     title:
-      'Tier 5 – True Cash-Flow & Revenue-Based Financing (No Collateral, No PG)',
-    course: 'Business Credit',
+      "Building Sovereignty, Private Wealth, and Financial Freedom with Creditor Academy + Chart Write like a Boss 2 Heygen videos",
+    course: "Master Class: Step-1",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(BC)Tier+5+%E2%80%93+True+Cash-Flow+%26+Revenue-Based+Financing+(No+Collateral%2C+No+PG).png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/125.png",
+  },
+  {
+    id: "m1-lession-7",
+    title:
+      "Building Credit, Merchant Accounts, and Protecting Intellectual Property in the New Digital Economy",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/34.png",
+  },
+  {
+    id: "m1-lession-8",
+    title:
+      "Bank Account Setup, Credit Disputes, and Strategic Financial Management",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/147.png",
+  },
+  {
+    id: "m1-lession-9",
+    title:
+      "Fiduciary Duty, Contract Management, Bank Account Setup, and Community Support",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/42.png",
+  },
+  {
+    id: "m1-lession-10",
+    title:
+      "From Paperwork to Practicality: Taking Action Through Private Banking",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/111.png",
+  },
+  {
+    id: "m1-lession-11",
+    title:
+      "Bank Accounts, Accounting & Credit: Your Road to Corporate-Level Power",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/140.png",
+  },
+  {
+    id: "m1-lession-12",
+    title: "Why Foundation Matters More Than Information in the Private",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/Lesson+12+.png",
+  },
+  {
+    id: "m1-lession-13",
+    title:
+      "Step One - Unincorporated Business Trust, Removing Liability, and Building Commerce",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/105.png",
+  },
+  {
+    id: "m1-lession-14",
+    title:
+      "Private Sovereignty, Business Trusts, Credit Validation, and Financial Empowerment Strategies",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/129.png",
+  },
+  {
+    id: "m1-lession-15",
+    title:
+      "Building Financial Sovereignty Through Private Business Trusts, Credit Optimization, and Merchant Accounts",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/96.png",
+  },
+  {
+    id: "m1-lession-16",
+    title:
+      "From Unincorporated Business Trusts to Credit Optimization and Marketing Strategies",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/114.png",
+  },
+  {
+    id: "m1-lession-17",
+    title:
+      "The Big Problem No One Sees — And the Private Solution No One Talks Abouts",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/138.png",
+  },
+  {
+    id: "m1-lession-18",
+    title:
+      "Digital ID, Business Licenses & Control: How the Private Sets You Free ",
+    course: "Master Class: Step-1",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/134.png",
   },
 
-  // Operate Private
+  // Master Class: Step-2
   {
-    id: 'operate-private-advantages-business-trust',
-    title: 'Advantages of the Business Trust',
-    course: 'Operate Private',
+    id: "m2-lession-2",
+    title: "Tax Strategies, Business Trusts, and Financial Empowerment",
+    course: "Master Class: Step-2",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(OP)Advantages+of+the+Business+Trust.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/74.png",
   },
   {
-    id: 'operate-private-business-trust-structure-governance',
-    title: 'The Business Trust – Structure & Governance',
-    course: 'Operate Private',
+    id: "m2-lession-3",
+    title:
+      "Overcoming Merchant Account Challenges, Status Correction, and Building Financial Freedom",
+    course: "Master Class: Step-2",
     image:
-      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/(OP)The+Business+Trust+%E2%80%93+Structure+%26+Governance.png',
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/70.png",
+  },
+  {
+    id: "m2-lession-4",
+    title:
+      "EIN Setup, Unincorporated Business Associations, and Banking Strategies for Financial Empowerment",
+    course: "Master Class: Step-2",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/82.png",
+  },
+  {
+    id: "m2-lession-5",
+    title:
+      "Business Trusts, Credit Building, Tax Strategies, and Status Correction",
+    course: "Master Class: Step-2",
+    image:
+      "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/86.png",
   },
 ];
 
@@ -100,20 +212,22 @@ function UpcomingCourses() {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('All');
+  const [selectedCourse, setSelectedCourse] = useState("All");
 
   const courseFilters = [
-    'All',
-    'SOV 101',
+    "All",
+    "SOV 101",
     ...Array.from(
-      new Set(UPCOMING_COURSES.map(c => c.course).filter(c => c !== 'SOV 101'))
+      new Set(
+        UPCOMING_COURSES.map((c) => c.course).filter((c) => c !== "SOV 101"),
+      ),
     ),
   ];
 
   const visibleCourses =
-    selectedCourse === 'All'
+    selectedCourse === "All"
       ? UPCOMING_COURSES
-      : UPCOMING_COURSES.filter(c => c.course === selectedCourse);
+      : UPCOMING_COURSES.filter((c) => c.course === selectedCourse);
 
   const updateScrollButtons = () => {
     const el = scrollRef.current;
@@ -123,14 +237,14 @@ function UpcomingCourses() {
     setCanScrollRight(el.scrollLeft < maxScrollLeft - 1);
   };
 
-  const scroll = direction => {
+  const scroll = (direction) => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
       const scrollAmount =
-        direction === 'left'
+        direction === "left"
           ? scrollLeft - clientWidth
           : scrollLeft + clientWidth;
-      scrollRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' });
+      scrollRef.current.scrollTo({ left: scrollAmount, behavior: "smooth" });
     }
   };
 
@@ -138,16 +252,16 @@ function UpcomingCourses() {
     updateScrollButtons();
     const el = scrollRef.current;
     if (!el) return;
-    el.addEventListener('scroll', updateScrollButtons, { passive: true });
-    window.addEventListener('resize', updateScrollButtons);
+    el.addEventListener("scroll", updateScrollButtons, { passive: true });
+    window.addEventListener("resize", updateScrollButtons);
     return () => {
-      el.removeEventListener('scroll', updateScrollButtons);
-      window.removeEventListener('resize', updateScrollButtons);
+      el.removeEventListener("scroll", updateScrollButtons);
+      window.removeEventListener("resize", updateScrollButtons);
     };
   }, []);
 
   return (
-    <div className="mb-16 relative max-w-4xl mx-auto">
+    <div className="mb-16 relative mx-auto">
       {/* Header */}
       <div className="mb-8 px-1">
         <div>
@@ -158,7 +272,7 @@ function UpcomingCourses() {
         </div>
         {/* Course filters placed below header */}
         <div className="mt-4 flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
-          {courseFilters.map(course => (
+          {courseFilters.map((course) => (
             <button
               key={course}
               onClick={() => setSelectedCourse(course)}
@@ -166,8 +280,8 @@ function UpcomingCourses() {
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#6164ec] 
                 ${
                   selectedCourse === course
-                    ? 'bg-[#6164ec] text-white border-transparent shadow-md ring-1 ring-[#6164ec]/40 hover:shadow-lg hover:brightness-105'
-                    : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#6164ec]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'
+                    ? "bg-[#6164ec] text-white border-transparent shadow-md ring-1 ring-[#6164ec]/40 hover:shadow-lg hover:brightness-105"
+                    : "bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-[#6164ec]/40 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md"
                 }
               `}
               aria-pressed={selectedCourse === course}
@@ -181,7 +295,7 @@ function UpcomingCourses() {
       {/* Scroll Arrows */}
       {canScrollLeft && (
         <button
-          onClick={() => scroll('left')}
+          onClick={() => scroll("left")}
           className="absolute left-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll left"
         >
@@ -190,7 +304,7 @@ function UpcomingCourses() {
       )}
       {canScrollRight && (
         <button
-          onClick={() => scroll('right')}
+          onClick={() => scroll("right")}
           className="absolute right-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll right"
         >
@@ -203,13 +317,13 @@ function UpcomingCourses() {
         ref={scrollRef}
         className="flex space-x-6 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar pb-6 px-1"
       >
-        {visibleCourses.map(item => (
+        {visibleCourses.map((item) => (
           <div
             key={item.id}
             className="flex-shrink-0 w-80 rounded-xl border border-white/40 overflow-hidden snap-start 
               transition-all duration-500 group hover:shadow-2xl hover:-translate-y-2 hover:z-10 bg-white"
             style={{
-              boxShadow: '0 8px 24px 0 rgba(0, 0, 0, 0.12)',
+              boxShadow: "0 8px 24px 0 rgba(0, 0, 0, 0.12)",
             }}
           >
             {/* Image with frosted glass overlay */}

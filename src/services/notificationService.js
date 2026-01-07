@@ -7,11 +7,9 @@ const API_BASE =
 
 // Dedicated Superadmin notification base URLs
 const SUPERADMIN_API_BASE =
-  import.meta.env?.VITE_SUPERADMIN_API_BASE_URL ||
-  "https://saas-backend-coki.onrender.com";
+  import.meta.env?.VITE_API_BASE_URL || "http://localhost:9000";
 const SUPERADMIN_MARK_READ_BASE =
-  import.meta.env?.VITE_SUPERADMIN_MARK_READ_BASE_URL ||
-  "http://localhost:9000";
+  import.meta.env?.VITE_API_BASE_URL || "http://localhost:9000";
 
 /*
 BACKEND ROUTES THAT NEED TO BE ENABLED:

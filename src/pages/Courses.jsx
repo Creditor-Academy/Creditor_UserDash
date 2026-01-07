@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -7,10 +7,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Progress } from '../components/ui/progress';
+} from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Progress } from "../components/ui/progress";
 import {
   BookOpen,
   Clock,
@@ -22,41 +22,41 @@ import {
   Lock,
   Play,
   FileText,
-} from 'lucide-react';
-import { Input } from '../components/ui/input';
+} from "lucide-react";
+import { Input } from "../components/ui/input";
 import {
   fetchUserCourses,
   fetchCourseModules,
-} from '../services/courseService';
-import { getCourseTrialStatus } from '../utils/trialUtils';
-import TrialBadge from '../components/ui/TrialBadge';
-import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
-import { useCredits } from '../contexts/CreditsContext';
-import { useUser } from '../contexts/UserContext';
-import { useSponsorAds } from '@/contexts/SponsorAdsContext';
-import SponsorAdCard from '@/components/sponsorAds/SponsorAdCard';
-import { useAuth } from '@/contexts/AuthContext';
-import { getUnlockedModulesByUser } from '../services/modulesService';
-import api from '../services/apiClient';
+} from "../services/courseService";
+import { getCourseTrialStatus } from "../utils/trialUtils";
+import TrialBadge from "../components/ui/TrialBadge";
+import TrialExpiredDialog from "../components/ui/TrialExpiredDialog";
+import { useCredits } from "../contexts/CreditsContext";
+import { useUser } from "../contexts/UserContext";
+import { useSponsorAds } from "@/contexts/SponsorAdsContext";
+import SponsorAdCard from "@/components/sponsorAds/SponsorAdCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUnlockedModulesByUser } from "../services/modulesService";
+import api from "../services/apiClient";
 
 export function Courses() {
   const { userProfile } = useUser();
   const { userRole } = useAuth();
   const { getPrimaryAdForPlacement } = useSponsorAds();
   const [courses, setCourses] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [progressFilter, setProgressFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [progressFilter, setProgressFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [expandedCourseId, setExpandedCourseId] = useState(null);
   const [courseModules, setCourseModules] = useState({});
   const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
   const [showTrialDialog, setShowTrialDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState('courses');
+  const [activeTab, setActiveTab] = useState("courses");
   const [myLessons, setMyLessons] = useState([]);
   const [loadingLessons, setLoadingLessons] = useState(false);
   // Track modules currently being marked as complete
@@ -67,11 +67,11 @@ export function Courses() {
   function formatTime(secs) {
     const h = Math.floor(secs / 3600)
       .toString()
-      .padStart(2, '0');
+      .padStart(2, "0");
     const m = Math.floor((secs % 3600) / 60)
       .toString()
-      .padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
+      .padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
     return `${h}:${m}:${s}`;
   }
 
@@ -83,7 +83,7 @@ export function Courses() {
 
     // Format: "1h 45m"
     const hourMinMatch = durationStr.match(
-      /(\d+)\s*h(?:ours?)?\s*(\d+)?\s*m?/i
+      /(\d+)\s*h(?:ours?)?\s*(\d+)?\s*m?/i,
     );
     if (hourMinMatch) {
       const hours = parseInt(hourMinMatch[1], 10);
@@ -110,7 +110,7 @@ export function Courses() {
   // Get time spent for all courses from localStorage
   const getCourseTimes = () => {
     const times = {};
-    courses.forEach(course => {
+    courses.forEach((course) => {
       const t = localStorage.getItem(`course_time_${course.id}`);
       times[course.id] = t ? parseInt(t, 10) : 0;
     });
@@ -120,35 +120,35 @@ export function Courses() {
   // Update times when component mounts and when tab regains focus
   useEffect(() => {
     const updateTimes = () => setCourseTimes(getCourseTimes());
-    window.addEventListener('focus', updateTimes);
-    return () => window.removeEventListener('focus', updateTimes);
+    window.addEventListener("focus", updateTimes);
+    return () => window.removeEventListener("focus", updateTimes);
   }, []);
   // Update times when route changes to /courses
   useEffect(() => {
-    if (location.pathname === '/courses') {
+    if (location.pathname === "/courses") {
       setCourseTimes(getCourseTimes());
     }
   }, [location.pathname]);
 
   useEffect(() => {
-    const selector = activeTab === 'courses' ? '.course-card' : '.lesson-card';
+    const selector = activeTab === "courses" ? ".course-card" : ".lesson-card";
     const cards = document.querySelectorAll(selector);
     cards.forEach((card, index) => {
       setTimeout(() => {
-        card.classList.add('animate-fade-in');
-        card.classList.remove('opacity-0');
+        card.classList.add("animate-fade-in");
+        card.classList.remove("opacity-0");
       }, 100 * index);
     });
   }, [filteredCourses, myLessons, activeTab]);
 
   // Recording course IDs to filter out from My Courses
   const RECORDING_COURSE_IDS = [
-    'a188173c-23a6-4cb7-9653-6a1a809e9914', // Become Private Recordings
-    '7b798545-6f5f-4028-9b1e-e18c7d2b4c47', // Operate Private Recordings
-    '199e328d-8366-4af1-9582-9ea545f8b59e', // Business Credit Recordings
-    'd8e2e17f-af91-46e3-9a81-6e5b0214bc5e', // Private Merchant Recordings
-    'd5330607-9a45-4298-8ead-976dd8810283', // Sovereignty 101 Recordings
-    '814b3edf-86da-4b0d-bb8c-8a6da2d9b4df', // I Want Remedy Now Recordings
+    "a188173c-23a6-4cb7-9653-6a1a809e9914", // Become Private Recordings
+    "7b798545-6f5f-4028-9b1e-e18c7d2b4c47", // Operate Private Recordings
+    "199e328d-8366-4af1-9582-9ea545f8b59e", // Business Credit Recordings
+    "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e", // Private Merchant Recordings
+    "d5330607-9a45-4298-8ead-976dd8810283", // Sovereignty 101 Recordings
+    "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now Recordings
   ];
 
   useEffect(() => {
@@ -160,16 +160,16 @@ export function Courses() {
 
         // Filter out recording courses from My Courses
         const filteredData = data.filter(
-          course => !RECORDING_COURSE_IDS.includes(course.id)
+          (course) => !RECORDING_COURSE_IDS.includes(course.id),
         );
 
         // Process each course to add modulesCount, totalDuration, and trial status
-        const processedCourses = filteredData.map(course => {
+        const processedCourses = filteredData.map((course) => {
           const modules = course.modules || [];
           // Sum durations using 'estimated_duration' (in minutes)
           const totalDurationMins = modules.reduce(
             (sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0),
-            0
+            0,
           );
           // Convert to seconds for formatTime
           const totalDurationSecs = totalDurationMins * 60;
@@ -184,7 +184,7 @@ export function Courses() {
             image:
               course.thumbnail ||
               course.image ||
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000',
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
             trialStatus,
           };
         });
@@ -194,18 +194,18 @@ export function Courses() {
 
         // Pre-populate courseModules for expanded view
         const modulesMap = {};
-        data.forEach(course => {
+        data.forEach((course) => {
           if (course.modules) {
             modulesMap[course.id] = course.modules;
           }
         });
-        setCourseModules(prev => ({
+        setCourseModules((prev) => ({
           ...prev,
           ...modulesMap,
         }));
       } catch (err) {
-        console.error('Error fetching courses:', err);
-        setError('Failed to fetch courses');
+        console.error("Error fetching courses:", err);
+        setError("Failed to fetch courses");
       } finally {
         setLoading(false);
       }
@@ -217,18 +217,18 @@ export function Courses() {
   // Update trial status every minute for real-time countdown
   useEffect(() => {
     const interval = setInterval(() => {
-      setCourses(prevCourses =>
-        prevCourses.map(course => ({
+      setCourses((prevCourses) =>
+        prevCourses.map((course) => ({
           ...course,
           trialStatus: getCourseTrialStatus(course),
-        }))
+        })),
       );
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
   }, []);
 
-  const handleCourseClick = course => {
+  const handleCourseClick = (course) => {
     if (course.trialStatus.isInTrial && course.trialStatus.isExpired) {
       setSelectedExpiredCourse(course);
       setShowTrialDialog(true);
@@ -243,7 +243,7 @@ export function Courses() {
     setSelectedExpiredCourse(null);
   };
 
-  const handleViewModules = courseId => {
+  const handleViewModules = (courseId) => {
     if (expandedCourseId === courseId) {
       setExpandedCourseId(null);
       return;
@@ -260,22 +260,22 @@ export function Courses() {
     // Apply search filter
     if (searchTerm) {
       results = results.filter(
-        course =>
+        (course) =>
           course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+          course.description?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     // Apply progress filter
-    if (progressFilter !== 'all') {
-      results = results.filter(course => {
+    if (progressFilter !== "all") {
+      results = results.filter((course) => {
         const progress = course.progress || 0;
         switch (progressFilter) {
-          case 'not-started':
+          case "not-started":
             return progress === 0;
-          case 'in-progress':
+          case "in-progress":
             return progress > 0 && progress < 100;
-          case 'completed':
+          case "completed":
             return progress === 100;
           default:
             return true;
@@ -284,8 +284,8 @@ export function Courses() {
     }
 
     // Apply category filter
-    if (categoryFilter !== 'all') {
-      results = results.filter(course => course.category === categoryFilter);
+    if (categoryFilter !== "all") {
+      results = results.filter((course) => course.category === categoryFilter);
     }
 
     setFilteredCourses(results);
@@ -330,41 +330,44 @@ export function Courses() {
   );
 
   const courseListingAd = useMemo(
-    () => getPrimaryAdForPlacement('course_listing_tile', { role: userRole }),
-    [getPrimaryAdForPlacement, userRole]
+    () => getPrimaryAdForPlacement("course_listing_tile", { role: userRole }),
+    [getPrimaryAdForPlacement, userRole],
   );
 
   const decoratedCourseList = useMemo(() => {
     if (!courseListingAd) {
-      return filteredCourses.map(course => ({ type: 'course', data: course }));
+      return filteredCourses.map((course) => ({
+        type: "course",
+        data: course,
+      }));
     }
     if (filteredCourses.length === 0) {
-      return [{ type: 'ad', data: courseListingAd }];
+      return [{ type: "ad", data: courseListingAd }];
     }
     const items = [];
     filteredCourses.forEach((course, index) => {
-      items.push({ type: 'course', data: course });
+      items.push({ type: "course", data: course });
       if (index === 1) {
-        items.push({ type: 'ad', data: courseListingAd });
+        items.push({ type: "ad", data: courseListingAd });
       }
     });
-    if (!items.some(item => item.type === 'ad')) {
+    if (!items.some((item) => item.type === "ad")) {
       items.splice(Math.min(1, items.length), 0, {
-        type: 'ad',
+        type: "ad",
         data: courseListingAd,
       });
     }
     return items;
   }, [filteredCourses, courseListingAd]);
 
-  const renderCourseTile = course => (
+  const renderCourseTile = (course) => (
     <div key={course.id} className="course-card opacity-0">
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
         <div className="aspect-video relative overflow-hidden">
           <img
             src={
               course.image ||
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
             }
             alt={course.title}
             className="w-full h-full object-cover"
@@ -416,9 +419,9 @@ export function Courses() {
           </div>
           {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
             <div className="text-xs text-center text-gray-600">
-              Trial ends:{' '}
+              Trial ends:{" "}
               {new Date(
-                course.trialStatus.subscriptionEnd
+                course.trialStatus.subscriptionEnd,
               ).toLocaleDateString()}
             </div>
           )}
@@ -460,7 +463,7 @@ export function Courses() {
                   </div>
                 </button>
                 <button
-                  className="relative px-6 py-3 text-sm font-medium rounded-lg bg-[#6164ec] hover:bg-[#b00000] text-white disabled:bg-[#a00000] disabled:text-white/70"
+                  className="relative px-6 py-3 text-sm font-medium rounded-lg bg-[#6164ec] text-white disabled:text-white/70"
                   disabled
                 >
                   <div className="flex items-center gap-2">
@@ -534,7 +537,7 @@ export function Courses() {
                   placeholder="Search courses..."
                   className="pl-8 w-full"
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               {/* <Button 
@@ -549,102 +552,102 @@ export function Courses() {
           </div>
 
           <div className="mb-6">
-            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm gap-4">
               <button
                 className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  activeTab === 'courses'
-                    ? 'bg-[#6164ec] text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  activeTab === "courses"
+                    ? "bg-[#6164ec] text-white shadow-md"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
-                onClick={() => setActiveTab('courses')}
+                onClick={() => setActiveTab("courses")}
               >
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Courses
                 </div>
-                {activeTab === 'courses' && (
+                {activeTab === "courses" && (
                   <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
                 )}
               </button>
               <button
                 className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  activeTab === 'lessons'
-                    ? 'bg-[#6164ec] text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  activeTab === "lessons"
+                    ? "bg-[#6164ec] text-white shadow-md"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
                 onClick={async () => {
-                  setActiveTab('lessons');
+                  setActiveTab("lessons");
                   if (!userProfile?.id) return;
                   setLoadingLessons(true);
                   try {
-                    console.log('[UI] Fetch My Lessons for', userProfile.id);
+                    console.log("[UI] Fetch My Lessons for", userProfile.id);
                     const data = await getUnlockedModulesByUser(userProfile.id);
                     console.log(
-                      '[UI] My Lessons count',
-                      Array.isArray(data) ? data.length : 'not-array'
+                      "[UI] My Lessons count",
+                      Array.isArray(data) ? data.length : "not-array",
                     );
                     setMyLessons(data);
 
                     // Pre-load module data in background (non-blocking)
                     if (data && data.length > 0) {
                       console.log(
-                        '[UI] Starting background pre-loading of module data'
+                        "[UI] Starting background pre-loading of module data",
                       );
                       const uniqueCourseIds = [
                         ...new Set(
                           data
-                            .map(lesson => lesson.module?.course_id)
-                            .filter(Boolean)
+                            .map((lesson) => lesson.module?.course_id)
+                            .filter(Boolean),
                         ),
                       ];
 
                       // Start pre-loading but don't wait for it
                       Promise.all(
-                        uniqueCourseIds.map(async courseId => {
+                        uniqueCourseIds.map(async (courseId) => {
                           try {
                             const modules = await fetchCourseModules(courseId);
                             return { courseId, modules };
                           } catch (error) {
                             console.warn(
                               `Failed to pre-load modules for course ${courseId}:`,
-                              error
+                              error,
                             );
                             return { courseId, modules: [] };
                           }
-                        })
+                        }),
                       )
-                        .then(courseModulesResults => {
+                        .then((courseModulesResults) => {
                           // Cache all module data
                           const newCache = {};
                           courseModulesResults.forEach(
                             ({ courseId, modules }) => {
-                              modules.forEach(module => {
+                              modules.forEach((module) => {
                                 const cacheKey = `${courseId}-${module.id}`;
                                 newCache[cacheKey] = module;
                               });
-                            }
+                            },
                           );
 
-                          setCompleteModulesCache(prev => ({
+                          setCompleteModulesCache((prev) => ({
                             ...prev,
                             ...newCache,
                           }));
                           console.log(
-                            '[UI] Background pre-loaded and cached',
+                            "[UI] Background pre-loaded and cached",
                             Object.keys(newCache).length,
-                            'modules'
+                            "modules",
                           );
                         })
-                        .catch(error => {
+                        .catch((error) => {
                           console.warn(
-                            '[UI] Background pre-loading failed:',
-                            error
+                            "[UI] Background pre-loading failed:",
+                            error,
                           );
                           // Don't show error to user, just log it
                         });
                     }
                   } catch (e) {
-                    console.error('[UI] My Lessons fetch error', e);
+                    console.error("[UI] My Lessons fetch error", e);
                     setMyLessons([]);
                   } finally {
                     setLoadingLessons(false);
@@ -658,7 +661,7 @@ export function Courses() {
                     <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
                   )}
                 </div>
-                {activeTab === 'lessons' && (
+                {activeTab === "lessons" && (
                   <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
                 )}
               </button>
@@ -701,17 +704,17 @@ export function Courses() {
             </div>
           )} */}
 
-          {activeTab === 'courses' && (
+          {activeTab === "courses" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredCourses.length > 0 ? (
-                filteredCourses.map(course => (
+                filteredCourses.map((course) => (
                   <div key={course.id} className="course-card opacity-0">
                     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                       <div className="aspect-video relative overflow-hidden">
                         <img
                           src={
                             course.image ||
-                            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+                            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
                           }
                           alt={course.title}
                           className="w-full h-full object-cover"
@@ -776,7 +779,7 @@ export function Courses() {
                           >
                             <Button
                               variant="default"
-                              className="w-full text-sm sm:text-base bg-[#6164ec] hover:bg-[#b00000]"
+                              className="w-full text-sm sm:text-base bg-[#6164ec]"
                             >
                               Continue Learning
                             </Button>
@@ -787,9 +790,9 @@ export function Courses() {
                         {course.trialStatus.isInTrial &&
                           !course.trialStatus.isExpired && (
                             <div className="text-xs text-center text-gray-600">
-                              Trial ends:{' '}
+                              Trial ends:{" "}
                               {new Date(
-                                course.trialStatus.subscriptionEnd
+                                course.trialStatus.subscriptionEnd,
                               ).toLocaleDateString()}
                             </div>
                           )}
@@ -819,7 +822,7 @@ export function Courses() {
             </div>
           )}
 
-          {activeTab === 'lessons' && (
+          {activeTab === "lessons" && (
             <div>
               {loadingLessons ? (
                 <div className="text-center py-10 text-sm text-gray-600">
@@ -842,7 +845,7 @@ export function Courses() {
                   }
                   return (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                      {combined.map(access => {
+                      {combined.map((access) => {
                         const module = access.module;
                         const courseId = access.module?.course_id;
                         const isContentAvailable = !!module?.resource_url;
@@ -852,7 +855,7 @@ export function Courses() {
                           Array.isArray(module.user_module_progress) &&
                           module.user_module_progress.length > 0 &&
                           module.user_module_progress.some(
-                            progress => progress.completed === true
+                            (progress) => progress.completed === true,
                           );
 
                         // Get complete module data from cache for better thumbnail and resource_url
@@ -871,12 +874,12 @@ export function Courses() {
                                   src={
                                     displayModule?.thumbnail ||
                                     module?.thumbnail ||
-                                    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+                                    "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
                                   }
                                   alt={
                                     displayModule?.title ||
                                     module?.title ||
-                                    'Lesson'
+                                    "Lesson"
                                   }
                                   className="w-full h-full object-cover"
                                 />
@@ -890,7 +893,7 @@ export function Courses() {
                                 {/* Course name tag */}
                                 <div className="absolute top-2 right-2">
                                   <div className="bg-white/90 text-gray-800 px-2 py-1 rounded-md text-xs font-medium shadow-sm">
-                                    {access.course?.title || 'Course'}
+                                    {access.course?.title || "Course"}
                                   </div>
                                 </div>
                               </div>
@@ -911,7 +914,7 @@ export function Courses() {
                                     <div className="flex items-center gap-1">
                                       <BookOpen size={14} />
                                       <span>
-                                        Order: {module?.order || 'N/A'}
+                                        Order: {module?.order || "N/A"}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -968,7 +971,7 @@ export function Courses() {
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
                                       disabled={markingCompleteIds.has(
-                                        String(module?.id)
+                                        String(module?.id),
                                       )}
                                       onClick={async () => {
                                         const idStr = String(module?.id);
@@ -978,7 +981,7 @@ export function Courses() {
                                         if (markingCompleteIds.has(idStr))
                                           return;
 
-                                        setMarkingCompleteIds(prev => {
+                                        setMarkingCompleteIds((prev) => {
                                           const next = new Set(prev);
                                           next.add(idStr);
                                           return next;
@@ -986,37 +989,37 @@ export function Courses() {
 
                                         try {
                                           console.log(
-                                            'Marking module as complete:',
+                                            "Marking module as complete:",
                                             courseId,
-                                            module?.id
+                                            module?.id,
                                           );
                                           await api.post(
-                                            `/api/course/${courseId}/modules/${module?.id}/mark-complete`
+                                            `/api/course/${courseId}/modules/${module?.id}/mark-complete`,
                                           );
 
                                           // Update the local state to reflect completion
-                                          setMyLessons(prev =>
-                                            prev.map(lesson =>
+                                          setMyLessons((prev) =>
+                                            prev.map((lesson) =>
                                               lesson.module_id ===
                                               access.module_id
                                                 ? { ...lesson, completed: true }
-                                                : lesson
-                                            )
+                                                : lesson,
+                                            ),
                                           );
 
                                           console.log(
-                                            'Module marked as complete successfully'
+                                            "Module marked as complete successfully",
                                           );
                                         } catch (err) {
                                           console.error(
-                                            'Failed to mark module as complete',
-                                            err
+                                            "Failed to mark module as complete",
+                                            err,
                                           );
                                           alert(
-                                            'Failed to mark lesson as complete. Please try again.'
+                                            "Failed to mark lesson as complete. Please try again.",
                                           );
                                         } finally {
-                                          setMarkingCompleteIds(prev => {
+                                          setMarkingCompleteIds((prev) => {
                                             const next = new Set(prev);
                                             next.delete(idStr);
                                             return next;
@@ -1025,10 +1028,10 @@ export function Courses() {
                                       }}
                                     >
                                       {markingCompleteIds.has(
-                                        String(module?.id)
+                                        String(module?.id),
                                       )
-                                        ? 'Marking...'
-                                        : 'Mark as Complete'}
+                                        ? "Marking..."
+                                        : "Mark as Complete"}
                                     </Button>
                                   ) : (
                                     <div className="w-full flex items-center justify-center">
