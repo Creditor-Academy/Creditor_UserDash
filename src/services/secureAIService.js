@@ -1,4 +1,4 @@
-import { emitActiveOrgUsageRefresh } from "../utils/activeOrgUsageEvents";
+import { tokenCache } from "../utils/tokenCache";
 import { getAccessToken } from "./tokenService";
 
 const API_BASE =
@@ -1283,10 +1283,28 @@ Return ONLY valid JSON.`;
   }
 
   /**
-   * Notify listeners to refresh active organization usage
+   * Log token usage for an AI operation
+   * Stores which operation used tokens and when
+   * @param {string} operation - Operation name (e.g., 'essay_generation', 'quiz_creation')
+   * @param {number} tokensUsed - Number of tokens consumed
+   */
+  logTokenUsageOperation(operation, tokensUsed) {
+    tokenCache.logTokenUsage(operation, tokensUsed);
+    console.log(
+      `[SecureAIService] Logged ${tokensUsed} tokens for ${operation}`,
+    );
+  }
+
+  /**
+   * Invalidate token cache and notify listeners
+   * Called after AI operations complete to refresh token counts
+   * Only invalidates cache, doesn't force immediate refresh
    */
   notifyUsageRefresh() {
-    emitActiveOrgUsageRefresh();
+    tokenCache.invalidateCache();
+    console.log(
+      "[SecureAIService] Token cache invalidated - will refresh on next request",
+    );
   }
 
   /**

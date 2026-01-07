@@ -1,64 +1,18 @@
-import React, { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import React from "react";
 import { Zap, AlertCircle } from "lucide-react";
 import "./CompactTokenDisplay.css";
-import { subscribeActiveOrgUsageRefresh } from "../../utils/activeOrgUsageEvents";
-import { getAuthHeader } from "../../services/authHeader";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
+import { useTokenCache } from "../../hooks/useTokenCache";
 
 /**
  * CompactTokenDisplay Component
  * Compact token display for header/top bar
  * Shows quick token status at a glance
+ *
+ * Uses centralized token cache to prevent excessive API calls
  */
 export const CompactTokenDisplay = () => {
-  const [org, setOrg] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [noOrg, setNoOrg] = useState(false);
-
-  const fetchTokenStats = useCallback(async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE}/api/my-active-organization`,
-        {
-          headers: getAuthHeader(),
-          withCredentials: true,
-        },
-      );
-      if (response.data?.data) {
-        setOrg(response.data.data);
-        setError(null);
-        setNoOrg(false);
-      } else {
-        setOrg(null);
-        setNoOrg(true);
-      }
-    } catch (err) {
-      console.error("Failed to fetch active org tokens:", err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        setNoOrg(true);
-        setError("No active organization. Please login again.");
-      } else {
-        setError("Failed to load tokens");
-      }
-      setOrg(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTokenStats();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchTokenStats, 60000);
-    const unsubscribe = subscribeActiveOrgUsageRefresh(fetchTokenStats);
-    return () => {
-      clearInterval(interval);
-      unsubscribe?.();
-    };
-  }, [fetchTokenStats]);
+  // Use token cache hook - prevents repeated API calls with smart caching
+  const { org, loading, error, noOrg } = useTokenCache();
 
   if (loading) {
     return (
