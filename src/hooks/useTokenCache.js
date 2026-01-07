@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { tokenCache } from "../utils/tokenCache";
 
 /**
  * Custom hook to fetch and cache AI token usage
  * Uses centralized token cache to prevent repeated API calls
+ * Handles auth failures with smart retry logic and exponential backoff
  *
  * @param {string} apiEndpoint - API endpoint to fetch from (default: '/api/my-active-organization')
  * @returns {Object} { org, loading, error, noOrg, refresh }
@@ -14,34 +15,69 @@ export const useTokenCache = (apiEndpoint = "/api/my-active-organization") => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [noOrg, setNoOrg] = useState(false);
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef(null);
 
-  const fetchTokenStats = useCallback(async () => {
-    try {
-      // Use token cache to get data with intelligent caching
-      const data = await tokenCache.getTokenData(async () => {
-        const response = await axios.get(apiEndpoint);
-        if (!response.data?.data) {
-          throw new Error("No organization data in response");
+  const fetchTokenStats = useCallback(
+    async (isRetry = false) => {
+      try {
+        // If auth error detected, clear cache and attempt recovery
+        if (tokenCache.isAuthError() && !isRetry) {
+          console.log(
+            "[useTokenCache] Auth error detected, clearing cache and retrying...",
+          );
+          tokenCache.clearAuthError();
         }
-        return response.data.data;
-      });
 
-      setOrg(data);
-      setError(null);
-      setNoOrg(false);
-    } catch (err) {
-      console.error("Failed to fetch active org usage:", err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        setNoOrg(true);
-        setError("No active organization. Please login again.");
-      } else {
-        setError("Failed to load AI usage");
+        // Use token cache to get data with intelligent caching
+        const data = await tokenCache.getTokenData(async () => {
+          const response = await axios.get(apiEndpoint);
+          if (!response.data?.data) {
+            throw new Error("No organization data in response");
+          }
+          return response.data.data;
+        });
+
+        setOrg(data);
+        setError(null);
+        setNoOrg(false);
+        retryCountRef.current = 0; // Reset retry count on success
+      } catch (err) {
+        console.error("[useTokenCache] Failed to fetch active org usage:", err);
+
+        const isAuthError =
+          err.response?.status === 401 || err.response?.status === 403;
+
+        if (isAuthError) {
+          setNoOrg(true);
+          setError("Authentication expired. Please refresh the page.");
+          tokenCache.clearAuthError();
+
+          // Auto-retry auth errors with exponential backoff
+          if (!isRetry && retryCountRef.current < 3) {
+            retryCountRef.current++;
+            const delayMs = Math.min(
+              1000 * Math.pow(2, retryCountRef.current),
+              5000,
+            );
+            console.log(
+              `[useTokenCache] Scheduling retry #${retryCountRef.current} in ${delayMs}ms`,
+            );
+            retryTimeoutRef.current = setTimeout(() => {
+              fetchTokenStats(true);
+            }, delayMs);
+          }
+        } else {
+          setError("Failed to load AI usage");
+        }
+
+        setOrg(null);
+      } finally {
+        setLoading(false);
       }
-      setOrg(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [apiEndpoint]);
+    },
+    [apiEndpoint],
+  );
 
   useEffect(() => {
     // Initial fetch
@@ -51,6 +87,7 @@ export const useTokenCache = (apiEndpoint = "/api/my-active-organization") => {
     const interval = setInterval(() => {
       if (!tokenCache.isCacheValid()) {
         console.log("[useTokenCache] Cache expired, refreshing");
+        retryCountRef.current = 0; // Reset retries on periodic refresh
         fetchTokenStats();
       }
     }, 90000);
@@ -65,6 +102,9 @@ export const useTokenCache = (apiEndpoint = "/api/my-active-organization") => {
     return () => {
       clearInterval(interval);
       unsubscribe();
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
     };
   }, [fetchTokenStats]);
 

@@ -15,6 +15,7 @@ class TokenCacheService {
     this.pendingRequest = null;
     this.listeners = new Set();
     this.tokenUsageLog = []; // Track token usage by operation
+    this.lastError = null; // Track last error for debugging
   }
 
   /**
@@ -76,18 +77,51 @@ class TokenCacheService {
 
   /**
    * Internal method to fetch and cache data
+   * Handles auth errors by clearing cache
    */
   async _fetchAndCache(fetchFn) {
     try {
       const data = await fetchFn();
       this.cache = data;
       this.lastFetchTime = Date.now();
+      this.lastError = null; // Clear any previous errors
       this.notifyListeners(data);
       return data;
     } catch (error) {
+      // Handle authentication failures
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.warn(
+          "[TokenCache] Authentication error detected - clearing cache",
+          error.response?.status,
+        );
+        this.clearAuthError(); // Clear auth-related cache
+      }
+
+      this.lastError = error;
       console.error("[TokenCache] Failed to fetch token data", error);
       throw error;
     }
+  }
+
+  /**
+   * Clear cache on authentication error
+   * Allows next request to attempt fresh auth
+   */
+  clearAuthError() {
+    this.cache = null;
+    this.lastFetchTime = 0;
+    this.pendingRequest = null;
+    console.log("[TokenCache] Auth error cache cleared - ready for retry");
+  }
+
+  /**
+   * Check if last error was an auth error
+   */
+  isAuthError() {
+    return (
+      this.lastError?.response?.status === 401 ||
+      this.lastError?.response?.status === 403
+    );
   }
 
   /**
@@ -160,6 +194,7 @@ class TokenCacheService {
     this.pendingRequest = null;
     this.tokenUsageLog = [];
     this.listeners.clear();
+    this.lastError = null;
   }
 
   /**
