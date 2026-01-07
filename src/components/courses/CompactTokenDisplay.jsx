@@ -3,6 +3,7 @@ import axios from "axios";
 import { Zap, AlertCircle } from "lucide-react";
 import "./CompactTokenDisplay.css";
 import { subscribeActiveOrgUsageRefresh } from "../../utils/activeOrgUsageEvents";
+import { getAuthHeader } from "../../services/authHeader";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
 
@@ -21,7 +22,10 @@ export const CompactTokenDisplay = () => {
     try {
       const response = await axios.get(
         `${API_BASE}/api/my-active-organization`,
-        { withCredentials: true },
+        {
+          headers: getAuthHeader(),
+          withCredentials: true,
+        },
       );
       if (response.data?.data) {
         setOrg(response.data.data);
