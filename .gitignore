@@ -43,7 +43,3 @@ ai-config.json
 ai-models.json
 ai-provider-config.js
 
-# Vernibility 
-.env
-.env.*
-*.env
