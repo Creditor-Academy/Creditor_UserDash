@@ -33,6 +33,7 @@ import {
   FaBullhorn,
 } from 'react-icons/fa';
 import SponsorAdsAdminPanel from '@/components/sponsorAds/SponsorAdsAdminPanel';
+import UpcomingPage from './UpcomingSection/UpcomingPage';
 
 const InstructorPage = () => {
   const { isInstructorOrAdmin } = useAuth();
@@ -60,6 +61,7 @@ const InstructorPage = () => {
     if (path.includes('/assets')) return 'resources';
     if (path.includes('/payments')) return 'payments';
     if (path.includes('/sponsor-ads')) return 'sponsorAds';
+    if (path.includes('/upcoming-content')) return 'upcomingContent';
     return 'course'; // default
   };
 
@@ -294,6 +296,16 @@ const InstructorPage = () => {
           >
             <FaUsers /> Private Groups (Admin)
           </button>
+          <button
+            onClick={() => setActiveTab('upcomingContent')}
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === 'upcomingContent'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <FaCalendarAlt /> Upcoming Content
+          </button>
         </div>
       </div>
 
@@ -346,7 +358,7 @@ const InstructorPage = () => {
                   </p>
                 </div>
               </div>
-            </div>
+            </div>  
           </div>
         </div>
 
@@ -449,6 +461,11 @@ const InstructorPage = () => {
             {activeTab === 'adminPrivateGroups' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <PrivateGroupsAdmin />
+              </section>
+            )}
+            {activeTab === 'upcomingContent' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <UpcomingPage />
               </section>
             )}
           </div>
