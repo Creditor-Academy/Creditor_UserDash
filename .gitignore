@@ -18,12 +18,6 @@ coverage
 
 
 # Environment variables
-.env
-.env.local
-.env.development
-.env.development.local
-.env.test.local
-.env.production.local
 
 # AI Service Configuration (Keep private)
 ai-config.json
