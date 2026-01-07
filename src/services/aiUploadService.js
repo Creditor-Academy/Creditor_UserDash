@@ -33,7 +33,7 @@ export async function uploadAIGeneratedImage(imageUrl, options = {}) {
         headers: {
           "Content-Type": "application/json",
         },
-        timeout: 60000, // 60 second timeout
+        timeout: 180000, // 180 second timeout (3 minutes for large file uploads)
       },
     );
 

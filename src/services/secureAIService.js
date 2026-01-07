@@ -1,11 +1,11 @@
-import { emitActiveOrgUsageRefresh } from '../utils/activeOrgUsageEvents';
-import { getAccessToken } from './tokenService';
+import { emitActiveOrgUsageRefresh } from "../utils/activeOrgUsageEvents";
+import { getAccessToken } from "./tokenService";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV
-    ? 'http://localhost:9000'
-    : 'https://creditor.onrender.com');
+    ? "http://localhost:9000"
+    : "https://creditor.onrender.com");
 const isDevelopment = !!import.meta.env.DEV;
 
 const clientLogger = {
@@ -30,14 +30,14 @@ class SecureAIService {
   constructor() {
     this.apiBase = API_BASE;
     this.endpoints = {
-      generateText: '/api/ai-proxy/generate-text',
-      generateStructured: '/api/ai-proxy/generate-structured',
-      generateImage: '/api/ai-proxy/generate-image',
-      generateCourseOutline: '/api/ai-proxy/generate-course-outline',
-      generateCourseBlueprint: '/api/ai-proxy/generate-course-blueprint',
-      logAIGeneration: '/api/ai-learning/log-generation',
-      logAIGenerationBatch: '/api/ai-learning/log-generation/batch',
-      status: '/api/ai-proxy/status',
+      generateText: "/api/ai-proxy/generate-text",
+      generateStructured: "/api/ai-proxy/generate-structured",
+      generateImage: "/api/ai-proxy/generate-image",
+      generateCourseOutline: "/api/ai-proxy/generate-course-outline",
+      generateCourseBlueprint: "/api/ai-proxy/generate-course-blueprint",
+      logAIGeneration: "/api/ai-learning/log-generation",
+      logAIGenerationBatch: "/api/ai-learning/log-generation/batch",
+      status: "/api/ai-proxy/status",
     };
     this.statusCache = {
       data: null,
@@ -52,7 +52,7 @@ class SecureAIService {
   getAuthHeaders() {
     const token = getAccessToken();
     return {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
     };
   }
@@ -78,40 +78,40 @@ class SecureAIService {
         response.data?.error ||
         response.data?.details?.message;
 
-      if (response.data?.error?.code === 'content_policy_violation') {
+      if (response.data?.error?.code === "content_policy_violation") {
         return new Error(
-          'The image prompt was rejected due to safety filters. Please adjust the wording and try again.'
+          "The image prompt was rejected due to safety filters. Please adjust the wording and try again.",
         );
       }
 
       switch (status) {
         case 401:
           return new Error(
-            'Authentication required. Please login to use AI features.'
+            "Authentication required. Please login to use AI features.",
           );
         case 403:
           return new Error(
-            'Access forbidden. You may not have permission to use this AI feature.'
+            "Access forbidden. You may not have permission to use this AI feature.",
           );
         case 429:
           return new Error(
-            'Rate limit exceeded. Please wait before making more AI requests.'
+            "Rate limit exceeded. Please wait before making more AI requests.",
           );
         case 402:
           return new Error(
-            'Usage limit exceeded. Please upgrade your plan or wait for reset.'
+            "Usage limit exceeded. Please upgrade your plan or wait for reset.",
           );
         case 500:
         case 502:
         case 503:
           return new Error(
             backendMessage ||
-              'AI service temporarily unavailable. Please try again later.'
+              "AI service temporarily unavailable. Please try again later.",
           );
         default:
           return new Error(
             backendMessage ||
-              `Request failed with status ${status}. ${error.message || ''}`
+              `Request failed with status ${status}. ${error.message || ""}`,
           );
       }
     }
@@ -124,54 +124,54 @@ class SecureAIService {
         error.response.data?.error ||
         error.response.data?.details?.message;
 
-      if (error.response.data?.error?.code === 'content_policy_violation') {
+      if (error.response.data?.error?.code === "content_policy_violation") {
         return new Error(
-          'The image prompt was rejected due to safety filters. Please adjust the wording and try again.'
+          "The image prompt was rejected due to safety filters. Please adjust the wording and try again.",
         );
       }
 
       switch (status) {
         case 401:
           return new Error(
-            'Authentication required. Please login to use AI features.'
+            "Authentication required. Please login to use AI features.",
           );
         case 403:
           return new Error(
-            'Access forbidden. You may not have permission to use this AI feature.'
+            "Access forbidden. You may not have permission to use this AI feature.",
           );
         case 429:
           return new Error(
-            'Rate limit exceeded. Please wait before making more AI requests.'
+            "Rate limit exceeded. Please wait before making more AI requests.",
           );
         case 402:
           return new Error(
-            'Usage limit exceeded. Please upgrade your plan or wait for reset.'
+            "Usage limit exceeded. Please upgrade your plan or wait for reset.",
           );
         case 500:
         case 502:
         case 503:
           return new Error(
             backendMessage ||
-              'AI service temporarily unavailable. Please try again later.'
+              "AI service temporarily unavailable. Please try again later.",
           );
         default:
           return new Error(
             backendMessage ||
-              `Request failed with status ${status}. ${error.message || ''}`
+              `Request failed with status ${status}. ${error.message || ""}`,
           );
       }
     }
 
-    if (error.code === 'NETWORK_ERROR' || error.message?.includes('fetch')) {
-      return new Error('Network error. Please check your internet connection.');
+    if (error.code === "NETWORK_ERROR" || error.message?.includes("fetch")) {
+      return new Error("Network error. Please check your internet connection.");
     }
 
     // If error already has a good message, use it
-    if (error.message && !error.message.includes('fetch')) {
+    if (error.message && !error.message.includes("fetch")) {
       return error;
     }
 
-    return new Error(error.message || 'An unexpected error occurred.');
+    return new Error(error.message || "An unexpected error occurred.");
   }
 
   /**
@@ -198,7 +198,7 @@ class SecureAIService {
       };
       return status;
     } catch (error) {
-      clientLogger.warn('Could not check backend status:', error.message);
+      clientLogger.warn("Could not check backend status:", error.message);
       return {
         available: false,
         error: error.message,
@@ -213,14 +213,29 @@ class SecureAIService {
     endpoint,
     options,
     maxRetries = 3,
-    retryCount = 0
+    retryCount = 0,
   ) {
     try {
       const response = await fetch(`${this.apiBase}${endpoint}`, options);
 
       // Handle HTTP errors
       if (!response.ok) {
-        // Don't retry on client errors (4xx)
+        // Retry on rate limiting (429) with longer delay
+        if (response.status === 429 && retryCount < maxRetries) {
+          const delay = (retryCount + 1) * 30000; // 30s, 60s, 90s backoff for rate limiting
+          clientLogger.warn(
+            `Rate limited (429), retrying in ${delay / 1000}s... (${retryCount + 1}/${maxRetries})`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return this.makeRequestWithRetry(
+            endpoint,
+            options,
+            maxRetries,
+            retryCount + 1,
+          );
+        }
+
+        // Don't retry on other client errors (4xx except 429)
         if (response.status >= 400 && response.status < 500) {
           let errorData;
           try {
@@ -230,7 +245,7 @@ class SecureAIService {
           }
 
           const error = new Error(
-            errorData.message || `HTTP ${response.status}`
+            errorData.message || `HTTP ${response.status}`,
           );
           error.response = { status: response.status, data: errorData };
           throw error;
@@ -243,14 +258,14 @@ class SecureAIService {
         ) {
           const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
           clientLogger.warn(
-            `Request failed (${response.status}), retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+            `Request failed (${response.status}), retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`,
           );
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           return this.makeRequestWithRetry(
             endpoint,
             options,
             maxRetries,
-            retryCount + 1
+            retryCount + 1,
           );
         }
 
@@ -270,19 +285,19 @@ class SecureAIService {
     } catch (error) {
       // Network errors - retry
       if (
-        (error.message?.includes('fetch') || error.code === 'NETWORK_ERROR') &&
+        (error.message?.includes("fetch") || error.code === "NETWORK_ERROR") &&
         retryCount < maxRetries
       ) {
         const delay = Math.pow(2, retryCount) * 1000;
         clientLogger.warn(
-          `Network error, retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`
+          `Network error, retrying in ${delay}ms... (${retryCount + 1}/${maxRetries})`,
         );
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.makeRequestWithRetry(
           endpoint,
           options,
           maxRetries,
-          retryCount + 1
+          retryCount + 1,
         );
       }
 
@@ -299,10 +314,10 @@ class SecureAIService {
   async generateText(prompt, options = {}) {
     try {
       const {
-        tier = 'standard',
+        tier = "standard",
         maxTokens = 1000,
         temperature = 0.7,
-        systemPrompt = 'You are a helpful AI assistant for educational content creation.',
+        systemPrompt = "You are a helpful AI assistant for educational content creation.",
         enhancePrompt = false,
         skipStatusCheck = false,
       } = options;
@@ -313,17 +328,17 @@ class SecureAIService {
         if (!status.available) {
           throw new Error(
             status.error ||
-              'AI service is currently unavailable. Please try again later.'
+              "AI service is currently unavailable. Please try again later.",
           );
         }
       }
 
-      clientLogger.debug('Generating text via secure backend...');
+      clientLogger.debug("Generating text via secure backend...");
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateText,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             prompt,
@@ -333,17 +348,17 @@ class SecureAIService {
             systemPrompt,
             enhancePrompt,
           }),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Text generation failed');
+        throw new Error(result.message || "Text generation failed");
       }
 
       clientLogger.debug(
-        `Text generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Text generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`,
       );
 
       this.notifyUsageRefresh();
@@ -351,16 +366,16 @@ class SecureAIService {
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'Text generation',
-        error.response
+        "Text generation",
+        error.response,
       );
       throw formattedError;
     }
   }
 
   async summarizeContent(content, options = {}) {
-    const length = options?.length || 'medium';
-    const type = options?.type || 'bullet';
+    const length = options?.length || "medium";
+    const type = options?.type || "bullet";
 
     const lengthConfigMap = {
       short: { minWords: 50, maxWords: 100, maxTokens: 300 },
@@ -373,25 +388,25 @@ class SecureAIService {
 
     const formatInstructionMap = {
       bullet:
-        'Return the summary as bullet points. Use short, information-dense bullets.',
+        "Return the summary as bullet points. Use short, information-dense bullets.",
       paragraph:
-        'Return the summary as a single well-structured paragraph. Avoid bullet points.',
+        "Return the summary as a single well-structured paragraph. Avoid bullet points.",
       outline:
-        'Return the summary as an outline with headings and sub-bullets. Use a clear hierarchy.',
+        "Return the summary as an outline with headings and sub-bullets. Use a clear hierarchy.",
     };
 
     const formatInstruction =
       formatInstructionMap[type] || formatInstructionMap.bullet;
 
-    const cleanedContent = (content || '').trim();
+    const cleanedContent = (content || "").trim();
     if (!cleanedContent) {
-      throw new Error('Content is required for summarization');
+      throw new Error("Content is required for summarization");
     }
 
     const systemPrompt =
-      'You are an expert summarizer. Produce accurate summaries without adding new facts.';
+      "You are an expert summarizer. Produce accurate summaries without adding new facts.";
 
-    const buildPrompt = chunk => {
+    const buildPrompt = (chunk) => {
       const base = `Summarize the content below.
 
 Constraints:
@@ -407,7 +422,7 @@ ${chunk}`;
 
       const safeChunk = chunk.slice(
         0,
-        Math.max(0, chunk.length - (base.length - 4000))
+        Math.max(0, chunk.length - (base.length - 4000)),
       );
       return `Summarize the content below.
 
@@ -436,7 +451,7 @@ ${safeChunk}`;
     const partialSummaries = [];
     for (const chunk of chunks) {
       const summary = await this.generateText(buildPrompt(chunk), {
-        tier: options?.tier || 'standard',
+        tier: options?.tier || "standard",
         maxTokens: lengthConfig.maxTokens,
         temperature: 0.3,
         systemPrompt,
@@ -446,20 +461,20 @@ ${safeChunk}`;
       partialSummaries.push(summary);
     }
 
-    let finalSummary = partialSummaries.join('\n\n');
+    let finalSummary = partialSummaries.join("\n\n");
     if (chunks.length > 1) {
       finalSummary = await this.generateText(
         buildPrompt(
-          `Combine the partial summaries below into one unified summary.\n\n${finalSummary}`
+          `Combine the partial summaries below into one unified summary.\n\n${finalSummary}`,
         ),
         {
-          tier: options?.tier || 'standard',
+          tier: options?.tier || "standard",
           maxTokens: lengthConfig.maxTokens,
           temperature: 0.3,
           systemPrompt,
           enhancePrompt: false,
           skipStatusCheck: true,
-        }
+        },
       );
     }
 
@@ -475,25 +490,25 @@ ${safeChunk}`;
     };
   }
 
-  async answerQuestion(question, context = '', options = {}) {
-    const q = (question || '').trim();
-    const ctx = (context || '').trim();
+  async answerQuestion(question, context = "", options = {}) {
+    const q = (question || "").trim();
+    const ctx = (context || "").trim();
 
     if (!q) {
-      throw new Error('Question is required');
+      throw new Error("Question is required");
     }
 
     const maxAnswerLength =
       options?.max_answer_length || options?.maxAnswerLength;
     const maxAnswerWords =
-      typeof maxAnswerLength === 'number' && maxAnswerLength > 0
+      typeof maxAnswerLength === "number" && maxAnswerLength > 0
         ? maxAnswerLength
         : null;
 
     const systemPrompt =
-      'You are a helpful assistant. Answer accurately and concisely. If you do not know, say so.';
+      "You are a helpful assistant. Answer accurately and concisely. If you do not know, say so.";
 
-    const clippedContext = ctx ? ctx.slice(0, 1500) : '';
+    const clippedContext = ctx ? ctx.slice(0, 1500) : "";
     const basePrompt = clippedContext
       ? `Question: ${q}\n\nContext: ${clippedContext}`
       : `Question: ${q}`;
@@ -503,7 +518,7 @@ ${safeChunk}`;
       : `${basePrompt}\n\nConstraints:\n- Be direct and avoid fluff.`;
 
     const answer = await this.generateText(prompt.slice(0, 4000), {
-      tier: options?.tier || 'standard',
+      tier: options?.tier || "standard",
       maxTokens: options?.maxTokens || 500,
       temperature: 0.3,
       systemPrompt,
@@ -523,24 +538,24 @@ ${safeChunk}`;
       const response = await this.makeRequestWithRetry(
         this.endpoints.logAIGeneration,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'AI generation logging failed');
+        throw new Error(result.message || "AI generation logging failed");
       }
 
       return result.data;
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'AI generation logging',
-        error.response
+        "AI generation logging",
+        error.response,
       );
       throw formattedError;
     }
@@ -551,24 +566,24 @@ ${safeChunk}`;
       const response = await this.makeRequestWithRetry(
         this.endpoints.logAIGenerationBatch,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'AI generation batch logging failed');
+        throw new Error(result.message || "AI generation batch logging failed");
       }
 
       return result.data;
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'AI generation batch logging',
-        error.response
+        "AI generation batch logging",
+        error.response,
       );
       throw formattedError;
     }
@@ -584,7 +599,7 @@ ${safeChunk}`;
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
       const {
-        tier = 'standard',
+        tier = "standard",
         maxTokens = 2000,
         temperature = 0.7,
         skipStatusCheck = false,
@@ -596,17 +611,17 @@ ${safeChunk}`;
         if (!status.available) {
           throw new Error(
             status.error ||
-              'AI service is currently unavailable. Please try again later.'
+              "AI service is currently unavailable. Please try again later.",
           );
         }
       }
 
-      clientLogger.debug('Generating structured JSON via secure backend...');
+      clientLogger.debug("Generating structured JSON via secure backend...");
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateStructured,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             systemPrompt,
@@ -615,17 +630,17 @@ ${safeChunk}`;
             maxTokens,
             temperature,
           }),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Structured generation failed');
+        throw new Error(result.message || "Structured generation failed");
       }
 
       clientLogger.debug(
-        `Structured JSON generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Structured JSON generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`,
       );
 
       this.notifyUsageRefresh();
@@ -633,8 +648,8 @@ ${safeChunk}`;
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'Structured generation',
-        error.response
+        "Structured generation",
+        error.response,
       );
       throw formattedError;
     }
@@ -649,13 +664,13 @@ ${safeChunk}`;
   async generateImage(prompt, options = {}) {
     try {
       const {
-        tier = 'standard',
-        size = '1024x1024',
-        quality = 'standard',
-        style = 'vivid',
+        tier = "standard",
+        size = "1024x1024",
+        quality = "standard",
+        style = "vivid",
         enhancePrompt = false,
         uploadToS3 = true,
-        folder = 'ai-generated-images',
+        folder = "ai-generated-images",
         skipStatusCheck = false,
       } = options;
 
@@ -665,17 +680,17 @@ ${safeChunk}`;
         if (!status.available) {
           throw new Error(
             status.error ||
-              'AI service is currently unavailable. Please try again later.'
+              "AI service is currently unavailable. Please try again later.",
           );
         }
       }
 
-      clientLogger.debug('Generating image via secure backend...');
+      clientLogger.debug("Generating image via secure backend...");
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateImage,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             prompt,
@@ -687,13 +702,13 @@ ${safeChunk}`;
             uploadToS3,
             folder,
           }),
-        }
+        },
       );
 
       const result = await response.json();
 
       // Debug: Log the full backend response
-      clientLogger.debug('Backend image generation response:', {
+      clientLogger.debug("Backend image generation response:", {
         success: result.success,
         hasData: !!result.data,
         imageUrl: result.data?.imageUrl,
@@ -703,11 +718,11 @@ ${safeChunk}`;
       });
 
       if (!result.success) {
-        throw new Error(result.message || 'Image generation failed');
+        throw new Error(result.message || "Image generation failed");
       }
 
       clientLogger.debug(
-        `Image generated and uploaded to S3 ($${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Image generated and uploaded to S3 ($${result.data?.cost?.finalCost?.toFixed(4) || 0})`,
       );
 
       const imageData = {
@@ -720,10 +735,10 @@ ${safeChunk}`;
 
       // Error: if both URLs are missing, throw error
       if (!imageData.url) {
-        clientLogger.error('No image URL returned from backend response');
-        clientLogger.error('Full backend response for debugging:', result);
+        clientLogger.error("No image URL returned from backend response");
+        clientLogger.error("Full backend response for debugging:", result);
         throw new Error(
-          'Image generation succeeded but no URL returned from backend'
+          "Image generation succeeded but no URL returned from backend",
         );
       }
 
@@ -742,8 +757,8 @@ ${safeChunk}`;
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'Image generation',
-        error.response
+        "Image generation",
+        error.response,
       );
 
       // Gracefully skip on quota/permission issues so downstream logic can
@@ -752,7 +767,7 @@ ${safeChunk}`;
         error?.response?.status || error?.status || formattedError?.status;
       if (status === 402 || status === 403) {
         clientLogger.warn(
-          `⚠️ Skipping image generation due to ${status}: ${formattedError.message}`
+          `⚠️ Skipping image generation due to ${status}: ${formattedError.message}`,
         );
         return {
           success: false,
@@ -772,21 +787,21 @@ ${safeChunk}`;
    */
   async generateCourseOutline(courseData) {
     try {
-      clientLogger.debug('Generating course outline via secure backend...');
+      clientLogger.debug("Generating course outline via secure backend...");
 
       // Check backend availability
       const status = await this.checkBackendStatus();
       if (!status.available) {
         throw new Error(
           status.error ||
-            'AI service is currently unavailable. Please try again later.'
+            "AI service is currently unavailable. Please try again later.",
         );
       }
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateCourseOutline,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             courseTitle: courseData.title || courseData.courseTitle,
@@ -794,22 +809,22 @@ ${safeChunk}`;
             courseDescription:
               courseData.description || courseData.courseDescription,
             duration: courseData.duration,
-            difficulty: courseData.difficulty || 'intermediate',
+            difficulty: courseData.difficulty || "intermediate",
             learningObjectives:
               courseData.objectives || courseData.learningObjectives,
-            generateType: 'outline',
+            generateType: "outline",
           }),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Course outline generation failed');
+        throw new Error(result.message || "Course outline generation failed");
       }
 
       clientLogger.debug(
-        `Course outline generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Course outline generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`,
       );
 
       this.notifyUsageRefresh();
@@ -823,8 +838,8 @@ ${safeChunk}`;
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'Course outline generation',
-        error.response
+        "Course outline generation",
+        error.response,
       );
       throw formattedError;
     }
@@ -838,7 +853,7 @@ ${safeChunk}`;
   async generateComprehensiveCourse(courseData) {
     try {
       clientLogger.debug(
-        'Generating comprehensive course via secure backend...'
+        "Generating comprehensive course via secure backend...",
       );
 
       // Check backend availability
@@ -846,14 +861,14 @@ ${safeChunk}`;
       if (!status.available) {
         throw new Error(
           status.error ||
-            'AI service is currently unavailable. Please try again later.'
+            "AI service is currently unavailable. Please try again later.",
         );
       }
 
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateCourseOutline,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify({
             courseTitle: courseData.title || courseData.courseTitle,
@@ -861,26 +876,26 @@ ${safeChunk}`;
             courseDescription:
               courseData.description || courseData.courseDescription,
             duration: courseData.duration,
-            difficulty: courseData.difficulty || 'intermediate',
+            difficulty: courseData.difficulty || "intermediate",
             learningObjectives:
               courseData.objectives || courseData.learningObjectives,
-            generateType: 'comprehensive',
+            generateType: "comprehensive",
           }),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
         throw new Error(
-          result.message || 'Comprehensive course generation failed'
+          result.message || "Comprehensive course generation failed",
         );
       }
 
       this.notifyUsageRefresh();
 
       clientLogger.debug(
-        `Comprehensive course generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Comprehensive course generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`,
       );
 
       return {
@@ -892,8 +907,8 @@ ${safeChunk}`;
     } catch (error) {
       const formattedError = this.handleError(
         error,
-        'Comprehensive course generation',
-        error.response
+        "Comprehensive course generation",
+        error.response,
       );
       throw formattedError;
     }
@@ -902,33 +917,33 @@ ${safeChunk}`;
   async generateCourseBlueprint(blueprintInput) {
     try {
       clientLogger.debug(
-        'Generating course blueprint via secure backend endpoint...'
+        "Generating course blueprint via secure backend endpoint...",
       );
 
       const status = await this.checkBackendStatus();
       if (!status.available) {
         throw new Error(
           status.error ||
-            'AI service is currently unavailable. Please try again later.'
+            "AI service is currently unavailable. Please try again later.",
         );
       }
 
       const payload = {
-        courseTitle: blueprintInput?.courseTitle || blueprintInput?.title || '',
+        courseTitle: blueprintInput?.courseTitle || blueprintInput?.title || "",
         subjectDomain:
-          blueprintInput?.subjectDomain || blueprintInput?.subject || '',
+          blueprintInput?.subjectDomain || blueprintInput?.subject || "",
         courseDescription:
           blueprintInput?.courseDescription ||
           blueprintInput?.description ||
-          '',
-        duration: blueprintInput?.duration || '4 weeks',
-        difficulty: blueprintInput?.difficulty || 'intermediate',
+          "",
+        duration: blueprintInput?.duration || "4 weeks",
+        difficulty: blueprintInput?.difficulty || "intermediate",
         learningObjectives:
           blueprintInput?.learningObjectives ||
           blueprintInput?.objectives ||
-          '',
+          "",
         targetAudience:
-          blueprintInput?.targetAudience || blueprintInput?.audience || '',
+          blueprintInput?.targetAudience || blueprintInput?.audience || "",
         priorKnowledge: blueprintInput?.priorKnowledge || null,
         rawInput: blueprintInput || null,
         // Pass extended inputs
@@ -948,20 +963,20 @@ ${safeChunk}`;
       const response = await this.makeRequestWithRetry(
         this.endpoints.generateCourseBlueprint,
         {
-          method: 'POST',
+          method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Course blueprint generation failed');
+        throw new Error(result.message || "Course blueprint generation failed");
       }
 
       clientLogger.debug(
-        `Course blueprint generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`
+        `Course blueprint generated (${result.data?.tokensUsed || 0} tokens, $${result.data?.cost?.finalCost?.toFixed(4) || 0})`,
       );
 
       this.notifyUsageRefresh();
@@ -978,7 +993,7 @@ ${safeChunk}`;
       // to exist on older backends.
       if (error?.response?.status === 404) {
         clientLogger.warn(
-          'Course blueprint endpoint not found on backend, falling back to structured generation'
+          "Course blueprint endpoint not found on backend, falling back to structured generation",
         );
 
         try {
@@ -1004,11 +1019,11 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
             systemPrompt,
             userPrompt,
             {
-              tier: 'standard',
+              tier: "standard",
               maxTokens: 4000,
               temperature: 0.7,
               skipStatusCheck: true,
-            }
+            },
           );
 
           this.notifyUsageRefresh();
@@ -1020,8 +1035,8 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
         } catch (fallbackError) {
           const formattedFallbackError = this.handleError(
             fallbackError,
-            'Course blueprint generation (fallback)',
-            fallbackError.response
+            "Course blueprint generation (fallback)",
+            fallbackError.response,
           );
           throw formattedFallbackError;
         }
@@ -1029,8 +1044,8 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
 
       const formattedError = this.handleError(
         error,
-        'Course blueprint generation',
-        error.response
+        "Course blueprint generation",
+        error.response,
       );
       throw formattedError;
     }
@@ -1045,18 +1060,18 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
   async generateCourseImage(prompt, options = {}) {
     try {
       clientLogger.debug(
-        'Generating course image with prompt:',
-        prompt.substring(0, 100) + '...'
+        "Generating course image with prompt:",
+        prompt.substring(0, 100) + "...",
       );
 
       const result = await this.generateImage(prompt, {
-        tier: 'standard',
-        size: options.size || '1024x1024',
-        quality: options.quality || 'standard',
-        style: options.style || 'vivid',
+        tier: "standard",
+        size: options.size || "1024x1024",
+        quality: options.quality || "standard",
+        style: options.style || "vivid",
         enhancePrompt: false, // Manual enhancement only for course images
         uploadToS3: true,
-        folder: options.folder || 'course-thumbnails',
+        folder: options.folder || "course-thumbnails",
       });
 
       const imageData = result.data || {
@@ -1069,18 +1084,18 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
         data: {
           url: imageData.url,
           uploadedToS3: imageData.uploadedToS3,
-          folder: imageData.folder || options.folder || 'course-thumbnails',
+          folder: imageData.folder || options.folder || "course-thumbnails",
           uploadSkippedReason: imageData.uploadSkippedReason,
         },
         url: imageData.url,
         uploadedToS3: imageData.uploadedToS3,
-        folder: imageData.folder || options.folder || 'course-thumbnails',
+        folder: imageData.folder || options.folder || "course-thumbnails",
         uploadSkippedReason: imageData.uploadSkippedReason,
         cost: result.cost,
       };
     } catch (error) {
       clientLogger.error(
-        'Course image generation failed, creating fallback response'
+        "Course image generation failed, creating fallback response",
       );
 
       // Create a placeholder SVG image as fallback
@@ -1104,22 +1119,22 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
       // Return a fallback response with placeholder image
       return {
         success: false,
-        error: error.message || 'Course image generation failed',
+        error: error.message || "Course image generation failed",
         data: {
           url: placeholderSvg,
-          size: options.size || '1024x1024',
-          quality: options.quality || 'standard',
-          style: options.style || 'vivid',
+          size: options.size || "1024x1024",
+          quality: options.quality || "standard",
+          style: options.style || "vivid",
           uploadedToS3: false,
-          folder: options.folder || 'course-thumbnails',
+          folder: options.folder || "course-thumbnails",
           uploadSkippedReason:
-            'Generation failed - ' + (error.message || 'Unknown error'),
+            "Generation failed - " + (error.message || "Unknown error"),
         },
         url: placeholderSvg,
         uploadedToS3: false,
-        folder: options.folder || 'course-thumbnails',
+        folder: options.folder || "course-thumbnails",
         uploadSkippedReason:
-          'Generation failed - ' + (error.message || 'Unknown error'),
+          "Generation failed - " + (error.message || "Unknown error"),
         cost: { finalCost: 0 },
       };
     }
@@ -1137,7 +1152,7 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
     lessonData,
     moduleData,
     courseData,
-    options = {}
+    options = {},
   ) {
     try {
       const prompt = `Create detailed lesson content for:
@@ -1145,7 +1160,7 @@ ${JSON.stringify(blueprintInput || {}, null, 2)}`;
 Course: ${courseData.title}
 Module: ${moduleData.title}
 Lesson: ${lessonData.title}
-Description: ${lessonData.description || 'Educational content'}
+Description: ${lessonData.description || "Educational content"}
 
 Generate comprehensive, engaging educational content that includes:
 1. Introduction
@@ -1156,17 +1171,17 @@ Generate comprehensive, engaging educational content that includes:
 Format the content in clear, structured paragraphs.`;
 
       const content = await this.generateText(prompt, {
-        tier: options?.tier || 'standard',
+        tier: options?.tier || "standard",
         maxTokens: options.maxTokens || 1500,
         temperature: 0.7,
         systemPrompt:
-          'You are an expert educational content creator. Create clear, engaging, and informative lesson content.',
+          "You are an expert educational content creator. Create clear, engaging, and informative lesson content.",
         enhancePrompt: false, // Manual enhancement only for lesson content
       });
 
       return content;
     } catch (error) {
-      this.handleError(error, 'Lesson content generation');
+      this.handleError(error, "Lesson content generation");
     }
   }
 
@@ -1179,8 +1194,8 @@ Format the content in clear, structured paragraphs.`;
   async enhanceLessonContent(content, options = {}) {
     try {
       const {
-        enhancementType = 'clarity',
-        targetAudience = 'general learners',
+        enhancementType = "clarity",
+        targetAudience = "general learners",
       } = options;
 
       const prompt = `Enhance the following educational content for ${enhancementType}:
@@ -1199,17 +1214,17 @@ Please improve the content by:
 Return the enhanced version maintaining the same general structure.`;
 
       const enhancedContent = await this.generateText(prompt, {
-        tier: options?.tier || 'standard',
+        tier: options?.tier || "standard",
         maxTokens: 2000,
         temperature: 0.7,
         systemPrompt:
-          'You are an expert educational content editor. Enhance content while maintaining its core message and structure.',
+          "You are an expert educational content editor. Enhance content while maintaining its core message and structure.",
         enhancePrompt: true,
       });
 
       return enhancedContent;
     } catch (error) {
-      this.handleError(error, 'Content enhancement');
+      this.handleError(error, "Content enhancement");
     }
   }
 
@@ -1223,8 +1238,8 @@ Return the enhanced version maintaining the same general structure.`;
     try {
       const {
         numberOfQuestions = 5,
-        difficulty = 'medium',
-        questionType = 'multiple-choice',
+        difficulty = "medium",
+        questionType = "multiple-choice",
       } = options;
 
       const prompt = `Generate ${numberOfQuestions} ${difficulty} ${questionType} quiz questions about: ${topic}
@@ -1248,13 +1263,13 @@ Format as JSON array:
 Return ONLY valid JSON.`;
 
       const response = await this.generateStructured(
-        'You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.',
+        "You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.",
         prompt,
         {
-          tier: options?.tier || 'standard',
+          tier: options?.tier || "standard",
           maxTokens: 1500,
           temperature: 0.7,
-        }
+        },
       );
 
       // Ensure response is an array
@@ -1263,7 +1278,7 @@ Return ONLY valid JSON.`;
       clientLogger.debug(`✅ Generated ${questions.length} quiz questions`);
       return questions;
     } catch (error) {
-      this.handleError(error, 'Quiz generation');
+      this.handleError(error, "Quiz generation");
     }
   }
 
@@ -1281,19 +1296,19 @@ Return ONLY valid JSON.`;
   async getStatus() {
     try {
       const response = await fetch(`${this.apiBase}${this.endpoints.status}`, {
-        method: 'GET',
+        method: "GET",
         headers: this.getAuthHeaders(),
       });
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Failed to get AI status');
+        throw new Error(result.message || "Failed to get AI status");
       }
 
       return result.data;
     } catch (error) {
-      clientLogger.error('Failed to get AI status:', error);
+      clientLogger.error("Failed to get AI status:", error);
       return {
         available: false,
         error: error.message,

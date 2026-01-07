@@ -5,6 +5,7 @@ import { updateLessonContent } from "./courseService";
 import openAIService from "./openAIService";
 import { uploadAIGeneratedImage } from "./aiUploadService";
 import contentLibraryAIService from "./contentLibraryAIService";
+import aiRequestQueue from "./aiRequestQueue";
 import {
   SYSTEM_PROMPTS,
   USER_PROMPT_TEMPLATES,
@@ -444,6 +445,7 @@ ${JSON.stringify(inputSummary, null, 2)}`;
         type: "text",
         textType: "heading",
         content: "Core Concepts",
+        gradient: "gradient2",
         order: order++,
         isAIGenerated: true,
       });
@@ -484,7 +486,8 @@ ${JSON.stringify(inputSummary, null, 2)}`;
           type: "table",
           content: {
             headers: table.headers,
-            rows: table.rows,
+            data: table.rows, // Changed from 'rows' to 'data' to match manual table structure
+            templateId: "responsive_table",
           },
           order: order++,
           isAIGenerated: true,
@@ -503,6 +506,7 @@ ${JSON.stringify(inputSummary, null, 2)}`;
         type: "text",
         textType: "heading",
         content: guidedExample.title || "Guided Example",
+        gradient: "gradient3",
         order: order++,
         isAIGenerated: true,
       });
@@ -565,6 +569,7 @@ ${JSON.stringify(inputSummary, null, 2)}`;
         type: "text",
         textType: "heading",
         content: "Best Practices and Pitfalls",
+        gradient: "gradient4",
         order: order++,
         isAIGenerated: true,
       });
@@ -585,7 +590,7 @@ ${JSON.stringify(inputSummary, null, 2)}`;
         blocks.push({
           id: `best-pitfalls-${Date.now()}`,
           type: "statement",
-          statementType: "note",
+          variant: "note",
           content: pitfalls.join("\n"),
           order: order++,
           isAIGenerated: true,
@@ -1333,23 +1338,88 @@ Answer: A`,
   }
 
   /**
-   * Generate interactive block
+   * Generate interactive block with AI-generated tab content
    */
   async generateInteractiveBlock(lessonTitle, order) {
-    const tabsData = [
-      {
-        title: "Key Idea",
-        content: `Core concept for "${lessonTitle}" with a crisp definition and why it matters.`,
-      },
-      {
-        title: "Example",
-        content: `A short scenario that applies "${lessonTitle}" in practice.`,
-      },
-      {
-        title: "Try It",
-        content: `A quick prompt or action learners can perform to reinforce "${lessonTitle}".`,
-      },
-    ];
+    let tabsData = [];
+
+    try {
+      console.log(
+        `📑 Generating interactive block with AI tabs for "${lessonTitle}"...`,
+      );
+
+      // Generate AI content for each tab
+      const tabPrompts = {
+        "Key Idea": `Provide a crisp, one-paragraph definition and explanation of "${lessonTitle}". Include why this concept is important. Be concise (2-3 sentences max).`,
+        Example: `Provide a short, real-world example or scenario that demonstrates "${lessonTitle}" in practice. Keep it practical and relatable (2-3 sentences).`,
+        "Try It": `Create a brief, actionable prompt or simple exercise that a learner can do right now to understand "${lessonTitle}". Make it doable in under 2 minutes.`,
+      };
+
+      for (const [title, prompt] of Object.entries(tabPrompts)) {
+        try {
+          console.log(`   📝 Generating "${title}" tab via AI...`);
+          const content = await aiRequestQueue.enqueueRequest(
+            () =>
+              this.aiService.generateText(prompt, {
+                maxTokens: 150,
+                temperature: 0.7,
+              }),
+            () => `[${title} content could not be generated]`,
+            `interactive-tab-${title.replace(/\s+/g, "-")}-${Date.now()}`,
+          );
+
+          const tabContent =
+            typeof content === "string"
+              ? content.trim()
+              : `[${title} content unavailable]`;
+          console.log(
+            `   ✅ "${title}" tab generated (${tabContent.length} chars)`,
+          );
+
+          tabsData.push({
+            title,
+            content: tabContent,
+          });
+        } catch (error) {
+          console.error(
+            `[INTERACTIVE TAB ERROR] Failed to generate "${title}" tab for "${lessonTitle}":`,
+            error.message,
+          );
+          tabsData.push({
+            title,
+            content: `[${title} content could not be generated]`,
+          });
+        }
+      }
+
+      console.log(
+        `✨ Interactive block complete: ${tabsData.length} tabs generated`,
+      );
+    } catch (error) {
+      console.error(
+        `[INTERACTIVE BLOCK ERROR] Failed to generate interactive block for "${lessonTitle}":`,
+        error.message,
+      );
+      // Fallback to basic tabs if AI generation fails
+      tabsData = [
+        {
+          title: "Key Idea",
+          content: `Understanding "${lessonTitle}" is fundamental to this topic.`,
+        },
+        {
+          title: "Example",
+          content: `${lessonTitle} applies to real-world scenarios and practical situations.`,
+        },
+        {
+          title: "Try It",
+          content: `Reflect on how "${lessonTitle}" applies to your own experience.`,
+        },
+      ];
+    }
+
+    console.log(
+      `✨ Interactive block complete: ${tabsData.length} tabs generated`,
+    );
 
     const html_css = `
     <div class="interactive-tabs bg-white border border-slate-200 rounded-xl shadow-sm" data-template="tabs">
@@ -1404,11 +1474,14 @@ Answer: A`,
     return {
       id: `interactive-tabs-${Date.now()}`,
       type: "interactive",
+      subtype: "tabs",
+      template: "tabs",
       content: JSON.stringify({
         type: "tabs",
         templateId: "tabs",
         tabsData,
       }),
+      tabsData,
       html_css,
       order,
       isAIGenerated: true,
@@ -2104,6 +2177,73 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
     // Determine layout: use template, layout, or default to 'centered'
     const imageLayout = template || layout || block.layout || "centered";
 
+    // Generate a color-based placeholder when no image URL
+    const generatePlaceholder = () => {
+      const colors = [
+        { bg: "from-blue-100 to-blue-200", text: "from-blue-400 to-blue-600" },
+        {
+          bg: "from-purple-100 to-purple-200",
+          text: "from-purple-400 to-purple-600",
+        },
+        { bg: "from-pink-100 to-pink-200", text: "from-pink-400 to-pink-600" },
+        {
+          bg: "from-indigo-100 to-indigo-200",
+          text: "from-indigo-400 to-indigo-600",
+        },
+        { bg: "from-cyan-100 to-cyan-200", text: "from-cyan-400 to-cyan-600" },
+      ];
+      const selected = colors[Math.floor(Math.random() * colors.length)];
+      return `
+        <div class="w-full bg-gradient-to-br ${selected.bg} rounded-lg h-80 flex items-center justify-center p-6 shadow-md">
+          <div class="text-center">
+            <div class="inline-block p-4 bg-white/30 rounded-full mb-4">
+              <svg class="w-16 h-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p class="text-gray-700 font-medium mb-2">Visual Concept</p>
+            <p class="text-sm text-gray-600 max-w-xs">${text || "Image generation in progress"}</p>
+          </div>
+        </div>
+      `;
+    };
+
+    // If imageUrl is null or empty, show placeholder
+    if (!imageUrl || imageUrl.trim() === "") {
+      switch (imageLayout) {
+        case "image-text":
+        case "side-by-side":
+          return `
+            <div class="flex gap-5 my-6 items-center flex-wrap md:flex-nowrap">
+              <div class="flex-1 min-w-0">
+                ${generatePlaceholder()}
+              </div>
+              <div class="flex-1 px-4">
+                <p class="text-base leading-relaxed text-gray-600">${text}</p>
+              </div>
+            </div>`;
+        case "text-on-image":
+        case "overlay":
+          return `
+            <div class="relative my-6 rounded-xl overflow-hidden">
+              ${generatePlaceholder()}
+              ${
+                text
+                  ? `<div class="absolute inset-0 bg-black/40 flex items-center justify-center p-5">
+                <p class="text-white text-lg md:text-xl font-semibold text-center leading-snug">${text}</p>
+              </div>`
+                  : ""
+              }
+            </div>`;
+        default: // centered, full-width, etc.
+          return `
+            <div class="text-center my-6">
+              ${generatePlaceholder()}
+              ${caption ? `<p class="mt-3 text-sm text-gray-500 italic">${caption}</p>` : ""}
+            </div>`;
+      }
+    }
+
     switch (imageLayout) {
       case "image-text":
       case "side-by-side":
@@ -2112,7 +2252,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         return `
           <div class="flex gap-5 my-6 items-center flex-wrap md:flex-nowrap ${isImageRight ? "flex-row-reverse" : ""}">
             <div class="flex-1 min-w-0">
-              <img src="${imageUrl}" alt="${block.imageTitle || "Lesson image"}" class="w-full h-auto rounded-lg" loading="lazy" />
+              <img src="${imageUrl}" alt="${block.imageTitle || "Lesson image"}" class="w-full h-auto max-h-96 object-cover rounded-lg" loading="lazy" />
             </div>
             <div class="flex-1 px-4">
               <p class="text-base leading-relaxed text-gray-600">${text}</p>
@@ -2123,7 +2263,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       case "overlay":
         return `
           <div class="relative my-6 rounded-xl overflow-hidden">
-            <img src="${imageUrl}" alt="${block.imageTitle || "Background"}" class="w-full h-auto md:h-96 object-cover" loading="lazy" />
+            <img src="${imageUrl}" alt="${block.imageTitle || "Background"}" class="w-full h-auto md:h-96 object-cover max-h-[500px]" loading="lazy" />
             ${
               text
                 ? `<div class="absolute inset-0 bg-black/40 flex items-center justify-center p-5">
@@ -2137,7 +2277,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       case "centered":
         return `
           <div class="text-center my-6">
-            <img src="${imageUrl}" alt="${block.imageTitle || "Centered image"}" class="max-w-2xl mx-auto w-full h-auto rounded-xl shadow-md" loading="lazy" />
+            <img src="${imageUrl}" alt="${block.imageTitle || "Centered image"}" class="max-w-2xl max-h-[500px] mx-auto w-full h-auto object-contain rounded-xl shadow-md" loading="lazy" />
             ${text ? `<p class="mt-3 text-sm text-gray-500 italic">${text}</p>` : ""}
             ${caption ? `<p class="mt-3 text-sm text-gray-500 italic">${caption}</p>` : ""}
           </div>`;
@@ -2146,7 +2286,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       case "full-width":
         return `
           <div class="my-6">
-            <img src="${imageUrl}" alt="${block.imageTitle || "Full width image"}" class="w-full h-auto rounded-lg" loading="lazy" />
+            <img src="${imageUrl}" alt="${block.imageTitle || "Full width image"}" class="w-full h-auto max-h-[600px] object-cover rounded-lg" loading="lazy" />
             ${
               text
                 ? `<div class="py-4">
@@ -3039,6 +3179,9 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       return `<div class="p-4 border border-gray-200 rounded-lg bg-gray-50"><p class="text-gray-500 text-sm">Table content</p></div>`;
     }
 
+    // Normalize data field: support both 'data' and 'rows' field names
+    const tableRowsData = tableData.data || tableData.rows || [];
+
     // Use proper CSS classes from TableComponent based on template type
     if (
       finalTemplateId === "two_columns" ||
@@ -3054,8 +3197,8 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
 
       return `
         <div class="grid ${colClass} gap-8">
-          ${(tableData.data && tableData.data[0]
-            ? tableData.data[0]
+          ${(tableRowsData && tableRowsData[0]
+            ? tableRowsData[0]
             : tableData.headers
           )
             .map(
@@ -3096,7 +3239,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-100">
-                ${(tableData.data || [])
+                ${(tableRowsData || [])
                   .map(
                     (row, rowIndex) => `
                   <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? "bg-white" : "bg-gray-25"}">
@@ -3286,7 +3429,11 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
 
       // Handle tabs - Use proper CSS classes from InteractiveComponent
       if (templateId === "tabs" || interactiveType === "tabs") {
-        const tabsData = interactiveData.tabs || interactiveData.data || [];
+        const tabsData =
+          interactiveData.tabsData ||
+          interactiveData.tabs ||
+          interactiveData.data ||
+          [];
         if (tabsData.length === 0)
           return `<div class="p-4 bg-gray-50 rounded">No tabs content</div>`;
 
@@ -3328,7 +3475,10 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       // Handle accordion - Use proper CSS classes from InteractiveComponent
       if (templateId === "accordion" || interactiveType === "accordion") {
         const accordionData =
-          interactiveData.accordion || interactiveData.data || [];
+          interactiveData.accordionData ||
+          interactiveData.accordion ||
+          interactiveData.data ||
+          [];
         if (accordionData.length === 0)
           return `<div class="p-4 bg-gray-50 rounded">No accordion content</div>`;
 
@@ -3371,7 +3521,10 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       // Handle timeline - Use proper CSS classes
       if (templateId === "timeline" || interactiveType === "timeline") {
         const timelineData =
-          interactiveData.timeline || interactiveData.data || [];
+          interactiveData.timelineData ||
+          interactiveData.timeline ||
+          interactiveData.data ||
+          [];
         if (timelineData.length === 0)
           return `<div class="p-4 bg-gray-50 rounded">No timeline content</div>`;
 
@@ -3395,6 +3548,51 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
                 `,
                   )
                   .join("")}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Handle labeled-graphic - Interactive concept visualization with hotspots
+      if (
+        templateId === "labeled-graphic" ||
+        interactiveType === "labeled-graphic"
+      ) {
+        const graphicData =
+          interactiveData.labeledGraphicData ||
+          interactiveData.labeledGraphic ||
+          interactiveData.data ||
+          {};
+        const hotspots = graphicData.hotspots || [];
+        const image = graphicData.image || {};
+
+        if (hotspots.length === 0) {
+          return `<div class="p-4 bg-gray-50 rounded">No labeled graphic content</div>`;
+        }
+
+        return `
+          <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-indigo-500 to-purple-600">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">${image.name || "Concept Visualization"}</h3>
+            <div class="relative">
+              ${image.src ? `<img src="${image.src}" alt="${image.name || "Concept"}" class="w-full rounded-lg mb-4 shadow-md" />` : `<div class="w-full bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg h-64 flex items-center justify-center mb-4"><p class="text-gray-500">Concept Visualization</p></div>`}
+              <div class="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                <h4 class="font-semibold text-gray-800 mb-3">Key Components:</h4>
+                <ul class="space-y-2">
+                  ${hotspots
+                    .map(
+                      (spot, index) => `
+                    <li class="flex items-start">
+                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-sm font-medium mr-3 flex-shrink-0">${index + 1}</span>
+                      <div>
+                        <p class="font-medium text-gray-800">${spot.label || `Component ${index + 1}`}</p>
+                        <p class="text-sm text-gray-600">${spot.description || spot.content || ""}</p>
+                      </div>
+                    </li>
+                  `,
+                    )
+                    .join("")}
+                </ul>
               </div>
             </div>
           </div>
@@ -4378,12 +4576,17 @@ Generate ONLY the caption text, no additional explanation.`;
    * Score content quality (0-100)
    */
   scoreContentQuality(content, sectionType) {
-    if (!content || content.trim().length < 10) return 0;
+    if (!content) return 0;
+
+    // Handle non-string content (objects, etc)
+    const contentStr =
+      typeof content === "string" ? content : JSON.stringify(content);
+    if (contentStr.trim().length < 10) return 0;
 
     let score = 50; // Base score
 
     // Length check (not too short, not too long)
-    const wordCount = content.split(/\s+/).length;
+    const wordCount = contentStr.split(/\s+/).length;
     const idealLengths = {
       objectives: { min: 15, max: 100 },
       "key-terms": { min: 50, max: 200 },
@@ -4398,22 +4601,22 @@ Generate ONLY the caption text, no additional explanation.`;
     if (wordCount >= ideal.min && wordCount <= ideal.max) score += 15;
 
     // Specificity (has numbers, examples, concrete terms)
-    if (/\d+/.test(content)) score += 5;
-    if (/example|instance|case|scenario/i.test(content)) score += 10;
-    if (/specific|concrete|particular|detailed/i.test(content)) score += 5;
+    if (/\d+/.test(contentStr)) score += 5;
+    if (/example|instance|case|scenario/i.test(contentStr)) score += 10;
+    if (/specific|concrete|particular|detailed/i.test(contentStr)) score += 5;
 
     // Action-oriented (for objectives, tasks)
     if (["objectives", "task"].includes(sectionType)) {
       const actionVerbs =
         /understand|apply|analyze|create|evaluate|implement|design|build/i;
-      if (actionVerbs.test(content)) score += 10;
+      if (actionVerbs.test(contentStr)) score += 10;
     }
 
     // Structure (has bullets, lists, clear organization)
-    if (/\n|•|[-*]/.test(content)) score += 5;
+    if (/\n|•|[-*]/.test(contentStr)) score += 5;
 
     // Engagement (questions, hooks, interesting language)
-    if (/\?|!|wonder|imagine|consider/i.test(content)) score += 5;
+    if (/\?|!|wonder|imagine|consider/i.test(contentStr)) score += 5;
 
     return Math.min(100, score);
   }
@@ -4562,25 +4765,50 @@ Generate ONLY the caption text, no additional explanation.`;
             break;
 
           case "quote":
-            const quoteData = await this.generateQuoteForSection(
-              sectionType,
+            // Generate carousel quotes instead of single quotes for premium content
+            const carouselQuoteData = await this.generateCarouselQuotes(
               context,
+              3,
             );
-            if (quoteData) {
-              // Parse markdown in quote before storing
-              const parsedQuote = this.parseMarkdownToHTML(quoteData.quote);
-              const quoteBlock = {
-                id: `quote-${Date.now()}-${Math.random()}`,
+            if (carouselQuoteData && carouselQuoteData.length > 0) {
+              const carouselQuoteBlock = {
+                id: `quote-carousel-${Date.now()}-${Math.random()}`,
                 type: "quote",
-                content: parsedQuote, // Store parsed HTML
-                author: quoteData.author,
+                textType: "quote_carousel",
+                subtype: "quote_carousel",
+                content: JSON.stringify({ quotes: carouselQuoteData }),
+                quotes: carouselQuoteData,
                 order: currentOrder++,
                 isAIGenerated: true,
-                metadata: { variant: blockConfig.variant || "quote_a" },
+                metadata: {
+                  variant: "quote_carousel",
+                  source: "AI-generated carousel",
+                },
               };
-              // Generate html_css for quote block
-              quoteBlock.html_css = this.convertBlockToHTML(quoteBlock);
-              newBlock = quoteBlock;
+              // Generate html_css for quote carousel block
+              carouselQuoteBlock.html_css =
+                this.convertBlockToHTML(carouselQuoteBlock);
+              newBlock = carouselQuoteBlock;
+            } else {
+              // Fallback to single quote if carousel generation fails
+              const quoteData = await this.generateQuoteForSection(
+                sectionType,
+                context,
+              );
+              if (quoteData) {
+                const parsedQuote = this.parseMarkdownToHTML(quoteData.quote);
+                const quoteBlock = {
+                  id: `quote-${Date.now()}-${Math.random()}`,
+                  type: "quote",
+                  content: parsedQuote,
+                  author: quoteData.author,
+                  order: currentOrder++,
+                  isAIGenerated: true,
+                  metadata: { variant: blockConfig.variant || "quote_a" },
+                };
+                quoteBlock.html_css = this.convertBlockToHTML(quoteBlock);
+                newBlock = quoteBlock;
+              }
             }
             break;
 
@@ -4740,7 +4968,7 @@ Generate ONLY the caption text, no additional explanation.`;
                 const imageResult = await secureAIService.generateImage(
                   imageData.prompt,
                   {
-                    size: "768x512",
+                    size: "1024x1024", // Fixed: DALL-E 3 only supports 1024x1024, 1792x1024, 1024x1792
                     quality: "standard",
                   },
                 );
@@ -4846,13 +5074,14 @@ Generate ONLY the caption text, no additional explanation.`;
               const tableBlock = {
                 id: `table-${Date.now()}-${Math.random()}`,
                 type: "table",
-                content: tableData,
+                content: JSON.stringify(tableData), // Store as JSON string (matches manual table structure)
+                templateId: "responsive_table",
                 order: currentOrder++,
                 isAIGenerated: true,
                 metadata: {
                   variant: "styled",
                   qualityScore: this.scoreContentQuality(
-                    tableData,
+                    JSON.stringify(tableData),
                     sectionType,
                   ),
                 },
@@ -5069,11 +5298,17 @@ Generate ONLY the caption text, no additional explanation.`;
     const prompt =
       prompts[sectionType] ||
       `Create a relevant statement about "${lessonTitle}".`;
+
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 100,
-        temperature: 0.7,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 100,
+            temperature: 0.7,
+          }),
+        () => null, // No fallback for statements
+        `statement-${sectionType}-${Date.now()}`,
+      );
       return typeof result === "string" ? result.trim() : "";
     } catch {
       return null;
@@ -5109,6 +5344,104 @@ Generate ONLY the caption text, no additional explanation.`;
     }
   }
 
+  async generateCarouselQuotes(context, count = 3) {
+    const { lessonTitle } = context;
+    const quotes = [];
+
+    // Pre-defined carousel quote templates (for fast fallback when AI is rate-limited)
+    const fallbackQuotes = [
+      {
+        quote:
+          "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.",
+        author: "Brian Herbert",
+      },
+      {
+        quote:
+          "Success is not final, failure is not fatal. It is the courage to continue that counts.",
+        author: "Winston Churchill",
+      },
+      {
+        quote:
+          "The best time to plant a tree was 20 years ago. The second best time is now.",
+        author: "Chinese Proverb",
+      },
+    ];
+
+    try {
+      const themes = [
+        {
+          type: "inspirational",
+          prompt: `Generate an inspirational quote about learning and mastery related to "${lessonTitle}". Format: "Quote" - Author Name`,
+        },
+        {
+          type: "expert",
+          prompt: `Generate an expert perspective quote about practical application of "${lessonTitle}". Format: "Quote" - Author Name`,
+        },
+        {
+          type: "motivational",
+          prompt: `Generate a motivational quote about the journey of learning "${lessonTitle}". Format: "Quote" - Author Name`,
+        },
+      ];
+
+      for (let i = 0; i < Math.min(count, themes.length); i++) {
+        try {
+          // Use global AI request queue for rate limiting protection
+          const result = await aiRequestQueue.enqueueRequest(
+            () =>
+              this.aiService.generateText(themes[i].prompt, {
+                maxTokens: 100,
+                temperature: 0.7,
+              }),
+            () => fallbackQuotes[i] || fallbackQuotes[0], // Return fallback on failure
+            `carousel-quote-${i}-${Date.now()}`,
+          );
+
+          const text = typeof result === "string" ? result.trim() : "";
+          const match = text.match(/"([^"]+)"\s*[-–—]\s*(.+)/);
+
+          if (match) {
+            quotes.push({
+              quote: match[1].trim(),
+              author: match[2].trim(),
+            });
+          } else if (text && text.length > 10) {
+            quotes.push({
+              quote: text,
+              author: "Learning Expert",
+            });
+          } else if (result && typeof result === "object" && result.quote) {
+            // Fallback quote object
+            quotes.push(result);
+          }
+        } catch (e) {
+          console.warn(
+            `Failed to generate carousel quote ${i + 1}:`,
+            e.message,
+          );
+          // Use fallback quote on error
+          if (i < fallbackQuotes.length) {
+            quotes.push(fallbackQuotes[i]);
+          }
+        }
+      }
+
+      // If we got some quotes, return them
+      if (quotes.length > 0) {
+        return quotes;
+      }
+
+      // If no quotes generated, return fallback quotes
+      console.warn("Unable to generate carousel quotes, using fallback quotes");
+      return fallbackQuotes.slice(0, count);
+    } catch (error) {
+      console.warn(
+        "Error generating carousel quotes, using fallback quotes:",
+        error,
+      );
+      return fallbackQuotes.slice(0, count);
+    }
+  }
+
   async generateParagraphForSection(sectionType, sectionContent, context) {
     const { lessonTitle } = context;
     const prompts = {
@@ -5129,11 +5462,17 @@ Generate ONLY the caption text, no additional explanation.`;
     const prompt =
       prompts[sectionType] ||
       `Write a relevant paragraph about "${lessonTitle}".`;
+
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 200,
-        temperature: 0.6,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 200,
+            temperature: 0.6,
+          }),
+        () => null, // No fallback for paragraphs
+        `paragraph-${sectionType}-${Date.now()}`,
+      );
       return typeof result === "string" ? result.trim() : "";
     } catch {
       return null;
@@ -5169,10 +5508,15 @@ Generate ONLY the caption text, no additional explanation.`;
 
     try {
       const contentPrompt = `Write 2-3 sentences expanding on: ${prompt.content}`;
-      const result = await this.aiService.generateText(contentPrompt, {
-        maxTokens: 150,
-        temperature: 0.6,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(contentPrompt, {
+            maxTokens: 150,
+            temperature: 0.6,
+          }),
+        () => prompt.content, // Fallback to default content
+        `subheading-${sectionType}-${Date.now()}`,
+      );
       return {
         subheading: prompt.subheading,
         content: typeof result === "string" ? result.trim() : prompt.content,
@@ -5202,10 +5546,15 @@ Generate ONLY the caption text, no additional explanation.`;
       prompts[sectionType] ||
       `List 3-4 relevant points about "${lessonTitle}".`;
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 150,
-        temperature: 0.6,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 150,
+            temperature: 0.6,
+          }),
+        () => [], // No fallback for lists
+        `bullet-list-${sectionType}-${Date.now()}`,
+      );
       const text = typeof result === "string" ? result.trim() : "";
       return text
         .split("\n")
@@ -5234,10 +5583,15 @@ Generate ONLY the caption text, no additional explanation.`;
       prompts[sectionType] ||
       `List 3-4 numbered points about "${lessonTitle}".`;
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 150,
-        temperature: 0.6,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 150,
+            temperature: 0.6,
+          }),
+        () => [], // No fallback for lists
+        `numbered-list-${sectionType}-${Date.now()}`,
+      );
       const text = typeof result === "string" ? result.trim() : "";
       return text
         .split("\n")
@@ -5263,13 +5617,20 @@ Generate ONLY the caption text, no additional explanation.`;
     if (!prompt) return null;
 
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 120,
-        temperature: 0.7,
-        systemPrompt:
-          "You create realistic, photographic-style image prompts. NO infographics, NO diagrams, NO small text. Only realistic scenes, objects, or situations.",
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 120,
+            temperature: 0.7,
+            systemPrompt:
+              "You create realistic, photographic-style image prompts. NO infographics, NO diagrams, NO small text. Only realistic scenes, objects, or situations.",
+          }),
+        () => null, // No fallback for image prompts
+        `image-prompt-${sectionType}-${Date.now()}`,
+      );
       let description = typeof result === "string" ? result.trim() : "";
+
+      if (!description) return null;
 
       // Ensure the prompt emphasizes realistic, photographic style
       if (
@@ -5285,7 +5646,11 @@ Generate ONLY the caption text, no additional explanation.`;
         description: description,
         prompt: description,
       };
-    } catch {
+    } catch (error) {
+      console.error(
+        `[IMAGE GENERATION ERROR] Failed to generate image prompt for section "${sectionType}":`,
+        error.message || error,
+      );
       return null;
     }
   }
@@ -5301,16 +5666,47 @@ Generate ONLY the caption text, no additional explanation.`;
     if (!prompt) return null;
 
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 200,
-        temperature: 0.5,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 200,
+            temperature: 0.5,
+          }),
+        () => null, // No fallback for tables
+        `table-${sectionType}-${Date.now()}`,
+      );
       const text = typeof result === "string" ? result.trim() : "";
-      if (text.includes("|")) {
-        return text;
+      if (text && text.includes("|")) {
+        // Parse pipe-delimited format into structured table data
+        const lines = text.split("\n").filter((line) => line.trim());
+        if (lines.length > 0) {
+          const headers = lines[0]
+            .split("|")
+            .map((cell) => cell.trim())
+            .filter((cell) => cell);
+          const data = lines.slice(1).map((line) =>
+            line
+              .split("|")
+              .map((cell) => cell.trim())
+              .filter((cell) => cell),
+          );
+
+          // Return structured table data instead of raw string
+          return {
+            headers,
+            data,
+            columns: headers.length,
+            rows: data.length,
+            templateId: "responsive_table",
+          };
+        }
       }
       return null;
-    } catch {
+    } catch (error) {
+      console.error(
+        `[TABLE GENERATION ERROR] Failed to generate table for section "${sectionType}":`,
+        error.message || error,
+      );
       return null;
     }
   }
@@ -5321,10 +5717,15 @@ Generate ONLY the caption text, no additional explanation.`;
 
     try {
       const prompt = `Create a quick quiz question about "${lessonTitle}" with 4 multiple choice options and indicate the correct answer. Format as: Q: Question? a) Option 1 b) Option 2 c) Option 3 d) Option 4 Answer: c`;
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 200,
-        temperature: 0.6,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 200,
+            temperature: 0.6,
+          }),
+        () => null, // No fallback for quizzes
+        `quiz-${sectionType}-${Date.now()}`,
+      );
       const text = typeof result === "string" ? result.trim() : "";
       const parsed = this.parseQuizQuestions(text);
       if (parsed && parsed.length > 0) {
@@ -5351,12 +5752,26 @@ Generate ONLY the caption text, no additional explanation.`;
     const prompt = linkPrompts[sectionType];
     if (!prompt) return null;
 
+    const fallback = {
+      url: "#",
+      title: `Resource: ${lessonTitle}`,
+      description: `Additional resources for ${lessonTitle}`,
+      type: "article",
+    };
+
     try {
-      const result = await this.aiService.generateText(prompt, {
-        maxTokens: 150,
-        temperature: 0.6,
-      });
+      const result = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(prompt, {
+            maxTokens: 150,
+            temperature: 0.6,
+          }),
+        () => null, // No fallback for link generation
+        `link-${sectionType}-${Date.now()}`,
+      );
       const text = typeof result === "string" ? result.trim() : "";
+      if (!text) return fallback;
+
       // Extract title and description
       const lines = text.split("\n").filter((l) => l.trim());
       const title =
@@ -5373,12 +5788,7 @@ Generate ONLY the caption text, no additional explanation.`;
         type: "article",
       };
     } catch {
-      return {
-        url: "#",
-        title: `Resource: ${lessonTitle}`,
-        description: `Additional resources for ${lessonTitle}`,
-        type: "article",
-      };
+      return fallback;
     }
   }
 
@@ -5911,7 +6321,7 @@ Format: One visual description per line. Return 1-3 descriptions.`;
             "./secureAIService"
           );
           const imageResult = await secureAIService.generateImage(visualDesc, {
-            size: "768x512",
+            size: "1024x1024",
             quality: "standard",
           });
 
@@ -5920,6 +6330,8 @@ Format: One visual description per line. Return 1-3 descriptions.`;
               "⚠️ Visual image generation skipped:",
               imageResult.error || "Unknown reason",
             );
+            // Generate placeholder - will be handled below
+            imageUrl = null;
           } else if (imageResult && (imageResult.url || imageResult.imageUrl)) {
             const tempImageUrl = imageResult.url || imageResult.imageUrl;
 
@@ -5943,11 +6355,16 @@ Format: One visual description per line. Return 1-3 descriptions.`;
                 imageUrl = tempImageUrl;
               }
             } catch (uploadError) {
+              console.warn(
+                "⚠️ Image upload failed, using temp URL:",
+                uploadError.message,
+              );
               imageUrl = tempImageUrl;
             }
           }
         } catch (imageError) {
           console.error("❌ Image generation failed:", imageError);
+          // Keep imageUrl as null - will use placeholder below
         }
 
         // Randomly select image layout for variety (use all 4 types)
@@ -5970,7 +6387,7 @@ Format: One visual description per line. Return 1-3 descriptions.`;
           imageTitle: `Visual ${i + 1}: ${lessonTitle}`,
           imageDescription: visualDesc,
           text: visualDesc, // For caption (used in side-by-side/overlay layouts)
-          imageUrl: imageUrl || "",
+          imageUrl: imageUrl || null, // Use null for placeholder detection
           order: blockOrder++,
           isAIGenerated: true,
           metadata: {

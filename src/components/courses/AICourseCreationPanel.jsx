@@ -2748,6 +2748,7 @@ MOOD: Modern, inspiring, professional, engaging`;
         };
 
         try {
+          console.log(`📚 Generating lesson content for "${lessonTitle}"...`);
           const blocks = await universalAILessonService.generateLessonContent(
             lessonInfo,
             moduleInfo,
@@ -2755,11 +2756,20 @@ MOOD: Modern, inspiring, professional, engaging`;
             generationOptions,
           );
 
+          console.log(
+            `✅ Generated ${blocks?.length || 0} blocks for "${lessonTitle}":`,
+            blocks
+              ?.map((b) => `${b.type}${b.textType ? `(${b.textType})` : ""}`)
+              .join(", "),
+          );
+
           // Convert blocks into lesson content payload (content + metadata)
           const lessonContent =
             universalAILessonService.convertBlocksToLessonContent(blocks);
 
+          console.log(`💾 Saving lesson content for "${lessonTitle}"...`);
           await updateLessonContent(lessonId, lessonContent);
+          console.log(`✅ Lesson content saved for "${lessonTitle}"`);
 
           if (!firstLessonBlocks) {
             firstLessonBlocks = lessonContent.content || blocks;
@@ -2902,6 +2912,7 @@ MOOD: Modern, inspiring, professional, engaging`;
               left: 0,
               right: 0,
               bottom: 0,
+              scrollbarGutter: "stable",
             }}
             onClick={onClose}
           />
