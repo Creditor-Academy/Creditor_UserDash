@@ -80,7 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'http://localhost:9000'
+      'https://saas-backend-coki.onrender.com'
     ),
     // AI Service API Keys - Injected at build time
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
@@ -92,7 +92,7 @@ export default defineConfig(({ mode }) => ({
     ),
   },
 }));
-
+// Public Resouce Section
 // #(Testing Backend)
 // # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 

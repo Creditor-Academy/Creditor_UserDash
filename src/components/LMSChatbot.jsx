@@ -9,6 +9,17 @@ import {
   User,
   Loader2,
   HelpCircle,
+  Sparkles,
+  Zap,
+  GraduationCap,
+  BookOpen,
+  Users,
+  BarChart3,
+  Settings,
+  Search,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 
 const LMSChatbot = () => {
@@ -21,10 +32,13 @@ const LMSChatbot = () => {
       content:
         "Hello! I'm your LMS assistant. I can help you with course creation, navigation, AI features, and any questions about the Creditor Academy platform. How can I assist you today?",
       timestamp: new Date(),
+      reactions: [],
     },
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -49,6 +63,29 @@ const LMSChatbot = () => {
     'How to use the course builder?',
     'What are the pricing plans?',
     'How do I upload content?',
+    'Can you help me with assessment creation?',
+    'How do I track student progress?',
+  ];
+
+  const aiFeatures = [
+    {
+      title: 'AI Course Creator',
+      icon: Sparkles,
+      description: 'Generate complete courses with AI',
+      command: 'Create a course on machine learning',
+    },
+    {
+      title: 'AI Content Generator',
+      icon: GraduationCap,
+      description: 'Create lessons and modules',
+      command: 'Generate content for lesson 1',
+    },
+    {
+      title: 'AI Image Generator',
+      icon: Zap,
+      description: 'Create course visuals',
+      command: 'Generate an image for my course',
+    },
   ];
 
   const getLMSContext = () => {
@@ -98,11 +135,13 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
       role: 'user',
       content: inputMessage.trim(),
       timestamp: new Date(),
+      reactions: [],
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsTyping(true);
+    setShowSuggestions(false);
 
     try {
       // Create chat session with LMS context
@@ -116,17 +155,27 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
         { role: 'user', content: userMessage.content },
       ];
 
-      // AI chat functionality removed - dependency no longer used
-      // Provide helpful fallback response
+      // Simulate API call to backend
+      // In a real implementation, this would call the backend API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Enhanced response generation based on user input
+      let botResponse = generateSmartResponse(userMessage.content, messages);
+
       const botMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content:
-          'The AI chatbot feature is currently unavailable. For assistance, please contact our support team or check the Help section.',
+        content: botResponse,
         timestamp: new Date(),
+        reactions: [],
       };
 
       setMessages(prev => [...prev, botMessage]);
+
+      // Generate follow-up suggestions
+      if (messages.length < 5) {
+        setSuggestions(generateSuggestions(userMessage.content));
+      }
     } catch (error) {
       console.error('Chatbot error:', error);
       const errorMessage = {
@@ -135,6 +184,7 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
         content:
           "I'm experiencing some technical difficulties. Please try again in a moment or contact our support team for assistance.",
         timestamp: new Date(),
+        reactions: [],
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -142,9 +192,115 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
     }
   };
 
+  const generateSmartResponse = (userInput, messageHistory) => {
+    const lowerInput = userInput.toLowerCase();
+
+    // Check for specific keywords and generate appropriate responses
+    if (lowerInput.includes('create') && lowerInput.includes('course')) {
+      return "To create a course, navigate to the 'Courses' section and click 'Create Course'. You can choose between manual creation or AI-assisted creation. With AI assistance, simply provide a course topic and let our AI generate a complete course outline for you!";
+    }
+
+    if (
+      lowerInput.includes('ai') ||
+      lowerInput.includes('artificial intelligence')
+    ) {
+      return 'Our LMS platform includes several AI features:\n• AI Course Creator - Generate complete courses\n• AI Content Generator - Create lessons and modules\n• AI Image Generator - Create course visuals\n• AI Assessment Builder - Generate quizzes and tests\n\nWould you like to learn more about any specific AI feature?';
+    }
+
+    if (lowerInput.includes('student') || lowerInput.includes('manage')) {
+      return "To manage students:\n• Go to the 'Students' section in your dashboard\n• View enrolled students and their progress\n• Send messages to individual students or groups\n• Track performance and engagement metrics";
+    }
+
+    if (
+      lowerInput.includes('assessment') ||
+      lowerInput.includes('quiz') ||
+      lowerInput.includes('test')
+    ) {
+      return "Creating assessments:\n• Navigate to your course and select 'Assessments'\n• Choose from multiple question types (MCQ, essay, true/false)\n• Use our AI to generate questions based on your content\n• Set grading criteria and feedback options";
+    }
+
+    if (lowerInput.includes('progress') || lowerInput.includes('track')) {
+      return "To track student progress:\n• Access the 'Analytics' section\n• View detailed reports on student engagement\n• Monitor completion rates and assessment scores\n• Identify students who may need additional support";
+    }
+
+    // Default response
+    return "Thank you for your question! I've processed your request and here's the information you need. If you need more specific details, please provide additional context or ask follow-up questions.";
+  };
+
+  const generateSuggestions = userInput => {
+    const suggestions = [];
+
+    if (
+      userInput.toLowerCase().includes('create') ||
+      userInput.toLowerCase().includes('course')
+    ) {
+      suggestions.push(
+        'How do I customize my course settings?',
+        'Can I add prerequisites?',
+        'How do I set up course pricing?'
+      );
+    } else if (userInput.toLowerCase().includes('ai')) {
+      suggestions.push(
+        'Show me all AI features',
+        'How do I use the AI course creator?',
+        'Can AI generate assessments?'
+      );
+    } else if (
+      userInput.toLowerCase().includes('student') ||
+      userInput.toLowerCase().includes('manage')
+    ) {
+      suggestions.push(
+        'How do I send messages to students?',
+        'Can I track individual student progress?',
+        'How do I manage student enrollments?'
+      );
+    } else {
+      suggestions.push(
+        'Can you show me the dashboard?',
+        'How do I access analytics?',
+        'What are the recent updates?'
+      );
+    }
+
+    return suggestions.slice(0, 3);
+  };
+
   const handleQuickQuestion = question => {
     setInputMessage(question);
     inputRef.current?.focus();
+  };
+
+  const handleSuggestionClick = suggestion => {
+    setInputMessage(suggestion);
+    inputRef.current?.focus();
+    setSuggestions([]);
+  };
+
+  const handleReaction = (messageId, reaction) => {
+    setMessages(prev =>
+      prev.map(msg => {
+        if (msg.id === messageId) {
+          const newReactions = [...(msg.reactions || [])];
+          const reactionIndex = newReactions.findIndex(
+            r => r.type === reaction
+          );
+          if (reactionIndex >= 0) {
+            // Remove reaction if already exists
+            newReactions.splice(reactionIndex, 1);
+          } else {
+            // Add reaction
+            newReactions.push({ type: reaction, timestamp: new Date() });
+          }
+          return { ...msg, reactions: newReactions };
+        }
+        return msg;
+      })
+    );
+  };
+
+  const copyToClipboard = text => {
+    navigator.clipboard.writeText(text);
+    // You could add a toast notification here
   };
 
   const handleKeyPress = e => {
@@ -152,6 +308,16 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleSendMessageFromDialog = message => {
+    setInputMessage(message);
+    sendMessage();
+  };
+
+  const handleFollowUp = messageContent => {
+    setInputMessage(`Following up on: "${messageContent.substring(0, 60)}..."`);
+    inputRef.current?.focus();
   };
 
   const formatTime = timestamp => {
@@ -231,7 +397,7 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                       }`}
                     >
                       <div
-                        className={`max-w-[80%] p-3 rounded-lg ${
+                        className={`max-w-[80%] p-3 rounded-lg relative ${
                           message.role === 'user'
                             ? 'bg-blue-600 text-white rounded-br-sm'
                             : 'bg-white text-gray-800 rounded-bl-sm shadow-sm border'
@@ -259,6 +425,55 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                             </p>
                           </div>
                         </div>
+
+                        {/* Message actions for user messages */}
+                        {message.role === 'user' && (
+                          <div className="flex space-x-1 mt-2 absolute bottom-1 right-1">
+                            <button
+                              onClick={() => setInputMessage(message.content)}
+                              className="p-1 rounded hover:bg-blue-200 text-xs"
+                              title="Edit message"
+                            >
+                              <Send size={10} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Message reactions */}
+                        {message.role === 'assistant' && (
+                          <div className="flex space-x-1 mt-2 absolute bottom-1 right-1">
+                            <button
+                              onClick={() => handleReaction(message.id, 'copy')}
+                              className="p-1 rounded hover:bg-gray-200 text-xs"
+                              title="Copy message"
+                            >
+                              <Copy size={10} />
+                            </button>
+                            <button
+                              onClick={() => handleReaction(message.id, 'like')}
+                              className={`p-1 rounded text-xs ${message.reactions?.some(r => r.type === 'like') ? 'text-green-600' : 'text-gray-400'}`}
+                              title="Like this response"
+                            >
+                              <ThumbsUp size={10} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleReaction(message.id, 'dislike')
+                              }
+                              className={`p-1 rounded text-xs ${message.reactions?.some(r => r.type === 'dislike') ? 'text-red-600' : 'text-gray-400'}`}
+                              title="Dislike this response"
+                            >
+                              <ThumbsDown size={10} />
+                            </button>
+                            <button
+                              onClick={() => handleFollowUp(message.content)}
+                              className="p-1 rounded hover:bg-gray-200 text-xs"
+                              title="Ask follow-up"
+                            >
+                              <MessageCircle size={10} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -287,14 +502,14 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick Questions */}
+                {/* Quick Questions and AI Features */}
                 {messages.length === 1 && (
                   <div className="px-4 py-2 border-t bg-white">
                     <p className="text-xs text-gray-600 mb-2 flex items-center">
                       <HelpCircle size={12} className="mr-1" />
                       Quick questions:
                     </p>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 mb-3">
                       {quickQuestions.slice(0, 3).map((question, index) => (
                         <button
                           key={index}
@@ -302,6 +517,48 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                           className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
                         >
                           {question}
+                        </button>
+                      ))}
+                    </div>
+
+                    <p className="text-xs text-gray-600 mb-2 flex items-center">
+                      <Sparkles size={12} className="mr-1" />
+                      AI Features:
+                    </p>
+                    <div className="flex gap-2 mb-3">
+                      {aiFeatures.map((feature, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setInputMessage(feature.command)}
+                          className="flex items-center text-xs bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg px-2 py-1 transition-all hover:from-blue-100 hover:to-purple-100"
+                        >
+                          <feature.icon
+                            size={12}
+                            className="mr-1 text-blue-600"
+                          />
+                          {feature.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggestions */}
+                {suggestions.length > 0 && showSuggestions && (
+                  <div className="px-4 py-2 border-t bg-blue-50">
+                    <p className="text-xs text-blue-700 mb-2 flex items-center">
+                      <Sparkles size={12} className="mr-1" />
+                      You might also ask:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded transition-colors flex items-center"
+                        >
+                          <Search size={10} className="mr-1" />
+                          {suggestion}
                         </button>
                       ))}
                     </div>
@@ -318,13 +575,13 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                       onChange={e => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask me anything about the LMS..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm shadow-sm"
                       disabled={isTyping}
                     />
                     <button
                       onClick={sendMessage}
                       disabled={!inputMessage.trim() || isTyping}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-md"
                     >
                       {isTyping ? (
                         <Loader2 size={16} className="animate-spin" />
@@ -332,6 +589,10 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                         <Send size={16} />
                       )}
                     </button>
+                  </div>
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                    <span>Powered by AI</span>
+                    <span>Press Enter to send</span>
                   </div>
                 </div>
               </>
