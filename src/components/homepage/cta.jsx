@@ -3,51 +3,49 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function LearningFutureSection() {
+const CTA = () => {
   return (
-    <section
-      className="relative text-gray-800 py-20 overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0f9ff 100%)',
-      }}
-    >
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(89,86,233,0.05)_1px,transparent_1px)] bg-[size:24px_24px] opacity-20"></div>
+    <section className="py-20 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 text-white">
+      <div className="container mx-auto px-6 text-center">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Transform Your Learning & Development?
+          </h2>
+          <p className="text-xl text-blue-200 mb-10 max-w-3xl mx-auto">
+            Join thousands of Instructional Designers, Training Teams, and L&D
+            leaders already building the future with Athena.
+          </p>
 
-      {/* Main content */}
-      <div className="relative container mx-auto px-6 text-center flex flex-col items-center justify-center">
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-4xl md:text-6xl font-bold mb-6 leading-tight max-w-3xl"
-        >
-          Experience the{' '}
-          <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">
-            Future of Learning Design
-          </span>
-          .
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl"
-        >
-          Unlock creativity, innovation, and engagement with modern digital
-          learning tools.
-        </motion.p>
-
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.97 }}
-          className="bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:from-sky-600 hover:to-blue-700 hover:shadow-xl transition-all duration-300"
-        >
-          Join Now
-        </motion.button>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a
+              href="/contact"
+              className="px-6 py-3 bg-white text-blue-900 font-semibold rounded-lg hover:bg-blue-50 transition-colors duration-300 whitespace-nowrap"
+            >
+              Start Your Free Trial
+            </a>
+            <a
+              href="/pricing"
+              className="px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-blue-900 transition-colors duration-300 whitespace-nowrap"
+            >
+              Explore Bundles
+            </a>
+            <a
+              href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
+              className="px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-blue-900 transition-colors duration-300 whitespace-nowrap"
+            >
+              Schedule a Demo
+            </a>
+            <a
+              href="/contact"
+              className="px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-blue-900 transition-colors duration-300 whitespace-nowrap"
+            >
+              Contact Sales
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
-}
+};
+
+export default CTA;
