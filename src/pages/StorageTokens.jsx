@@ -85,13 +85,13 @@ const StorageTokens = () => {
     userProfile?.org_id ||
     userProfile?.organizationId ||
     userProfile?.organization?.id ||
-    localStorage.getItem("orgId") ||
-    "997be751-2e1b-4751-80af-3b29f81e0eb0";
+    localStorage.getItem("orgId");
 
   useEffect(() => {
     const fetchOrg = async () => {
       if (!orgId) {
         setError("Organization not found. Please log in again.");
+        setLoading(false);
         return;
       }
       try {
@@ -99,13 +99,19 @@ const StorageTokens = () => {
         setError(null);
         const response = await api.get(`/api/org/SingleOrg/${orgId}`);
         const data = response?.data?.data || response?.data;
-        setOrgData(data);
+        if (!data) {
+          setError("Organization data not found.");
+          setOrgData(null);
+        } else {
+          setOrgData(data);
+        }
       } catch (err) {
         console.error("Failed to fetch organization usage", err);
         setError(
           err?.response?.data?.message ||
             "Unable to load storage and token usage right now.",
         );
+        setOrgData(null);
       } finally {
         setLoading(false);
       }

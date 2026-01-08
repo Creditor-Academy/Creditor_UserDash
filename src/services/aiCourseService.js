@@ -5,21 +5,21 @@ import {
   createModule,
   createLesson,
   updateLessonContent,
-} from './courseService';
-import { uploadImage } from './imageUploadService';
-import { uploadAIGeneratedImage, uploadAICourseMedia } from './aiUploadService';
-import universalAILessonService from './universalAILessonService.js';
-import structuredLessonGenerator from './structuredLessonGenerator.js';
-import secureAIService from './secureAIService.js';
+} from "./courseService";
+import { uploadImage } from "./imageUploadService";
+import { uploadAIGeneratedImage, uploadAICourseMedia } from "./aiUploadService";
+import universalAILessonService from "./universalAILessonService.js";
+import structuredLessonGenerator from "./structuredLessonGenerator.js";
+import secureAIService from "./secureAIService.js";
 
 // API configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth headers
 function getAuthHeaders() {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   return {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
   };
 }
@@ -42,12 +42,12 @@ export async function generateSafeCourseOutline(courseData, options = {}) {
  */
 export async function generateAICourseOutline(courseData) {
   try {
-    console.log('🤖 Generating AI course outline for:', courseData.title);
+    console.log("🤖 Generating AI course outline for:", courseData.title);
 
     const aiResult = await secureAIService.generateCourseOutline(courseData);
 
     if (aiResult.success && aiResult.data) {
-      console.log('✅ Course outline generation successful');
+      console.log("✅ Course outline generation successful");
 
       // Transform the data to match expected format
       const courseStructure = {
@@ -62,7 +62,7 @@ export async function generateAICourseOutline(courseData) {
         data: courseStructure,
       };
     } else {
-      console.warn('AI generation failed, using fallback:', aiResult.error);
+      console.warn("AI generation failed, using fallback:", aiResult.error);
 
       // Fallback to structured generation
       const courseStructure = {
@@ -78,7 +78,7 @@ export async function generateAICourseOutline(courseData) {
       };
     }
   } catch (error) {
-    console.error('❌ AI course outline generation failed:', error);
+    console.error("❌ AI course outline generation failed:", error);
 
     // Return fallback structure
     return {
@@ -100,8 +100,8 @@ export async function generateAICourseOutline(courseData) {
 function generateFallbackModules(courseData) {
   const subject = courseData.subject || courseData.title;
   console.log(
-    '📚 Generating fallback single comprehensive module for subject:',
-    subject
+    "📚 Generating fallback single comprehensive module for subject:",
+    subject,
   );
 
   const modules = [
@@ -116,8 +116,8 @@ function generateFallbackModules(courseData) {
           title: `Comprehensive ${subject} Guide`,
           lesson_title: `Comprehensive ${subject} Guide`,
           description: `A complete guide covering all aspects of ${subject} including fundamentals, practical applications, and advanced techniques`,
-          content: '',
-          duration: '60 min',
+          content: "",
+          duration: "60 min",
         },
       ],
     },
@@ -125,7 +125,7 @@ function generateFallbackModules(courseData) {
 
   console.log(
     `📚 Generated ${modules.length} fallback modules:`,
-    modules.map(m => m.module_title)
+    modules.map((m) => m.module_title),
   );
   return modules;
 }
@@ -139,7 +139,7 @@ async function enhanceModulesWithLessons(modules, courseData) {
     // Modules will use fallback lesson structure
     return modules;
   } catch (error) {
-    console.warn('Could not enhance modules with AI lessons:', error);
+    console.warn("Could not enhance modules with AI lessons:", error);
     return modules;
   }
 }
@@ -149,24 +149,24 @@ async function enhanceModulesWithLessons(modules, courseData) {
  */
 function parseLessonsFromCurriculum(curriculum, moduleId) {
   const lessons = [];
-  const lines = curriculum.split('\n').filter(line => line.trim());
+  const lines = curriculum.split("\n").filter((line) => line.trim());
 
   let lessonId = (moduleId - 1) * 10 + 1;
 
   for (const line of lines) {
     if (
-      line.includes('lesson') ||
-      line.includes('topic') ||
-      line.includes('-')
+      line.includes("lesson") ||
+      line.includes("topic") ||
+      line.includes("-")
     ) {
-      const cleanLine = line.replace(/^[-•*]\s*/, '').trim();
+      const cleanLine = line.replace(/^[-•*]\s*/, "").trim();
       if (cleanLine.length > 5) {
         lessons.push({
           id: lessonId++,
           title: cleanLine,
           description: `Learn about ${cleanLine.toLowerCase()}`,
-          content: '',
-          duration: '20 min',
+          content: "",
+          duration: "20 min",
         });
       }
     }
@@ -177,9 +177,9 @@ function parseLessonsFromCurriculum(curriculum, moduleId) {
     lessons.push({
       id: lessonId++,
       title: `Lesson ${lessons.length + 1}`,
-      description: 'Additional learning content',
-      content: '',
-      duration: '15 min',
+      description: "Additional learning content",
+      content: "",
+      duration: "15 min",
     });
   }
 
@@ -195,19 +195,19 @@ function validateCourseData(courseData) {
   const errors = [];
 
   if (!courseData.title?.trim()) {
-    errors.push('Course title is required');
+    errors.push("Course title is required");
   }
 
   if (!courseData.description?.trim()) {
-    errors.push('Course description is required');
+    errors.push("Course description is required");
   }
 
   if (courseData.title?.length > 200) {
-    errors.push('Course title must be less than 200 characters');
+    errors.push("Course title must be less than 200 characters");
   }
 
   if (courseData.description?.length > 2000) {
-    errors.push('Course description must be less than 2000 characters');
+    errors.push("Course description must be less than 2000 characters");
   }
 
   return {
@@ -227,13 +227,13 @@ export async function createCompleteAICourse(courseData) {
   if (!validation.isValid) {
     return {
       success: false,
-      error: `Validation failed: ${validation.errors.join(', ')}`,
+      error: `Validation failed: ${validation.errors.join(", ")}`,
       data: null,
     };
   }
 
   try {
-    console.log('🚀 Creating complete AI course:', courseData.title);
+    console.log("🚀 Creating complete AI course:", courseData.title);
 
     // Step 1: Use provided course structure or generate AI course outline
     let courseStructure;
@@ -241,18 +241,18 @@ export async function createCompleteAICourse(courseData) {
     // Check if comprehensive course structure is already provided
     if (courseData.comprehensiveCourseStructure) {
       console.log(
-        '📋 Step 1: Using provided comprehensive course structure with thumbnails...'
+        "📋 Step 1: Using provided comprehensive course structure with thumbnails...",
       );
       courseStructure = courseData.comprehensiveCourseStructure;
-      console.log('🎨 Using course structure with thumbnails:', {
+      console.log("🎨 Using course structure with thumbnails:", {
         moduleCount: courseStructure.modules?.length || 0,
         hasModuleThumbnails: courseStructure.modules?.[0]?.thumbnail
-          ? 'Yes'
-          : 'No',
+          ? "Yes"
+          : "No",
         hasLessonThumbnails: courseStructure.modules?.[0]?.lessons?.[0]
           ?.thumbnail
-          ? 'Yes'
-          : 'No',
+          ? "Yes"
+          : "No",
       });
     } else {
       // Retry logic for AI outline generation
@@ -263,60 +263,60 @@ export async function createCompleteAICourse(courseData) {
       while (generationAttempts < maxGenerationAttempts) {
         try {
           console.log(
-            `📋 Step 1: Generating AI course outline (attempt ${generationAttempts + 1}/${maxGenerationAttempts})...`
+            `📋 Step 1: Generating AI course outline (attempt ${generationAttempts + 1}/${maxGenerationAttempts})...`,
           );
           const outlineResponse = await generateAICourseOutline(courseData);
 
           // Validate response structure
           if (!outlineResponse) {
-            throw new Error('AI generation returned null response');
+            throw new Error("AI generation returned null response");
           }
 
           if (!outlineResponse.success) {
             throw new Error(
-              outlineResponse.error || 'AI generation returned no data'
+              outlineResponse.error || "AI generation returned no data",
             );
           }
 
           if (!outlineResponse.data || !outlineResponse.data.modules) {
-            throw new Error('Invalid AI response structure: missing modules');
+            throw new Error("Invalid AI response structure: missing modules");
           }
 
           if (outlineResponse.data.modules.length === 0) {
-            throw new Error('AI generation returned empty module list');
+            throw new Error("AI generation returned empty module list");
           }
 
           courseStructure = outlineResponse.data;
           console.log(
-            `✅ AI outline generated successfully with ${courseStructure.modules.length} modules`
+            `✅ AI outline generated successfully with ${courseStructure.modules.length} modules`,
           );
           break;
         } catch (outlineError) {
           generationAttempts++;
           console.error(
             `❌ AI generation attempt ${generationAttempts} failed:`,
-            outlineError.message
+            outlineError.message,
           );
 
           if (generationAttempts >= maxGenerationAttempts) {
             console.warn(
-              '⚠️ All AI generation attempts failed, using fallback structure'
+              "⚠️ All AI generation attempts failed, using fallback structure",
             );
             courseStructure = {
               title: courseData.title,
               subject: courseData.subject || courseData.title,
               modules: generateFallbackModules(courseData),
               metadata: {
-                reason: 'AI generation failed after all retries',
+                reason: "AI generation failed after all retries",
                 originalError: outlineError.message,
               },
             };
 
             // Notify user about fallback
-            if (typeof window !== 'undefined' && window.showNotification) {
+            if (typeof window !== "undefined" && window.showNotification) {
               window.showNotification(
-                'AI generation failed. Using template structure instead. You can enhance it manually.',
-                'warning'
+                "AI generation failed. Using template structure instead. You can enhance it manually.",
+                "warning",
               );
             }
             break;
@@ -325,12 +325,12 @@ export async function createCompleteAICourse(courseData) {
           // Retry with exponential backoff (OPTIMIZED - reduced for faster recovery)
           const waitTime = Math.min(
             500 * Math.pow(1.5, generationAttempts - 1),
-            3000
+            3000,
           );
           console.log(
-            `⏳ Waiting ${waitTime}ms before retry attempt ${generationAttempts + 1}...`
+            `⏳ Waiting ${waitTime}ms before retry attempt ${generationAttempts + 1}...`,
           );
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
         }
       }
     }
@@ -341,7 +341,7 @@ export async function createCompleteAICourse(courseData) {
 
     try {
       console.log(
-        '🏗️ Step 2: Creating course via backend API (in parallel with outline)...'
+        "🏗️ Step 2: Creating course via backend API (in parallel with outline)...",
       );
 
       // Normalize course data to ensure all required fields are present
@@ -352,7 +352,7 @@ export async function createCompleteAICourse(courseData) {
       ).substring(0, 200);
 
       const normalizedDescription = (
-        courseData.description || 'Course description'
+        courseData.description || "Course description"
       ).substring(0, 2000);
 
       const normalizedSubject = (
@@ -366,30 +366,30 @@ export async function createCompleteAICourse(courseData) {
       if (courseData.learningObjectives) {
         if (Array.isArray(courseData.learningObjectives)) {
           learningObjectives = courseData.learningObjectives;
-        } else if (typeof courseData.learningObjectives === 'string') {
+        } else if (typeof courseData.learningObjectives === "string") {
           learningObjectives = courseData.learningObjectives
-            .split('\n')
-            .map(s => s.trim())
+            .split("\n")
+            .map((s) => s.trim())
             .filter(Boolean);
         }
       }
 
       // Map difficulty level to course_level
       const difficultyMap = {
-        beginner: 'BEGINNER',
-        intermediate: 'INTERMEDIATE',
-        advanced: 'ADVANCED',
-        expert: 'EXPERT',
+        beginner: "BEGINNER",
+        intermediate: "INTERMEDIATE",
+        advanced: "ADVANCED",
+        expert: "EXPERT",
       };
 
       const courseLevelFromAI =
-        courseStructure.difficulty || courseData.difficulty || 'intermediate';
+        courseStructure.difficulty || courseData.difficulty || "intermediate";
       const courseLevel =
-        difficultyMap[courseLevelFromAI.toLowerCase()] || 'INTERMEDIATE';
+        difficultyMap[courseLevelFromAI.toLowerCase()] || "INTERMEDIATE";
 
       // Parse duration
       const estimatedDuration =
-        courseData.duration || courseStructure.duration || '4 weeks';
+        courseData.duration || courseStructure.duration || "4 weeks";
 
       const coursePayload = {
         title: normalizedTitle,
@@ -399,16 +399,16 @@ export async function createCompleteAICourse(courseData) {
         course_level: courseLevel,
         estimated_duration: estimatedDuration,
         max_students: Number(courseData.max_students) || 100,
-        price: courseData.price || '0',
+        price: courseData.price || "0",
         thumbnail: courseData.thumbnail || null,
         isHidden: false,
-        course_status: 'DRAFT',
-        courseType: 'OPEN',
-        lockModules: 'UNLOCKED',
+        course_status: "DRAFT",
+        courseType: "OPEN",
+        lockModules: "UNLOCKED",
         requireFinalQuiz: true,
       };
 
-      console.log('📦 Course payload prepared:', {
+      console.log("📦 Course payload prepared:", {
         title: coursePayload.title,
         hasDescription: !!coursePayload.description,
         subject: coursePayload.subject,
@@ -427,26 +427,28 @@ export async function createCompleteAICourse(courseData) {
           courseId = createdCourse.data?.id || createdCourse.id;
 
           if (courseId) {
-            console.log('✅ Course created successfully:', courseId);
+            console.log("✅ Course created successfully:", courseId);
             break;
           } else {
-            throw new Error('No course ID returned from API');
+            throw new Error("No course ID returned from API");
           }
         } catch (courseError) {
           retryCount++;
           console.warn(
             `Course creation attempt ${retryCount} failed:`,
-            courseError.message
+            courseError.message,
           );
 
           if (retryCount >= maxRetries) {
             throw new Error(
-              `Course creation failed after ${maxRetries} attempts: ${courseError.message}`
+              `Course creation failed after ${maxRetries} attempts: ${courseError.message}`,
             );
           }
 
           // Wait before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retryCount),
+          );
         }
       }
     } catch (courseCreationError) {
@@ -454,27 +456,27 @@ export async function createCompleteAICourse(courseData) {
     }
 
     // Step 3: Create modules in parallel using deployed backend API (OPTIMIZED)
-    console.log('📚 Step 3: Creating modules and lessons...');
+    console.log("📚 Step 3: Creating modules and lessons...");
     const moduleErrors = [];
 
     // Add progress callback if provided
-    const updateProgress = message => {
+    const updateProgress = (message) => {
       console.log(`📊 Progress: ${message}`);
     };
 
     // Create all modules in parallel (OPTIMIZED)
     console.log(
-      `🚀 Creating ${courseStructure.modules.length} modules in parallel...`
+      `🚀 Creating ${courseStructure.modules.length} modules in parallel...`,
     );
 
     const createdModules = await Promise.all(
       courseStructure.modules.map(async (moduleData, i) => {
         try {
           console.log(
-            `📖 Creating module ${i + 1}/${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
+            `📖 Creating module ${i + 1}/${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`,
           );
           updateProgress(
-            `Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
+            `Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`,
           );
 
           // Validate and prepare thumbnail URL
@@ -482,10 +484,10 @@ export async function createCompleteAICourse(courseData) {
             moduleData.thumbnail || moduleData.module_thumbnail_url;
           const validatedThumbnail =
             moduleThumbnail &&
-            (moduleThumbnail.startsWith('http') ||
-              moduleThumbnail.startsWith('data:'))
+            (moduleThumbnail.startsWith("http") ||
+              moduleThumbnail.startsWith("data:"))
               ? moduleThumbnail
-              : '';
+              : "";
 
           const modulePayload = {
             title: moduleData.title || moduleData.module_title,
@@ -494,20 +496,20 @@ export async function createCompleteAICourse(courseData) {
               `${moduleData.title || moduleData.module_title} module content`,
             order: i + 1,
             estimated_duration: 60,
-            module_status: 'PUBLISHED',
+            module_status: "PUBLISHED",
             price: 0, // Backend expects number, matching manual creation
           };
 
           // Only include thumbnail if it has a valid value
-          if (validatedThumbnail && validatedThumbnail.trim() !== '') {
+          if (validatedThumbnail && validatedThumbnail.trim() !== "") {
             modulePayload.thumbnail = validatedThumbnail;
           }
 
           console.log(
-            '📋 Module payload being sent:',
-            JSON.stringify(modulePayload, null, 2)
+            "📋 Module payload being sent:",
+            JSON.stringify(modulePayload, null, 2),
           );
-          console.log('🎨 Module thumbnail data:', {
+          console.log("🎨 Module thumbnail data:", {
             thumbnail: moduleData.thumbnail,
             module_thumbnail_url: moduleData.module_thumbnail_url,
             validated_thumbnail: validatedThumbnail,
@@ -525,7 +527,7 @@ export async function createCompleteAICourse(courseData) {
               // Validate module was created with ID
               const moduleId = createdModule.data?.id || createdModule.id;
               if (!moduleId) {
-                throw new Error('Module created but no ID returned');
+                throw new Error("Module created but no ID returned");
               }
 
               console.log(`✅ Module created with ID: ${moduleId}`);
@@ -536,10 +538,10 @@ export async function createCompleteAICourse(courseData) {
                 throw moduleError;
               }
               console.warn(
-                `Module creation retry ${moduleRetryCount}/${maxModuleRetries} for: ${moduleData.title || moduleData.module_title}`
+                `Module creation retry ${moduleRetryCount}/${maxModuleRetries} for: ${moduleData.title || moduleData.module_title}`,
               );
-              await new Promise(resolve =>
-                setTimeout(resolve, 500 * moduleRetryCount)
+              await new Promise((resolve) =>
+                setTimeout(resolve, 500 * moduleRetryCount),
               );
             }
           }
@@ -551,7 +553,7 @@ export async function createCompleteAICourse(courseData) {
         } catch (error) {
           console.error(
             `❌ Failed to create module: ${moduleData.title || moduleData.module_title}`,
-            error.message
+            error.message,
           );
           moduleErrors.push({
             module: moduleData.title || moduleData.module_title,
@@ -559,19 +561,19 @@ export async function createCompleteAICourse(courseData) {
           });
           throw error;
         }
-      })
+      }),
     );
 
     // Log module creation summary
     console.log(
-      `📊 Module creation summary: ${createdModules.length}/${courseStructure.modules.length} successful`
+      `📊 Module creation summary: ${createdModules.length}/${courseStructure.modules.length} successful`,
     );
     if (moduleErrors.length > 0) {
-      console.warn('⚠️ Module creation errors:', moduleErrors);
+      console.warn("⚠️ Module creation errors:", moduleErrors);
     }
 
     // Step 4: Create lessons for all modules in parallel (OPTIMIZED)
-    console.log('📝 Step 4: Creating lessons for all modules in parallel...');
+    console.log("📝 Step 4: Creating lessons for all modules in parallel...");
     const lessonErrors = [];
 
     // Create lessons for all modules in parallel
@@ -582,7 +584,7 @@ export async function createCompleteAICourse(courseData) {
 
         if (moduleData.lessons && moduleData.lessons.length > 0) {
           console.log(
-            `📝 Creating ${moduleData.lessons.length} lessons for module ${moduleIndex + 1}...`
+            `📝 Creating ${moduleData.lessons.length} lessons for module ${moduleIndex + 1}...`,
           );
 
           // Create all lessons for this module in parallel
@@ -590,7 +592,7 @@ export async function createCompleteAICourse(courseData) {
             moduleData.lessons.map(async (lessonData, j) => {
               try {
                 console.log(
-                  `📝 Creating lesson ${j + 1}/${moduleData.lessons.length}: ${lessonData.title}`
+                  `📝 Creating lesson ${j + 1}/${moduleData.lessons.length}: ${lessonData.title}`,
                 );
 
                 // Validate and prepare lesson thumbnail URL
@@ -598,10 +600,10 @@ export async function createCompleteAICourse(courseData) {
                   lessonData.thumbnail || lessonData.lesson_thumbnail_url;
                 const validatedLessonThumbnail =
                   lessonThumbnail &&
-                  (lessonThumbnail.startsWith('http') ||
-                    lessonThumbnail.startsWith('data:'))
+                  (lessonThumbnail.startsWith("http") ||
+                    lessonThumbnail.startsWith("data:"))
                     ? lessonThumbnail
-                    : '';
+                    : "";
 
                 const lessonPayload = {
                   title: lessonData.title.substring(0, 200),
@@ -609,12 +611,12 @@ export async function createCompleteAICourse(courseData) {
                     lessonData.description ||
                     `${lessonData.title} lesson content`,
                   order: j + 1,
-                  status: 'PUBLISHED',
+                  status: "PUBLISHED",
                 };
 
                 if (
                   validatedLessonThumbnail &&
-                  validatedLessonThumbnail.trim() !== ''
+                  validatedLessonThumbnail.trim() !== ""
                 ) {
                   lessonPayload.thumbnail = validatedLessonThumbnail;
                 }
@@ -629,13 +631,13 @@ export async function createCompleteAICourse(courseData) {
                     createdLesson = await createLesson(
                       courseId,
                       moduleId,
-                      lessonPayload
+                      lessonPayload,
                     );
 
                     // Validate lesson was created with ID
                     const lessonId = createdLesson.data?.id || createdLesson.id;
                     if (!lessonId) {
-                      throw new Error('Lesson created but no ID returned');
+                      throw new Error("Lesson created but no ID returned");
                     }
 
                     console.log(`✅ Lesson created with ID: ${lessonId}`);
@@ -646,10 +648,10 @@ export async function createCompleteAICourse(courseData) {
                       throw lessonError;
                     }
                     console.warn(
-                      `Lesson creation retry ${lessonRetryCount}/${maxLessonRetries}`
+                      `Lesson creation retry ${lessonRetryCount}/${maxLessonRetries}`,
                     );
-                    await new Promise(resolve =>
-                      setTimeout(resolve, 500 * lessonRetryCount)
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, 500 * lessonRetryCount),
                     );
                   }
                 }
@@ -658,7 +660,7 @@ export async function createCompleteAICourse(courseData) {
               } catch (lessonError) {
                 console.error(
                   `❌ Failed to create lesson "${lessonData.title}":`,
-                  lessonError.message
+                  lessonError.message,
                 );
                 lessonErrors.push({
                   moduleTitle: moduleData.title || moduleData.module_title,
@@ -666,18 +668,18 @@ export async function createCompleteAICourse(courseData) {
                   error: lessonError.message,
                 });
               }
-            })
+            }),
           );
 
           console.log(
-            `✅ All lessons created for module ${moduleIndex + 1}: ${moduleData.title || moduleData.module_title}`
+            `✅ All lessons created for module ${moduleIndex + 1}: ${moduleData.title || moduleData.module_title}`,
           );
         }
-      })
+      }),
     );
 
     // Step 5: Auto-generate lesson content using universalAILessonService
-    console.log('📝 Step 5: Auto-generating content for all lessons...');
+    console.log("📝 Step 5: Auto-generating content for all lessons...");
     const contentGenerationResults = {
       successCount: 0,
       failedCount: 0,
@@ -688,45 +690,58 @@ export async function createCompleteAICourse(courseData) {
 
     // Import universalAILessonService dynamically if needed
     const universalAILessonService = await import(
-      './universalAILessonService'
-    ).then(m => m.default);
+      "./universalAILessonService"
+    ).then((m) => m.default);
 
     // Track generation mode (from courseData options or default to STANDARD)
-    const generationMode = courseData.generationMode || 'STANDARD';
+    const generationMode = courseData.generationMode || "STANDARD";
     const generationConfig = {
       QUICK: {
-        contentType: 'outline',
+        contentType: "outline",
         includeImages: false,
         maxImages: 0,
         includeAssessments: false,
         includeExamples: false,
+        includeSummary: false,
+        includeInteractive: false,
+        useBlueprintStructure: true,
+        useAddiePhases: true,
         maxTokens: 500,
       },
       STANDARD: {
-        contentType: 'comprehensive',
+        contentType: "comprehensive",
         includeImages: true,
         maxImages: 1,
         includeAssessments: true,
         includeExamples: true,
+        includeSummary: true,
+        includeInteractive: false,
+        useBlueprintStructure: true,
+        useAddiePhases: true,
         maxTokens: 1000,
       },
       COMPLETE: {
-        contentType: 'comprehensive',
+        contentType: "comprehensive",
         includeImages: true,
         maxImages: 2,
         includeAssessments: true,
         includeExamples: true,
         includeSummary: true,
+        includeInteractive: true,
+        useBlueprintStructure: true,
+        useAddiePhases: true,
         maxTokens: 1500,
       },
       PREMIUM: {
-        contentType: 'comprehensive',
+        contentType: "comprehensive",
         includeImages: true,
-        maxImages: 1, // speed-oriented: single high-quality image
+        maxImages: 1,
         includeAssessments: true,
         includeExamples: true,
         includeSummary: true,
         includeInteractive: true,
+        useBlueprintStructure: true,
+        useAddiePhases: true,
         maxTokens: 2000,
       },
     };
@@ -736,10 +751,10 @@ export async function createCompleteAICourse(courseData) {
     console.log(`🎯 Using ${generationMode} generation mode`);
 
     // Fast Premium toggle: allow caller to skip images even in Premium for speed
-    if (generationMode === 'PREMIUM' && courseData?.fastPremium === true) {
+    if (generationMode === "PREMIUM" && courseData?.fastPremium === true) {
       config.includeImages = false;
       config.maxImages = 0;
-      console.log('⚡ Fast Premium enabled: skipping images for speed');
+      console.log("⚡ Fast Premium enabled: skipping images for speed");
     }
 
     // Process lessons in batches for parallel execution (OPTIMIZED - Phase 3: Aggressive parallelization)
@@ -754,29 +769,29 @@ export async function createCompleteAICourse(courseData) {
       const totalBatches = Math.ceil(createdLessons.length / BATCH_SIZE);
 
       console.log(
-        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons in parallel) - AGGRESSIVE MODE`
+        `📊 Processing batch ${batchNumber}/${totalBatches} (${batch.length} lessons in parallel) - AGGRESSIVE MODE`,
       );
 
       // Process all lessons in batch in parallel
       const batchResults = await Promise.all(
-        batch.map(async createdLesson => {
+        batch.map(async (createdLesson) => {
           processedCount++;
           const lessonId = createdLesson.data?.id || createdLesson.id;
           const lessonTitle =
             createdLesson.data?.title ||
             createdLesson.title ||
-            'Untitled Lesson';
+            "Untitled Lesson";
 
           try {
             console.log(
-              `📚 Generating content for lesson ${processedCount}/${createdLessons.length}: ${lessonTitle}`
+              `📚 Generating content for lesson ${processedCount}/${createdLessons.length}: ${lessonTitle}`,
             );
             updateProgress(
-              `Generating content for lesson ${processedCount} of ${createdLessons.length}: ${lessonTitle}`
+              `Generating content for lesson ${processedCount} of ${createdLessons.length}: ${lessonTitle}`,
             );
 
             // Find module info for this lesson
-            const parentModule = createdModules.find(m => {
+            const parentModule = createdModules.find((m) => {
               const modId = m.data?.id || m.id;
               return (
                 createdLesson.module_id === modId ||
@@ -785,7 +800,7 @@ export async function createCompleteAICourse(courseData) {
             });
 
             const moduleTitle =
-              parentModule?.data?.title || parentModule?.title || 'Module';
+              parentModule?.data?.title || parentModule?.title || "Module";
 
             // Use structured lesson generator (NEW: Fixed 8-block structure)
             const useStructuredGeneration =
@@ -793,7 +808,7 @@ export async function createCompleteAICourse(courseData) {
 
             if (useStructuredGeneration) {
               console.log(
-                `🎯 Using structured lesson generator (${generationMode} mode)`
+                `🎯 Using structured lesson generator (${generationMode} mode)`,
               );
 
               // Generate lesson with structured format
@@ -802,29 +817,29 @@ export async function createCompleteAICourse(courseData) {
                 {
                   title: courseData.title,
                   description: courseData.description,
-                  difficulty: courseData.difficulty || 'intermediate',
-                  targetAudience: courseData.targetAudience || 'learners',
+                  difficulty: courseData.difficulty || "intermediate",
+                  targetAudience: courseData.targetAudience || "learners",
                   generationMode: generationMode, // Pass generation mode
                 },
-                progress => {
+                (progress) => {
                   console.log(
-                    `  └─ ${progress.message} (${progress.current}/${progress.total})`
+                    `  └─ ${progress.message} (${progress.current}/${progress.total})`,
                   );
                 },
                 {
                   skipImages:
-                    generationMode === 'QUICK' ||
+                    generationMode === "QUICK" ||
                     config.includeImages === false,
                   includeImages: config.includeImages,
                   maxImages: config.maxImages,
-                } // Pass config to control images per mode
+                }, // Pass config to control images per mode
               );
 
               if (result.success) {
                 try {
                   await secureAIService.logAIGenerationBatch({
                     courseId,
-                    logs: (result.blocks || []).map(block => ({
+                    logs: (result.blocks || []).map((block) => ({
                       lesson_id: lessonId,
                       block_id: block.id,
                       block_type: block.type,
@@ -840,8 +855,8 @@ export async function createCompleteAICourse(courseData) {
                   });
                 } catch (logError) {
                   console.warn(
-                    '⚠️ Failed to log AI generation batch (non-blocking):',
-                    logError.message
+                    "⚠️ Failed to log AI generation batch (non-blocking):",
+                    logError.message,
                   );
                 }
 
@@ -852,11 +867,11 @@ export async function createCompleteAICourse(courseData) {
                   blocks: result.blocks.length,
                 };
               } else {
-                throw new Error(result.error || 'Structured generation failed');
+                throw new Error(result.error || "Structured generation failed");
               }
             } else {
               // Fallback to original universal AI lesson service
-              console.log('📝 Using universal AI lesson service (legacy mode)');
+              console.log("📝 Using universal AI lesson service (legacy mode)");
 
               const blocks =
                 await universalAILessonService.generateLessonContent(
@@ -877,13 +892,13 @@ export async function createCompleteAICourse(courseData) {
                     includeAssessments: config.includeAssessments,
                     includeSummary: config.includeSummary,
                     includeInteractive: config.includeInteractive,
-                  }
+                  },
                 );
 
               // Save generated content to lesson
               await universalAILessonService.saveContentToLesson(
                 lessonId,
-                blocks
+                blocks,
               );
 
               return {
@@ -896,7 +911,7 @@ export async function createCompleteAICourse(courseData) {
           } catch (contentError) {
             console.error(
               `❌ Failed to generate content for "${lessonTitle}":`,
-              contentError.message
+              contentError.message,
             );
 
             // Generate placeholder content for failed lessons
@@ -904,7 +919,7 @@ export async function createCompleteAICourse(courseData) {
               const placeholderBlocks = [
                 {
                   id: `placeholder-${Date.now()}`,
-                  type: 'text',
+                  type: "text",
                   content: `This lesson covers ${lessonTitle}. Content will be enhanced soon.`,
                   order: 0,
                   isPlaceholder: true,
@@ -912,13 +927,13 @@ export async function createCompleteAICourse(courseData) {
               ];
               await universalAILessonService.saveContentToLesson(
                 lessonId,
-                placeholderBlocks
+                placeholderBlocks,
               );
               console.log(`📋 Placeholder content saved for: ${lessonTitle}`);
             } catch (placeholderError) {
               console.error(
                 `❌ Failed to save placeholder for "${lessonTitle}":`,
-                placeholderError.message
+                placeholderError.message,
               );
             }
 
@@ -929,16 +944,16 @@ export async function createCompleteAICourse(courseData) {
               error: contentError.message,
             };
           }
-        })
+        }),
       );
 
       // Update results from batch
-      batchResults.forEach(result => {
+      batchResults.forEach((result) => {
         if (result.success) {
           contentGenerationResults.successCount++;
           contentGenerationResults.totalBlocks += result.blocks;
           console.log(
-            `✅ Lesson complete: ${result.lessonTitle} (${result.blocks} blocks)`
+            `✅ Lesson complete: ${result.lessonTitle} (${result.blocks} blocks)`,
           );
         } else {
           contentGenerationResults.failedCount++;
@@ -955,7 +970,7 @@ export async function createCompleteAICourse(courseData) {
     // Log content generation summary
     console.log(`📊 Content Generation Summary:`);
     console.log(
-      `   ✅ Successful: ${contentGenerationResults.successCount}/${createdLessons.length}`
+      `   ✅ Successful: ${contentGenerationResults.successCount}/${createdLessons.length}`,
     );
     console.log(`   📦 Total Blocks: ${contentGenerationResults.totalBlocks}`);
     if (contentGenerationResults.failedCount > 0) {
@@ -966,11 +981,11 @@ export async function createCompleteAICourse(courseData) {
     console.log(`📊 Final creation summary:`);
     console.log(`   ✅ Course: Created successfully`);
     console.log(
-      `   📚 Modules: ${createdModules.length}/${courseStructure.modules.length} created`
+      `   📚 Modules: ${createdModules.length}/${courseStructure.modules.length} created`,
     );
     console.log(`   📝 Lessons: ${createdLessons.length} created`);
     console.log(
-      `   📦 Content: ${contentGenerationResults.successCount} lessons with AI-generated content`
+      `   📦 Content: ${contentGenerationResults.successCount} lessons with AI-generated content`,
     );
 
     if (moduleErrors.length > 0) {
@@ -981,7 +996,7 @@ export async function createCompleteAICourse(courseData) {
     }
     if (contentGenerationResults.failedCount > 0) {
       console.warn(
-        `   ⚠️ Content generation errors: ${contentGenerationResults.failedCount}`
+        `   ⚠️ Content generation errors: ${contentGenerationResults.failedCount}`,
       );
     }
 
@@ -1008,7 +1023,7 @@ export async function createCompleteAICourse(courseData) {
       },
     };
   } catch (error) {
-    console.error('❌ Complete AI course creation failed:', error);
+    console.error("❌ Complete AI course creation failed:", error);
     return {
       success: false,
       error: error.message,
@@ -1025,47 +1040,47 @@ export async function createCompleteAICourse(courseData) {
  */
 export async function generateAndUploadCourseImage(prompt, options = {}) {
   try {
-    console.log('🎨 Generating course image:', prompt);
+    console.log("🎨 Generating course image:", prompt);
 
-    const tier = options?.tier || 'standard';
+    const tier = options?.tier || "standard";
     const result = await secureAIService.generateCourseImage(prompt, {
       ...options,
       tier,
     });
 
     if (result.success) {
-      console.log('✅ Image generation successful');
+      console.log("✅ Image generation successful");
       return result;
     } else {
-      console.warn('🔄 Image generation failed:', result.error);
+      console.warn("🔄 Image generation failed:", result.error);
 
       // Fallback to placeholder
       let imageUrl = null;
-      let generationMethod = 'fallback';
+      let generationMethod = "fallback";
 
       // Step 2: If AI generation failed, create a placeholder image URL
       if (!imageUrl) {
         // Create a data URL placeholder image instead of using external services
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = 1024;
         canvas.height = 1024;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
 
         // Generate a gradient background
         const gradient = ctx.createLinearGradient(0, 0, 1024, 1024);
-        gradient.addColorStop(0, '#4F46E5');
-        gradient.addColorStop(1, '#7C3AED');
+        gradient.addColorStop(0, "#4F46E5");
+        gradient.addColorStop(1, "#7C3AED");
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 1024, 1024);
 
         // Add text
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 48px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 48px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
 
-        const text = prompt.substring(0, 30) || 'Course Image';
+        const text = prompt.substring(0, 30) || "Course Image";
         const lines = text.match(/.{1,15}/g) || [text];
 
         lines.forEach((line, index) => {
@@ -1073,7 +1088,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
         });
 
         // Add decorative elements
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
         for (let i = 0; i < 20; i++) {
           const x = Math.random() * 1024;
           const y = Math.random() * 1024;
@@ -1083,9 +1098,9 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           ctx.fill();
         }
 
-        imageUrl = canvas.toDataURL('image/png');
-        generationMethod = 'canvas-placeholder';
-        console.log('📷 Using canvas-generated placeholder image');
+        imageUrl = canvas.toDataURL("image/png");
+        generationMethod = "canvas-placeholder";
+        console.log("📷 Using canvas-generated placeholder image");
       }
 
       // Continue with legacy upload logic
@@ -1094,7 +1109,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
       let uploadSuccess = false;
 
       try {
-        console.log('🤖 Uploading AI-generated image via /api/ai endpoint...');
+        console.log("🤖 Uploading AI-generated image via /api/ai endpoint...");
 
         // Use AI upload service for AI-generated images
         const uploadResponse = await uploadAIGeneratedImage(imageUrl, {
@@ -1105,14 +1120,14 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           s3Url = uploadResponse.imageUrl;
           uploadSuccess = true;
           console.log(
-            '✅ AI image uploaded to S3 via /api/ai endpoint:',
-            s3Url
+            "✅ AI image uploaded to S3 via /api/ai endpoint:",
+            s3Url,
           );
         }
       } catch (uploadError) {
         console.warn(
-          '📤 AI endpoint upload failed, trying fallback...',
-          uploadError.message
+          "📤 AI endpoint upload failed, trying fallback...",
+          uploadError.message,
         );
 
         // Fallback to regular upload if AI endpoint fails
@@ -1121,25 +1136,25 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           if (response.ok) {
             const blob = await response.blob();
             const file = new File([blob], `ai-course-image-${Date.now()}.png`, {
-              type: 'image/png',
+              type: "image/png",
             });
 
             const uploadResponse = await uploadImage(file, {
-              folder: 'course-thumbnails',
+              folder: "course-thumbnails",
               public: true,
-              type: 'image',
+              type: "image",
             });
 
             if (uploadResponse && uploadResponse.imageUrl) {
               s3Url = uploadResponse.imageUrl;
               uploadSuccess = true;
-              console.log('✅ S3 upload successful via fallback');
+              console.log("✅ S3 upload successful via fallback");
             }
           }
         } catch (fallbackError) {
           console.warn(
-            '📤 Fallback upload also failed, using direct image URL:',
-            fallbackError.message
+            "📤 Fallback upload also failed, using direct image URL:",
+            fallbackError.message,
           );
         }
       }
@@ -1150,7 +1165,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           s3Url: s3Url,
           url: s3Url,
           fileName: `ai-course-image-${Date.now()}.png`,
-          fileSize: uploadSuccess ? 'unknown' : 'placeholder',
+          fileSize: uploadSuccess ? "unknown" : "placeholder",
           prompt: prompt,
           style: options.style,
           generationMethod: generationMethod,
@@ -1160,40 +1175,40 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
       };
     }
   } catch (error) {
-    console.error('❌ Generate and upload course image failed:', error);
+    console.error("❌ Generate and upload course image failed:", error);
 
     // Return a basic data URL placeholder as last resort
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     // Simple gradient background
     const gradient = ctx.createLinearGradient(0, 0, 1024, 1024);
-    gradient.addColorStop(0, '#4F46E5');
-    gradient.addColorStop(1, '#7C3AED');
+    gradient.addColorStop(0, "#4F46E5");
+    gradient.addColorStop(1, "#7C3AED");
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1024, 1024);
 
     // Add text
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 36px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Course Image', 512, 512);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 36px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Course Image", 512, 512);
 
-    const placeholderDataUrl = canvas.toDataURL('image/png');
+    const placeholderDataUrl = canvas.toDataURL("image/png");
 
     return {
       success: false,
       data: {
         url: placeholderDataUrl,
-        fileName: 'placeholder-image.png',
-        fileSize: 'placeholder',
+        fileName: "placeholder-image.png",
+        fileSize: "placeholder",
         prompt: prompt,
         style: options.style,
-        generationMethod: 'error-fallback-canvas',
+        generationMethod: "error-fallback-canvas",
         uploadedToS3: false,
         createdAt: new Date().toISOString(),
       },
@@ -1210,51 +1225,51 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
  */
 export async function generateCourseImage(prompt, options = {}) {
   try {
-    console.log('🎨 Generating course image:', prompt);
-    const tier = options?.tier || 'standard';
+    console.log("🎨 Generating course image:", prompt);
+    const tier = options?.tier || "standard";
     const aiResult = await secureAIService.generateCourseImage(prompt, {
       ...options,
       tier,
     });
 
     if (aiResult.success && aiResult.data) {
-      console.log('✅ Image generation successful');
+      console.log("✅ Image generation successful");
       return aiResult;
     } else {
-      console.warn('AI generation failed:', aiResult.error);
+      console.warn("AI generation failed:", aiResult.error);
       return aiResult; // Still return the result with fallback image
     }
   } catch (error) {
-    console.error('❌ Course image generation failed:', error);
+    console.error("❌ Course image generation failed:", error);
 
     // Return canvas-generated placeholder as fallback
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     // Create gradient background
     const gradient = ctx.createLinearGradient(0, 0, 1024, 1024);
-    gradient.addColorStop(0, '#6366f1');
-    gradient.addColorStop(1, '#8b5cf6');
+    gradient.addColorStop(0, "#6366f1");
+    gradient.addColorStop(1, "#8b5cf6");
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 1024, 1024);
 
     // Add text
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 36px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Course Image', 512, 512);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 36px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Course Image", 512, 512);
 
     return {
       success: false,
       data: {
-        url: canvas.toDataURL('image/png'),
+        url: canvas.toDataURL("image/png"),
         prompt: prompt,
-        style: 'canvas-placeholder',
-        size: options.size || '1024x1024',
+        style: "canvas-placeholder",
+        size: options.size || "1024x1024",
         createdAt: new Date().toISOString(),
       },
       error: error.message,
@@ -1270,30 +1285,30 @@ export async function generateCourseImage(prompt, options = {}) {
  */
 export async function summarizeContent(content, options = {}) {
   try {
-    console.log('📝 Summarizing content for course...');
+    console.log("📝 Summarizing content for course...");
 
-    const prompt = `Summarize the following content in ${options.length || 'medium'} length and format as ${options.type || 'bullet'}:
+    const prompt = `Summarize the following content in ${options.length || "medium"} length and format as ${options.type || "bullet"}:
       
 ${content}`;
 
     let summary;
     try {
       summary = await secureAIService.generateText(prompt, {
-        tier: options?.tier || 'standard',
+        tier: options?.tier || "standard",
         maxTokens: 300,
         temperature: 0.3,
       });
     } catch (summarizeError) {
       console.warn(
-        'AI summarization failed, using fallback:',
-        summarizeError.message
+        "AI summarization failed, using fallback:",
+        summarizeError.message,
       );
 
       // Simple fallback summarization
       const sentences = content
         .split(/[.!?]+/)
-        .filter(s => s.trim().length > 0);
-      summary = sentences.slice(0, 3).join('. ') + '.';
+        .filter((s) => s.trim().length > 0);
+      summary = sentences.slice(0, 3).join(". ") + ".";
     }
 
     return {
@@ -1307,7 +1322,7 @@ ${content}`;
       },
     };
   } catch (error) {
-    console.error('❌ Content summarization failed:', error);
+    console.error("❌ Content summarization failed:", error);
     return {
       success: false,
       error: error.message,
@@ -1321,27 +1336,27 @@ ${content}`;
  * @param {string} context - Optional context
  * @returns {Promise<Object>} Answer data
  */
-export async function searchCourseContent(question, context = '') {
+export async function searchCourseContent(question, context = "") {
   try {
-    console.log('🔍 Searching course content:', question);
+    console.log("🔍 Searching course content:", question);
 
     const prompt = `Answer the following question based on the provided context:
       
 Question: ${question}
 
-Context: ${context || 'No specific context provided'}
+Context: ${context || "No specific context provided"}
 
 Provide a clear, educational answer that would be helpful for a student learning this topic.`;
 
     let answer;
     try {
       answer = await secureAIService.generateText(prompt, {
-        tier: 'standard',
+        tier: "standard",
         maxTokens: 500,
         temperature: 0.5,
       });
     } catch (qaError) {
-      console.warn('AI QA failed, using fallback:', qaError.message);
+      console.warn("AI QA failed, using fallback:", qaError.message);
 
       // Simple fallback answer
       answer = `This is an educational topic related to ${question}. Please refer to course materials for detailed information.`;
@@ -1353,13 +1368,13 @@ Provide a clear, educational answer that would be helpful for a student learning
         question: question,
         answer: answer,
         context: context,
-        type: 'concept', // Default type
-        difficulty: 'Intermediate',
+        type: "concept", // Default type
+        difficulty: "Intermediate",
         createdAt: new Date().toISOString(),
       },
     };
   } catch (error) {
-    console.error('❌ Course content search failed:', error);
+    console.error("❌ Course content search failed:", error);
     return {
       success: false,
       error: error.message,
@@ -1374,10 +1389,10 @@ Provide a clear, educational answer that would be helpful for a student learning
  * @param {string} context - Optional extra context
  * @returns {Promise<{success:boolean, data:{qa:Array<{question:string,answer:string}>}}>} Q&A pairs
  */
-export async function generateQAPairs(topic, count = 3, context = '') {
+export async function generateQAPairs(topic, count = 3, context = "") {
   try {
     const prompt = `Create ${count} high-quality quiz Q&A pairs for the topic "${topic}".
-${context ? `Context: ${context}` : ''}
+${context ? `Context: ${context}` : ""}
 
 Return valid JSON only in this format:
 {
@@ -1389,19 +1404,19 @@ Return valid JSON only in this format:
     let qa = [];
     try {
       const response = await secureAIService.generateText(prompt, {
-        tier: 'standard',
+        tier: "standard",
         maxTokens: 600,
         temperature: 0.5,
       });
 
       const jsonMatch =
-        typeof response === 'string' ? response.match(/\{[\s\S]*\}/) : null;
+        typeof response === "string" ? response.match(/\{[\s\S]*\}/) : null;
       const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : response);
       qa = Array.isArray(parsed.qa) ? parsed.qa : [];
     } catch (primaryError) {
       console.warn(
-        'Primary QA generation failed, using simple fallback:',
-        primaryError.message
+        "Primary QA generation failed, using simple fallback:",
+        primaryError.message,
       );
       // Simple fallback without external API
       qa = Array.from({ length: count }).map((_, i) => ({
@@ -1412,12 +1427,12 @@ Return valid JSON only in this format:
 
     // Normalize
     qa = qa
-      .filter(p => p && p.question && p.answer)
-      .map(p => ({ question: String(p.question), answer: String(p.answer) }));
+      .filter((p) => p && p.question && p.answer)
+      .map((p) => ({ question: String(p.question), answer: String(p.answer) }));
 
     return { success: true, data: { qa } };
   } catch (error) {
-    console.error('❌ QA generation failed:', error);
+    console.error("❌ QA generation failed:", error);
     return { success: false, data: { qa: [] }, error: error.message };
   }
 }
@@ -1442,22 +1457,22 @@ export async function generateSafeLessonContent(prompt, options = {}) {
 export async function generateLessonFromPrompt(prompt, options = {}) {
   try {
     const sysPrompt = `Create a structured lesson as JSON with keys: introduction (string), mainContent (array of strings), examples (array of {title, description}), keyTakeaways (array of strings), summary (string). Keep concise and instructional.`;
-    const userPrompt = `Topic: ${prompt}${options.context ? `\nContext: ${options.context}` : ''}\nLevel: ${options.level || 'beginner'}`;
+    const userPrompt = `Topic: ${prompt}${options.context ? `\nContext: ${options.context}` : ""}\nLevel: ${options.level || "beginner"}`;
 
     let lesson;
     try {
       const response = await secureAIService.generateStructured(
         sysPrompt,
-        userPrompt
+        userPrompt,
       );
       lesson = response;
     } catch {
       const text = await secureAIService.generateText(
         `${sysPrompt}\n\n${userPrompt}`,
-        { tier: 'standard', maxTokens: 800, temperature: 0.6 }
+        { tier: "standard", maxTokens: 800, temperature: 0.6 },
       );
       const jsonMatch =
-        typeof text === 'string' ? text.match(/\{[\s\S]*\}/) : null;
+        typeof text === "string" ? text.match(/\{[\s\S]*\}/) : null;
       lesson = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     }
 
@@ -1466,7 +1481,7 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
     return {
       success: true,
       data: {
-        introduction: lesson.introduction || '',
+        introduction: lesson.introduction || "",
         mainContent: Array.isArray(lesson.mainContent)
           ? lesson.mainContent
           : [],
@@ -1474,19 +1489,19 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
         keyTakeaways: Array.isArray(lesson.keyTakeaways)
           ? lesson.keyTakeaways
           : [],
-        summary: lesson.summary || '',
+        summary: lesson.summary || "",
       },
     };
   } catch (error) {
-    console.error('❌ Prompt-to-lesson generation failed:', error);
+    console.error("❌ Prompt-to-lesson generation failed:", error);
     return {
       success: false,
       data: {
-        introduction: '',
+        introduction: "",
         mainContent: [],
         examples: [],
         keyTakeaways: [],
-        summary: '',
+        summary: "",
       },
       error: error.message,
     };
@@ -1500,25 +1515,25 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
 export async function generateAssessmentQuestions(
   topic,
   count = 5,
-  context = ''
+  context = "",
 ) {
   try {
-    const prompt = `Create ${count} multiple-choice questions (MCQs) for the topic "${topic}"${context ? ` with context: ${context}` : ''}. Return JSON {"questions": [{"question": "...", "options": ["A","B","C","D"], "answerIndex": 0}]}`;
+    const prompt = `Create ${count} multiple-choice questions (MCQs) for the topic "${topic}"${context ? ` with context: ${context}` : ""}. Return JSON {"questions": [{"question": "...", "options": ["A","B","C","D"], "answerIndex": 0}]}`;
     let questions = [];
     try {
       const text = await secureAIService.generateText(prompt, {
-        tier: 'standard',
+        tier: "standard",
         maxTokens: 1000,
         temperature: 0.6,
       });
       const jsonMatch =
-        typeof text === 'string' ? text.match(/\{[\s\S]*\}/) : null;
+        typeof text === "string" ? text.match(/\{[\s\S]*\}/) : null;
       const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
       questions = Array.isArray(parsed.questions) ? parsed.questions : [];
     } catch (e) {
       console.warn(
-        'Primary assessment generation failed, using fallback:',
-        e.message
+        "Primary assessment generation failed, using fallback:",
+        e.message,
       );
       questions = Array.from({ length: count }).map((_, i) => ({
         question: `Which statement about ${topic} is correct? (${i + 1})`,
@@ -1537,11 +1552,11 @@ export async function generateAssessmentQuestions(
       options: (q.options || []).map(String),
       correct_option_index: Number.isInteger(q.answerIndex) ? q.answerIndex : 0,
       order: idx + 1,
-      difficulty: options?.level || 'EASY',
+      difficulty: options?.level || "EASY",
     }));
     return { success: true, data: { questions: normalized } };
   } catch (error) {
-    console.error('❌ Assessment generation failed:', error);
+    console.error("❌ Assessment generation failed:", error);
     return { success: false, data: { questions: [] }, error: error.message };
   }
 }
@@ -1553,17 +1568,17 @@ export async function generateAssessmentQuestions(
  */
 export async function saveAICourse(courseData) {
   try {
-    console.log('💾 Saving AI-generated course:', courseData.title);
+    console.log("💾 Saving AI-generated course:", courseData.title);
 
     const response = await fetch(`${API_BASE}/api/ai/courses`, {
-      method: 'POST',
+      method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({
         ...courseData,
         isAIGenerated: true,
         aiMetadata: {
           generatedAt: new Date().toISOString(),
-          generationMethod: 'ai-service',
+          generationMethod: "ai-service",
         },
       }),
     });
@@ -1579,7 +1594,7 @@ export async function saveAICourse(courseData) {
       data: result,
     };
   } catch (error) {
-    console.error('❌ Failed to save AI course:', error);
+    console.error("❌ Failed to save AI course:", error);
     return {
       success: false,
       error: error.message,
@@ -1595,35 +1610,35 @@ export async function saveAICourse(courseData) {
 export async function saveAILessons(lessonData) {
   try {
     console.log(
-      '💾 Saving AI-generated lessons to database:',
-      lessonData.courseTitle
+      "💾 Saving AI-generated lessons to database:",
+      lessonData.courseTitle,
     );
 
     const { courseTitle, courseId, lessons, blockBased } = lessonData;
 
     if (!courseId) {
-      throw new Error('Course ID is required to save lessons');
+      throw new Error("Course ID is required to save lessons");
     }
 
     if (!lessons || lessons.length === 0) {
-      throw new Error('No lessons provided to save');
+      throw new Error("No lessons provided to save");
     }
 
-    console.log('📚 Lesson data to save:', {
+    console.log("📚 Lesson data to save:", {
       courseTitle,
       courseId,
       lessonCount: lessons.length,
       blockBased,
       totalBlocks: lessons.reduce(
         (acc, lesson) => acc + (lesson.blocks?.length || 0),
-        0
+        0,
       ),
     });
 
     // Group lessons by module
     const moduleGroups = {};
-    lessons.forEach(lesson => {
-      const moduleId = lesson.moduleId || 'default';
+    lessons.forEach((lesson) => {
+      const moduleId = lesson.moduleId || "default";
       if (!moduleGroups[moduleId]) {
         moduleGroups[moduleId] = [];
       }
@@ -1646,7 +1661,7 @@ export async function saveAILessons(lessonData) {
           price: 0, // Required field
         };
 
-        console.log('🔄 Creating module:', moduleData.title);
+        console.log("🔄 Creating module:", moduleData.title);
         const createdModule = await createModule(courseId, moduleData);
         createdModules.push(createdModule);
 
@@ -1655,17 +1670,17 @@ export async function saveAILessons(lessonData) {
           try {
             const lessonPayload = {
               title: lesson.title,
-              description: lesson.description || 'AI-generated lesson content',
-              content: lesson.content || '',
-              duration: lesson.duration || '15 min',
+              description: lesson.description || "AI-generated lesson content",
+              content: lesson.content || "",
+              duration: lesson.duration || "15 min",
               order: createdLessons.length + 1,
             };
 
-            console.log('🔄 Creating lesson:', lessonPayload.title);
+            console.log("🔄 Creating lesson:", lessonPayload.title);
             const createdLesson = await createLesson(
               courseId,
               createdModule.id,
-              lessonPayload
+              lessonPayload,
             );
             createdLessons.push(createdLesson);
 
@@ -1683,27 +1698,27 @@ export async function saveAILessons(lessonData) {
               };
 
               console.log(
-                '🔄 Updating lesson content for:',
-                lessonPayload.title
+                "🔄 Updating lesson content for:",
+                lessonPayload.title,
               );
               await updateLessonContent(createdLesson.id, contentData);
             }
           } catch (lessonError) {
             console.error(
-              '❌ Failed to create lesson:',
+              "❌ Failed to create lesson:",
               lesson.title,
-              lessonError
+              lessonError,
             );
             throw lessonError; // Re-throw to handle in outer catch
           }
         }
       } catch (moduleError) {
-        console.error('❌ Failed to create module:', moduleId, moduleError);
+        console.error("❌ Failed to create module:", moduleId, moduleError);
         throw moduleError; // Re-throw to handle in outer catch
       }
     }
 
-    console.log('✅ Successfully saved AI lessons to database:', {
+    console.log("✅ Successfully saved AI lessons to database:", {
       courseId,
       modulesCreated: createdModules.length,
       lessonsCreated: createdLessons.length,
@@ -1714,19 +1729,19 @@ export async function saveAILessons(lessonData) {
       data: {
         data: {
           courseId: courseId,
-          moduleIds: createdModules.map(m => m.id),
-          lessonIds: createdLessons.map(l => l.id),
+          moduleIds: createdModules.map((m) => m.id),
+          lessonIds: createdLessons.map((l) => l.id),
           modulesCreated: createdModules.length,
           lessonsCreated: createdLessons.length,
-          message: 'Lessons saved successfully to database',
+          message: "Lessons saved successfully to database",
         },
       },
     };
   } catch (error) {
-    console.error('❌ Failed to save AI lessons to database:', error);
+    console.error("❌ Failed to save AI lessons to database:", error);
     return {
       success: false,
-      error: error.message || 'Failed to save lessons to database',
+      error: error.message || "Failed to save lessons to database",
     };
   }
 }
@@ -1738,7 +1753,7 @@ export async function saveAILessons(lessonData) {
  */
 export async function updateEnhancedLessonContent(contentData) {
   try {
-    console.log('🔄 Updating lesson content:', contentData.courseTitle);
+    console.log("🔄 Updating lesson content:", contentData.courseTitle);
 
     // Enhanced content data processing
     const processedData = {
@@ -1749,10 +1764,10 @@ export async function updateEnhancedLessonContent(contentData) {
       totalBlocks:
         contentData.lessons?.reduce(
           (acc, lesson) => acc + (lesson.blocks?.length || 0),
-          0
+          0,
         ) || 0,
       lessons:
-        contentData.lessons?.map(lesson => ({
+        contentData.lessons?.map((lesson) => ({
           id: lesson.id,
           title: lesson.title,
           moduleId: lesson.moduleId,
@@ -1764,27 +1779,27 @@ export async function updateEnhancedLessonContent(contentData) {
       savedAt: contentData.savedAt || new Date().toISOString(),
     };
 
-    console.log('📚 Enhanced content data to update:', processedData);
+    console.log("📚 Enhanced content data to update:", processedData);
 
     // Try to save to backend API if available
     try {
       const response = await fetch(
         `${API_BASE}/api/courses/${contentData.courseId}/content`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: getAuthHeaders(),
           body: JSON.stringify(processedData),
-        }
+        },
       );
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Successfully saved to backend:', result);
+        console.log("✅ Successfully saved to backend:", result);
 
         return {
           success: true,
           data: {
-            message: 'Lesson content updated successfully',
+            message: "Lesson content updated successfully",
             courseId: contentData.courseId,
             updatedLessons: processedData.lessonCount,
             totalBlocks: processedData.totalBlocks,
@@ -1793,36 +1808,36 @@ export async function updateEnhancedLessonContent(contentData) {
           },
         };
       } else {
-        console.warn('⚠️ Backend save failed, using local storage fallback');
+        console.warn("⚠️ Backend save failed, using local storage fallback");
         throw new Error(`Backend save failed: ${response.status}`);
       }
     } catch (backendError) {
       console.warn(
-        '⚠️ Backend not available, using local storage:',
-        backendError.message
+        "⚠️ Backend not available, using local storage:",
+        backendError.message,
       );
 
       // Fallback to localStorage
-      const storageKey = `lesson_content_${contentData.courseId || 'temp'}`;
+      const storageKey = `lesson_content_${contentData.courseId || "temp"}`;
       localStorage.setItem(storageKey, JSON.stringify(processedData));
 
       // Also save to a general backup
       const allSavedContent = JSON.parse(
-        localStorage.getItem('ai_lesson_backups') || '{}'
+        localStorage.getItem("ai_lesson_backups") || "{}",
       );
-      allSavedContent[contentData.courseId || 'temp'] = processedData;
+      allSavedContent[contentData.courseId || "temp"] = processedData;
       localStorage.setItem(
-        'ai_lesson_backups',
-        JSON.stringify(allSavedContent)
+        "ai_lesson_backups",
+        JSON.stringify(allSavedContent),
       );
 
       // Simulate API delay for UX consistency
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       return {
         success: true,
         data: {
-          message: 'Lesson content saved locally (backend unavailable)',
+          message: "Lesson content saved locally (backend unavailable)",
           courseId: contentData.courseId || Date.now(),
           updatedLessons: processedData.lessonCount,
           totalBlocks: processedData.totalBlocks,
@@ -1833,10 +1848,10 @@ export async function updateEnhancedLessonContent(contentData) {
       };
     }
   } catch (error) {
-    console.error('❌ Failed to update lesson content:', error);
+    console.error("❌ Failed to update lesson content:", error);
     return {
       success: false,
-      error: error.message || 'Failed to update lesson content',
+      error: error.message || "Failed to update lesson content",
     };
   }
 }
@@ -1848,10 +1863,10 @@ export async function updateEnhancedLessonContent(contentData) {
  */
 export async function getAILessons(courseId) {
   try {
-    console.log('📚 Retrieving AI-generated lessons for course ID:', courseId);
+    console.log("📚 Retrieving AI-generated lessons for course ID:", courseId);
 
     const response = await fetch(`${API_BASE}/api/ai/lessons/${courseId}`, {
-      method: 'GET',
+      method: "GET",
       headers: getAuthHeaders(),
     });
 
@@ -1866,7 +1881,7 @@ export async function getAILessons(courseId) {
       data: result,
     };
   } catch (error) {
-    console.error('❌ Failed to retrieve AI lessons:', error);
+    console.error("❌ Failed to retrieve AI lessons:", error);
     return {
       success: false,
       error: error.message,
@@ -1880,10 +1895,10 @@ export async function getAILessons(courseId) {
  */
 export async function getAICourses() {
   try {
-    console.log('📚 Retrieving all AI-generated courses');
+    console.log("📚 Retrieving all AI-generated courses");
 
     const response = await fetch(`${API_BASE}/api/ai/courses`, {
-      method: 'GET',
+      method: "GET",
       headers: getAuthHeaders(),
     });
 
@@ -1898,7 +1913,7 @@ export async function getAICourses() {
       data: result,
     };
   } catch (error) {
-    console.error('❌ Failed to retrieve AI courses:', error);
+    console.error("❌ Failed to retrieve AI courses:", error);
     return {
       success: false,
       error: error.message,
@@ -1912,49 +1927,49 @@ export async function getAICourses() {
 class AICourseService {
   async generateCourseOutline(courseData) {
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Mock response - in a real implementation, this would call an AI service
     const mockOutline = {
-      course_title: courseData.title || 'Untitled Course',
+      course_title: courseData.title || "Untitled Course",
       modules: [
         {
           module_title:
-            'Introduction to ' + (courseData.subject || 'the subject'),
+            "Introduction to " + (courseData.subject || "the subject"),
           lesson: {
-            lesson_title: 'Getting Started',
-            lesson_intro: 'An introduction to the fundamental concepts',
+            lesson_title: "Getting Started",
+            lesson_intro: "An introduction to the fundamental concepts",
             lesson_content: [
               {
-                subtopic: 'Key Concepts',
-                content: 'Understanding the basic principles',
+                subtopic: "Key Concepts",
+                content: "Understanding the basic principles",
               },
               {
-                subtopic: 'Practical Applications',
-                content: 'Real-world examples and use cases',
+                subtopic: "Practical Applications",
+                content: "Real-world examples and use cases",
               },
             ],
             summary:
-              'This lesson provides a foundation for understanding the subject matter.',
+              "This lesson provides a foundation for understanding the subject matter.",
           },
         },
         {
-          module_title: 'Advanced ' + (courseData.subject || 'Topics'),
+          module_title: "Advanced " + (courseData.subject || "Topics"),
           lesson: {
-            lesson_title: 'Deep Dive',
-            lesson_intro: 'Exploring advanced concepts and techniques',
+            lesson_title: "Deep Dive",
+            lesson_intro: "Exploring advanced concepts and techniques",
             lesson_content: [
               {
-                subtopic: 'Advanced Techniques',
-                content: 'In-depth exploration of complex topics',
+                subtopic: "Advanced Techniques",
+                content: "In-depth exploration of complex topics",
               },
               {
-                subtopic: 'Best Practices',
-                content: 'Industry-standard approaches and methodologies',
+                subtopic: "Best Practices",
+                content: "Industry-standard approaches and methodologies",
               },
             ],
             summary:
-              'This lesson builds on the foundation to explore more complex topics.',
+              "This lesson builds on the foundation to explore more complex topics.",
           },
         },
       ],
@@ -1968,32 +1983,32 @@ class AICourseService {
 
   async generateCourseImage(prompt, options = {}) {
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Mock response - in a real implementation, this would call an image generation service
     return {
       success: true,
       data: {
-        url: 'https://placehold.co/600x400/cccccc/ffffff?text=AI+Generated+Image',
+        url: "https://placehold.co/600x400/cccccc/ffffff?text=AI+Generated+Image",
         prompt: prompt,
-        style: options.style || 'realistic',
+        style: options.style || "realistic",
       },
     };
   }
 
   async summarizeContent(content, options = {}) {
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     // Mock response - in a real implementation, this would call a summarization service
     return {
       success: true,
       data: {
         summary:
-          'This is a summarized version of the provided content. In a real implementation, this would be generated by an AI summarization service.',
+          "This is a summarized version of the provided content. In a real implementation, this would be generated by an AI summarization service.",
         originalLength: content.length,
         summaryLength: 100,
-        type: options.type || 'bullet',
+        type: options.type || "bullet",
       },
     };
   }
@@ -2006,17 +2021,17 @@ class AICourseService {
  */
 export async function createSimpleAICourse(courseData) {
   try {
-    console.log('🚀 Creating simple AI course:', courseData.title);
+    console.log("🚀 Creating simple AI course:", courseData.title);
 
     // Step 1: Generate AI course outline for single lesson
-    console.log('📋 Step 1: Generating AI lesson outline...');
+    console.log("📋 Step 1: Generating AI lesson outline...");
     const aiPrompt = `Create a single comprehensive lesson for the course "${courseData.title}".
 
 Course Details:
-- Subject: ${courseData.subject || 'General'}
-- Description: ${courseData.description || 'Educational content'}
-- Target Audience: ${courseData.targetAudience || 'Beginners'}
-- Difficulty: ${courseData.difficulty || 'beginner'}
+- Subject: ${courseData.subject || "General"}
+- Description: ${courseData.description || "Educational content"}
+- Target Audience: ${courseData.targetAudience || "Beginners"}
+- Difficulty: ${courseData.difficulty || "beginner"}
 
 Create a structured lesson with:
 - Clear lesson title and description
@@ -2044,7 +2059,7 @@ Format as JSON:
     try {
       const aiResult = await enhancedAIService.generateText(aiPrompt, {
         systemPrompt:
-          'You are an expert educational content creator. Generate well-structured lesson content in JSON format.',
+          "You are an expert educational content creator. Generate well-structured lesson content in JSON format.",
         maxTokens: 1000,
         temperature: 0.7,
       });
@@ -2057,18 +2072,18 @@ Format as JSON:
             content.match(/\{[\s\S]*\}/);
           const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
           lessonStructure = JSON.parse(jsonString);
-          console.log('✅ AI lesson structure generated');
+          console.log("✅ AI lesson structure generated");
         } catch (parseError) {
-          console.warn('Failed to parse AI response, using fallback');
-          throw new Error('JSON parse failed');
+          console.warn("Failed to parse AI response, using fallback");
+          throw new Error("JSON parse failed");
         }
       } else {
-        throw new Error(aiResult.error || 'AI generation failed');
+        throw new Error(aiResult.error || "AI generation failed");
       }
     } catch (aiError) {
       console.warn(
-        'AI generation failed, using fallback structure:',
-        aiError.message
+        "AI generation failed, using fallback structure:",
+        aiError.message,
       );
       lessonStructure = {
         lesson_title: `Introduction to ${courseData.title}`,
@@ -2081,15 +2096,15 @@ Format as JSON:
         ],
         content_sections: [
           {
-            title: 'What is ' + courseData.title + '?',
+            title: "What is " + courseData.title + "?",
             content: `${courseData.title} is a fundamental concept that helps you build better applications and solve complex problems.`,
           },
           {
-            title: 'Key Concepts',
+            title: "Key Concepts",
             content: `Understanding the core principles of ${courseData.title} is essential for effective implementation.`,
           },
           {
-            title: 'Best Practices',
+            title: "Best Practices",
             content: `Follow these proven approaches to get the most out of ${courseData.title}.`,
           },
         ],
@@ -2107,115 +2122,115 @@ Format as JSON:
     }
 
     // Step 2: Create Course
-    console.log('📚 Step 2: Creating course...');
+    console.log("📚 Step 2: Creating course...");
     const coursePayload = {
       title: courseData.title,
       description:
         courseData.description || `Learn ${courseData.title} fundamentals`,
       subject: courseData.subject || courseData.title,
-      objectives: lessonStructure.learning_objectives.join('\n'),
-      duration: courseData.duration || '1 week',
+      objectives: lessonStructure.learning_objectives.join("\n"),
+      duration: courseData.duration || "1 week",
       max_students: courseData.max_students || 100,
-      price: courseData.price || '0',
+      price: courseData.price || "0",
       thumbnail: courseData.thumbnail || null,
     };
 
     const course = await createAICourse(coursePayload);
     const courseId = course.data?.id || course.id;
-    console.log('✅ Course created:', courseId);
+    console.log("✅ Course created:", courseId);
 
     // Step 3: Create Module
-    console.log('📖 Step 3: Creating module...');
+    console.log("📖 Step 3: Creating module...");
     const moduleData = {
-      title: 'Module 1: ' + lessonStructure.lesson_title,
+      title: "Module 1: " + lessonStructure.lesson_title,
       description: lessonStructure.lesson_description,
       order: 1,
       estimated_duration: 60,
-      module_status: 'PUBLISHED',
+      module_status: "PUBLISHED",
       price: 0,
     };
     // Note: Thumbnail omitted - will be added separately if needed
 
     const module = await createModule(courseId, moduleData);
     const moduleId = module.data?.id || module.id;
-    console.log('✅ Module created:', moduleId);
+    console.log("✅ Module created:", moduleId);
 
     // Step 4: Create Lesson
-    console.log('📝 Step 4: Creating lesson...');
+    console.log("📝 Step 4: Creating lesson...");
     const lessonPayload = {
       title: lessonStructure.lesson_title,
       description: lessonStructure.lesson_description,
       order: 1,
-      status: 'PUBLISHED',
-      duration: courseData.lessonDuration || '30 min',
+      status: "PUBLISHED",
+      duration: courseData.lessonDuration || "30 min",
     };
 
     const lesson = await createLesson(courseId, moduleId, lessonPayload);
     const lessonId = lesson.data?.id || lesson.id;
-    console.log('✅ Lesson created:', lessonId);
+    console.log("✅ Lesson created:", lessonId);
 
     // Step 5: Generate Comprehensive AI Content using ALL Content Library Types
     console.log(
-      '📦 Step 5: Generating comprehensive AI lesson content using all content library types...'
+      "📦 Step 5: Generating comprehensive AI lesson content using all content library types...",
     );
 
     // Enhanced gradient color schemes with better color combinations
     const gradientSchemes = [
       {
-        from: 'indigo-600',
-        via: 'purple-600',
-        to: 'pink-600',
-        accent: 'indigo-700',
-        name: 'Royal Purple',
+        from: "indigo-600",
+        via: "purple-600",
+        to: "pink-600",
+        accent: "indigo-700",
+        name: "Royal Purple",
       },
       {
-        from: 'emerald-600',
-        via: 'teal-600',
-        to: 'cyan-600',
-        accent: 'emerald-700',
-        name: 'Ocean Breeze',
+        from: "emerald-600",
+        via: "teal-600",
+        to: "cyan-600",
+        accent: "emerald-700",
+        name: "Ocean Breeze",
       },
       {
-        from: 'orange-600',
-        via: 'red-600',
-        to: 'pink-600',
-        accent: 'orange-700',
-        name: 'Sunset Fire',
+        from: "orange-600",
+        via: "red-600",
+        to: "pink-600",
+        accent: "orange-700",
+        name: "Sunset Fire",
       },
       {
-        from: 'blue-600',
-        via: 'indigo-600',
-        to: 'purple-600',
-        accent: 'blue-700',
-        name: 'Deep Ocean',
+        from: "blue-600",
+        via: "indigo-600",
+        to: "purple-600",
+        accent: "blue-700",
+        name: "Deep Ocean",
       },
       {
-        from: 'green-600',
-        via: 'emerald-600',
-        to: 'teal-600',
-        accent: 'green-700',
-        name: 'Forest Green',
+        from: "green-600",
+        via: "emerald-600",
+        to: "teal-600",
+        accent: "green-700",
+        name: "Forest Green",
       },
       {
-        from: 'violet-600',
-        via: 'fuchsia-600',
-        to: 'pink-600',
-        accent: 'violet-700',
-        name: 'Mystic Purple',
+        from: "violet-600",
+        via: "fuchsia-600",
+        to: "pink-600",
+        accent: "violet-700",
+        name: "Mystic Purple",
       },
       {
-        from: 'rose-600',
-        via: 'pink-600',
-        to: 'fuchsia-600',
-        accent: 'rose-700',
-        name: 'Rose Garden',
+        from: "rose-600",
+        via: "pink-600",
+        to: "fuchsia-600",
+        accent: "rose-700",
+        name: "Rose Garden",
       },
       {
-        from: 'amber-600',
-        via: 'yellow-600',
-        to: 'orange-600',
-        accent: 'amber-700',
-        name: 'Golden Sun',
+        from: "amber-600",
+        via: "yellow-600",
+        to: "orange-600",
+        accent: "amber-700",
+        name: "Golden Sun",
       },
     ];
 
@@ -2239,9 +2254,9 @@ Format as JSON:
 
     // PAGE 1: Master Heading Block (First Page)
     contentBlocks.push({
-      type: 'text',
+      type: "text",
       block_id: `ai_master_title_${lessonId}`,
-      textType: 'master_heading',
+      textType: "master_heading",
       html_css: `
         <div class="relative overflow-hidden rounded-3xl p-12 bg-gradient-to-br from-${gradientSchemes[0].from} via-${gradientSchemes[0].via} to-${gradientSchemes[0].to} text-white mb-8 shadow-2xl">
           <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-24 translate-x-24 animate-pulse"></div>
@@ -2270,7 +2285,7 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        textType: 'master_heading',
+        textType: "master_heading",
         title: lessonStructure.lesson_title,
         content: lessonStructure.lesson_description,
       },
@@ -2278,9 +2293,9 @@ Format as JSON:
 
     // PAGE BREAK: Continue Divider (Moves to Page 2)
     contentBlocks.push({
-      type: 'divider',
+      type: "divider",
       block_id: `ai_page_break_${lessonId}`,
-      subtype: 'continue',
+      subtype: "continue",
       html_css: `
         <div class="flex items-center justify-center py-12 mb-8">
           <div class="flex flex-col items-center space-y-6">
@@ -2299,8 +2314,8 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        type: 'continue_divider',
-        subtype: 'continue',
+        type: "continue_divider",
+        subtype: "continue",
       },
     });
 
@@ -2308,9 +2323,9 @@ Format as JSON:
 
     // 1. HEADING TEXT BLOCK - Course Introduction
     contentBlocks.push({
-      type: 'text',
+      type: "text",
       block_id: `ai_intro_heading_${lessonId}`,
-      textType: 'heading',
+      textType: "heading",
       html_css: `
         <div class="mb-8">
           <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome to ${lessonStructure.lesson_title}</h1>
@@ -2319,7 +2334,7 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        textType: 'heading',
+        textType: "heading",
         title: `Welcome to ${lessonStructure.lesson_title}`,
         content: `Welcome to ${lessonStructure.lesson_title}`,
       },
@@ -2327,9 +2342,9 @@ Format as JSON:
 
     // 2. STATEMENT BLOCK - Important Note (statement-c type)
     contentBlocks.push({
-      type: 'statement',
+      type: "statement",
       block_id: `ai_intro_statement_${lessonId}`,
-      statementType: 'statement-c',
+      statementType: "statement-c",
       html_css: `
         <div class="bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-${gradientSchemes[1].from} p-6 rounded-r-xl shadow-sm mb-8">
           <div class="flex items-start">
@@ -2345,17 +2360,17 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        statementType: 'statement-c',
+        statementType: "statement-c",
         content: `This lesson will provide you with comprehensive knowledge about ${courseData.title}. Take your time to understand each concept thoroughly.`,
       },
     });
 
     // 3. QUOTE BLOCK - Inspirational Quote (quote_b type)
     contentBlocks.push({
-      type: 'quote',
+      type: "quote",
       block_id: `ai_inspiration_quote_${lessonId}`,
-      textType: 'quote_b',
-      quoteType: 'quote_b',
+      textType: "quote_b",
+      quoteType: "quote_b",
       html_css: `
         <div class="text-center bg-gray-50 rounded-2xl p-12 mb-8 shadow-lg">
           <blockquote class="text-3xl font-thin text-gray-800 mb-6 leading-relaxed italic">
@@ -2370,18 +2385,18 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        textType: 'quote_b',
-        quoteType: 'quote_b',
+        textType: "quote_b",
+        quoteType: "quote_b",
         content: JSON.stringify({
           quote:
-            'Learning is not attained by chance, it must be sought for with ardor and attended to with diligence.',
-          author: 'Abigail Adams',
+            "Learning is not attained by chance, it must be sought for with ardor and attended to with diligence.",
+          author: "Abigail Adams",
         }),
       },
     });
 
     // 4. IMAGE BLOCK - AI Generated Learning Objectives Illustration
-    console.log('🖼️ Generating AI image for learning objectives...');
+    console.log("🖼️ Generating AI image for learning objectives...");
     let objectivesImageUrl = null;
     try {
       let objectivesPrompt = `Professional educational illustration showing learning objectives and goals for ${lessonStructure.lesson_title}. Modern, clean design with icons representing education, targets, and achievement. Bright colors, minimalist style.`;
@@ -2391,25 +2406,25 @@ Format as JSON:
 
       const imageResult = await generateImage({
         prompt: objectivesPrompt,
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'vivid',
+        size: "1024x1024",
+        quality: "standard",
+        style: "vivid",
       });
 
       if (imageResult.success) {
         objectivesImageUrl = imageResult.data.url;
-        console.log('✅ Learning objectives image generated successfully');
+        console.log("✅ Learning objectives image generated successfully");
       }
     } catch (imageError) {
       console.warn(
-        '⚠️ Failed to generate objectives image:',
-        imageError.message
+        "⚠️ Failed to generate objectives image:",
+        imageError.message,
       );
     }
 
     if (objectivesImageUrl) {
       contentBlocks.push({
-        type: 'image',
+        type: "image",
         block_id: `ai_objectives_image_${lessonId}`,
         html_css: `
           <div class="lesson-image centered mb-8">
@@ -2425,10 +2440,10 @@ Format as JSON:
         order: blockOrder++,
         details: {
           image_url: objectivesImageUrl,
-          alt_text: 'Learning Objectives Illustration',
+          alt_text: "Learning Objectives Illustration",
           caption:
             "Visual representation of what you'll achieve in this lesson",
-          layout: 'centered',
+          layout: "centered",
           aiGenerated: true,
         },
       });
@@ -2436,9 +2451,9 @@ Format as JSON:
 
     // 5. LIST BLOCK - Learning Objectives (numbered list)
     contentBlocks.push({
-      type: 'list',
+      type: "list",
       block_id: `ai_objectives_list_${lessonId}`,
-      listType: 'numbered',
+      listType: "numbered",
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
           <div class="flex items-center mb-6">
@@ -2459,25 +2474,25 @@ Format as JSON:
                   <p class="text-gray-700 leading-relaxed font-medium">${obj}</p>
                 </div>
               </li>
-            `
+            `,
               )
-              .join('')}
+              .join("")}
           </ol>
         </div>
       `,
       order: blockOrder++,
       details: {
-        listType: 'numbered',
+        listType: "numbered",
         content: JSON.stringify({
           items: lessonStructure.learning_objectives,
-          listType: 'numbered',
+          listType: "numbered",
         }),
       },
     });
 
     // 6. YOUTUBE BLOCK - Educational Video (placeholder)
     contentBlocks.push({
-      type: 'youtube',
+      type: "youtube",
       block_id: `ai_intro_video_${lessonId}`,
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
@@ -2495,7 +2510,7 @@ Format as JSON:
             <p class="text-gray-600 mb-4">Get a quick introduction to the key concepts we'll cover</p>
             <div class="text-sm text-gray-500">
               <p>🎥 Duration: 5-10 minutes</p>
-              <p>📚 Level: ${courseData.level || 'Beginner'}</p>
+              <p>📚 Level: ${courseData.level || "Beginner"}</p>
             </div>
           </div>
         </div>
@@ -2510,7 +2525,7 @@ Format as JSON:
 
     // 7. LINK BLOCK - Additional Resources
     contentBlocks.push({
-      type: 'link',
+      type: "link",
       block_id: `ai_resources_link_${lessonId}`,
       html_css: `
         <div class="bg-gradient-to-r from-${gradientSchemes[4].from}/10 to-${gradientSchemes[4].to}/10 rounded-2xl p-6 mb-8 border border-${gradientSchemes[4].from}/20">
@@ -2531,7 +2546,7 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        link_url: 'https://example.com',
+        link_url: "https://example.com",
         link_text: `Read More About ${courseData.title}`,
         description: `Explore more about ${courseData.title} with these curated resources`,
       },
@@ -2548,9 +2563,9 @@ Format as JSON:
 
       // 8a. SUBHEADING TEXT BLOCK for section
       contentBlocks.push({
-        type: 'text',
+        type: "text",
         block_id: `ai_section_subheading_${lessonId}_${index}`,
-        textType: 'subheading',
+        textType: "subheading",
         html_css: `
           <div class="mb-6">
             <h2 class="text-2xl font-semibold text-gray-800 mb-3">${section.title}</h2>
@@ -2559,7 +2574,7 @@ Format as JSON:
         `,
         order: blockOrder++,
         details: {
-          textType: 'subheading',
+          textType: "subheading",
           title: section.title,
           content: section.title,
         },
@@ -2576,9 +2591,9 @@ Format as JSON:
 
         const imageResult = await generateImage({
           prompt: sectionPrompt,
-          size: '1024x1024',
-          quality: 'standard',
-          style: 'vivid',
+          size: "1024x1024",
+          quality: "standard",
+          style: "vivid",
         });
 
         if (imageResult.success) {
@@ -2588,18 +2603,18 @@ Format as JSON:
       } catch (imageError) {
         console.warn(
           `⚠️ Failed to generate section ${index + 1} image:`,
-          imageError.message
+          imageError.message,
         );
       }
 
       // 8c. IMAGE BLOCK with side-by-side layout
       if (sectionImageUrl) {
-        const alignment = index % 2 === 0 ? 'left' : 'right';
-        const imageOrder = alignment === 'left' ? 'order-1' : 'order-2';
-        const textOrder = alignment === 'left' ? 'order-2' : 'order-1';
+        const alignment = index % 2 === 0 ? "left" : "right";
+        const imageOrder = alignment === "left" ? "order-1" : "order-2";
+        const textOrder = alignment === "left" ? "order-2" : "order-1";
 
         contentBlocks.push({
-          type: 'image',
+          type: "image",
           block_id: `ai_section_image_${lessonId}_${index}`,
           html_css: `
             <div class="lesson-image side-by-side mb-8">
@@ -2623,7 +2638,7 @@ Format as JSON:
             image_url: sectionImageUrl,
             alt_text: `${section.title} Illustration`,
             caption: section.content,
-            layout: 'side-by-side',
+            layout: "side-by-side",
             alignment: alignment,
             aiGenerated: true,
           },
@@ -2631,9 +2646,9 @@ Format as JSON:
       } else {
         // 8d. PARAGRAPH TEXT BLOCK if no image
         contentBlocks.push({
-          type: 'text',
+          type: "text",
           block_id: `ai_section_paragraph_${lessonId}_${index}`,
-          textType: 'paragraph',
+          textType: "paragraph",
           html_css: `
             <div class="bg-gradient-to-r from-${scheme.from}/5 to-${scheme.to}/5 rounded-2xl p-8 mb-8 border border-${scheme.from}/20">
               <p class="text-gray-700 leading-relaxed text-lg font-medium">${section.content}</p>
@@ -2641,7 +2656,7 @@ Format as JSON:
           `,
           order: blockOrder++,
           details: {
-            textType: 'paragraph',
+            textType: "paragraph",
             content: section.content,
           },
         });
@@ -2650,7 +2665,7 @@ Format as JSON:
 
     // 9. TABLE BLOCK - Comparison or Summary Table
     contentBlocks.push({
-      type: 'table', // Use singular to match backend and most frontend code
+      type: "table", // Use singular to match backend and most frontend code
       block_id: `ai_summary_table_${lessonId}`,
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
@@ -2673,7 +2688,7 @@ Format as JSON:
                 ${lessonStructure.content_sections
                   .map(
                     (section, index) => `
-                  <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                  <tr class="${index % 2 === 0 ? "bg-gray-50" : "bg-white"}">
                     <td class="border border-gray-200 p-4 font-medium text-${gradientSchemes[5].accent}">${section.title}</td>
                     <td class="border border-gray-200 p-4 text-gray-700">${section.content.substring(0, 100)}...</td>
                     <td class="border border-gray-200 p-4">
@@ -2682,9 +2697,9 @@ Format as JSON:
                       </span>
                     </td>
                   </tr>
-                `
+                `,
                   )
-                  .join('')}
+                  .join("")}
               </tbody>
             </table>
           </div>
@@ -2693,11 +2708,11 @@ Format as JSON:
       order: blockOrder++,
       details: {
         table_data: {
-          headers: ['Concept', 'Description', 'Importance'],
-          rows: lessonStructure.content_sections.map(section => [
+          headers: ["Concept", "Description", "Importance"],
+          rows: lessonStructure.content_sections.map((section) => [
             section.title,
-            section.content.substring(0, 100) + '...',
-            'Essential',
+            section.content.substring(0, 100) + "...",
+            "Essential",
           ]),
         },
       },
@@ -2705,7 +2720,7 @@ Format as JSON:
 
     // 10. AUDIO BLOCK - Podcast or Audio Summary
     contentBlocks.push({
-      type: 'audio',
+      type: "audio",
       block_id: `ai_audio_summary_${lessonId}`,
       html_css: `
         <div class="bg-gradient-to-r from-${gradientSchemes[6].from}/10 to-${gradientSchemes[6].to}/10 rounded-2xl p-8 mb-8 border border-${gradientSchemes[6].from}/20">
@@ -2735,15 +2750,15 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        audio_url: 'https://example.com/audio.mp3', // Placeholder
+        audio_url: "https://example.com/audio.mp3", // Placeholder
         audio_title: `${lessonStructure.lesson_title} - Audio Summary`,
-        description: 'Listen to a comprehensive overview of this lesson',
+        description: "Listen to a comprehensive overview of this lesson",
       },
     });
 
     // 11. REGULAR DIVIDER - Visual Separation
     contentBlocks.push({
-      type: 'divider',
+      type: "divider",
       block_id: `ai_divider_${lessonId}`,
       html_css: `
         <div class="flex items-center justify-center py-8 mb-8">
@@ -2757,14 +2772,14 @@ Format as JSON:
         </div>
       `,
       order: blockOrder++,
-      details: { type: 'divider' },
+      details: { type: "divider" },
     });
 
     // 12. CHECKBOX LIST BLOCK - Interactive Checklist
     contentBlocks.push({
-      type: 'list',
+      type: "list",
       block_id: `ai_checklist_${lessonId}`,
-      listType: 'checkbox',
+      listType: "checkbox",
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
           <div class="flex items-center mb-6">
@@ -2783,18 +2798,18 @@ Format as JSON:
                   <label class="text-gray-700 leading-relaxed font-medium cursor-pointer">${takeaway}</label>
                 </div>
               </div>
-            `
+            `,
               )
-              .join('')}
+              .join("")}
           </div>
         </div>
       `,
       order: blockOrder++,
       details: {
-        listType: 'checkbox',
+        listType: "checkbox",
         content: JSON.stringify({
           items: lessonStructure.key_takeaways,
-          listType: 'checkbox',
+          listType: "checkbox",
           checkedItems: {},
         }),
       },
@@ -2802,7 +2817,7 @@ Format as JSON:
 
     // 13. PDF BLOCK - Downloadable Resource
     contentBlocks.push({
-      type: 'pdf',
+      type: "pdf",
       block_id: `ai_pdf_resource_${lessonId}`,
       html_css: `
         <div class="bg-gradient-to-r from-${gradientSchemes[1].from}/10 to-${gradientSchemes[1].to}/10 rounded-2xl p-8 mb-8 border border-${gradientSchemes[1].from}/20">
@@ -2837,15 +2852,15 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        pdf_url: 'https://example.com/study-guide.pdf', // Placeholder
+        pdf_url: "https://example.com/study-guide.pdf", // Placeholder
         pdf_title: `${lessonStructure.lesson_title} - Study Guide`,
-        description: 'Comprehensive notes and key points',
+        description: "Comprehensive notes and key points",
       },
     });
 
     // 14. VIDEO BLOCK - Educational Video
     contentBlocks.push({
-      type: 'video',
+      type: "video",
       block_id: `ai_video_demo_${lessonId}`,
       html_css: `
         <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
@@ -2871,18 +2886,18 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        video_url: 'https://example.com/demo-video.mp4', // Placeholder
+        video_url: "https://example.com/demo-video.mp4", // Placeholder
         video_title: `${lessonStructure.lesson_title} in Action`,
-        description: 'See practical applications and real-world examples',
+        description: "See practical applications and real-world examples",
       },
     });
 
     // 15. QUOTE BLOCK - Expert Quote (quote_a type)
     contentBlocks.push({
-      type: 'quote',
+      type: "quote",
       block_id: `ai_expert_quote_${lessonId}`,
-      textType: 'quote_a',
-      quoteType: 'quote_a',
+      textType: "quote_a",
+      quoteType: "quote_a",
       html_css: `
         <div class="relative bg-gradient-to-br from-gray-50 to-white p-8 max-w-4xl mx-auto rounded-2xl shadow-lg border border-gray-100 mb-8">
           <div class="flex items-start space-x-4">
@@ -2901,13 +2916,13 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        textType: 'quote_a',
-        quoteType: 'quote_a',
+        textType: "quote_a",
+        quoteType: "quote_a",
         content: JSON.stringify({
           quote: `Mastering ${courseData.title} is essential for anyone looking to excel in today's technology-driven world. The concepts covered in this lesson form the foundation for advanced learning.`,
-          author: 'Dr. Sarah Johnson, Technology Expert',
+          author: "Dr. Sarah Johnson, Technology Expert",
           authorImage:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
         }),
       },
     });
@@ -2915,7 +2930,7 @@ Format as JSON:
     // 5. Examples Block - Interactive Style
     if (lessonStructure.examples && lessonStructure.examples.length > 0) {
       contentBlocks.push({
-        type: 'interactive',
+        type: "interactive",
         block_id: `ai_examples_${lessonId}`,
         html_css: `
           <div class="relative bg-gradient-to-br from-${gradientSchemes[3].from}/5 via-white to-${gradientSchemes[3].to}/5 rounded-2xl shadow-xl p-8 mb-8 border border-${gradientSchemes[3].from}/20">
@@ -2944,26 +2959,26 @@ Format as JSON:
                       </div>
                     </div>
                   </div>
-                `
+                `,
                   )
-                  .join('')}
+                  .join("")}
               </div>
             </div>
           </div>
         `,
         order: blockOrder++,
         details: {
-          type: 'examples',
-          content: lessonStructure.examples.join('\n'),
+          type: "examples",
+          content: lessonStructure.examples.join("\n"),
         },
       });
     }
 
     // 6. Key Takeaways - Statement Block Style
     contentBlocks.push({
-      type: 'statement',
+      type: "statement",
       block_id: `ai_takeaways_${lessonId}`,
-      statementType: 'statement-success',
+      statementType: "statement-success",
       html_css: `
         <div class="relative bg-gradient-to-br from-${gradientSchemes[4].from} via-${gradientSchemes[4].via} to-${gradientSchemes[4].to} rounded-3xl shadow-2xl p-10 mb-8 text-white overflow-hidden">
           <div class="absolute top-0 left-0 w-full h-full bg-black/10 rounded-3xl"></div>
@@ -2990,9 +3005,9 @@ Format as JSON:
                   </div>
                   <p class="text-white font-medium leading-relaxed text-lg">${takeaway}</p>
                 </div>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
             </div>
             <div class="mt-8 text-center">
               <div class="inline-flex items-center space-x-2 bg-white/10 rounded-full px-6 py-3 backdrop-blur-sm">
@@ -3005,15 +3020,15 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        statementType: 'statement-success',
-        type: 'takeaways',
-        content: lessonStructure.key_takeaways.join('\n'),
+        statementType: "statement-success",
+        type: "takeaways",
+        content: lessonStructure.key_takeaways.join("\n"),
       },
     });
 
     // FINAL DIVIDER: End of Lesson Divider
     contentBlocks.push({
-      type: 'divider',
+      type: "divider",
       block_id: `ai_final_divider_${lessonId}`,
       html_css: `
         <div class="flex flex-col items-center justify-center py-16 mb-8">
@@ -3045,13 +3060,13 @@ Format as JSON:
       `,
       order: blockOrder++,
       details: {
-        type: 'final_divider',
-        purpose: 'lesson_completion',
+        type: "final_divider",
+        purpose: "lesson_completion",
       },
     });
 
     // Step 6: Save Content Blocks to Lesson
-    console.log('💾 Step 6: Saving content blocks to lesson...');
+    console.log("💾 Step 6: Saving content blocks to lesson...");
     const contentData = {
       content: contentBlocks,
       metadata: {
@@ -3063,7 +3078,7 @@ Format as JSON:
     };
 
     await updateLessonContent(lessonId, contentData);
-    console.log('✅ Lesson content blocks saved');
+    console.log("✅ Lesson content blocks saved");
 
     const result = {
       success: true,
@@ -3080,10 +3095,10 @@ Format as JSON:
       },
     };
 
-    console.log('🎉 Simple AI course created successfully:', result);
+    console.log("🎉 Simple AI course created successfully:", result);
     return result;
   } catch (error) {
-    console.error('❌ Error creating simple AI course:', error);
+    console.error("❌ Error creating simple AI course:", error);
     return {
       success: false,
       error: error.message,

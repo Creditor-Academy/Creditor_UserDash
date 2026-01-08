@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import React, { useState } from "react";
 import {
   Zap,
   TrendingUp,
@@ -7,70 +6,35 @@ import {
   BarChart3,
   Clock,
   Plus,
-} from 'lucide-react';
-import './AIUsageHeader.css';
-import { subscribeActiveOrgUsageRefresh } from '../../utils/activeOrgUsageEvents';
-import { useAuth } from '../../contexts/AuthContext';
+} from "lucide-react";
+import "./AIUsageHeader.css";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTokenCache } from "../../hooks/useTokenCache";
 
 /**
  * AIUsageHeader Component
  * Premium AI usage display for top of page
  * Shows organization token usage with detailed breakdown
  * Only visible to admin and instructor roles
+ *
+ * Uses centralized token cache to prevent excessive API calls
  */
 export const AIUsageHeader = () => {
   const { userRoles } = useAuth();
-  const [org, setOrg] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
-  const [noOrg, setNoOrg] = useState(false);
+
+  // Use token cache hook - prevents repeated API calls with smart caching
+  const { org, loading, error, noOrg } = useTokenCache();
 
   // Check if user is admin or instructor
   const isAdminOrInstructor = userRoles?.some(
-    role => role === 'admin' || role === 'instructor'
+    (role) => role === "admin" || role === "instructor",
   );
 
   // Hide component for regular users
   if (!isAdminOrInstructor) {
     return null;
   }
-
-  const fetchTokenStats = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/my-active-organization');
-      if (response.data?.data) {
-        setOrg(response.data.data);
-        setError(null);
-        setNoOrg(false);
-      } else {
-        setOrg(null);
-        setNoOrg(true);
-      }
-    } catch (err) {
-      console.error('Failed to fetch active org usage:', err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        setNoOrg(true);
-        setError('No active organization. Please login again.');
-      } else {
-        setError('Failed to load AI usage');
-      }
-      setOrg(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchTokenStats();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchTokenStats, 60000);
-    const unsubscribe = subscribeActiveOrgUsageRefresh(fetchTokenStats);
-    return () => {
-      clearInterval(interval);
-      unsubscribe?.();
-    };
-  }, [fetchTokenStats]);
 
   if (loading) {
     return (
@@ -102,7 +66,7 @@ export const AIUsageHeader = () => {
 
   const organization = org;
   const percentage = Math.round(
-    (organization.ai_tokens_used / organization.ai_token_limit) * 100
+    (organization.ai_tokens_used / organization.ai_token_limit) * 100,
   );
   const isWarning = percentage >= 80;
   const isExceeded = percentage >= 100;
@@ -114,7 +78,7 @@ export const AIUsageHeader = () => {
   const daysInMonth = new Date(
     today.getFullYear(),
     today.getMonth() + 1,
-    0
+    0,
   ).getDate();
   const currentDay = today.getDate();
   const dailyAverage = Math.round(organization.ai_tokens_used / currentDay);
@@ -122,7 +86,7 @@ export const AIUsageHeader = () => {
 
   return (
     <div
-      className={`ai-usage-header ${isExceeded ? 'exceeded' : isWarning ? 'warning' : 'normal'}`}
+      className={`ai-usage-header ${isExceeded ? "exceeded" : isWarning ? "warning" : "normal"}`}
     >
       {/* Main Header Bar */}
       <div className="header-main">
@@ -155,7 +119,7 @@ export const AIUsageHeader = () => {
           <div className="stat-box remaining">
             <span className="stat-label">Remaining</span>
             <span
-              className={`stat-value ${tokensRemaining < 100000 ? 'low' : ''}`}
+              className={`stat-value ${tokensRemaining < 100000 ? "low" : ""}`}
             >
               {tokensRemaining.toLocaleString()}
             </span>
@@ -167,7 +131,7 @@ export const AIUsageHeader = () => {
           <span className="org-id-text">{organization.id}</span>
           <button
             className="token-management-btn"
-            onClick={() => (window.location.href = '/storage-and-tokens')}
+            onClick={() => (window.location.href = "/storage-and-tokens")}
             title="Manage tokens and storage"
           >
             <Plus size={18} />
@@ -175,7 +139,7 @@ export const AIUsageHeader = () => {
           <button
             className="expand-btn"
             onClick={() => setExpanded(!expanded)}
-            title={expanded ? 'Collapse' : 'Expand'}
+            title={expanded ? "Collapse" : "Expand"}
           >
             <svg
               width="20"
@@ -183,7 +147,7 @@ export const AIUsageHeader = () => {
               viewBox="0 0 20 20"
               fill="none"
               stroke="currentColor"
-              className={`expand-icon ${expanded ? 'rotated' : ''}`}
+              className={`expand-icon ${expanded ? "rotated" : ""}`}
             >
               <path
                 d="M7 8l5 5 5-5"
@@ -201,7 +165,7 @@ export const AIUsageHeader = () => {
         <div className="progress-bar-container">
           <div className="progress-bar">
             <div
-              className={`progress-fill ${isExceeded ? 'exceeded' : isWarning ? 'warning' : ''}`}
+              className={`progress-fill ${isExceeded ? "exceeded" : isWarning ? "warning" : ""}`}
               style={{ width: `${Math.min(percentage, 100)}%` }}
             >
               <div className="progress-shimmer"></div>
@@ -252,7 +216,7 @@ export const AIUsageHeader = () => {
                   <span>Projected Monthly</span>
                 </div>
                 <span
-                  className={`projection-value ${projectedMonthly > organization.ai_token_limit ? 'over-limit' : ''}`}
+                  className={`projection-value ${projectedMonthly > organization.ai_token_limit ? "over-limit" : ""}`}
                 >
                   {projectedMonthly.toLocaleString()} tokens
                   {projectedMonthly > organization.ai_token_limit && (
@@ -268,7 +232,7 @@ export const AIUsageHeader = () => {
                 <span className="projection-value">
                   {tokensRemaining > 0 && dailyAverage > 0
                     ? Math.ceil(tokensRemaining / dailyAverage)
-                    : '∞'}{' '}
+                    : "∞"}{" "}
                   days
                 </span>
               </div>

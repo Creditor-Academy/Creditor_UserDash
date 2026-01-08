@@ -1,14 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { Zap, AlertCircle } from 'lucide-react';
-import './CompactTokenDisplay.css';
-import { subscribeActiveOrgUsageRefresh } from '../../utils/activeOrgUsageEvents';
+import React, { useEffect, useState, useCallback } from "react";
+import axios from "axios";
+import { Zap, AlertCircle } from "lucide-react";
+import "./CompactTokenDisplay.css";
+import { subscribeActiveOrgUsageRefresh } from "../../utils/activeOrgUsageEvents";
 
-/**
- * CompactTokenDisplay Component
- * Compact token display for header/top bar
- * Shows quick token status at a glance
- */
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
+
 export const CompactTokenDisplay = () => {
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +14,11 @@ export const CompactTokenDisplay = () => {
 
   const fetchTokenStats = useCallback(async () => {
     try {
-      const response = await axios.get('/api/my-active-organization');
+      // const response = await axios.get('/api/my-active-organization');
+      const response = await axios.get(
+        `${API_BASE}/api/my-active-organization`,
+        { withCredentials: true },
+      );
       if (response.data?.data) {
         setOrg(response.data.data);
         setError(null);
@@ -27,12 +28,14 @@ export const CompactTokenDisplay = () => {
         setNoOrg(true);
       }
     } catch (err) {
-      console.error('Failed to fetch active org tokens:', err);
+      console.error("Failed to fetch active org tokens:", err);
       if (err.response?.status === 401 || err.response?.status === 403) {
         setNoOrg(true);
-        setError('No active organization. Please login again.');
+        // setError('No active organization. Please login again.');
+        setError("No active organization. Please login again.");
       } else {
-        setError('Failed to load tokens');
+        // setError('Failed to load tokens');
+        setError("Failed to load tokens");
       }
       setOrg(null);
     } finally {
@@ -42,14 +45,12 @@ export const CompactTokenDisplay = () => {
 
   useEffect(() => {
     fetchTokenStats();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchTokenStats, 60000);
+    // Only refresh when AI operations trigger the event
     const unsubscribe = subscribeActiveOrgUsageRefresh(fetchTokenStats);
     return () => {
-      clearInterval(interval);
       unsubscribe?.();
     };
-  }, [fetchTokenStats]);
+  }, []);
 
   if (loading) {
     return (
@@ -80,7 +81,7 @@ export const CompactTokenDisplay = () => {
 
   const organization = org;
   const percentage = Math.round(
-    (organization.ai_tokens_used / organization.ai_token_limit) * 100
+    (organization.ai_tokens_used / organization.ai_token_limit) * 100,
   );
   const isWarning = percentage >= 80;
   const isExceeded = percentage >= 100;
@@ -89,7 +90,8 @@ export const CompactTokenDisplay = () => {
 
   return (
     <div
-      className={`compact-token-display ${isExceeded ? 'exceeded' : isWarning ? 'warning' : 'normal'}`}
+      // className={`compact-token-display ${isExceeded ? 'exceeded' : isWarning ? 'warning' : 'normal'}`}
+      className={`compact-token-display ${isExceeded ? "exceeded" : isWarning ? "warning" : "normal"}`}
     >
       <div className="token-icon-wrapper">
         <Zap size={16} className="token-icon" />
@@ -98,7 +100,8 @@ export const CompactTokenDisplay = () => {
       <div className="token-info">
         <div className="token-label">AI Tokens</div>
         <div className="token-value">
-          {organization.ai_tokens_used.toLocaleString()} /{' '}
+          {/* {organization.ai_tokens_used.toLocaleString()} /{' '} */}
+          {organization.ai_tokens_used.toLocaleString()} /{" "}
           {organization.ai_token_limit.toLocaleString()}
         </div>
       </div>
@@ -106,7 +109,8 @@ export const CompactTokenDisplay = () => {
       <div className="token-bar-wrapper">
         <div className="token-bar">
           <div
-            className={`token-bar-fill ${isExceeded ? 'exceeded' : isWarning ? 'warning' : ''}`}
+            // className={`token-bar-fill ${isExceeded ? 'exceeded' : isWarning ? 'warning' : ''}`}
+            className={`token-bar-fill ${isExceeded ? "exceeded" : isWarning ? "warning" : ""}`}
             style={{ width: `${Math.min(percentage, 100)}%` }}
           />
         </div>
