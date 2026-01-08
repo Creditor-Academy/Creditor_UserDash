@@ -573,9 +573,18 @@ const ImageBlockComponent = forwardRef(
 
           // Preserve or detect layout/alignment for AI generated blocks so edits
           // (like changing text) don't reset positioning.
+          const templateLayoutMap = {
+            "image-text": "side-by-side",
+            "text-on-image": "overlay",
+            "image-centered": "centered",
+            "image-full-width": "full-width",
+          };
+
           const detectedLayout =
             block.layout ||
             block.details?.layout ||
+            templateLayoutMap[block.templateType] ||
+            templateLayoutMap[block.details?.template] ||
             (block.html_css &&
               (block.html_css.includes("grid md:grid-cols-2") ||
               block.html_css.includes("flex gap-5")
@@ -749,7 +758,19 @@ const ImageBlockComponent = forwardRef(
     };
 
     const generateImageBlockHtml = (block) => {
-      const layout = block.layout || "centered";
+      // Map UI layout IDs to internal layout names if needed
+      const layoutMap = {
+        "image-text": "side-by-side",
+        "text-on-image": "overlay",
+        "image-centered": "centered",
+        "image-full-width": "full-width",
+      };
+
+      let layout = block.layout || "centered";
+      if (layout && layoutMap[layout]) {
+        layout = layoutMap[layout];
+      }
+
       const textContentHtml = (
         (block.text ?? block.details?.caption_html ?? "") ||
         ""
@@ -815,6 +836,19 @@ const ImageBlockComponent = forwardRef(
           if (block.type === "image") {
             const captionPlainText = getPlainText(block.text || "");
 
+            // Map UI layout IDs to internal layout names
+            const layoutMap = {
+              "image-text": "side-by-side",
+              "text-on-image": "overlay",
+              "image-centered": "centered",
+              "image-full-width": "full-width",
+            };
+
+            let layout = block.layout || block.details?.layout;
+            if (layout && layoutMap[layout]) {
+              layout = layoutMap[layout];
+            }
+
             // Ensure we're using the uploaded AWS URL, not local URL
             let finalImageUrl =
               block.imageUrl || block.details?.image_url || "";
@@ -837,7 +871,7 @@ const ImageBlockComponent = forwardRef(
               caption: captionPlainText || block.details?.caption || "",
               caption_html: block.text || block.details?.caption_html || "",
               alt_text: block.imageTitle || block.details?.alt_text || "",
-              layout: block.layout || block.details?.layout,
+              layout: layout,
               template: block.templateType || block.details?.template,
               alignment: block.alignment || block.details?.alignment || "left",
             };
@@ -845,6 +879,7 @@ const ImageBlockComponent = forwardRef(
             // Create updated block with final image URL for HTML generation
             const updatedBlock = {
               ...block,
+              layout: layout,
               imageUrl: finalImageUrl,
               details: updatedDetails,
             };
@@ -953,14 +988,28 @@ const ImageBlockComponent = forwardRef(
           imageUrl = imagePreview;
         }
 
-        const layout = currentBlock?.layout || null;
+        let layout = currentBlock?.layout || null;
         const templateType = currentBlock?.templateType || null;
         const textHtml = (imageTemplateText || "").trim();
         const textPlain = getPlainText(textHtml).trim();
 
+        // Map UI layout IDs to internal layout names
+        const layoutMap = {
+          "image-text": "side-by-side",
+          "text-on-image": "overlay",
+          "image-centered": "centered",
+          "image-full-width": "full-width",
+        };
+
+        if (layout && layoutMap[layout]) {
+          layout = layoutMap[layout];
+        }
+
         // Determine which alignment to use based on layout
         const finalAlignment =
-          layout === "side-by-side" ? imageAlignment : standaloneImageAlignment;
+          layout === "side-by-side"
+            ? imageAlignment
+            : standaloneImageAlignment || "center";
 
         const newBlock = {
           id: currentBlock?.id || `image-${Date.now()}`,
@@ -1381,11 +1430,19 @@ const ImageBlockComponent = forwardRef(
                     <button
                       key={type.id}
                       onClick={() => {
+                        // Map UI layout IDs to internal layout names
+                        const layoutMap = {
+                          "image-text": "side-by-side",
+                          "text-on-image": "overlay",
+                          "image-centered": "centered",
+                          "image-full-width": "full-width",
+                        };
+
                         // Update the image type/template
                         const updatedBlock = {
                           ...currentBlock,
                           templateType: type.id,
-                          layout: type.id,
+                          layout: layoutMap[type.id] || type.id,
                         };
                         setCurrentBlock(updatedBlock);
                       }}
@@ -1456,6 +1513,65 @@ const ImageBlockComponent = forwardRef(
                       ))}
                     </div>
                   </div>
+
+                  {/* Standalone image alignment */}
+                  {currentBlock?.layout !== "image-text" &&
+                    currentBlock?.layout !== "side-by-side" && (
+                      <div>
+                        <div className="text-sm text-gray-600 mb-3">
+                          For Centered, Overlay or Full Width blocks:
+                        </div>
+                        <div className="flex gap-3 flex-wrap">
+                          {[
+                            {
+                              value: "left",
+                              label: "Align Left",
+                              icon: <AlignLeft className="h-4 w-4" />,
+                            },
+                            {
+                              value: "center",
+                              label: "Align Center",
+                              icon: <AlignCenter className="h-4 w-4" />,
+                            },
+                            {
+                              value: "right",
+                              label: "Align Right",
+                              icon: <AlignRight className="h-4 w-4" />,
+                            },
+                            {
+                              value: "full",
+                              label: "Full Width",
+                              icon: <Layout className="h-4 w-4" />,
+                            },
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() =>
+                                setStandaloneImageAlignment(option.value)
+                              }
+                              className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                                standaloneImageAlignment === option.value
+                                  ? "border-blue-500 bg-blue-50"
+                                  : "border-gray-200 bg-white hover:border-gray-300"
+                              }`}
+                            >
+                              <div
+                                className={
+                                  standaloneImageAlignment === option.value
+                                    ? "text-blue-600"
+                                    : "text-gray-600"
+                                }
+                              >
+                                {option.icon}
+                              </div>
+                              <span className="text-xs font-medium text-center text-gray-700">
+                                {option.label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
               </div>
 
