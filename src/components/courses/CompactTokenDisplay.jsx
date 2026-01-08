@@ -45,14 +45,12 @@ export const CompactTokenDisplay = () => {
 
   useEffect(() => {
     fetchTokenStats();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchTokenStats, 60000);
+    // Only refresh when AI operations trigger the event
     const unsubscribe = subscribeActiveOrgUsageRefresh(fetchTokenStats);
     return () => {
-      clearInterval(interval);
       unsubscribe?.();
     };
-  }, [fetchTokenStats]);
+  }, []);
 
   if (loading) {
     return (
