@@ -571,7 +571,33 @@ const ImageBlockComponent = forwardRef(
         prev.map((block) => {
           if (block.id !== blockId) return block;
 
-          const updatedBlock = { ...block, [field]: value };
+          // Preserve or detect layout/alignment for AI generated blocks so edits
+          // (like changing text) don't reset positioning.
+          const detectedLayout =
+            block.layout ||
+            block.details?.layout ||
+            (block.html_css &&
+              (block.html_css.includes("grid md:grid-cols-2") ||
+              block.html_css.includes("flex gap-5")
+                ? "side-by-side"
+                : block.html_css.includes("absolute inset-0")
+                  ? "overlay"
+                  : block.html_css.includes("w-full h-")
+                    ? "full-width"
+                    : null));
+          const detectedAlignment =
+            block.alignment ||
+            block.details?.alignment ||
+            (block.html_css && block.html_css.includes("flex-row-reverse")
+              ? "right"
+              : "left");
+
+          const updatedBlock = {
+            ...block,
+            layout: detectedLayout || block.layout,
+            alignment: detectedAlignment,
+            [field]: value,
+          };
 
           if (field === "text") {
             const plainText = getPlainText(value || "");
@@ -580,6 +606,13 @@ const ImageBlockComponent = forwardRef(
               ...(updatedBlock.details || {}),
               caption: plainText,
               caption_html: value,
+            };
+          }
+
+          if (field === "alignment") {
+            updatedBlock.details = {
+              ...(updatedBlock.details || {}),
+              alignment: value,
             };
           }
 

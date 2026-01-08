@@ -14,7 +14,15 @@ export const SidebarContext = React.createContext({
 
 export function DashboardLayout() {
   const location = useLocation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Initialize sidebar state based on the current route so immersive pages
+  // render in their intended collapsed state without a flash/shift.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const isImmersiveRoute =
+      location.pathname.startsWith("/dashboard/scenario/take/") ||
+      (location.pathname.includes("/lesson/") &&
+        location.pathname.includes("/builder"));
+    return isImmersiveRoute;
+  });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
 
