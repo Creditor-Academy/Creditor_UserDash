@@ -408,7 +408,9 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-blue-600 font-bold text-sm">CA</span>
+                    <span className="text-blue-600 font-bold text-sm">
+                      {organizationName?.charAt(0).toUpperCase() || "C"}
+                    </span>
                   </div>
                 </motion.button>
               </TooltipTrigger>

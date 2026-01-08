@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Search,
   Edit,
@@ -20,29 +20,29 @@ import {
   Building2,
   Calendar,
   LogIn,
-} from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { darkTheme, lightTheme } from '../theme/colors';
+} from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
+import { darkTheme, lightTheme } from "../theme/colors";
 
 // Status Badge Component
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     active: {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
-      label: 'Active',
+      bg: "bg-green-100",
+      text: "text-green-800",
+      label: "Active",
     },
     inactive: {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
-      label: 'Inactive',
+      bg: "bg-red-100",
+      text: "text-red-800",
+      label: "Inactive",
     },
     pending: {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-800',
-      label: 'Pending',
+      bg: "bg-yellow-100",
+      text: "text-yellow-800",
+      label: "Pending",
     },
-  }[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
+  }[status] || { bg: "bg-gray-100", text: "text-gray-800", label: status };
 
   return (
     <span
@@ -57,21 +57,21 @@ const StatusBadge = ({ status }) => {
 const RoleBadge = ({ role }) => {
   const roleConfig = {
     admin: {
-      bg: 'bg-blue-100',
-      text: 'text-blue-800',
-      label: 'Admin',
+      bg: "bg-blue-100",
+      text: "text-blue-800",
+      label: "Admin",
     },
     manager: {
-      bg: 'bg-purple-100',
-      text: 'text-purple-800',
-      label: 'Manager',
+      bg: "bg-purple-100",
+      text: "text-purple-800",
+      label: "Manager",
     },
     user: {
-      bg: 'bg-gray-100',
-      text: 'text-gray-800',
-      label: 'User',
+      bg: "bg-gray-100",
+      text: "text-gray-800",
+      label: "User",
     },
-  }[role] || { bg: 'bg-gray-100', text: 'text-gray-800', label: role };
+  }[role] || { bg: "bg-gray-100", text: "text-gray-800", label: role };
 
   return (
     <span
@@ -89,16 +89,16 @@ const SkeletonLoader = ({ colors }) => (
     <div className="flex items-center space-x-4">
       <div
         className="h-20 w-20 rounded-full animate-pulse"
-        style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+        style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
       ></div>
       <div className="flex-1 space-y-2">
         <div
           className="h-6 w-32 rounded animate-pulse"
-          style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+          style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
         ></div>
         <div
           className="h-4 w-24 rounded animate-pulse"
-          style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+          style={{ backgroundColor: "rgba(200, 200, 200, 0.2)" }}
         ></div>
       </div>
     </div>
@@ -109,27 +109,27 @@ const SkeletonLoader = ({ colors }) => (
       style={{
         backgroundColor: colors.bg.hover,
         borderColor: colors.border,
-        borderWidth: '1px',
+        borderWidth: "1px",
       }}
     >
       <div
         className="h-5 w-32 rounded animate-pulse"
-        style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+        style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
       ></div>
-      {[1, 2].map(i => (
+      {[1, 2].map((i) => (
         <div key={i} className="flex items-center space-x-3">
           <div
             className="h-5 w-5 rounded animate-pulse"
-            style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+            style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
           ></div>
           <div className="flex-1 space-y-1">
             <div
               className="h-3 w-12 rounded animate-pulse"
-              style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+              style={{ backgroundColor: "rgba(200, 200, 200, 0.2)" }}
             ></div>
             <div
               className="h-4 w-40 rounded animate-pulse"
-              style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+              style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
             ></div>
           </div>
         </div>
@@ -142,26 +142,26 @@ const SkeletonLoader = ({ colors }) => (
       style={{
         backgroundColor: colors.bg.hover,
         borderColor: colors.border,
-        borderWidth: '1px',
+        borderWidth: "1px",
       }}
     >
       <div
         className="h-5 w-32 rounded animate-pulse"
-        style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+        style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
       ></div>
       <div className="flex items-center space-x-3">
         <div
           className="h-5 w-5 rounded animate-pulse"
-          style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+          style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
         ></div>
         <div className="flex-1 space-y-1">
           <div
             className="h-3 w-12 rounded animate-pulse"
-            style={{ backgroundColor: 'rgba(200, 200, 200, 0.2)' }}
+            style={{ backgroundColor: "rgba(200, 200, 200, 0.2)" }}
           ></div>
           <div
             className="h-4 w-32 rounded animate-pulse"
-            style={{ backgroundColor: 'rgba(200, 200, 200, 0.3)' }}
+            style={{ backgroundColor: "rgba(200, 200, 200, 0.3)" }}
           ></div>
         </div>
       </div>
@@ -173,28 +173,28 @@ const SkeletonLoader = ({ colors }) => (
 const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
   if (!isOpen) return null;
 
-  const formatDate = dateString => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const getInitials = name => {
+  const getInitials = (name) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const getUserRole = user => {
-    if (!user) return 'No role assigned';
+  const getUserRole = (user) => {
+    if (!user) return "No role assigned";
     if (
       user.user_roles &&
       Array.isArray(user.user_roles) &&
@@ -207,7 +207,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
     if (user.role) {
       return user.role.charAt(0).toUpperCase() + user.role.slice(1);
     }
-    return 'No role assigned';
+    return "No role assigned";
   };
 
   return (
@@ -217,7 +217,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
         style={{
           backgroundColor: colors.bg.secondary,
           borderColor: colors.border,
-          borderWidth: '1px',
+          borderWidth: "1px",
         }}
       >
         {/* Header */}
@@ -254,10 +254,10 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                   className="h-20 w-20 rounded-full flex items-center justify-center text-2xl font-bold text-white"
                   style={{
                     background:
-                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   }}
                 >
-                  {getInitials(user.first_name || 'User')}
+                  {getInitials(user.first_name || "User")}
                 </div>
                 <div>
                   <h3
@@ -281,7 +281,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                 style={{
                   backgroundColor: colors.bg.hover,
                   borderColor: colors.border,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
               >
                 <h4
@@ -292,7 +292,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
-                    <Mail className="h-5 w-5" style={{ color: '#3B82F6' }} />
+                    <Mail className="h-5 w-5" style={{ color: "#3B82F6" }} />
                     <div>
                       <p
                         className="text-xs"
@@ -304,12 +304,12 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                         className="text-sm font-medium"
                         style={{ color: colors.text.primary }}
                       >
-                        {user.email || 'N/A'}
+                        {user.email || "N/A"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Phone className="h-5 w-5" style={{ color: '#10B981' }} />
+                    <Phone className="h-5 w-5" style={{ color: "#10B981" }} />
                     <div>
                       <p
                         className="text-xs"
@@ -321,7 +321,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                         className="text-sm font-medium"
                         style={{ color: colors.text.primary }}
                       >
-                        {user.phone || 'N/A'}
+                        {user.phone || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -334,7 +334,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                 style={{
                   backgroundColor: colors.bg.hover,
                   borderColor: colors.border,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
               >
                 <h4
@@ -344,7 +344,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                   Organization
                 </h4>
                 <div className="flex items-center space-x-3">
-                  <Building2 className="h-5 w-5" style={{ color: '#F59E0B' }} />
+                  <Building2 className="h-5 w-5" style={{ color: "#F59E0B" }} />
                   <div>
                     <p
                       className="text-xs"
@@ -356,7 +356,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                       className="text-sm font-medium"
                       style={{ color: colors.text.primary }}
                     >
-                      {user.organization?.name || 'N/A'}
+                      {user.organization?.name || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -368,7 +368,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                 style={{
                   backgroundColor: colors.bg.hover,
                   borderColor: colors.border,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
               >
                 <h4
@@ -381,7 +381,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                   <div className="flex items-center space-x-3">
                     <Calendar
                       className="h-5 w-5"
-                      style={{ color: '#8B5CF6' }}
+                      style={{ color: "#8B5CF6" }}
                     />
                     <div>
                       <p
@@ -394,12 +394,12 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                         className="text-sm font-medium"
                         style={{ color: colors.text.primary }}
                       >
-                        {user.created_at ? formatDate(user.created_at) : 'N/A'}
+                        {user.created_at ? formatDate(user.created_at) : "N/A"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <LogIn className="h-5 w-5" style={{ color: '#EC4899' }} />
+                    <LogIn className="h-5 w-5" style={{ color: "#EC4899" }} />
                     <div>
                       <p
                         className="text-xs"
@@ -413,7 +413,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                       >
                         {user.login_activity && user.login_activity.length > 0
                           ? formatDate(user.login_activity[0].createdAt)
-                          : 'Never'}
+                          : "Never"}
                       </p>
                     </div>
                   </div>
@@ -427,7 +427,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                   style={{
                     backgroundColor: colors.bg.hover,
                     borderColor: colors.border,
-                    borderWidth: '1px',
+                    borderWidth: "1px",
                   }}
                 >
                   <h4
@@ -439,23 +439,23 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                   <div className="space-y-2">
                     {[...user.login_activity]
                       .sort(
-                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
                       )
                       .slice(0, 5)
-                      .map(activity => (
+                      .map((activity) => (
                         <div
                           key={activity.id}
                           className="flex items-center justify-between p-2 rounded-lg"
                           style={{
                             backgroundColor: colors.bg.secondary,
                             borderColor: colors.border,
-                            borderWidth: '1px',
+                            borderWidth: "1px",
                           }}
                         >
                           <div className="flex items-center space-x-2">
                             <div
                               className="h-2 w-2 rounded-full"
-                              style={{ backgroundColor: '#10B981' }}
+                              style={{ backgroundColor: "#10B981" }}
                             ></div>
                             <span
                               className="text-sm"
@@ -483,7 +483,7 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
                   style={{
                     backgroundColor: colors.bg.hover,
                     borderColor: colors.border,
-                    borderWidth: '1px',
+                    borderWidth: "1px",
                   }}
                 >
                   <h4
@@ -531,13 +531,13 @@ const UserDetailsModal = ({ isOpen, user, onClose, colors, isLoading }) => {
 
 const Users = () => {
   const { theme } = useTheme();
-  const colors = theme === 'dark' ? darkTheme : lightTheme;
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [organizationFilter, setOrganizationFilter] = useState('all');
-  const [organizationSearch, setOrganizationSearch] = useState('');
+  const colors = theme === "dark" ? darkTheme : lightTheme;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [organizationFilter, setOrganizationFilter] = useState("all");
+  const [organizationSearch, setOrganizationSearch] = useState("");
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
-  const [sortBy, setSortBy] = useState('alphabetical-asc');
+  const [sortBy, setSortBy] = useState("alphabetical-asc");
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -548,106 +548,20 @@ const Users = () => {
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [userPendingDelete, setUserPendingDelete] = useState(null);
 
-  // Fetch users from API
+  // Users API functionality removed - API not for admin roles
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setIsLoading(true);
-        const apiBaseUrl =
-          import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
-        const url = `${apiBaseUrl}/api/org/get-all-users`;
-        const accessToken = localStorage.getItem('authToken');
-
-        console.log('Fetching users from:', url);
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('Users API response:', result);
-        console.log('Result data type:', typeof result.data);
-        console.log('Is array?', Array.isArray(result.data));
-        console.log('Result data:', result.data);
-
-        if (result.success) {
-          // Handle different response structures
-          let usersArray = [];
-
-          if (Array.isArray(result.data)) {
-            usersArray = result.data;
-          } else if (result.data && typeof result.data === 'object') {
-            // If data is an object, try to extract array from it
-            if (result.data.users && Array.isArray(result.data.users)) {
-              usersArray = result.data.users;
-            } else if (result.data.data && Array.isArray(result.data.data)) {
-              usersArray = result.data.data;
-            } else {
-              // Try to convert object to array
-              usersArray = Object.values(result.data).filter(
-                item => typeof item === 'object'
-              );
-            }
-          }
-
-          console.log('Processed users array:', usersArray);
-          console.log('Users count:', usersArray.length);
-
-          // Map API response to component format
-          const mappedUsers = usersArray.map(user => ({
-            id: user.id || user._id || user.user_id || 'N/A',
-            name:
-              `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.trim() ||
-              user.name ||
-              user.full_name ||
-              'N/A',
-            email: user.email || 'N/A',
-            phone: user.phone || user.phone_number || '',
-            role:
-              user.roles && Array.isArray(user.roles) && user.roles.length > 0
-                ? user.roles[0]
-                : user.role || user.user_role || 'user',
-            status: user.status || (user.is_active ? 'active' : 'inactive'),
-            lastLogin: user.last_login || user.lastLogin || null,
-            joinDate:
-              user.created_at || user.joinDate || new Date().toISOString(),
-            organization:
-              user.organizations?.name ||
-              user.organization ||
-              user.org_name ||
-              'N/A',
-          }));
-
-          console.log('Mapped users:', mappedUsers);
-          setUsers(mappedUsers);
-        } else {
-          console.warn('Unexpected response format:', result);
-          setUsers([]);
-        }
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        setUsers([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUsers();
+    setIsLoading(false);
+    setUsers([]);
   }, []);
 
   // Fetch user details when eye button is clicked
-  const handleViewUser = async userId => {
+  const handleViewUser = async (userId) => {
     try {
       setUserDetailsLoading(true);
       const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
       const url = `${apiBaseUrl}/api/org/orgprofile/${userId}`;
-      const accessToken = localStorage.getItem('authToken');
+      const accessToken = localStorage.getItem("authToken");
 
       const response = await fetch(url, {
         headers: {
@@ -665,27 +579,27 @@ const Users = () => {
         setShowUserModal(true);
       }
     } catch (error) {
-      console.error('Error fetching user details:', error);
-      alert('Failed to load user details');
+      console.error("Error fetching user details:", error);
+      alert("Failed to load user details");
     } finally {
       setUserDetailsLoading(false);
     }
   };
 
-  const handleRequestDelete = user => setUserPendingDelete(user);
+  const handleRequestDelete = (user) => setUserPendingDelete(user);
   const handleCancelDelete = () => setUserPendingDelete(null);
 
   // Delete user
-  const handleDeleteUser = async userId => {
+  const handleDeleteUser = async (userId) => {
     try {
       setDeletingUserId(userId);
       const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
       const url = `${apiBaseUrl}/api/org/orgdelete/${userId}`;
-      const accessToken = localStorage.getItem('authToken');
+      const accessToken = localStorage.getItem("authToken");
 
       const response = await fetch(url, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -695,11 +609,11 @@ const Users = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
       setUserPendingDelete(null);
     } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Failed to delete user. Please try again.');
+      console.error("Error deleting user:", error);
+      alert("Failed to delete user. Please try again.");
     } finally {
       setDeletingUserId(null);
     }
@@ -713,24 +627,24 @@ const Users = () => {
 
   // Get unique organizations for filter dropdown
   const uniqueOrganizations = [
-    ...new Set(users.map(user => user.organization)),
-  ].filter(org => org !== 'N/A');
+    ...new Set(users.map((user) => user.organization)),
+  ].filter((org) => org !== "N/A");
 
   // Filter organizations based on search
-  const filteredOrganizations = uniqueOrganizations.filter(org =>
-    org.toLowerCase().includes(organizationSearch.toLowerCase())
+  const filteredOrganizations = uniqueOrganizations.filter((org) =>
+    org.toLowerCase().includes(organizationSearch.toLowerCase()),
   );
 
   // Filter users based on search and filters
-  let filteredUsers = users.filter(user => {
+  let filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.organization.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
     const matchesOrganization =
-      organizationFilter === 'all' || user.organization === organizationFilter;
+      organizationFilter === "all" || user.organization === organizationFilter;
 
     return matchesSearch && matchesRole && matchesOrganization;
   });
@@ -738,15 +652,15 @@ const Users = () => {
   // Apply sorting
   filteredUsers = [...filteredUsers].sort((a, b) => {
     switch (sortBy) {
-      case 'alphabetical-asc':
+      case "alphabetical-asc":
         return a.name.localeCompare(b.name);
-      case 'alphabetical-desc':
+      case "alphabetical-desc":
         return b.name.localeCompare(a.name);
-      case 'never-visited':
+      case "never-visited":
         return (
           (a.lastLogin === null ? -1 : 1) - (b.lastLogin === null ? -1 : 1)
         );
-      case 'just-visited':
+      case "just-visited":
         if (a.lastLogin === null) return 1;
         if (b.lastLogin === null) return -1;
         return new Date(b.lastLogin) - new Date(a.lastLogin);
@@ -759,7 +673,7 @@ const Users = () => {
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
   const currentUsers = filteredUsers.slice(
     (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    currentPage * rowsPerPage,
   );
 
   return (
@@ -798,10 +712,10 @@ const Users = () => {
                 className="h-10 w-10 rounded-full flex items-center justify-center"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.25))',
+                    "linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.25))",
                 }}
               >
-                <Trash2 className="h-5 w-5" style={{ color: '#EF4444' }} />
+                <Trash2 className="h-5 w-5" style={{ color: "#EF4444" }} />
               </div>
               <div className="flex-1">
                 <h3
@@ -812,7 +726,7 @@ const Users = () => {
                 </h3>
                 <p className="text-sm" style={{ color: colors.text.secondary }}>
                   {`You're about to delete ${
-                    userPendingDelete.name || 'this user'
+                    userPendingDelete.name || "this user"
                   }. This action cannot be undone.`}
                 </p>
               </div>
@@ -839,13 +753,13 @@ const Users = () => {
                 className="px-4 py-2 rounded-lg font-semibold transition-colors text-white disabled:opacity-70"
                 style={{
                   background:
-                    'linear-gradient(135deg, #ef4444 0%, #f97316 100%)',
-                  boxShadow: '0 10px 30px rgba(239,68,68,0.35)',
+                    "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+                  boxShadow: "0 10px 30px rgba(239,68,68,0.35)",
                 }}
               >
                 {deletingUserId === userPendingDelete.id
-                  ? 'Deleting...'
-                  : 'Delete'}
+                  ? "Deleting..."
+                  : "Delete"}
               </button>
             </div>
           </div>
@@ -879,9 +793,9 @@ const Users = () => {
         className="rounded-2xl shadow-lg overflow-hidden mt-8"
         style={{
           borderColor: colors.border,
-          borderWidth: '1px',
+          borderWidth: "1px",
           backgroundColor: colors.bg.secondary,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
         }}
       >
         <div className="p-6 border-b" style={{ borderColor: colors.border }}>
@@ -895,8 +809,8 @@ const Users = () => {
             <span
               className="text-sm px-3 py-1 rounded-full"
               style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                color: '#3B82F6',
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                color: "#3B82F6",
               }}
             >
               {filteredUsers.length} users
@@ -914,10 +828,10 @@ const Users = () => {
                   backgroundColor: colors.bg.secondary,
                   borderColor: colors.border,
                   color: colors.text.primary,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
@@ -929,11 +843,11 @@ const Users = () => {
                   backgroundColor: colors.bg.secondary,
                   borderColor: colors.border,
                   color: colors.text.primary,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
               >
-                {organizationFilter === 'all'
-                  ? 'All Organizations'
+                {organizationFilter === "all"
+                  ? "All Organizations"
                   : organizationFilter}
               </button>
               <ChevronDown
@@ -947,7 +861,7 @@ const Users = () => {
                   style={{
                     backgroundColor: colors.bg.secondary,
                     borderColor: colors.border,
-                    borderWidth: '1px',
+                    borderWidth: "1px",
                   }}
                 >
                   <div
@@ -962,11 +876,11 @@ const Users = () => {
                         backgroundColor: colors.bg.primary,
                         borderColor: colors.border,
                         color: colors.text.primary,
-                        borderWidth: '1px',
+                        borderWidth: "1px",
                       }}
                       value={organizationSearch}
-                      onChange={e => setOrganizationSearch(e.target.value)}
-                      onClick={e => e.stopPropagation()}
+                      onChange={(e) => setOrganizationSearch(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
                       autoFocus
                     />
                   </div>
@@ -974,59 +888,59 @@ const Users = () => {
                   <div className="max-h-56 overflow-y-auto">
                     <button
                       onClick={() => {
-                        setOrganizationFilter('all');
+                        setOrganizationFilter("all");
                         setIsOrgDropdownOpen(false);
-                        setOrganizationSearch('');
+                        setOrganizationSearch("");
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm font-medium transition-colors duration-150"
                       style={{
                         color: colors.text.primary,
                         backgroundColor:
-                          organizationFilter === 'all'
-                            ? 'rgba(59, 130, 246, 0.1)'
-                            : 'transparent',
+                          organizationFilter === "all"
+                            ? "rgba(59, 130, 246, 0.1)"
+                            : "transparent",
                       }}
-                      onMouseEnter={e => {
-                        if (organizationFilter !== 'all') {
+                      onMouseEnter={(e) => {
+                        if (organizationFilter !== "all") {
                           e.currentTarget.style.backgroundColor =
                             colors.bg.hover;
                         }
                       }}
-                      onMouseLeave={e => {
-                        if (organizationFilter !== 'all') {
-                          e.currentTarget.style.backgroundColor = 'transparent';
+                      onMouseLeave={(e) => {
+                        if (organizationFilter !== "all") {
+                          e.currentTarget.style.backgroundColor = "transparent";
                         }
                       }}
                     >
                       All Organizations
                     </button>
 
-                    {filteredOrganizations.map(org => (
+                    {filteredOrganizations.map((org) => (
                       <button
                         key={org}
                         onClick={() => {
                           setOrganizationFilter(org);
                           setIsOrgDropdownOpen(false);
-                          setOrganizationSearch('');
+                          setOrganizationSearch("");
                         }}
                         className="w-full text-left px-4 py-2.5 text-sm font-medium transition-colors duration-150"
                         style={{
                           color: colors.text.primary,
                           backgroundColor:
                             organizationFilter === org
-                              ? 'rgba(59, 130, 246, 0.1)'
-                              : 'transparent',
+                              ? "rgba(59, 130, 246, 0.1)"
+                              : "transparent",
                         }}
-                        onMouseEnter={e => {
+                        onMouseEnter={(e) => {
                           if (organizationFilter !== org) {
                             e.currentTarget.style.backgroundColor =
                               colors.bg.hover;
                           }
                         }}
-                        onMouseLeave={e => {
+                        onMouseLeave={(e) => {
                           if (organizationFilter !== org) {
                             e.currentTarget.style.backgroundColor =
-                              'transparent';
+                              "transparent";
                           }
                         }}
                       >
@@ -1054,10 +968,10 @@ const Users = () => {
                   backgroundColor: colors.bg.secondary,
                   borderColor: colors.border,
                   color: colors.text.primary,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
                 value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
+                onChange={(e) => setSortBy(e.target.value)}
               >
                 <option value="alphabetical-asc">Alphabetical (A → Z)</option>
                 <option value="alphabetical-desc">Alphabetical (Z → A)</option>
@@ -1076,10 +990,10 @@ const Users = () => {
                   backgroundColor: colors.bg.secondary,
                   borderColor: colors.border,
                   color: colors.text.primary,
-                  borderWidth: '1px',
+                  borderWidth: "1px",
                 }}
                 value={roleFilter}
-                onChange={e => setRoleFilter(e.target.value)}
+                onChange={(e) => setRoleFilter(e.target.value)}
               >
                 <option value="all">All Roles</option>
                 <option value="admin">Admin</option>
@@ -1098,7 +1012,7 @@ const Users = () => {
           className="shadow rounded-lg overflow-hidden"
           style={{
             borderColor: colors.border,
-            borderWidth: '1px',
+            borderWidth: "1px",
             backgroundColor: colors.bg.secondary,
           }}
         >
@@ -1163,14 +1077,14 @@ const Users = () => {
                             <div
                               className="flex-shrink-0 h-10 w-10 rounded-full animate-pulse"
                               style={{
-                                backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                                backgroundColor: "rgba(200, 200, 200, 0.3)",
                               }}
                             ></div>
                             <div className="ml-4 space-y-2 flex-1">
                               <div
                                 className="h-4 w-24 rounded animate-pulse"
                                 style={{
-                                  backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                                  backgroundColor: "rgba(200, 200, 200, 0.3)",
                                 }}
                               ></div>
                             </div>
@@ -1181,13 +1095,13 @@ const Users = () => {
                             <div
                               className="h-4 w-32 rounded animate-pulse"
                               style={{
-                                backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                                backgroundColor: "rgba(200, 200, 200, 0.3)",
                               }}
                             ></div>
                             <div
                               className="h-3 w-24 rounded animate-pulse"
                               style={{
-                                backgroundColor: 'rgba(200, 200, 200, 0.2)',
+                                backgroundColor: "rgba(200, 200, 200, 0.2)",
                               }}
                             ></div>
                           </div>
@@ -1196,7 +1110,7 @@ const Users = () => {
                           <div
                             className="h-4 w-20 rounded animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                         </td>
@@ -1204,7 +1118,7 @@ const Users = () => {
                           <div
                             className="h-6 w-16 rounded-full animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                         </td>
@@ -1212,7 +1126,7 @@ const Users = () => {
                           <div
                             className="h-4 w-20 rounded animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                         </td>
@@ -1221,13 +1135,13 @@ const Users = () => {
                             <div
                               className="h-8 w-8 rounded-lg animate-pulse"
                               style={{
-                                backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                                backgroundColor: "rgba(200, 200, 200, 0.3)",
                               }}
                             ></div>
                             <div
                               className="h-8 w-8 rounded-lg animate-pulse"
                               style={{
-                                backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                                backgroundColor: "rgba(200, 200, 200, 0.3)",
                               }}
                             ></div>
                           </div>
@@ -1236,20 +1150,20 @@ const Users = () => {
                     ))}
                   </>
                 ) : currentUsers.length > 0 ? (
-                  currentUsers.map(user => (
+                  currentUsers.map((user) => (
                     <tr
                       key={user.id}
                       style={{ backgroundColor: colors.bg.secondary }}
                       className="transition-colors duration-150 border-b"
-                      onMouseEnter={e => {
+                      onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = colors.bg.hover;
                         e.currentTarget.style.boxShadow =
-                          '0 2px 8px rgba(0, 0, 0, 0.05)';
+                          "0 2px 8px rgba(0, 0, 0, 0.05)";
                       }}
-                      onMouseLeave={e => {
+                      onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor =
                           colors.bg.secondary;
-                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1257,12 +1171,12 @@ const Users = () => {
                           <div
                             className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
                             style={{
-                              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                              backgroundColor: "rgba(59, 130, 246, 0.1)",
                             }}
                           >
                             <User
                               className="h-5 w-5"
-                              style={{ color: '#3B82F6' }}
+                              style={{ color: "#3B82F6" }}
                             />
                           </div>
                           <div className="ml-4">
@@ -1287,7 +1201,7 @@ const Users = () => {
                           style={{ color: colors.text.secondary }}
                         >
                           <Phone className="h-3 w-3 mr-1" />
-                          {user.phone || 'N/A'}
+                          {user.phone || "N/A"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1307,7 +1221,7 @@ const Users = () => {
                       >
                         {user.lastLogin
                           ? new Date(user.lastLogin).toLocaleDateString()
-                          : 'Never'}
+                          : "Never"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center items-center space-x-2">
@@ -1330,7 +1244,7 @@ const Users = () => {
                           >
                             <Trash2
                               className="h-5 w-5"
-                              style={{ color: '#EF4444' }}
+                              style={{ color: "#EF4444" }}
                             />
                           </button>
                         </div>
@@ -1356,10 +1270,10 @@ const Users = () => {
                           style={{ color: colors.text.secondary }}
                         >
                           {searchTerm ||
-                          roleFilter !== 'all' ||
-                          organizationFilter !== 'all'
-                            ? 'No users match your search criteria. Try adjusting your filters.'
-                            : 'No users available.'}
+                          roleFilter !== "all" ||
+                          organizationFilter !== "all"
+                            ? "No users match your search criteria. Try adjusting your filters."
+                            : "No users available."}
                         </p>
                       </div>
                     </td>
@@ -1376,15 +1290,15 @@ const Users = () => {
               style={{ borderColor: colors.border }}
             >
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                Showing{' '}
+                Showing{" "}
                 <span className="font-medium">
                   {(currentPage - 1) * rowsPerPage + 1}
-                </span>{' '}
-                to{' '}
+                </span>{" "}
+                to{" "}
                 <span className="font-medium">
                   {Math.min(currentPage * rowsPerPage, filteredUsers.length)}
-                </span>{' '}
-                of <span className="font-medium">{filteredUsers.length}</span>{' '}
+                </span>{" "}
+                of <span className="font-medium">{filteredUsers.length}</span>{" "}
                 results
               </div>
               <div className="flex items-center space-x-4">
@@ -1393,7 +1307,7 @@ const Users = () => {
                 </span>
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
                     style={{ color: colors.text.primary }}
@@ -1404,16 +1318,16 @@ const Users = () => {
                     className="px-2 text-sm"
                     style={{ color: colors.text.primary }}
                   >
-                    {currentPage} of{' '}
+                    {currentPage} of{" "}
                     {Math.ceil(filteredUsers.length / rowsPerPage)}
                   </span>
                   <button
                     onClick={() =>
-                      setCurrentPage(p =>
+                      setCurrentPage((p) =>
                         Math.min(
                           Math.ceil(filteredUsers.length / rowsPerPage),
-                          p + 1
-                        )
+                          p + 1,
+                        ),
                       )
                     }
                     disabled={
