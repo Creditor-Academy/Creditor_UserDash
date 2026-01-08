@@ -795,7 +795,7 @@ const ImageBlockComponent = forwardRef(
         return `
         <div class="flex gap-5 my-6 items-center flex-wrap md:flex-nowrap ${isImageRight ? "flex-row-reverse" : ""}">
           <div class="flex-1 min-w-0">
-            <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="w-full h-auto rounded-lg" />
+            <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="w-full h-auto object-contain" style="max-height: 400px;" />
           </div>
           <div class="flex-1 px-4">
             <div class="text-base leading-relaxed text-gray-600 space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
@@ -806,7 +806,7 @@ const ImageBlockComponent = forwardRef(
       `;
       } else if (layout === "overlay") {
         return `
-        <div class="relative rounded-xl overflow-hidden my-6">
+        <div class="relative overflow-hidden my-6">
           <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="w-full h-96 object-cover" />
           ${textContent ? `<div class="absolute inset-0 bg-black/40 flex items-center justify-center p-5"><div class="text-white text-lg md:text-xl font-semibold text-center leading-snug space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${textContent}</div></div></div>` : ""}
         </div>
@@ -814,15 +814,16 @@ const ImageBlockComponent = forwardRef(
       } else if (layout === "full-width") {
         return `
         <div class="my-6 space-y-4">
-          <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="w-full h-auto rounded-lg" />
+          <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="w-full h-auto object-contain" style="max-height: 500px;" />
           ${textContent ? `<div class="text-base text-gray-600 leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ""}
         </div>
       `;
       } else {
         // centered - default
+        const isFullWidth = alignment === "full";
         return `
         <div class="text-center my-6">
-          <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="max-w-2xl mx-auto w-full h-auto rounded-xl shadow-md" />
+          <img src="${imageUrl}" alt="${imageTitle || "Image"}" class="${isFullWidth ? "w-full" : "max-w-4xl"} mx-auto h-auto object-contain" style="max-height: 500px;" />
           ${textContent ? `<div class="text-sm text-gray-500 italic mt-3 space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ""}
         </div>
       `;
@@ -1671,10 +1672,23 @@ const ImageBlockComponent = forwardRef(
                         </Button>
                       )}
                     </div>
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="max-w-full h-auto max-h-64 rounded-lg border"
+                    {/* Live Preview that matches Builder view exactly */}
+                    <div
+                      className="mt-2 border rounded-lg bg-white overflow-hidden p-4"
+                      dangerouslySetInnerHTML={{
+                        __html: generateImageBlockHtml({
+                          imageUrl: imagePreview,
+                          imageTitle: imageTitle,
+                          layout: currentBlock?.layout || "centered",
+                          alignment:
+                            currentBlock?.layout === "side-by-side" ||
+                            currentBlock?.layout === "image-text"
+                              ? imageAlignment
+                              : standaloneImageAlignment || "center",
+                          text: imageTemplateText,
+                          imageDescription: imageDescription,
+                        }),
+                      }}
                     />
                   </div>
                 )}
