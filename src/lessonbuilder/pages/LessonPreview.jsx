@@ -25,7 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import ImmersiveReader from '@/components/courses/ImmersiveReader';
 import { getTtsToken } from '@/services/speechify';
-import { updateLessonProgress } from '@/services/progressService';
+import { useLessonProgressTracker } from '@/hooks/useLessonProgressTracker';
 
 // Helper function to decode HTML entities
 const decodeHtmlEntities = text => {
@@ -137,7 +137,21 @@ const LessonPreview = () => {
 
   // Get progress state from navigation
   const progressState = location.state || {};
-  const { lessonProgress, targetSection, resumeFromProgress } = progressState;
+  const {
+    lessonProgress,
+    targetSection,
+    calculatedHeadingIndex,
+    shouldPreventProgressUpdates,
+    resumeFromProgress,
+  } = progressState;
+
+  // Initialize event-driven lesson progress tracking
+  const lessonProgressTracker = useLessonProgressTracker(
+    lessonId,
+    lessonData?.headingSections || [],
+    currentPage,
+    shouldPreventProgressUpdates
+  );
 
   useEffect(() => {
     let styleEl = document.getElementById('lesson-preview-image-list-style');
@@ -453,48 +467,61 @@ const LessonPreview = () => {
       const computedPages = computePages(transformedData.allContent);
       setPages(computedPages);
 
-      // Handle progress-based navigation
+      // Handle progress-based navigation - TREAT BACKEND PROGRESS AS SOURCE OF TRUTH
       if (resumeFromProgress && targetSection && lessonProgress) {
-        console.log('Resuming lesson from progress:', {
+        console.log('Resuming lesson from backend progress:', {
           lessonProgress,
           targetSection,
+          calculatedHeadingIndex,
+          shouldPreventProgressUpdates,
+          resumeFromProgress,
         });
 
-        // Find the target section index
-        const targetIndex = transformedData.headingSections?.findIndex(
-          s => s.id === targetSection
-        );
+        // Use the calculated heading index from LessonView
+        const targetIndex =
+          calculatedHeadingIndex >= 0
+            ? calculatedHeadingIndex
+            : transformedData.headingSections?.findIndex(
+                s => s.id === targetSection
+              );
+
         if (targetIndex >= 0) {
-          // Set current page and section
+          console.log('Setting lesson state from backend progress:', {
+            targetIndex,
+            targetSection,
+            calculatedHeadingIndex,
+            totalSections: transformedData.headingSections?.length,
+          });
+
+          // CRITICAL: Set state based on backend progress calculation
           setCurrentPage(targetIndex);
           setCurrentSection(targetSection);
 
-          // Mark previous sections as completed based on progress
+          // Mark completed sections based on backend progress
           const progressPercentage = lessonProgress.progress;
           const totalSections = transformedData.headingSections?.length || 1;
+
+          // Use the SAME formula as backend: completedHeadings = floor((progress / 100) * totalMasterHeadings)
           const completedCount = Math.floor(
             (progressPercentage / 100) * totalSections
           );
 
           const completedSet = new Set();
-          for (
-            let i = 0;
-            i < completedCount && i < transformedData.headingSections?.length;
-            i++
-          ) {
+          // Mark sections BEFORE the current target as completed
+          for (let i = 0; i < completedCount && i < targetIndex; i++) {
             completedSet.add(transformedData.headingSections[i].id);
           }
           setCompletedSections(completedSet);
 
-          console.log('Progress navigation setup:', {
-            progressPercentage,
+          console.log('Backend progress resume setup:', {
+            backendProgress: progressPercentage,
             totalSections,
             completedCount,
             targetIndex,
             completedSections: Array.from(completedSet),
           });
 
-          // Scroll to target section after a short delay to ensure DOM is ready
+          // Scroll to target section after DOM is ready
           setTimeout(() => {
             const targetElement = document.getElementById(
               `section-${targetSection}`
@@ -505,11 +532,23 @@ const LessonPreview = () => {
               const offsetPosition =
                 elementPosition + window.pageYOffset - headerOffset;
               window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+              console.log('Scrolled to resumed section:', targetSection);
             }
           }, 300);
+        } else {
+          console.warn(
+            'Target section not found, falling back to first section'
+          );
+          // Fallback to first section if target not found
+          const firstSection = transformedData.headingSections?.[0];
+          if (firstSection) {
+            setCurrentSection(firstSection.id);
+            setCurrentPage(0);
+          }
         }
       } else {
-        // Default behavior: start from first section
+        // Default behavior: start from first section (no progress or new lesson)
+        console.log('Starting lesson from beginning (no progress to resume)');
         const firstSection = transformedData.headingSections?.[0];
         if (firstSection) {
           setCurrentSection(firstSection.id);
@@ -1016,43 +1055,7 @@ const LessonPreview = () => {
     }
   };
 
-  const handleContinue = async () => {
-    try {
-      // Calculate progress based on completed sections
-      const totalSections = lessonData?.headingSections?.length || 1;
-      const completedCount = completedSections.size;
-      const progressPercentage = Math.round(
-        (completedCount / totalSections) * 100
-      );
-
-      // Check if lesson is completed
-      const isCompleted = completedCount >= totalSections;
-
-      // Update lesson progress in backend
-      await updateLessonProgress(lessonId, progressPercentage, isCompleted);
-      console.log('Lesson progress updated:', {
-        lessonId,
-        progress: progressPercentage,
-        completed: isCompleted,
-      });
-
-      // Show success toast
-      toast({
-        title: 'Progress Updated',
-        description: isCompleted
-          ? 'Lesson completed! 🎉'
-          : `Progress: ${progressPercentage}%`,
-      });
-    } catch (error) {
-      console.error('Error updating lesson progress:', error);
-      toast({
-        title: 'Progress Update Failed',
-        description: 'Failed to save progress. Please try again.',
-        variant: 'destructive',
-      });
-    }
-
-    // Continue with existing logic
+  const handleContinue = () => {
     setCompletedSections(prev => {
       const done = new Set(prev);
       const currentHeading = lessonData?.headingSections?.[currentPage]?.id;
@@ -1591,11 +1594,30 @@ const LessonPreview = () => {
     lessonData.headingSections.find(s => s.id === currentSection) ||
     lessonData.headingSections[0];
 
-  // Progress based on completed master headings
+  // Progress from backend (source of truth)
   const totalSections = lessonData.headingSections?.length || 0;
-  const completedCount = Math.min(completedSections.size, totalSections);
-  const derivedProgress =
-    totalSections > 0 ? Math.round((completedCount / totalSections) * 100) : 0;
+  const backendProgress = lessonProgress?.progress || 0;
+  const isBackendCompleted =
+    lessonProgress?.completed || backendProgress >= 100;
+
+  // Calculate completed sections based on backend progress
+  const calculateCompletedSections = () => {
+    if (!lessonProgress || !lessonData.headingSections) return new Set();
+
+    const progressPercentage = lessonProgress.progress;
+    const totalSections = lessonData.headingSections.length;
+    const completedCount = Math.floor(
+      (progressPercentage / 100) * totalSections
+    );
+
+    const completedSet = new Set();
+    for (let i = 0; i < completedCount; i++) {
+      completedSet.add(lessonData.headingSections[i].id);
+    }
+    return completedSet;
+  };
+
+  const backendCompletedSections = calculateCompletedSections();
 
   return (
     <>
@@ -1661,11 +1683,11 @@ const LessonPreview = () => {
                 <div className="bg-blue-700 rounded-full h-2 mb-2">
                   <div
                     className="bg-white rounded-full h-2 transition-all duration-300"
-                    style={{ width: `${derivedProgress}%` }}
+                    style={{ width: `${backendProgress}%` }}
                   ></div>
                 </div>
                 <div className="text-sm opacity-75">
-                  {derivedProgress}% COMPLETE
+                  {backendProgress}% COMPLETE
                 </div>
               </div>
 
@@ -1691,7 +1713,7 @@ const LessonPreview = () => {
                     >
                       <div className="flex items-center">
                         <div className="flex items-center mr-3">
-                          {completedSections.has(section.id) ? (
+                          {backendCompletedSections.has(section.id) ? (
                             <CheckCircle className="h-5 w-5 text-green-500" />
                           ) : (
                             <Circle className="h-5 w-5" />
@@ -1797,6 +1819,28 @@ const LessonPreview = () => {
                     of {totalSections}
                   </Badge>
                 )}
+
+                {/* Lesson progress indicator */}
+                <Badge
+                  variant={isBackendCompleted ? 'default' : 'secondary'}
+                  className={`text-xs px-2.5 py-1 font-medium ${
+                    isBackendCompleted
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  {isBackendCompleted ? (
+                    <>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Completed
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="h-3 w-3 mr-1" />
+                      {backendProgress}%
+                    </>
+                  )}
+                </Badge>
               </div>
             </div>
           </header>
