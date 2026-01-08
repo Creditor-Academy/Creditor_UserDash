@@ -41,7 +41,7 @@ import {
   Eye,
   Users,
   AlertCircle,
-  TrendingUp,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -49,6 +49,9 @@ import {
   updateApplicationStatus,
 } from '@/services/sponsorAdsService';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Add this import for auth context/hook (adjust based on your auth setup)
+// import { useAuth } from '@/contexts/AuthContext';
 
 // Map backend position to frontend placement
 const POSITION_TO_PLACEMENT = {
@@ -151,6 +154,12 @@ const placementLabels = {
 };
 
 export const SponsorAdRequests = () => {
+  // Add this line to get user info (adjust based on your auth setup)
+  // const { user, isAdmin } = useAuth();
+
+  // For demonstration, I'll create a mock isAdmin state
+  // You should replace this with your actual auth logic
+  const [isAdmin, setIsAdmin] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -162,6 +171,19 @@ export const SponsorAdRequests = () => {
   const [viewImageError, setViewImageError] = useState(false);
   const [viewVideoError, setViewVideoError] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Simulate checking if user is admin
+  // Replace this with your actual auth check
+  useEffect(() => {
+    // Example: Check user role from localStorage or context
+    const checkAdminStatus = () => {
+      // This is a mock - replace with your actual auth logic
+      const userRole = localStorage.getItem('userRole') || 'user';
+      setIsAdmin(userRole === 'admin');
+    };
+
+    checkAdminStatus();
+  }, []);
 
   // Helper function to check if URL is a placeholder/invalid
   const isPlaceholderUrl = url => {
@@ -182,8 +204,13 @@ export const SponsorAdRequests = () => {
     }
   }, [viewingRequest]);
 
-  // Fetch all ad applications from backend
+  // Fetch all ad applications from backend - only if user is admin
   const fetchApplications = useCallback(async () => {
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -198,7 +225,7 @@ export const SponsorAdRequests = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchApplications();
@@ -226,13 +253,17 @@ export const SponsorAdRequests = () => {
   }, [requests]);
 
   const handleReview = (request, action) => {
+    if (!isAdmin) {
+      toast.error('You do not have permission to review requests');
+      return;
+    }
     setViewingRequest(request);
     setReviewAction(action);
     setReviewNotes('');
   };
 
   const submitReview = async () => {
-    if (!viewingRequest) return;
+    if (!viewingRequest || !isAdmin) return;
 
     // For rejection, require admin notes
     if (reviewAction === 'reject' && !reviewNotes.trim()) {
@@ -284,6 +315,33 @@ export const SponsorAdRequests = () => {
     }
   };
 
+  // Non-admin access restriction view
+  if (!isAdmin) {
+    return (
+      <div className="space-y-4">
+        <Card className="rounded-2xl border-red-200 bg-red-50">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="p-3 bg-red-100 rounded-full">
+                <Shield className="w-12 h-12 text-red-600" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xl font-bold text-red-900">
+                  Access Restricted
+                </p>
+                <p className="text-sm text-red-700 max-w-md">
+                  You do not have administrator privileges to view or manage
+                  sponsor ad requests. Please contact your system administrator
+                  if you believe this is an error.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -303,23 +361,26 @@ export const SponsorAdRequests = () => {
 
   if (error) {
     return (
-      <Card className="rounded-2xl border-red-200 bg-red-50">
-        <CardContent className="p-6">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <AlertCircle className="w-12 h-12 text-red-600" />
-            <p className="text-lg font-semibold text-red-900">
-              Failed to load ad applications
-            </p>
-            <p className="text-sm text-red-700">{error}</p>
-            <Button
-              onClick={fetchApplications}
-              className="mt-4 bg-red-600 hover:bg-red-700"
-            >
-              Retry
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card className="rounded-2xl border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+              <p className="text-lg font-semibold text-red-900">
+                Failed to load ad applications
+              </p>
+              <p className="text-sm text-red-700">{error}</p>
+              {/* Only show retry button for admin */}
+              <Button
+                onClick={fetchApplications}
+                className="mt-4 bg-red-600 hover:bg-red-700"
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

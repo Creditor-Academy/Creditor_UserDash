@@ -98,6 +98,7 @@ export const UserSponsorProvider = ({ children }) => {
       setAds(normalizedAds);
     } catch (err) {
       console.error('[UserSponsor] Failed to fetch applications:', err);
+
       setError(err.message);
       setAds([]);
     } finally {
