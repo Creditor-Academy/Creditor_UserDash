@@ -1594,9 +1594,9 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
         );
 
       if (isPortrait) {
-        imagePrompt += ` PROFESSIONAL PORTRAIT REQUIREMENTS: High-quality professional headshot or portrait, clear facial features, professional lighting (three-point lighting), sharp focus on face, natural skin tones, professional appearance, well-groomed, confident expression, neutral or warm background, studio-quality photography, no distortion, no messy appearance, clean and polished look. QUALITY: 8K resolution, professional photography standards, studio lighting, perfect focus, no artifacts.`;
+        imagePrompt += ` PHOTOREALISTIC HUMAN PORTRAIT: High-quality professional headshot with REAL HUMAN FACE (NOT cartoon/illustrated/anime), clear facial features, professional lighting, sharp face focus, natural realistic skin tones, well-groomed professional appearance, confident expression, neutral background, studio-quality photography, no distortion, 8K resolution, professional standards, perfect focus, no artifacts, ONLY realistic human photography.`;
       } else {
-        imagePrompt += ` QUALITY REQUIREMENTS: soft cinematic lighting, volumetric light, dramatic contrast, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft deep shadows, realistic reflections, smooth lighting falloff, glossy surface, metallic reflections, no text, no watermarks, clean background. Vivid, premium quality.`;
+        imagePrompt += ` QUALITY: Cinematic lighting, volumetric light, dramatic contrast, ultra-detailed, 8K clarity, crisp textures, photorealistic depth, centered composition, balanced spacing, clean layout, soft shadows, realistic reflections, smooth lighting, glossy surfaces, metallic reflections, no text, no watermarks, clean background, vivid premium quality.`;
       }
 
       // Generate image using OpenAI DALL-E

@@ -565,34 +565,17 @@ Requirements:
    * Block 5: Content Right + Image Left
    */
   async generateImageLeft(context, generationType = "STANDARD") {
-    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing key concepts of "${context.topic}".
-    
-Requirements:
-- Design a structured, organized visual with clear hierarchy
-- Show key concepts with flowchart or diagram elements
-- Use professional colors, icons, and typography
-- Include detailed information with proper spacing and layout
-- Display labels, annotations, and key points clearly visible
-- Modern, clean, professional style suitable for educational content
-- Ensure all text is readable and well-organized
-- Create a visually rich, information-dense design
-- Return ONLY the image description`;
+    const imagePromptText = `Create infographic/flowchart for "${context.topic}". Requirements: organized visual with clear hierarchy, key concepts with flowchart elements, professional colors/icons/typography, detailed info with proper spacing, LARGE BOLD READABLE TEXT (NOT small/distorted), professional educational style, visually rich design. Return image description only.`;
 
-    const contentPrompt = `Write 2-3 sentences explaining a key concept about "${context.topic}".
-
-Requirements:
-- Clear and informative
-- Complements a visual diagram or illustration
-- Professional tone
-- Return ONLY the text`;
+    const contentPrompt = `Write 2-3 sentences explaining a key concept about "${context.topic}".`;
 
     // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
     const [imagePrompt, contentText] = await Promise.all([
       optimizedOpenAIService.generateText(imagePromptText, {
-        maxTokens: 200,
+        maxTokens: 250,
         temperature: 0.8,
         systemPrompt:
-          "You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.",
+          "Expert infographic designer. Create professional prompts emphasizing: BOLD readable text, clear hierarchy, LARGE FONTS, flowcharts, icons, strong typography, excellent information density. Text must be visible and crisp at any size.",
       }),
       optimizedOpenAIService.generateText(contentPrompt, {
         maxTokens: 150,
@@ -607,7 +590,7 @@ Requirements:
 
     try {
       // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
-      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
+      const enhancedPrompt = `Professional educational infographic: ${imagePrompt.trim()}. CRITICAL: LARGE BOLD CRISP READABLE TEXT throughout, sharp and clear (never distorted), excellent contrast, clear visual hierarchy with prominent labels, organized sections with logical flow, professional icons, color-coded sections, 8K quality crisp details, sharp legible text as primary focus, professional design with premium color palette, clean white/light background for text contrast, vivid colors, professional quality. TEXT VISIBILITY IS PRIMARY GOAL.`;
 
       console.log(
         "🎨 Generating AI image (left) with premium 7-layer enhancement:",
@@ -704,34 +687,17 @@ Requirements:
    * Block 6: Content Left + Image Right
    */
   async generateImageRight(context, generationType = "STANDARD") {
-    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing practical application of "${context.topic}".
-    
-Requirements:
-- Design a structured, organized visual with clear hierarchy
-- Show practical applications with flowchart or process diagram elements
-- Use professional colors, icons, and typography
-- Include detailed information with proper spacing and layout
-- Display labels, annotations, and key points clearly visible
-- Modern, clean, professional style suitable for educational content
-- Ensure all text is readable and well-organized
-- Create a visually rich, information-dense design
-- Return ONLY the image description`;
+    const imagePromptText = `Create infographic/flowchart showing practical application of "${context.topic}". Requirements: organized visual with clear hierarchy, practical applications with flowchart/process elements, professional colors/icons/typography, detailed info with proper spacing, LARGE BOLD READABLE TEXT (NOT small/distorted), professional educational style, visually rich design. Return image description only.`;
 
-    const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".
-
-Requirements:
-- Focus on real-world usage
-- Clear examples
-- Professional tone
-- Return ONLY the text`;
+    const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".`;
 
     // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
     const [imagePrompt, contentText] = await Promise.all([
       optimizedOpenAIService.generateText(imagePromptText, {
-        maxTokens: 200,
+        maxTokens: 250,
         temperature: 0.8,
         systemPrompt:
-          "You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.",
+          "Expert infographic designer. Create professional prompts emphasizing: BOLD readable text, clear hierarchy, LARGE FONTS, flowcharts, icons, strong typography, excellent information density. Text must be visible and crisp at any size.",
       }),
       optimizedOpenAIService.generateText(contentPrompt, {
         maxTokens: 150,
@@ -745,7 +711,7 @@ Requirements:
 
     try {
       // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
-      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
+      const enhancedPrompt = `Professional educational infographic: ${imagePrompt.trim()}. CRITICAL: LARGE BOLD CRISP READABLE TEXT throughout, sharp and clear (never distorted), excellent contrast, clear visual hierarchy with prominent labels, organized sections with logical flow, professional icons, color-coded sections, 8K quality crisp details, sharp legible text as primary focus, professional design with premium color palette, clean white/light background for text contrast, vivid colors, professional quality. TEXT VISIBILITY IS PRIMARY GOAL.`;
 
       console.log(
         "🎨 Generating AI image (right) with infographic enhancement:",
