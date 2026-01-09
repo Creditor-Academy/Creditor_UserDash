@@ -44,7 +44,7 @@
 }
 
 .title-accent::after {
-  content: " Creditor Academy";
+  content: ' Creditor Acade';
   color: rgb(53, 152, 219);
 }
 
@@ -52,7 +52,7 @@
   display: block;
   width: 140px;
   height: 5px;
-  background: #5DADE2;
+  background: #5dade2;
   margin-top: 5px;
   transition: width 0.3s ease-in-out;
 }
@@ -83,20 +83,20 @@
     flex-direction: column;
     padding: 40px 5%;
   }
-  
+
   .about-video-container,
   .about-text-container {
     width: 100%;
   }
-  
+
   .about-video-container {
     margin-bottom: 30px;
   }
-  
+
   .about-title {
     font-size: 2rem;
   }
-  
+
   .about-description {
     font-size: 1.1rem;
   }

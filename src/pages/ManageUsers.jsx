@@ -1,22 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSearchParams } from 'react-router-dom';
-import UserDetailsModal from '@/components/UserDetailsModal';
-import { getAuthHeader } from '../services/authHeader';
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from "react-router-dom";
+import UserDetailsModal from "@/components/UserDetailsModal";
+import { getAuthHeader } from "../services/authHeader";
+import { FaUsers } from "react-icons/fa";
+import { X } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  'https://creditor-backend-9upi.onrender.com';
+  "https://creditor-backend-9upi.onrender.com";
 
 const ManageUsers = () => {
   const { userRole, hasRole } = useAuth();
+  const { userProfile } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('user');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState("user");
   const [apiCallTime, setApiCallTime] = useState(null);
+  const [orgData, setOrgData] = useState(null);
+  const [orgDataLoading, setOrgDataLoading] = useState(true);
+  const [isBuyUsersModalOpen, setIsBuyUsersModalOpen] = useState(false);
+  const [userAmount, setUserAmount] = useState("");
+  const [buyingUsers, setBuyingUsers] = useState(false);
 
   // Clear selected users when filter role changes
   useEffect(() => {
@@ -25,25 +34,25 @@ const ManageUsers = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [courses, setCourses] = useState([]);
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState("");
   const [addingToCourse, setAddingToCourse] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState({
-    courseTitle: '',
+    courseTitle: "",
     addedUsers: [],
-    roleType: '',
+    roleType: "",
   });
 
   // Password change modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [passwordSuccessData, setPasswordSuccessData] = useState({
     changedUsers: [],
-    newPassword: '',
+    newPassword: "",
     failedUpdates: [],
   });
   const [showPasswordSuccessModal, setShowPasswordSuccessModal] =
@@ -63,7 +72,7 @@ const ManageUsers = () => {
   // Internal notes state
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [currentNoteUser, setCurrentNoteUser] = useState(null);
-  const [currentNote, setCurrentNote] = useState('');
+  const [currentNote, setCurrentNote] = useState("");
   const [userNotes, setUserNotes] = useState({});
 
   // User details modal state
@@ -75,7 +84,7 @@ const ManageUsers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(5);
   // Sorting state
-  const [sortOption, setSortOption] = useState('alpha_asc');
+  const [sortOption, setSortOption] = useState("alpha_asc");
 
   useEffect(() => {
     fetchUsers();
@@ -92,33 +101,33 @@ const ManageUsers = () => {
   // Extract user notes from fetched users data
   const fetchUserNotes = () => {
     try {
-      console.log('📋 Extracting notes from users array...');
+      console.log("📋 Extracting notes from users array...");
       // Extract private_note from users array
       const notesObject = {};
-      users.forEach(user => {
+      users.forEach((user) => {
         if (user.private_note) {
           console.log(
             `📝 Found note for user ${user.first_name} ${user.last_name}:`,
-            user.private_note
+            user.private_note,
           );
           notesObject[user.id] = user.private_note;
         }
       });
-      console.log('📊 Total notes found:', Object.keys(notesObject).length);
+      console.log("📊 Total notes found:", Object.keys(notesObject).length);
       setUserNotes(notesObject);
     } catch (error) {
-      console.error('Error extracting user notes:', error);
+      console.error("Error extracting user notes:", error);
     }
   };
 
   // Save or update user note to backend using instructor API
   const saveUserNote = async (userId, noteText) => {
     try {
-      console.log('💾 Saving note for user:', userId);
-      console.log('📝 Note text:', noteText);
+      console.log("💾 Saving note for user:", userId);
+      console.log("📝 Note text:", noteText);
       console.log(
-        '🔗 API URL:',
-        `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`
+        "🔗 API URL:",
+        `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`,
       );
 
       const response = await axios.post(
@@ -128,14 +137,14 @@ const ManageUsers = () => {
         },
         {
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...(getAuthHeader() || {}),
           },
           withCredentials: true,
-        }
+        },
       );
 
-      console.log('✅ Save note response:', response.data);
+      console.log("✅ Save note response:", response.data);
 
       if (response.data) {
         // Update local state
@@ -148,22 +157,22 @@ const ManageUsers = () => {
         setUserNotes(updatedNotes);
 
         // Also update the user in the users array
-        setUsers(prevUsers =>
-          prevUsers.map(user =>
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
             user.id === userId
               ? { ...user, private_note: noteText.trim() || null }
-              : user
-          )
+              : user,
+          ),
         );
 
         return true;
       }
       return false;
     } catch (error) {
-      console.error('❌ Error saving user note:', error);
-      console.error('Error details:', error.response?.data);
+      console.error("❌ Error saving user note:", error);
+      console.error("Error details:", error.response?.data);
       setError(
-        `Failed to save note: ${error.response?.data?.message || error.message}`
+        `Failed to save note: ${error.response?.data?.message || error.message}`,
       );
       return false;
     }
@@ -171,13 +180,13 @@ const ManageUsers = () => {
 
   // Handle userId from search navigation
   useEffect(() => {
-    const userId = searchParams.get('userId');
-    console.log('🔍 Search navigation - userId:', userId);
-    console.log('🔍 Search navigation - users.length:', users.length);
+    const userId = searchParams.get("userId");
+    console.log("🔍 Search navigation - userId:", userId);
+    console.log("🔍 Search navigation - users.length:", users.length);
 
     if (userId && users.length > 0) {
-      const user = users.find(u => u.id === userId);
-      console.log('🔍 Search navigation - found user:', user);
+      const user = users.find((u) => u.id === userId);
+      console.log("🔍 Search navigation - found user:", user);
 
       if (user) {
         // Fetch detailed user profile data before opening modal
@@ -185,23 +194,23 @@ const ManageUsers = () => {
         // Clear the query parameter after processing
         setSearchParams({});
       } else {
-        console.warn('⚠️ Search navigation - User not found in users array');
+        console.warn("⚠️ Search navigation - User not found in users array");
         // Try to refresh users list to see if the user appears
-        console.log('🔄 Refreshing users list to find the user...');
+        console.log("🔄 Refreshing users list to find the user...");
         fetchUsers();
       }
     } else if (userId && users.length === 0) {
-      console.log('🔍 Search navigation - Waiting for users to load...');
+      console.log("🔍 Search navigation - Waiting for users to load...");
     }
   }, [searchParams, users, setSearchParams]);
 
   // Handle case where user might be found after users list is refreshed
   useEffect(() => {
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get("userId");
     if (userId && users.length > 0 && !showUserDetailsModal) {
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
       if (user) {
-        console.log('🔍 User found after refresh, opening modal...');
+        console.log("🔍 User found after refresh, opening modal...");
         fetchDetailedUserProfile(userId);
         setSearchParams({});
       }
@@ -209,23 +218,23 @@ const ManageUsers = () => {
   }, [users, searchParams, showUserDetailsModal, setSearchParams]);
 
   // Function to fetch detailed user profile and open modal
-  const fetchDetailedUserProfile = async userId => {
+  const fetchDetailedUserProfile = async (userId) => {
     try {
       setLoadingUserDetails(true);
-      console.log('🔍 Searching for user with ID:', userId);
-      console.log('🔍 Available users:', users);
+      console.log("🔍 Searching for user with ID:", userId);
+      console.log("🔍 Available users:", users);
       console.log(
-        '🔍 User IDs in users array:',
-        users.map(u => u.id)
+        "🔍 User IDs in users array:",
+        users.map((u) => u.id),
       );
 
       // Since the users array from /api/user/all should already contain detailed data,
       // we can use that directly. If we need to refresh the data, we can do so here.
-      const user = users.find(u => u.id === userId);
-      console.log('🔍 Found user:', user);
+      const user = users.find((u) => u.id === userId);
+      console.log("🔍 Found user:", user);
 
       if (user) {
-        console.log('🔍 User data for modal:', {
+        console.log("🔍 User data for modal:", {
           id: user.id,
           first_name: user.first_name,
           last_name: user.last_name,
@@ -241,14 +250,14 @@ const ManageUsers = () => {
         setSelectedUserForDetails(user);
         setShowUserDetailsModal(true);
       } else {
-        console.warn('⚠️ User not found in users array, userId:', userId);
+        console.warn("⚠️ User not found in users array, userId:", userId);
         // If user is not found, we might need to refresh the users list
         // or the user ID from search might not match the user ID from /api/user/all
       }
     } catch (error) {
-      console.error('❌ Error processing user profile:', error);
+      console.error("❌ Error processing user profile:", error);
       // Fallback to basic user data if processing fails
-      const user = users.find(u => u.id === userId);
+      const user = users.find((u) => u.id === userId);
       if (user) {
         setSelectedUserForDetails(user);
         setShowUserDetailsModal(true);
@@ -263,7 +272,7 @@ const ManageUsers = () => {
     setShowUserDetailsModal(false);
     setSelectedUserForDetails(null);
     // Clear any remaining search params
-    if (searchParams.get('userId')) {
+    if (searchParams.get("userId")) {
       setSearchParams({});
     }
   };
@@ -274,7 +283,7 @@ const ManageUsers = () => {
 
     const interval = setInterval(() => {
       // Force a re-render by updating a state that triggers recalculation
-      setUsers(prevUsers => [...prevUsers]);
+      setUsers((prevUsers) => [...prevUsers]);
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
@@ -287,37 +296,162 @@ const ManageUsers = () => {
     }
   }, [forceUpdate]);
 
+  // Fetch organization data for user limit
+  useEffect(() => {
+    const fetchOrgData = async () => {
+      try {
+        setOrgDataLoading(true);
+        const orgId =
+          userProfile?.organization_id ||
+          userProfile?.org_id ||
+          userProfile?.organizationId ||
+          userProfile?.organization?.id ||
+          localStorage.getItem("orgId");
+
+        if (!orgId) {
+          setOrgDataLoading(false);
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE}/api/org/SingleOrg/${orgId}`,
+          getAuthConfig(),
+        );
+        const orgDataResult = response?.data?.data || response?.data;
+        setOrgData(orgDataResult);
+      } catch (err) {
+        console.error("Error fetching organization data:", err);
+      } finally {
+        setOrgDataLoading(false);
+      }
+    };
+
+    if (userProfile) {
+      fetchOrgData();
+    }
+  }, [userProfile]);
+
+  // Handle buy users payment
+  const handleBuyUsers = async () => {
+    if (!userAmount || Number(userAmount) <= 0) {
+      setError("Please enter a valid number of users");
+      return;
+    }
+
+    try {
+      setBuyingUsers(true);
+      setError("");
+
+      const orgId =
+        userProfile?.organization_id ||
+        userProfile?.org_id ||
+        userProfile?.organizationId ||
+        userProfile?.organization?.id ||
+        localStorage.getItem("orgId");
+
+      if (!orgId) {
+        setError("Organization not found. Please log in again.");
+        setBuyingUsers(false);
+        return;
+      }
+
+      const numberOfUsers = Number(userAmount);
+      const totalCost = numberOfUsers * 14; // $14 per user
+
+      // Here you would integrate with your payment gateway
+      // For now, we'll simulate the payment and then update the user limit
+      console.log("Processing payment for", numberOfUsers, "users");
+      console.log("Total cost: $", totalCost);
+
+      // Simulate payment processing
+      // In production, integrate with Stripe, PayPal, or your payment gateway
+      const paymentSuccess = true; // Replace with actual payment processing
+
+      if (paymentSuccess) {
+        // Update organization user limit
+        const currentLimit = orgData?.user_limit || 0;
+        const newLimit = currentLimit + numberOfUsers;
+
+        const updateResponse = await axios.put(
+          `${API_BASE}/api/org/orgUpdate/${orgId}`,
+          {
+            user_limit: newLimit,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(getAuthHeader() || {}),
+            },
+            credentials: "include",
+            withCredentials: true,
+          },
+        );
+
+        if (updateResponse.data) {
+          // Refresh organization data
+          const orgResponse = await axios.get(
+            `${API_BASE}/api/org/SingleOrg/${orgId}`,
+            getAuthConfig(),
+          );
+          const orgDataResult = orgResponse?.data?.data || orgResponse?.data;
+          setOrgData(orgDataResult);
+
+          // Refresh users list
+          fetchUsers();
+
+          setSuccessMessage(
+            `Successfully purchased ${numberOfUsers} user(s) for $${totalCost.toLocaleString()}. Your user limit has been updated to ${newLimit.toLocaleString()}.`,
+          );
+          setIsBuyUsersModalOpen(false);
+          setUserAmount("");
+        } else {
+          setError("Failed to update user limit. Please contact support.");
+        }
+      } else {
+        setError("Payment processing failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error purchasing users:", err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to purchase users. Please try again.",
+      );
+    } finally {
+      setBuyingUsers(false);
+    }
+  };
+
   const getAuthConfig = () => ({
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(getAuthHeader() || {}), // getAuthHeader should return { Authorization: 'Bearer ...' }
     },
-    credentials: 'include',
+    credentials: "include",
     withCredentials: true,
   });
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
       const currentTime = new Date();
       setApiCallTime(currentTime);
 
       const response = await axios.get(
         `${API_BASE}/api/user/all`,
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       if (response.data && response.data.code === 200) {
         const fetchedUsers = response.data.data || [];
 
         // Debug: Check if private_note field exists
-        console.log('👥 Fetched users count:', fetchedUsers.length);
-        const usersWithNotes = fetchedUsers.filter(u => u.private_note);
-        console.log('📝 Users with private_note:', usersWithNotes.length);
+        console.log("👥 Fetched users count:", fetchedUsers.length);
+        const usersWithNotes = fetchedUsers.filter((u) => u.private_note);
+        console.log("📝 Users with private_note:", usersWithNotes.length);
         if (usersWithNotes.length > 0) {
-          console.log('📋 Sample user with note:', {
+          console.log("📋 Sample user with note:", {
             name: `${usersWithNotes[0].first_name} ${usersWithNotes[0].last_name}`,
             note: usersWithNotes[0].private_note,
           });
@@ -325,11 +459,11 @@ const ManageUsers = () => {
 
         setUsers(fetchedUsers);
       } else {
-        throw new Error('Failed to fetch users');
+        throw new Error("Failed to fetch users");
       }
     } catch (error) {
-      console.error('❌ Error fetching users:', error);
-      console.error('❌ Error details:', {
+      console.error("❌ Error fetching users:", error);
+      console.error("❌ Error details:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -337,9 +471,9 @@ const ManageUsers = () => {
       });
 
       if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else {
-        setError('Failed to load users. Please try again.');
+        setError("Failed to load users. Please try again.");
       }
       setUsers([]);
     } finally {
@@ -351,23 +485,23 @@ const ManageUsers = () => {
     try {
       const response = await axios.get(
         `${API_BASE}/api/course/getAllCourses`,
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       if (response.data && response.data.data) {
         const publishedCourses = response.data.data.filter(
-          course => course.course_status === 'PUBLISHED'
+          (course) => course.course_status === "PUBLISHED",
         );
         setCourses(publishedCourses);
       } else if (response.data && Array.isArray(response.data)) {
         const publishedCourses = response.data.filter(
-          course => course.course_status === 'PUBLISHED'
+          (course) => course.course_status === "PUBLISHED",
         );
         setCourses(publishedCourses);
       }
     } catch (error) {
-      console.error('❌ Error fetching courses:', error);
-      console.error('❌ Courses error details:', {
+      console.error("❌ Error fetching courses:", error);
+      console.error("❌ Courses error details:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -376,37 +510,37 @@ const ManageUsers = () => {
 
       // Fallback to dummy courses if API fails (only published courses)
       setCourses([
-        { id: '1', title: 'Introduction to React', course_status: 'PUBLISHED' },
-        { id: '2', title: 'Advanced JavaScript', course_status: 'PUBLISHED' },
+        { id: "1", title: "Introduction to React", course_status: "PUBLISHED" },
+        { id: "2", title: "Advanced JavaScript", course_status: "PUBLISHED" },
         {
-          id: '3',
-          title: 'Web Development Fundamentals',
-          course_status: 'PUBLISHED',
+          id: "3",
+          title: "Web Development Fundamentals",
+          course_status: "PUBLISHED",
         },
       ]);
     }
   };
 
   // Helper function to get user role from user_roles array
-  const getUserRole = user => {
+  const getUserRole = (user) => {
     if (user.user_roles && user.user_roles.length > 0) {
       // Priority order: admin > instructor > user (single role system)
-      const roles = user.user_roles.map(r => r.role);
+      const roles = user.user_roles.map((r) => r.role);
 
-      if (roles.includes('admin')) {
-        return 'admin';
-      } else if (roles.includes('instructor')) {
-        return 'instructor';
+      if (roles.includes("admin")) {
+        return "admin";
+      } else if (roles.includes("instructor")) {
+        return "instructor";
       } else {
         const role = roles[0];
         return role;
       }
     }
-    return 'user'; // default role when no role is assigned in backend
+    return "user"; // default role when no role is assigned in backend
   };
 
   // Helper function to calculate time difference and format it
-  const calculateTimeDifference = lastLoginTime => {
+  const calculateTimeDifference = (lastLoginTime) => {
     if (!apiCallTime || !lastLoginTime) {
       return null;
     }
@@ -424,28 +558,28 @@ const ManageUsers = () => {
 
     // Format the time difference
     if (years > 0) {
-      return `${years} year${years > 1 ? 's' : ''} ago`;
+      return `${years} year${years > 1 ? "s" : ""} ago`;
     } else if (months > 0) {
-      return `${months} month${months > 1 ? 's' : ''} ago`;
+      return `${months} month${months > 1 ? "s" : ""} ago`;
     } else if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''} ago`;
+      return `${days} day${days > 1 ? "s" : ""} ago`;
     } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
     } else if (minutes > 0) {
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
     } else if (seconds > 0) {
-      return `${seconds} second${seconds > 1 ? 's' : ''} ago`;
+      return `${seconds} second${seconds > 1 ? "s" : ""} ago`;
     } else {
-      return 'Just now';
+      return "Just now";
     }
   };
 
   // Helper to get last visited timestamp (ms) for sorting
-  const getLastVisitedTimestamp = user => {
+  const getLastVisitedTimestamp = (user) => {
     if (user?.activity_log && user.activity_log.length > 0) {
       const latest = user.activity_log.reduce((latestLog, log) => {
         const t = new Date(
-          log.createdAt || log.created_at || log.timestamp || log.time
+          log.createdAt || log.created_at || log.timestamp || log.time,
         ).getTime();
         return t > latestLog ? t : latestLog;
       }, 0);
@@ -455,7 +589,7 @@ const ManageUsers = () => {
   };
 
   // Helper to get createdAt timestamp (ms) for sorting "just added"
-  const getCreatedAtTimestamp = user => {
+  const getCreatedAtTimestamp = (user) => {
     // Prioritize created_at since that's what the API returns
     const created =
       user?.created_at ||
@@ -468,7 +602,7 @@ const ManageUsers = () => {
   };
 
   // Helper to check if user was enrolled in the last 30 days
-  const isEnrolledThisMonth = user => {
+  const isEnrolledThisMonth = (user) => {
     // Prioritize created_at since that's what the API returns
     const created =
       user?.created_at ||
@@ -489,15 +623,15 @@ const ManageUsers = () => {
   };
 
   // Helper to get full name for alphabetical sorting
-  const getFullName = user =>
-    `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
+  const getFullName = (user) =>
+    `${user.first_name || ""} ${user.last_name || ""}`.trim().toLowerCase();
 
   // Helper function to get last visited from activity_log
-  const getLastVisited = user => {
+  const getLastVisited = (user) => {
     if (user.activity_log && user.activity_log.length > 0) {
       // Sort by createdAt and get the latest
       const sortedLogs = user.activity_log.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       );
       const lastLoginTime = sortedLogs[0].createdAt;
 
@@ -507,7 +641,7 @@ const ManageUsers = () => {
     return null;
   };
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -535,13 +669,13 @@ const ManageUsers = () => {
   const sortedUsers = useMemo(() => {
     const arr = [...filteredUsers];
     switch (sortOption) {
-      case 'alpha_asc':
+      case "alpha_asc":
         arr.sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
         break;
-      case 'alpha_desc':
+      case "alpha_desc":
         arr.sort((a, b) => getFullName(b).localeCompare(getFullName(a)));
         break;
-      case 'never_visited':
+      case "never_visited":
         arr.sort((a, b) => {
           const aVisited = getLastVisitedTimestamp(a);
           const bVisited = getLastVisitedTimestamp(b);
@@ -551,7 +685,7 @@ const ManageUsers = () => {
           return getFullName(a).localeCompare(getFullName(b));
         });
         break;
-      case 'just_added':
+      case "just_added":
         arr.sort((a, b) => {
           const aCreated = getCreatedAtTimestamp(a);
           const bCreated = getCreatedAtTimestamp(b);
@@ -561,10 +695,10 @@ const ManageUsers = () => {
           return bCreated - aCreated; // newest first
         });
         break;
-      case 'enrolled_this_month':
+      case "enrolled_this_month":
         // Filter users enrolled this month and sort by newest first
         return arr
-          .filter(user => isEnrolledThisMonth(user))
+          .filter((user) => isEnrolledThisMonth(user))
           .sort((a, b) => {
             const aCreated = getCreatedAtTimestamp(a);
             const bCreated = getCreatedAtTimestamp(b);
@@ -592,45 +726,45 @@ const ManageUsers = () => {
 
   // Modified handleSelectAll to accumulate selections across pages
   const handleSelectAll = () => {
-    const currentPageUserIds = currentUsers.map(user => user.id);
-    const allCurrentSelected = currentPageUserIds.every(id =>
-      selectedUsers.includes(id)
+    const currentPageUserIds = currentUsers.map((user) => user.id);
+    const allCurrentSelected = currentPageUserIds.every((id) =>
+      selectedUsers.includes(id),
     );
     if (allCurrentSelected) {
       // Deselect all users on this page only
       setSelectedUsers(
-        selectedUsers.filter(id => !currentPageUserIds.includes(id))
+        selectedUsers.filter((id) => !currentPageUserIds.includes(id)),
       );
     } else {
       // Add all users from this page to the selection (accumulate)
       setSelectedUsers(
-        Array.from(new Set([...selectedUsers, ...currentPageUserIds]))
+        Array.from(new Set([...selectedUsers, ...currentPageUserIds])),
       );
     }
   };
 
   // Only show the select-all-across-pages button if all users on the current page are selected
   const showSelectAllAcrossPages = () => {
-    const currentPageUserIds = currentUsers.map(user => user.id);
+    const currentPageUserIds = currentUsers.map((user) => user.id);
     return (
       currentPageUserIds.length > 0 &&
-      currentPageUserIds.every(id => selectedUsers.includes(id))
+      currentPageUserIds.every((id) => selectedUsers.includes(id))
     );
   };
 
   // handleSelectUser: Deselecting a user removes them from selectedUsers
-  const handleSelectUser = userId => {
-    setSelectedUsers(prev =>
+  const handleSelectUser = (userId) => {
+    setSelectedUsers((prev) =>
       prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
     );
   };
 
   // New function to select all users across all pages for the current filter role
   const handleSelectAllUsers = () => {
     // Get all users that match the current filter role
-    const allFilteredUsers = users.filter(user => {
+    const allFilteredUsers = users.filter((user) => {
       const matchesSearch =
         user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -643,11 +777,11 @@ const ManageUsers = () => {
     });
 
     // Get all user IDs for the filtered users
-    const allFilteredUserIds = allFilteredUsers.map(user => user.id);
+    const allFilteredUserIds = allFilteredUsers.map((user) => user.id);
 
     // Check if all filtered users are already selected
-    const allSelected = allFilteredUserIds.every(id =>
-      selectedUsers.includes(id)
+    const allSelected = allFilteredUserIds.every((id) =>
+      selectedUsers.includes(id),
     );
 
     if (allSelected) {
@@ -661,7 +795,7 @@ const ManageUsers = () => {
 
   // Helper function to get total count of users for current filter role
   const getTotalFilteredUsersCount = () => {
-    return users.filter(user => {
+    return users.filter((user) => {
       const matchesSearch =
         user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -679,12 +813,12 @@ const ManageUsers = () => {
 
     try {
       setAddingToCourse(true);
-      setError('');
+      setError("");
       let response;
-      const selectedCourseData = courses.find(c => c.id === selectedCourse);
+      const selectedCourseData = courses.find((c) => c.id === selectedCourse);
       if (!selectedCourseData) {
         throw new Error(
-          `Course with ID "${selectedCourse}" not found. Available courses: ${courses.map(c => c.id).join(', ')}`
+          `Course with ID "${selectedCourse}" not found. Available courses: ${courses.map((c) => c.id).join(", ")}`,
         );
       }
       response = await axios.post(
@@ -693,7 +827,7 @@ const ManageUsers = () => {
           course_id: selectedCourse,
           learnerIds: selectedUsers,
         },
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       if (
@@ -704,15 +838,15 @@ const ManageUsers = () => {
       ) {
         // Get the selected course title
         const selectedCourseData = courses.find(
-          course => course.id === selectedCourse
+          (course) => course.id === selectedCourse,
         );
         const courseTitle = selectedCourseData
           ? selectedCourseData.title
           : selectedCourse;
 
         // Get the selected users data
-        const addedUsers = users.filter(user =>
-          selectedUsers.includes(user.id)
+        const addedUsers = users.filter((user) =>
+          selectedUsers.includes(user.id),
         );
 
         // Set success data and show success modal
@@ -724,14 +858,14 @@ const ManageUsers = () => {
 
         // Close course selection modal and reset course selection
         setShowCourseModal(false);
-        setSelectedCourse('');
+        setSelectedCourse("");
         // Don't clear selectedUsers here - keep them selected for potential "Add to More Courses"
 
         // After successful addition, verify the users are actually in the course
         try {
           const verifyResponse = await axios.get(
             `${API_BASE}/api/course/${selectedCourse}/getAllUsersByCourseId`,
-            getAuthConfig()
+            getAuthConfig(),
           );
 
           // console.log('✅ Course users verification response:', verifyResponse.data);
@@ -740,8 +874,8 @@ const ManageUsers = () => {
           // Check if our added users are actually in the course
           const courseUsers = verifyResponse.data?.data || [];
           const addedUserIds = selectedUsers;
-          const foundUsers = courseUsers.filter(cu =>
-            addedUserIds.includes(cu.user_id)
+          const foundUsers = courseUsers.filter((cu) =>
+            addedUserIds.includes(cu.user_id),
           );
 
           // console.log('🔍 Verification results:', {
@@ -757,7 +891,7 @@ const ManageUsers = () => {
             // console.log('✅ All users successfully verified in course!');
           }
         } catch (verifyError) {
-          console.error('❌ Error verifying course users:', verifyError);
+          console.error("❌ Error verifying course users:", verifyError);
         }
 
         // Refresh users list to get updated course information
@@ -766,12 +900,12 @@ const ManageUsers = () => {
         // console.log(`${filterRole}s added to course successfully`);
       } else {
         throw new Error(
-          response.data?.message || `Failed to add ${filterRole}s to course`
+          response.data?.message || `Failed to add ${filterRole}s to course`,
         );
       }
     } catch (error) {
       console.error(`Error adding ${filterRole}s to course:`, error);
-      console.error('❌ Error details:', {
+      console.error("❌ Error details:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -794,7 +928,7 @@ const ManageUsers = () => {
 
         // Get the selected course title
         const selectedCourseData = courses.find(
-          course => course.id === selectedCourse
+          (course) => course.id === selectedCourse,
         );
         const courseTitle = selectedCourseData
           ? selectedCourseData.title
@@ -804,24 +938,26 @@ const ManageUsers = () => {
         const errorMessage =
           error.response.data?.error ||
           error.response.data?.message ||
-          'Unknown error';
+          "Unknown error";
 
         // console.log('📋 Backend error message:', errorMessage);
 
         // Parse the error message to extract user IDs if present
         // Backend returns: "Users fc78ddd2-d389-4844-a387-53d257fb04a0 are already instructors for this course"
         const userMatch = errorMessage.match(
-          /Users\s+([^,\s]+(?:\s*,\s*[^,\s]+)*)\s+are already/
+          /Users\s+([^,\s]+(?:\s*,\s*[^,\s]+)*)\s+are already/,
         );
 
         if (userMatch) {
-          const existingUserIds = userMatch[1].split(',').map(id => id.trim());
+          const existingUserIds = userMatch[1]
+            .split(",")
+            .map((id) => id.trim());
           // console.log('🔍 Found existing user IDs in error message:', existingUserIds);
 
           // Check which users are already assigned vs. which are new
           const alreadyAssignedIds = existingUserIds;
           const newUserIds = selectedUsers.filter(
-            id => !alreadyAssignedIds.includes(id)
+            (id) => !alreadyAssignedIds.includes(id),
           );
 
           // console.log('📋 User analysis:', {
@@ -847,7 +983,7 @@ const ManageUsers = () => {
                   {
                     instructorIds: [userId],
                   },
-                  getAuthConfig()
+                  getAuthConfig(),
                 );
 
                 if (
@@ -865,8 +1001,8 @@ const ManageUsers = () => {
 
             // Show results
             if (successfulAdds.length > 0) {
-              const addedUsersData = users.filter(user =>
-                successfulAdds.includes(user.id)
+              const addedUsersData = users.filter((user) =>
+                successfulAdds.includes(user.id),
               );
 
               // console.log('✅ Showing success modal for individually added users:', addedUsersData);
@@ -879,7 +1015,7 @@ const ManageUsers = () => {
 
               // Close course selection modal and reset
               setShowCourseModal(false);
-              setSelectedCourse('');
+              setSelectedCourse("");
               setSelectedUsers([]);
 
               // Refresh users list to get updated course information
@@ -887,39 +1023,39 @@ const ManageUsers = () => {
             } else {
               // All users failed to be added individually
               setError(
-                `All selected ${filterRole}s are already assigned to the course "${courseTitle}".`
+                `All selected ${filterRole}s are already assigned to the course "${courseTitle}".`,
               );
               setShowCourseModal(false);
-              setSelectedCourse('');
+              setSelectedCourse("");
               setSelectedUsers([]);
             }
           } else {
             // All users are already assigned
             // console.log('ℹ️ All users already assigned, showing info message');
             setError(
-              `All selected ${filterRole}s are already assigned to the course "${courseTitle}".`
+              `All selected ${filterRole}s are already assigned to the course "${courseTitle}".`,
             );
             setShowCourseModal(false);
-            setSelectedCourse('');
+            setSelectedCourse("");
             setSelectedUsers([]);
           }
         } else {
           // Generic 409 message - couldn't parse user IDs
           // console.log('⚠️ Generic 409 response, showing default message');
           setError(
-            `Some ${filterRole}s are already assigned to this course. This is normal and won't affect their access.`
+            `Some ${filterRole}s are already assigned to this course. This is normal and won't affect their access.`,
           );
           setShowCourseModal(false);
-          setSelectedCourse('');
+          setSelectedCourse("");
           setSelectedUsers([]);
         }
       } else if (error.response?.status === 400) {
-        setError('Invalid request. Please check your selection and try again.');
+        setError("Invalid request. Please check your selection and try again.");
       } else if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (error.response?.status === 500) {
         setError(
-          `Server error: ${error.response?.data?.message || 'Internal server error occurred. Please try again.'}`
+          `Server error: ${error.response?.data?.message || "Internal server error occurred. Please try again."}`,
         );
       } else {
         setError(`Failed to add ${filterRole}s to course. Please try again.`);
@@ -934,7 +1070,7 @@ const ManageUsers = () => {
 
     try {
       setUpdatingRole(true);
-      setError('');
+      setError("");
 
       // console.log('🔄 Making instructor API call:', {
       //   url: `${API_BASE}/api/user/make-instructors`,
@@ -946,7 +1082,7 @@ const ManageUsers = () => {
       const response = await axios.post(
         `${API_BASE}/api/user/make-instructors`,
         { user_ids: selectedUsers },
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       // Detailed analysis of the response
@@ -964,8 +1100,8 @@ const ManageUsers = () => {
       // Check if the request was successful (HTTP 200-299)
       if (response.status >= 200 && response.status < 300) {
         // Get the selected users data
-        const updatedUsers = users.filter(user =>
-          selectedUsers.includes(user.id)
+        const updatedUsers = users.filter((user) =>
+          selectedUsers.includes(user.id),
         );
 
         // Since backend doesn't return updated user data, we need to manually update local state
@@ -973,19 +1109,19 @@ const ManageUsers = () => {
         // console.log('📋 Backend updated users count:', response.data?.message);
 
         // Manually update the local state to reflect the role change
-        setUsers(prevUsers => {
-          const newUsers = prevUsers.map(user => {
+        setUsers((prevUsers) => {
+          const newUsers = prevUsers.map((user) => {
             if (selectedUsers.includes(user.id)) {
               // Check if user already has instructor role
               const hasInstructorRole = user.user_roles?.some(
-                role => role.role === 'instructor'
+                (role) => role.role === "instructor",
               );
 
               if (!hasInstructorRole) {
                 // Replace all roles with instructor role (single role system)
                 const updatedUser = {
                   ...user,
-                  user_roles: [{ role: 'instructor' }],
+                  user_roles: [{ role: "instructor" }],
                 };
 
                 return updatedUser;
@@ -1012,9 +1148,9 @@ const ManageUsers = () => {
 
         // Show success message immediately
         setSuccessData({
-          courseTitle: 'Role Update',
+          courseTitle: "Role Update",
           addedUsers: updatedUsers,
-          roleType: 'instructor',
+          roleType: "instructor",
         });
         setShowSuccessModal(true);
 
@@ -1040,12 +1176,12 @@ const ManageUsers = () => {
       } else {
         // console.error('❌ API returned non-success status:', response.status);
         throw new Error(
-          response.data?.message || `API returned status ${response.status}`
+          response.data?.message || `API returned status ${response.status}`,
         );
       }
     } catch (error) {
-      console.error('❌ Error making users instructors:', error);
-      console.error('❌ Error details:', {
+      console.error("❌ Error making users instructors:", error);
+      console.error("❌ Error details:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -1057,17 +1193,17 @@ const ManageUsers = () => {
 
       // Handle specific error cases
       if (error.response?.status === 400) {
-        setError('Invalid request. Please check your selection and try again.');
+        setError("Invalid request. Please check your selection and try again.");
       } else if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (error.response?.status === 403) {
-        setError('You do not have permission to perform this action.');
+        setError("You do not have permission to perform this action.");
       } else if (error.response?.status === 500) {
         setError(
-          `Server error: ${error.response?.data?.message || 'Internal server error occurred. Please try again.'}`
+          `Server error: ${error.response?.data?.message || "Internal server error occurred. Please try again."}`,
         );
       } else {
-        setError('Failed to update user roles. Please try again.');
+        setError("Failed to update user roles. Please try again.");
       }
     } finally {
       setUpdatingRole(false);
@@ -1081,36 +1217,36 @@ const ManageUsers = () => {
 
     try {
       setUpdatingRole(true);
-      setError('');
+      setError("");
 
       // Make API call to convert selected users/instructors to admin
       const response = await axios.put(
         `${API_BASE}/api/user/convert-to-admin`,
         { user_ids: selectedUserIds },
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       // Check if the request was successful (HTTP 200-299)
       if (response.status >= 200 && response.status < 300) {
         // Get the selected users data
-        const updatedUsers = users.filter(user =>
-          selectedUserIds.includes(user.id)
+        const updatedUsers = users.filter((user) =>
+          selectedUserIds.includes(user.id),
         );
 
         // Manually update the local state to reflect the role change
-        setUsers(prevUsers => {
-          const newUsers = prevUsers.map(user => {
+        setUsers((prevUsers) => {
+          const newUsers = prevUsers.map((user) => {
             if (selectedUserIds.includes(user.id)) {
               // Check if user already has admin role
               const hasAdminRole = user.user_roles?.some(
-                role => role.role === 'admin'
+                (role) => role.role === "admin",
               );
 
               if (!hasAdminRole) {
                 // Replace all roles with admin role (single role system)
                 return {
                   ...user,
-                  user_roles: [{ role: 'admin' }],
+                  user_roles: [{ role: "admin" }],
                 };
               }
             }
@@ -1126,15 +1262,15 @@ const ManageUsers = () => {
         // Identify published courses that the new admins should access
         const publishedCoursesWithIds = courses
           .filter(
-            course =>
-              (course.course_status || course.status || '').toUpperCase() ===
-              'PUBLISHED'
+            (course) =>
+              (course.course_status || course.status || "").toUpperCase() ===
+              "PUBLISHED",
           )
-          .map(course => ({
+          .map((course) => ({
             ...course,
             resolvedId: course.id || course.course_id || course._id,
           }))
-          .filter(course => course.resolvedId);
+          .filter((course) => course.resolvedId);
 
         const totalEnrollments = publishedCoursesWithIds.length;
         const enrollmentResults = [];
@@ -1150,17 +1286,17 @@ const ManageUsers = () => {
                   course_id: course.resolvedId,
                   learnerIds: selectedUserIds,
                 },
-                getAuthConfig()
+                getAuthConfig(),
               );
               enrollmentResults.push({ course, success: true });
             } catch (enrollmentError) {
               console.error(
                 `❌ Failed to assign admin access for course ${course.title || course.resolvedId}:`,
-                enrollmentError.response?.data || enrollmentError.message
+                enrollmentError.response?.data || enrollmentError.message,
               );
               enrollmentResults.push({ course, success: false });
             } finally {
-              setEnrollmentProgress(prev => ({
+              setEnrollmentProgress((prev) => ({
                 current: Math.min(prev.current + 1, totalEnrollments),
                 total: totalEnrollments,
               }));
@@ -1169,13 +1305,13 @@ const ManageUsers = () => {
         }
 
         const successfulEnrollments = enrollmentResults.filter(
-          result => result.success
+          (result) => result.success,
         ).length;
 
         setSuccessData({
-          courseTitle: 'Role Update',
+          courseTitle: "Role Update",
           addedUsers: updatedUsers,
-          roleType: 'admin',
+          roleType: "admin",
           enrollmentInfo:
             totalEnrollments > 0
               ? {
@@ -1184,12 +1320,12 @@ const ManageUsers = () => {
                   message:
                     successfulEnrollments > 0
                       ? ` and enrolled them in ${successfulEnrollments} published course(s)`
-                      : ' (failed to assign published courses)',
+                      : " (failed to assign published courses)",
                 }
               : {
                   successful: 0,
                   total: 0,
-                  message: ' (no published courses available to assign)',
+                  message: " (no published courses available to assign)",
                 },
         });
         setShowSuccessModal(true);
@@ -1200,25 +1336,25 @@ const ManageUsers = () => {
         }, 2000);
       } else {
         throw new Error(
-          response.data?.message || `API returned status ${response.status}`
+          response.data?.message || `API returned status ${response.status}`,
         );
       }
     } catch (error) {
-      console.error('❌ Error making users admins:', error);
+      console.error("❌ Error making users admins:", error);
 
       // Handle specific error cases
       if (error.response?.status === 400) {
-        setError('Invalid request. Please check your selection and try again.');
+        setError("Invalid request. Please check your selection and try again.");
       } else if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (error.response?.status === 403) {
-        setError('You do not have permission to perform this action.');
+        setError("You do not have permission to perform this action.");
       } else if (error.response?.status === 500) {
         setError(
-          `Server error: ${error.response?.data?.message || 'Internal server error occurred. Please try again.'}`
+          `Server error: ${error.response?.data?.message || "Internal server error occurred. Please try again."}`,
         );
       } else {
-        setError('Failed to update user roles. Please try again.');
+        setError("Failed to update user roles. Please try again.");
       }
     } finally {
       setEnrollmentProgress({ current: 0, total: 0 });
@@ -1231,7 +1367,7 @@ const ManageUsers = () => {
 
     try {
       setUpdatingRole(true);
-      setError('');
+      setError("");
 
       // console.log('🔄 Making user API call:', {
       //   url: `${API_BASE}/api/user/make-users`,
@@ -1244,30 +1380,30 @@ const ManageUsers = () => {
       const response = await axios.post(
         `${API_BASE}/api/user/make-users`,
         { user_ids: selectedUsers },
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       // Check if the request was successful (HTTP 200-299)
       if (response.status >= 200 && response.status < 300) {
         // Get the selected users data
-        const updatedUsers = users.filter(user =>
-          selectedUsers.includes(user.id)
+        const updatedUsers = users.filter((user) =>
+          selectedUsers.includes(user.id),
         );
 
         // Manually update the local state to reflect the role change
-        setUsers(prevUsers => {
-          const newUsers = prevUsers.map(user => {
+        setUsers((prevUsers) => {
+          const newUsers = prevUsers.map((user) => {
             if (selectedUsers.includes(user.id)) {
               // Check if user already has user role
               const hasUserRole = user.user_roles?.some(
-                role => role.role === 'user'
+                (role) => role.role === "user",
               );
 
               if (!hasUserRole) {
                 // Replace all roles with user role (single role system)
                 const updatedUser = {
                   ...user,
-                  user_roles: [{ role: 'user' }],
+                  user_roles: [{ role: "user" }],
                 };
 
                 return updatedUser;
@@ -1291,7 +1427,7 @@ const ManageUsers = () => {
 
         // Show success message immediately
         setSuccessData({
-          courseTitle: 'User Role Update',
+          courseTitle: "User Role Update",
           addedUsers: updatedUsers,
         });
         setShowSuccessModal(true);
@@ -1304,25 +1440,25 @@ const ManageUsers = () => {
       } else {
         // console.error('❌ API returned non-success status:', response.status);
         throw new Error(
-          response.data?.message || `API returned status ${response.status}`
+          response.data?.message || `API returned status ${response.status}`,
         );
       }
     } catch (error) {
-      console.error('❌ Error making users regular users:', error);
+      console.error("❌ Error making users regular users:", error);
 
       // Handle specific error cases
       if (error.response?.status === 400) {
-        setError('Invalid request. Please check your selection and try again.');
+        setError("Invalid request. Please check your selection and try again.");
       } else if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (error.response?.status === 403) {
-        setError('You do not have permission to perform this action.');
+        setError("You do not have permission to perform this action.");
       } else if (error.response?.status === 500) {
         setError(
-          `Server error: ${error.response?.data?.message || 'Internal server error occurred. Please try again.'}`
+          `Server error: ${error.response?.data?.message || "Internal server error occurred. Please try again."}`,
         );
       } else {
-        setError('Failed to update user roles. Please try again.');
+        setError("Failed to update user roles. Please try again.");
       }
     } finally {
       setUpdatingRole(false);
@@ -1334,7 +1470,7 @@ const ManageUsers = () => {
 
     try {
       setDeletingUser(true);
-      setError('');
+      setError("");
 
       // console.log('🗑️ Deleting user:', {
       //   userId: userToDelete.id,
@@ -1346,7 +1482,7 @@ const ManageUsers = () => {
       // Make API call to delete user using the correct endpoint format
       const response = await axios.delete(
         `${API_BASE}/api/user/${userToDelete.id}`,
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       if (
@@ -1362,24 +1498,24 @@ const ManageUsers = () => {
         setUserToDelete(null);
 
         // Show temporary success message
-        setError(''); // Clear any existing errors
+        setError(""); // Clear any existing errors
         setSuccessMessage(
-          `User ${userToDelete.first_name} ${userToDelete.last_name} has been successfully deleted.`
+          `User ${userToDelete.first_name} ${userToDelete.last_name} has been successfully deleted.`,
         );
 
         // Clear success message after 3 seconds
         setTimeout(() => {
-          setSuccessMessage('');
+          setSuccessMessage("");
         }, 3000);
 
         // Refresh users list to get updated data
         await fetchUsers();
       } else {
-        throw new Error(response.data?.message || 'Failed to delete user');
+        throw new Error(response.data?.message || "Failed to delete user");
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
-      console.error('❌ Error details:', {
+      console.error("Error deleting user:", error);
+      console.error("❌ Error details:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -1390,30 +1526,30 @@ const ManageUsers = () => {
 
       // Handle specific error cases
       if (error.response?.status === 400) {
-        setError('Invalid request. Please check your selection and try again.');
+        setError("Invalid request. Please check your selection and try again.");
       } else if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (error.response?.status === 403) {
-        setError('You do not have permission to perform this action.');
+        setError("You do not have permission to perform this action.");
       } else if (error.response?.status === 404) {
-        setError('User not found or already deleted.');
+        setError("User not found or already deleted.");
       } else if (error.response?.status === 500) {
         setError(
-          `Server error: ${error.response?.data?.message || 'Internal server error occurred. Please try again.'}`
+          `Server error: ${error.response?.data?.message || "Internal server error occurred. Please try again."}`,
         );
       } else {
-        setError('Failed to delete user. Please try again.');
+        setError("Failed to delete user. Please try again.");
       }
     } finally {
       setDeletingUser(false);
     }
   };
 
-  const handleDeleteClick = user => {
+  const handleDeleteClick = (user) => {
     // Check if current user is admin
-    if (!hasRole('admin')) {
+    if (!hasRole("admin")) {
       setError(
-        'Only administrators can delete users, instructors, and admins.'
+        "Only administrators can delete users, instructors, and admins.",
       );
       return;
     }
@@ -1422,15 +1558,15 @@ const ManageUsers = () => {
     setShowDeleteModal(true);
   };
 
-  const handleUserDetailsClick = user => {
+  const handleUserDetailsClick = (user) => {
     setSelectedUserForDetails(user);
     setShowUserDetailsModal(true);
   };
 
   // Handle opening notes modal
-  const handleNotesClick = user => {
+  const handleNotesClick = (user) => {
     setCurrentNoteUser(user);
-    setCurrentNote(userNotes[user.id] || '');
+    setCurrentNote(userNotes[user.id] || "");
     setShowNotesModal(true);
   };
 
@@ -1443,11 +1579,11 @@ const ManageUsers = () => {
     if (success) {
       setShowNotesModal(false);
       setCurrentNoteUser(null);
-      setCurrentNote('');
+      setCurrentNote("");
       // Show success message
-      setSuccessMessage('Note saved successfully!');
+      setSuccessMessage("Note saved successfully!");
       setTimeout(() => {
-        setSuccessMessage('');
+        setSuccessMessage("");
       }, 2000);
     }
   };
@@ -1456,16 +1592,16 @@ const ManageUsers = () => {
   const handleClearNote = async () => {
     if (!currentNoteUser) return;
 
-    const success = await saveUserNote(currentNoteUser.id, '');
+    const success = await saveUserNote(currentNoteUser.id, "");
 
     if (success) {
       setShowNotesModal(false);
       setCurrentNoteUser(null);
-      setCurrentNote('');
+      setCurrentNote("");
       // Show success message
-      setSuccessMessage('Note cleared successfully!');
+      setSuccessMessage("Note cleared successfully!");
       setTimeout(() => {
-        setSuccessMessage('');
+        setSuccessMessage("");
       }, 2000);
     }
   };
@@ -1474,7 +1610,7 @@ const ManageUsers = () => {
   const handleCloseNotesModal = () => {
     setShowNotesModal(false);
     setCurrentNoteUser(null);
-    setCurrentNote('');
+    setCurrentNote("");
   };
 
   const handleAddToMoreCourses = () => {
@@ -1486,20 +1622,20 @@ const ManageUsers = () => {
 
     // Keep the selected users (they're already selected)
     // Reset the course selection
-    setSelectedCourse('');
+    setSelectedCourse("");
 
     // console.log('🔄 Opening course selection modal for additional enrollments');
     // console.log('📋 Selected users for additional courses:', selectedUsers);
   };
 
   // Function to manually check course users
-  const checkCourseUsers = async courseId => {
+  const checkCourseUsers = async (courseId) => {
     try {
       // console.log('🔍 Manually checking course users for course:', courseId);
 
       const response = await axios.get(
         `${API_BASE}/api/course/${courseId}/getAllUsersByCourseId`,
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       // console.log('✅ Course users check response:', response.data);
@@ -1508,46 +1644,46 @@ const ManageUsers = () => {
       // Show the results in an alert for easy viewing
       const courseUsers = response.data?.data || [];
       const userList = courseUsers
-        .map(cu => {
-          let roleDisplay = 'No role';
+        .map((cu) => {
+          let roleDisplay = "No role";
           if (cu.user?.user_roles && cu.user.user_roles.length > 0) {
-            const roles = cu.user.user_roles.map(r => r.role);
-            const priorityRoles = ['admin', 'instructor', 'user'];
+            const roles = cu.user.user_roles.map((r) => r.role);
+            const priorityRoles = ["admin", "instructor", "user"];
             const highestRole =
-              priorityRoles.find(role => roles.includes(role)) || 'user';
+              priorityRoles.find((role) => roles.includes(role)) || "user";
             roleDisplay = highestRole;
           }
           return `${cu.user?.first_name} ${cu.user?.last_name} (${cu.user?.email}) - Role: ${roleDisplay}`;
         })
-        .join('\n');
+        .join("\n");
 
-      alert(`Course Users for ${courseId}:\n\n${userList || 'No users found'}`);
+      alert(`Course Users for ${courseId}:\n\n${userList || "No users found"}`);
     } catch (error) {
-      console.error('❌ Error checking course users:', error);
+      console.error("❌ Error checking course users:", error);
       alert(`Error checking course users: ${error.message}`);
     }
   };
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match. Please try again.');
+      setPasswordError("Passwords do not match. Please try again.");
       return;
     }
 
     try {
       setChangingPassword(true);
-      setPasswordError('');
+      setPasswordError("");
 
       const changedUsers = [];
       const failedUpdates = [];
 
       // Call backend reset endpoint per user: { email, password }
       for (const userId of selectedUsers) {
-        const user = users.find(u => u.id === userId);
+        const user = users.find((u) => u.id === userId);
         if (!user || !user.email) {
           failedUpdates.push({
             user: user || { id: userId },
-            error: 'User or email not found',
+            error: "User or email not found",
           });
           continue;
         }
@@ -1555,14 +1691,14 @@ const ManageUsers = () => {
           const resp = await axios.post(
             `${API_BASE}/api/auth/reset-password`,
             { email: user.email, password: newPassword },
-            getAuthConfig()
+            getAuthConfig(),
           );
           if (resp.status >= 200 && resp.status < 300) {
             changedUsers.push(user);
           } else {
             failedUpdates.push({
               user,
-              error: resp.data?.message || 'Failed to change password',
+              error: resp.data?.message || "Failed to change password",
             });
           }
         } catch (err) {
@@ -1574,8 +1710,8 @@ const ManageUsers = () => {
       }
 
       // Prepare results UI
-      const updatedUsers = users.filter(user =>
-        selectedUsers.includes(user.id)
+      const updatedUsers = users.filter((user) =>
+        selectedUsers.includes(user.id),
       );
       setPasswordSuccessData({
         changedUsers: changedUsers.length ? changedUsers : updatedUsers,
@@ -1586,11 +1722,11 @@ const ManageUsers = () => {
 
       // Close password change modal and reset fields
       setShowPasswordModal(false);
-      setNewPassword('');
-      setConfirmPassword('');
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (error) {
-      console.error('Error changing password:', error);
-      console.error('❌ Error details:', {
+      console.error("Error changing password:", error);
+      console.error("❌ Error details:", {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
@@ -1599,7 +1735,7 @@ const ManageUsers = () => {
         method: error.config?.method,
         payload: error.config?.data,
       });
-      setPasswordError('Failed to change password. Please try again.');
+      setPasswordError("Failed to change password. Please try again.");
     } finally {
       setChangingPassword(false);
     }
@@ -1617,8 +1753,106 @@ const ManageUsers = () => {
     );
   }
 
+  // Calculate user counts
+  const totalUsers = users.length;
+  const filteredUsersCount = getTotalFilteredUsersCount();
+  const userLimit = orgData?.user_limit || null;
+
   return (
     <div className="space-y-6">
+      {/* User Count Display */}
+      <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white bg-purple-500">
+              <FaUsers />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                User Statistics
+              </p>
+              <div className="flex items-center gap-4 mt-1">
+                <div>
+                  <span className="text-lg font-bold text-gray-900">
+                    {totalUsers.toLocaleString()}
+                  </span>
+                  <span className="text-sm text-gray-600 ml-1">
+                    Total Users
+                  </span>
+                </div>
+                {(searchTerm || filterRole !== "user") && (
+                  <div className="text-gray-400">|</div>
+                )}
+                {(searchTerm || filterRole !== "user") && (
+                  <div>
+                    <span className="text-lg font-bold text-purple-600">
+                      {filteredUsersCount.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-gray-600 ml-1">Filtered</span>
+                  </div>
+                )}
+                {userLimit && (
+                  <>
+                    <div className="text-gray-400">|</div>
+                    <div>
+                      <span className="text-lg font-bold text-gray-900">
+                        {totalUsers.toLocaleString()} /{" "}
+                        {userLimit.toLocaleString()}
+                      </span>
+                      <span className="text-sm text-gray-600 ml-1">Limit</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {userLimit && (
+              <div className="text-right mr-4">
+                <div className="text-xs text-gray-500 mb-1">Usage</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {Math.round((totalUsers / userLimit) * 100)}%
+                </div>
+                <div className="w-32 h-2 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      (totalUsers / userLimit) * 100 >= 100
+                        ? "bg-gradient-to-r from-red-500 to-red-600"
+                        : (totalUsers / userLimit) * 100 >= 80
+                          ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                          : "bg-gradient-to-r from-purple-500 to-indigo-500"
+                    }`}
+                    style={{
+                      width: `${Math.min((totalUsers / userLimit) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setIsBuyUsersModalOpen(true)}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Add on users
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -1664,7 +1898,7 @@ const ManageUsers = () => {
       )}
 
       {/* Admin Notice */}
-      {!hasRole('admin') && (
+      {!hasRole("admin") && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <svg
@@ -1696,7 +1930,7 @@ const ManageUsers = () => {
               type="text"
               placeholder="Search users..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <svg
@@ -1743,31 +1977,31 @@ const ManageUsers = () => {
           )}
           <div className="flex gap-2">
             <button
-              onClick={() => setFilterRole('user')}
+              onClick={() => setFilterRole("user")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                filterRole === 'user'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                filterRole === "user"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               User
             </button>
             <button
-              onClick={() => setFilterRole('instructor')}
+              onClick={() => setFilterRole("instructor")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                filterRole === 'instructor'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                filterRole === "instructor"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               Instructor
             </button>
             <button
-              onClick={() => setFilterRole('admin')}
+              onClick={() => setFilterRole("admin")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                filterRole === 'admin'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                filterRole === "admin"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               Admin
@@ -1775,7 +2009,7 @@ const ManageUsers = () => {
             {/* Sort dropdown */}
             <select
               value={sortOption}
-              onChange={e => setSortOption(e.target.value)}
+              onChange={(e) => setSortOption(e.target.value)}
               className="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Sort users"
             >
@@ -1809,7 +2043,7 @@ const ManageUsers = () => {
             </span>
             <div className="flex gap-2">
               {/* Role Management Buttons */}
-              {filterRole === 'user' && (
+              {filterRole === "user" && (
                 <div className="flex gap-2">
                   <button
                     onClick={handleMakeInstructor}
@@ -1833,16 +2067,16 @@ const ManageUsers = () => {
                     {updatingRole
                       ? enrollmentProgress.total > 0
                         ? `Updating & Enrolling... (${enrollmentProgress.current}/${enrollmentProgress.total})`
-                        : 'Updating & Enrolling...'
-                      : 'Make Instructor'}
+                        : "Updating & Enrolling..."
+                      : "Make Instructor"}
                   </button>
                   <button
                     onClick={handleMakeAdmin}
-                    disabled={updatingRole || !hasRole('admin')}
+                    disabled={updatingRole || !hasRole("admin")}
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     title={
-                      hasRole('admin')
-                        ? 'Promote to Admin (replaces all existing roles)'
+                      hasRole("admin")
+                        ? "Promote to Admin (replaces all existing roles)"
                         : "Admin only - You don't have permission"
                     }
                   >
@@ -1859,19 +2093,19 @@ const ManageUsers = () => {
                         d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                       />
                     </svg>
-                    {updatingRole ? 'Updating...' : 'Make Admin'}
+                    {updatingRole ? "Updating..." : "Make Admin"}
                   </button>
                 </div>
               )}
-              {filterRole === 'instructor' && (
+              {filterRole === "instructor" && (
                 <div className="flex gap-2">
                   <button
                     onClick={handleMakeAdmin}
-                    disabled={updatingRole || !hasRole('admin')}
+                    disabled={updatingRole || !hasRole("admin")}
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     title={
-                      hasRole('admin')
-                        ? 'Promote to Admin (replaces all existing roles)'
+                      hasRole("admin")
+                        ? "Promote to Admin (replaces all existing roles)"
                         : "Admin only - You don't have permission"
                     }
                   >
@@ -1888,7 +2122,7 @@ const ManageUsers = () => {
                         d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                       />
                     </svg>
-                    {updatingRole ? 'Updating...' : 'Make Admin'}
+                    {updatingRole ? "Updating..." : "Make Admin"}
                   </button>
                 </div>
               )}
@@ -1968,7 +2202,7 @@ const ManageUsers = () => {
               <button
                 onClick={() => {
                   setShowCourseModal(false);
-                  setError('');
+                  setError("");
                   // Clear selected users when manually closing
                   setSelectedUsers([]);
                 }}
@@ -1984,11 +2218,11 @@ const ManageUsers = () => {
               </label>
               <select
                 value={selectedCourse}
-                onChange={e => setSelectedCourse(e.target.value)}
+                onChange={(e) => setSelectedCourse(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Choose a course...</option>
-                {courses.map(course => (
+                {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.title}
                   </option>
@@ -2000,7 +2234,7 @@ const ManageUsers = () => {
               <button
                 onClick={() => {
                   setShowCourseModal(false);
-                  setError('');
+                  setError("");
                   // Clear selected users when manually canceling
                   setSelectedUsers([]);
                 }}
@@ -2013,7 +2247,7 @@ const ManageUsers = () => {
                 disabled={!selectedCourse || addingToCourse}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {addingToCourse ? 'Adding...' : 'Add to Course'}
+                {addingToCourse ? "Adding..." : "Add to Course"}
               </button>
             </div>
           </div>
@@ -2055,38 +2289,38 @@ const ManageUsers = () => {
 
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-3">
-                {successData.courseTitle === 'Role Update' ? (
+                {successData.courseTitle === "Role Update" ? (
                   <>
-                    You have successfully updated{' '}
+                    You have successfully updated{" "}
                     <span className="font-semibold text-gray-800">
                       {successData.addedUsers.length} user(s)
-                    </span>{' '}
+                    </span>{" "}
                     to instructor role
-                    {successData.enrollmentInfo?.message || ''}. They will now
+                    {successData.enrollmentInfo?.message || ""}. They will now
                     appear in the Instructor section.
                   </>
-                ) : successData.courseTitle === 'User Deleted' ? (
+                ) : successData.courseTitle === "User Deleted" ? (
                   <>
-                    You have successfully deleted{' '}
-                    {getUserRole(successData.addedUsers[0])}{' '}
+                    You have successfully deleted{" "}
+                    {getUserRole(successData.addedUsers[0])}{" "}
                     <span className="font-semibold text-gray-800">
-                      {successData.addedUsers[0]?.first_name}{' '}
+                      {successData.addedUsers[0]?.first_name}{" "}
                       {successData.addedUsers[0]?.last_name}
-                    </span>{' '}
+                    </span>{" "}
                     from the system.
                   </>
                 ) : (
                   <>
-                    You have successfully added{' '}
+                    You have successfully added{" "}
                     <span className="font-semibold text-gray-800">
                       {successData.addedUsers.length} {filterRole}(s)
-                    </span>{' '}
+                    </span>{" "}
                     to the course:
                   </>
                 )}
               </p>
-              {successData.courseTitle !== 'Role Update' &&
-                successData.courseTitle !== 'User Deleted' && (
+              {successData.courseTitle !== "Role Update" &&
+                successData.courseTitle !== "User Deleted" && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                     <p className="text-sm font-medium text-blue-800">
                       {successData.courseTitle}
@@ -2095,7 +2329,7 @@ const ManageUsers = () => {
                 )}
 
               {/* Course Enrollment Information */}
-              {successData.courseTitle === 'Role Update' &&
+              {successData.courseTitle === "Role Update" &&
                 successData.enrollmentInfo && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -2117,14 +2351,14 @@ const ManageUsers = () => {
                       </p>
                     </div>
                     <p className="text-sm text-green-700">
-                      Successfully enrolled in{' '}
+                      Successfully enrolled in{" "}
                       <span className="font-semibold">
                         {successData.enrollmentInfo.successful}
-                      </span>{' '}
-                      out of{' '}
+                      </span>{" "}
+                      out of{" "}
                       <span className="font-semibold">
                         {successData.enrollmentInfo.total}
-                      </span>{' '}
+                      </span>{" "}
                       courses.
                     </p>
                     {successData.enrollmentInfo.successful <
@@ -2139,14 +2373,14 @@ const ManageUsers = () => {
 
               <div className="max-h-48 overflow-y-auto">
                 <p className="text-sm font-medium text-gray-700 mb-2">
-                  {successData.courseTitle === 'Role Update'
-                    ? 'Updated users:'
-                    : successData.courseTitle === 'User Deleted'
-                      ? 'Deleted member:'
+                  {successData.courseTitle === "Role Update"
+                    ? "Updated users:"
+                    : successData.courseTitle === "User Deleted"
+                      ? "Deleted member:"
                       : `Added ${filterRole}s:`}
                 </p>
                 <div className="space-y-2">
-                  {successData.addedUsers.map(user => (
+                  {successData.addedUsers.map((user) => (
                     <div
                       key={user.id}
                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
@@ -2171,8 +2405,8 @@ const ManageUsers = () => {
 
             <div className="flex justify-end gap-3">
               {/* Show "Add to More Courses" button only for course addition operations */}
-              {successData.courseTitle !== 'Role Update' &&
-                successData.courseTitle !== 'User Deleted' && (
+              {successData.courseTitle !== "Role Update" &&
+                successData.courseTitle !== "User Deleted" && (
                   <button
                     onClick={handleAddToMoreCourses}
                     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
@@ -2220,9 +2454,9 @@ const ManageUsers = () => {
               <button
                 onClick={() => {
                   setShowPasswordModal(false);
-                  setNewPassword('');
-                  setConfirmPassword('');
-                  setPasswordError('');
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setPasswordError("");
                 }}
                 className="text-gray-500 hover:text-gray-700 text-xl font-bold"
               >
@@ -2243,7 +2477,7 @@ const ManageUsers = () => {
               <input
                 type="password"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
@@ -2256,7 +2490,7 @@ const ManageUsers = () => {
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
@@ -2273,9 +2507,9 @@ const ManageUsers = () => {
               <button
                 onClick={() => {
                   setShowPasswordModal(false);
-                  setNewPassword('');
-                  setConfirmPassword('');
-                  setPasswordError('');
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setPasswordError("");
                 }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
@@ -2311,7 +2545,7 @@ const ManageUsers = () => {
                     Changing...
                   </>
                 ) : (
-                  'Change Password'
+                  "Change Password"
                 )}
               </button>
             </div>
@@ -2339,15 +2573,15 @@ const ManageUsers = () => {
                   />
                 </svg>
                 {passwordSuccessData.failedUpdates.length === 0
-                  ? 'Password Changed Successfully!'
-                  : 'Password Update Completed'}
+                  ? "Password Changed Successfully!"
+                  : "Password Update Completed"}
               </h3>
               <button
                 onClick={() => {
                   setShowPasswordSuccessModal(false);
                   setPasswordSuccessData({
                     changedUsers: [],
-                    newPassword: '',
+                    newPassword: "",
                     failedUpdates: [],
                   });
                 }}
@@ -2384,9 +2618,9 @@ const ManageUsers = () => {
                     )}
                   </div>
                   <div className="text-xs text-blue-600">
-                    Total:{' '}
+                    Total:{" "}
                     {passwordSuccessData.changedUsers.length +
-                      passwordSuccessData.failedUpdates.length}{' '}
+                      passwordSuccessData.failedUpdates.length}{" "}
                     user(s)
                   </div>
                 </div>
@@ -2419,7 +2653,7 @@ const ManageUsers = () => {
                       ✅ Successfully updated passwords for:
                     </p>
                     <div className="space-y-2">
-                      {passwordSuccessData.changedUsers.map(user => (
+                      {passwordSuccessData.changedUsers.map((user) => (
                         <div
                           key={user.id}
                           className="flex items-center gap-3 p-2 bg-green-50 rounded-lg border border-green-200"
@@ -2452,7 +2686,7 @@ const ManageUsers = () => {
                     ❌ Failed to update passwords for:
                   </p>
                   <div className="space-y-2">
-                    {passwordSuccessData.failedUpdates.map(failedUpdate => (
+                    {passwordSuccessData.failedUpdates.map((failedUpdate) => (
                       <div
                         key={failedUpdate.user.id}
                         className="flex items-center gap-3 p-2 bg-red-50 rounded-lg border border-red-200"
@@ -2465,7 +2699,7 @@ const ManageUsers = () => {
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900">
-                            {failedUpdate.user.first_name}{' '}
+                            {failedUpdate.user.first_name}{" "}
                             {failedUpdate.user.last_name}
                           </p>
                           <p className="text-xs text-gray-500">
@@ -2488,15 +2722,15 @@ const ManageUsers = () => {
                   setShowPasswordSuccessModal(false);
                   setPasswordSuccessData({
                     changedUsers: [],
-                    newPassword: '',
+                    newPassword: "",
                     failedUpdates: [],
                   });
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 {passwordSuccessData.failedUpdates.length === 0
-                  ? 'Close'
-                  : 'Done'}
+                  ? "Close"
+                  : "Done"}
               </button>
             </div>
           </div>
@@ -2515,8 +2749,8 @@ const ManageUsers = () => {
                       type="checkbox"
                       checked={
                         currentUsers.length > 0 &&
-                        currentUsers.every(user =>
-                          selectedUsers.includes(user.id)
+                        currentUsers.every((user) =>
+                          selectedUsers.includes(user.id),
                         )
                       }
                       onChange={handleSelectAll}
@@ -2524,15 +2758,15 @@ const ManageUsers = () => {
                     />
                     {/* Show Select All [Role]s (X) button only if all users on this page are selected */}
                     {showSelectAllAcrossPages() &&
-                      (filterRole === 'user' ? (
+                      (filterRole === "user" ? (
                         <button
                           onClick={handleSelectAllUsers}
                           className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
                             selectedUsers.length ===
                               getTotalFilteredUsersCount() &&
                             getTotalFilteredUsersCount() > 0
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              ? "bg-green-100 text-green-700 hover:bg-green-200"
+                              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                           }`}
                           title={`Select all ${getTotalFilteredUsersCount()} users across all pages`}
                         >
@@ -2568,15 +2802,15 @@ const ManageUsers = () => {
                               </svg>
                             )}
                         </button>
-                      ) : filterRole === 'instructor' ? (
+                      ) : filterRole === "instructor" ? (
                         <button
                           onClick={handleSelectAllUsers}
                           className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
                             selectedUsers.length ===
                               getTotalFilteredUsersCount() &&
                             getTotalFilteredUsersCount() > 0
-                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              ? "bg-green-100 text-green-700 hover:bg-green-200"
+                              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                           }`}
                           title={`Select all ${getTotalFilteredUsersCount()} instructors across all pages`}
                         >
@@ -2613,15 +2847,15 @@ const ManageUsers = () => {
                             )}
                         </button>
                       ) : (
-                        filterRole === 'admin' && (
+                        filterRole === "admin" && (
                           <button
                             onClick={handleSelectAllUsers}
                             className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
                               selectedUsers.length ===
                                 getTotalFilteredUsersCount() &&
                               getTotalFilteredUsersCount() > 0
-                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                : "bg-purple-100 text-purple-700 hover:bg-purple-200"
                             }`}
                             title={`Select all ${getTotalFilteredUsersCount()} admins across all pages`}
                           >
@@ -2674,12 +2908,12 @@ const ManageUsers = () => {
                   Notes
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {hasRole('admin') ? 'Actions' : 'Actions (Admin Only)'}
+                  {hasRole("admin") ? "Actions" : "Actions (Admin Only)"}
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentUsers.map(user => (
+              {currentUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
@@ -2714,28 +2948,28 @@ const ManageUsers = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        getUserRole(user) === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : getUserRole(user) === 'instructor'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
+                        getUserRole(user) === "admin"
+                          ? "bg-purple-100 text-purple-800"
+                          : getUserRole(user) === "instructor"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-green-100 text-green-800"
                       }`}
                     >
                       {getUserRole(user)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getLastVisited(user) || 'Never'}
+                    {getLastVisited(user) || "Never"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
                       onClick={() => handleNotesClick(user)}
                       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                         userNotes[user.id]
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
-                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                          ? "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                          : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
                       }`}
-                      title={userNotes[user.id] ? 'View/Edit Note' : 'Add Note'}
+                      title={userNotes[user.id] ? "View/Edit Note" : "Add Note"}
                     >
                       <svg
                         className="w-4 h-4"
@@ -2761,7 +2995,7 @@ const ManageUsers = () => {
                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {hasRole('admin') && (
+                    {hasRole("admin") && (
                       <button
                         onClick={() => handleDeleteClick(user)}
                         className="text-red-600 hover:text-red-900 transition-colors"
@@ -2809,7 +3043,7 @@ const ManageUsers = () => {
             </h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm
-                ? 'Try adjusting your search.'
+                ? "Try adjusting your search."
                 : `No ${filterRole}s found.`}
             </p>
           </div>
@@ -2821,12 +3055,12 @@ const ManageUsers = () => {
         <div className="bg-white px-4 py-3 flex items-center justify-center border-t border-gray-200">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentPage === 1
-                  ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? "bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
               Previous
@@ -2838,13 +3072,13 @@ const ManageUsers = () => {
 
             <button
               onClick={() =>
-                setCurrentPage(prev => Math.min(prev + 1, totalPages))
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage === totalPages}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentPage === totalPages
-                  ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? "bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
               Next
@@ -2873,7 +3107,7 @@ const ManageUsers = () => {
             </div>
 
             <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete {getUserRole(userToDelete)}{' '}
+              Are you sure you want to delete {getUserRole(userToDelete)}{" "}
               <span className="font-semibold text-gray-800">
                 {userToDelete.first_name} {userToDelete.last_name}
               </span>
@@ -2895,7 +3129,7 @@ const ManageUsers = () => {
                 disabled={deletingUser}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {deletingUser ? 'Deleting...' : 'Delete User'}
+                {deletingUser ? "Deleting..." : "Delete User"}
               </button>
             </div>
           </div>
@@ -2925,7 +3159,7 @@ const ManageUsers = () => {
                   Internal Notes
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Notes for:{' '}
+                  Notes for:{" "}
                   <span className="font-semibold text-gray-800">
                     {currentNoteUser.first_name} {currentNoteUser.last_name}
                   </span>
@@ -2945,7 +3179,7 @@ const ManageUsers = () => {
               </label>
               <textarea
                 value={currentNote}
-                onChange={e => setCurrentNote(e.target.value)}
+                onChange={(e) => setCurrentNote(e.target.value)}
                 placeholder="Write your internal notes about this user here... (visible to all instructors and admins)"
                 className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
               />
@@ -3005,6 +3239,82 @@ const ManageUsers = () => {
                   Save Note
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add on Users Modal */}
+      {isBuyUsersModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4"
+          onClick={() => {
+            setIsBuyUsersModalOpen(false);
+            setUserAmount("");
+          }}
+        >
+          <div
+            className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Add on Users</h2>
+              <button
+                onClick={() => {
+                  setIsBuyUsersModalOpen(false);
+                  setUserAmount("");
+                }}
+                className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Close"
+              >
+                <X size={24} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Current User Info */}
+              {orgData && (
+                <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-1">
+                    Current User Limit
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {totalUsers.toLocaleString()} /{" "}
+                    {orgData.user_limit
+                      ? orgData.user_limit.toLocaleString()
+                      : "∞"}{" "}
+                    users
+                  </p>
+                </div>
+              )}
+
+              {/* Contact Sales Message */}
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <p className="text-sm text-gray-700 font-semibold">
+                  Kindly contact our sales team to add more users.
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Email:{" "}
+                  <a
+                    className="text-blue-600 font-semibold"
+                    href="mailto:support@creditoracademy.com"
+                  >
+                    support@creditoracademy.com
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsBuyUsersModalOpen(false);
+                  setUserAmount("");
+                }}
+                className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

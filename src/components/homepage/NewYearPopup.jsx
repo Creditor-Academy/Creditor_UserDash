@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Gift } from 'lucide-react';
-import newYearImg from '../../assets/newyearr.png';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Gift } from "lucide-react";
+import newYearImg from "../../assets/newyearr.png";
 
 const NewYearPopup = () => {
   const [timeLeft, setTimeLeft] = useState({});
@@ -39,9 +39,9 @@ const NewYearPopup = () => {
       }, 700);
     };
 
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener("scroll", onScroll);
     return () => {
-      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener("scroll", onScroll);
       clearTimeout(scrollTimeoutRef.current);
     };
   }, []);
@@ -61,11 +61,10 @@ const NewYearPopup = () => {
               initial={{ scale: 0.96, y: 30 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.96, y: 30 }}
-              transition={{ type: 'spring', stiffness: 180, damping: 24 }}
+              transition={{ type: "spring", stiffness: 180, damping: 24 }}
               className="relative w-full max-w-4xl rounded-2xl bg-[#020617] border border-white/10 shadow-xl overflow-hidden"
             >
               <div className="relative grid grid-cols-1 md:grid-cols-2">
-
                 {/* │ GOLD DIVIDER (DESKTOP ONLY) */}
                 <div className="hidden md:block absolute top-8 bottom-8 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
                   <motion.div
@@ -102,7 +101,7 @@ const NewYearPopup = () => {
                       alt="Happy New Year 2026"
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 1.2, ease: 'easeOut' }}
+                      transition={{ duration: 1.2, ease: "easeOut" }}
                       className="w-48 sm:w-56 md:w-64 mb-5 drop-shadow-[0_30px_45px_rgba(255,215,0,0.4)]"
                     />
 
@@ -121,7 +120,6 @@ const NewYearPopup = () => {
 
                 {/* 🧠 RIGHT SECTION */}
                 <div className="relative z-10 p-8 md:p-10 flex flex-col justify-center text-white">
-
                   {/* Close */}
                   <button
                     onClick={() => setIsPopupOpen(false)}
@@ -136,7 +134,8 @@ const NewYearPopup = () => {
                   </h3>
 
                   <p className="text-slate-300 mb-6 text-sm sm:text-base">
-                    Build courses faster, teach smarter, and scale knowledge with AI-powered tools.
+                    Build courses faster, teach smarter, and scale knowledge
+                    with AI-powered tools.
                   </p>
 
                   {/* Countdown */}
@@ -147,7 +146,7 @@ const NewYearPopup = () => {
                         className="rounded-lg bg-white/5 border border-white/10 py-2 sm:py-3 text-center"
                       >
                         <div className="text-xl sm:text-2xl font-bold text-sky-400">
-                          {String(value).padStart(2, '0')}
+                          {String(value).padStart(2, "0")}
                         </div>
                         <div className="text-[9px] uppercase tracking-widest text-slate-400 mt-1">
                           {unit}
@@ -180,7 +179,7 @@ const NewYearPopup = () => {
       <div className="fixed bottom-5 right-5 z-[60]">
         <motion.button
           animate={{ rotate: [0, 8, -8, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           whileHover={{ scale: 1.12 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsPopupOpen(true)}

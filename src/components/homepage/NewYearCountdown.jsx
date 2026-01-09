@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import NewYearPopup from './NewYearPopup';
+import React, { useState, useEffect } from "react";
+import NewYearPopup from "./NewYearPopup";
 
 const NewYearCountdown = () => {
   const [showPopup, setShowPopup] = useState(false);
@@ -13,14 +13,10 @@ const NewYearCountdown = () => {
     setShowPopup(false);
     // Mark as shown today
     const today = new Date().toDateString();
-    localStorage.setItem('newYearPopupLastShown', today);
+    localStorage.setItem("newYearPopupLastShown", today);
   };
 
-  return (
-    <>
-      {showPopup && <NewYearPopup onClose={handleClosePopup} />}
-    </>
-  );
+  return <>{showPopup && <NewYearPopup onClose={handleClosePopup} />}</>;
 };
 
 export default NewYearCountdown;

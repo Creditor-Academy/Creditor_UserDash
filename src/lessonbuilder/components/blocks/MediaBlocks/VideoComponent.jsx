@@ -293,6 +293,19 @@ const VideoComponent = ({
             throw new Error('Upload failed');
           }
         } catch (uploadError) {
+          const isStorageLimitExceeded =
+            uploadError?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+            (uploadError?.message &&
+              (uploadError.message.toLowerCase().includes('limit exceeded') ||
+                uploadError.message.toLowerCase().includes('storage limit')));
+
+          if (isStorageLimitExceeded) {
+            toast.error(
+              'Storage limit exceeded. Please free up space or upgrade before uploading new videos.'
+            );
+            return;
+          }
+
           devLogger.warn(
             'Cloud upload failed, using local preview:',
             uploadError
@@ -398,7 +411,10 @@ const VideoComponent = ({
 
   return (
     <Dialog open={showVideoDialog} onOpenChange={handleVideoDialogClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+        aria-describedby={undefined}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Video className="h-5 w-5 text-blue-600" />
@@ -498,7 +514,7 @@ const VideoComponent = ({
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    MP4, WebM, OGG, AVI, MOV up to 500MB
+                    MP4, WebM, OGG, AVI, MOV up to 3GB
                   </p>
                 </div>
               </div>

@@ -5,18 +5,18 @@ import React, {
   useCallback,
   useMemo,
   useContext,
-} from 'react';
-import ProgressStats from '@/components/dashboard/ProgressStats';
-import CourseCard from '@/components/dashboard/CourseCard';
-import { Button } from '@/components/ui/button';
+} from "react";
+import ProgressStats from "@/components/dashboard/ProgressStats";
+import CourseCard from "@/components/dashboard/CourseCard";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { useCredits } from '@/contexts/CreditsContext';
+} from "@/components/ui/dialog";
+import { useCredits } from "@/contexts/CreditsContext";
 import {
   BookOpen,
   ChevronRight,
@@ -29,39 +29,39 @@ import {
   MonitorPlay,
   Award,
   Video,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { Link } from 'react-router-dom';
-import DashboardCarousel from '@/components/dashboard/DashboardCarousel';
-import DashboardGroup from '@/components/dashboard/DashboardGroup';
-import UpcomingCourses from '@/pages/UpcomingCourses';
-import DashboardCalendar from '@/components/dashboard/DashboardCalendar';
-import DashboardTodo from '@/components/dashboard/DashboardTodo';
-import MonthlyProgress from '@/components/dashboard/MonthlyProgress';
-import DashboardAnnouncements from '@/components/dashboard/DashboardAnnouncements';
-import LiveClasses from '@/components/dashboard/LiveClasses';
-import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import SponsorBanner from '@/components/sponsorAds/SponsorBanner';
-import SponsorSidebarAd from '@/components/sponsorAds/SponsorSidebarAd';
-import SponsorAdPopup from '@/components/sponsorAds/SponsorAdPopup';
-import axios from 'axios';
-import { fetchUserCourses } from '../services/courseService';
-import { useUser } from '@/contexts/UserContext';
-import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
-import { getCourseTrialStatus } from '../utils/trialUtils';
+import { Link } from "react-router-dom";
+import DashboardCarousel from "@/components/dashboard/DashboardCarousel";
+import DashboardGroup from "@/components/dashboard/DashboardGroup";
+import UpcomingCourses from "@/pages/UpcomingCourses";
+import DashboardCalendar from "@/components/dashboard/DashboardCalendar";
+import DashboardTodo from "@/components/dashboard/DashboardTodo";
+import MonthlyProgress from "@/components/dashboard/MonthlyProgress";
+import DashboardAnnouncements from "@/components/dashboard/DashboardAnnouncements";
+import LiveClasses from "@/components/dashboard/LiveClasses";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
+import SponsorBanner from "@/components/sponsorAds/SponsorBanner";
+import SponsorSidebarAd from "@/components/sponsorAds/SponsorSidebarAd";
+import SponsorAdPopup from "@/components/sponsorAds/SponsorAdPopup";
+import axios from "axios";
+import { fetchUserCourses } from "../services/courseService";
+import { useUser } from "@/contexts/UserContext";
+import { getAuthHeader } from "../services/authHeader"; // adjust path as needed
+import { getCourseTrialStatus } from "../utils/trialUtils";
 import {
   bookConsultation,
   fetchUserConsultations,
-} from '../services/consultationService';
+} from "../services/consultationService";
 import {
   bookWebsiteService,
   fetchUserWebsiteServices,
-} from '../services/websiteService';
-import CLogo from '@/assets/C-logo2.png';
-import OfferPopup from '@/components/offer/OfferPopup';
-import { useSponsorAds } from '@/contexts/SponsorAdsContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { fetchDashboardSponsorAds } from '@/services/sponsorAdsService';
+} from "../services/websiteService";
+import CLogo from "@/assets/C-logo2.png";
+import OfferPopup from "@/components/offer/OfferPopup";
+import { useSponsorAds } from "@/contexts/SponsorAdsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchDashboardSponsorAds } from "@/services/sponsorAdsService";
 
 export function Dashboard() {
   const importantUpdateStyles = `
@@ -164,9 +164,9 @@ export function Dashboard() {
 
         // 🔹 SIDEBAR ADS
         const sidebarAds = ads
-          .filter(ad => {
-            if (ad.position !== 'SIDEBAR') return false;
-            if (ad.status !== 'ACTIVE') return false;
+          .filter((ad) => {
+            if (ad.position !== "SIDEBAR") return false;
+            if (ad.status !== "ACTIVE") return false;
 
             const now = new Date();
             const start = ad.start_date ? new Date(ad.start_date) : null;
@@ -177,14 +177,14 @@ export function Dashboard() {
 
             return true;
           })
-          .map(ad => ({
+          .map((ad) => ({
             id: ad.id,
             title: ad.title,
             description: ad.description,
             sponsorName: ad.sponsor_name,
             mediaUrl: ad.video_url || ad.image_url, // ✅ REQUIRED
-            mediaType: ad.video_url ? 'video' : 'image', // ✅ REQUIRED
-            ctaText: ad.link_url ? 'Learn more' : '',
+            mediaType: ad.video_url ? "video" : "image", // ✅ REQUIRED
+            ctaText: ad.link_url ? "Learn more" : "",
             ctaUrl: ad.link_url,
           }))
           .slice(0, 5);
@@ -193,17 +193,17 @@ export function Dashboard() {
 
         // 🔹 DASHBOARD BANNER ADS
         const bannerAds = ads
-          .filter(ad => ad.position === 'DASHBOARD' && ad.status === 'ACTIVE')
-          .map(ad => ({
+          .filter((ad) => ad.position === "DASHBOARD" && ad.status === "ACTIVE")
+          .map((ad) => ({
             id: ad.id,
             title: ad.title,
             description: ad.description,
             sponsorName: ad.sponsor_name,
             mediaUrl: ad.image_url || ad.video_url,
-            mediaType: ad.video_url ? 'video' : 'image',
+            mediaType: ad.video_url ? "video" : "image",
             ctaUrl: ad.link_url,
-            ctaText: ad.link_url ? 'Learn more' : '',
-            tier: ad.tier || 'Gold',
+            ctaText: ad.link_url ? "Learn more" : "",
+            tier: ad.tier || "Gold",
           }));
 
         setDashboardBannerAds(bannerAds);
@@ -220,32 +220,32 @@ export function Dashboard() {
   }, [dashboardSidebarAds.length]);
 
   const popupAd = useMemo(
-    () => getPrimaryAdForPlacement('popup', { role: userRole }),
-    [getPrimaryAdForPlacement, userRole]
+    () => getPrimaryAdForPlacement("popup", { role: userRole }),
+    [getPrimaryAdForPlacement, userRole],
   );
 
   useEffect(() => {
     if (!popupAd) return;
     const storageKey = `sponsor_popup_${popupAd.id}`;
     if (
-      popupAd.frequency === 'once_per_session' &&
-      typeof window !== 'undefined' &&
+      popupAd.frequency === "once_per_session" &&
+      typeof window !== "undefined" &&
       window.sessionStorage.getItem(storageKey)
     ) {
       return;
     }
     const shouldShow =
-      popupAd.frequency === 'always' ||
-      popupAd.frequency === 'once_per_session' ||
-      (popupAd.frequency === 'low' && Math.random() < 0.4);
+      popupAd.frequency === "always" ||
+      popupAd.frequency === "once_per_session" ||
+      (popupAd.frequency === "low" && Math.random() < 0.4);
     if (!shouldShow) return;
     const timer = setTimeout(() => {
       setIsSponsorPopupOpen(true);
       if (
-        popupAd.frequency === 'once_per_session' &&
-        typeof window !== 'undefined'
+        popupAd.frequency === "once_per_session" &&
+        typeof window !== "undefined"
       ) {
-        window.sessionStorage.setItem(storageKey, 'shown');
+        window.sessionStorage.setItem(storageKey, "shown");
       }
     }, 1200);
     return () => clearTimeout(timer);
@@ -256,8 +256,8 @@ export function Dashboard() {
     if (dashboardBannerAds.length <= 1) return;
 
     const interval = setInterval(() => {
-      setBannerCarouselIndex(prev =>
-        prev === dashboardBannerAds.length - 1 ? 0 : prev + 1
+      setBannerCarouselIndex((prev) =>
+        prev === dashboardBannerAds.length - 1 ? 0 : prev + 1,
       );
     }, 10000); // Rotate every 10 seconds
 
@@ -278,8 +278,8 @@ export function Dashboard() {
     let timeoutId;
     const scheduleNext = () => {
       timeoutId = setTimeout(() => {
-        setSidebarCarouselIndex(prev =>
-          prev === dashboardSidebarAds.length - 1 ? 0 : prev + 1
+        setSidebarCarouselIndex((prev) =>
+          prev === dashboardSidebarAds.length - 1 ? 0 : prev + 1,
         );
         scheduleNext();
       }, getRandomInterval());
@@ -355,7 +355,7 @@ export function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
   const [userCourses, setUserCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [coursesError, setCoursesError] = useState(null);
@@ -366,42 +366,42 @@ export function Dashboard() {
   const [showConsultConfirmation, setShowConsultConfirmation] = useState(false);
   const [showConsultForm, setShowConsultForm] = useState(false);
   const [showServiceHistory, setShowServiceHistory] = useState(false);
-  const [historyTab, setHistoryTab] = useState('consultations'); // 'consultations' | 'website'
+  const [historyTab, setHistoryTab] = useState("consultations"); // 'consultations' | 'website'
   const CONSULT_COST = 1000; // credits for 30 mins
   const [showWebsiteModal, setShowWebsiteModal] = useState(false);
   const WEBSITE_PACKS = [
     {
-      id: 'basic',
-      name: 'Basic Website',
+      id: "basic",
+      name: "Basic Website",
       cost: 750,
-      blurb: '2-3 pages with essential features',
+      blurb: "2-3 pages with essential features",
       features: [
-        'Custom Logo',
-        'Contact Form',
-        'Mobile Responsive',
-        'SSL Security',
-        'Hosting & Maintenance',
+        "Custom Logo",
+        "Contact Form",
+        "Mobile Responsive",
+        "SSL Security",
+        "Hosting & Maintenance",
       ],
-      icon: '🌐',
+      icon: "🌐",
     },
     {
-      id: 'premium',
-      name: 'Premium Website',
+      id: "premium",
+      name: "Premium Website",
       cost: 5000,
-      blurb: '5-7+ custom pages with advanced features',
+      blurb: "5-7+ custom pages with advanced features",
       features: [
-        'Premium Design',
-        'User Dashboard',
-        'Member Portal',
-        'Backend Integration',
-        'SEO Optimization',
-        'Live Chat',
+        "Premium Design",
+        "User Dashboard",
+        "Member Portal",
+        "Backend Integration",
+        "SEO Optimization",
+        "Live Chat",
       ],
-      icon: '🚀',
+      icon: "🚀",
     },
   ];
   const [selectedWebsitePack, setSelectedWebsitePack] = useState(
-    WEBSITE_PACKS[0]
+    WEBSITE_PACKS[0],
   );
 
   const [showWebsiteDetails, setShowWebsiteDetails] = useState(false);
@@ -411,18 +411,18 @@ export function Dashboard() {
   // Loading and error states for bookings
   const [isBookingConsultation, setIsBookingConsultation] = useState(false);
   const [isBookingWebsite, setIsBookingWebsite] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-  const [bookingSuccess, setBookingSuccess] = useState('');
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState("");
 
   // History data state
   const [consultationHistory, setConsultationHistory] = useState([]);
   const [websiteHistory, setWebsiteHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState('');
+  const [historyError, setHistoryError] = useState("");
 
   const API_BASE =
     import.meta.env.VITE_API_BASE_URL ||
-    'https://creditor-backend-testing-branch.onrender.com';
+    "https://creditor-backend-testing-branch.onrender.com";
   // Get userId from localStorage or cookies, or fetch from profile
   // Don't use state for userId to avoid infinite loops - get it directly when needed
 
@@ -431,23 +431,23 @@ export function Dashboard() {
       setLoading(true);
 
       // Get userId - use from context if available, otherwise fetch from profile
-      let currentUserId = localStorage.getItem('userId');
+      let currentUserId = localStorage.getItem("userId");
       if (!currentUserId && userProfile) {
         currentUserId = userProfile.id;
-        localStorage.setItem('userId', currentUserId);
+        localStorage.setItem("userId", currentUserId);
       } else if (!currentUserId) {
         currentUserId = await fetchUserProfile();
       }
 
       if (!currentUserId) {
-        throw new Error('Unable to get user ID. Please log in again.');
+        throw new Error("Unable to get user ID. Please log in again.");
       }
 
       // Use the new user progress endpoint from your backend
       try {
-        const { api } = await import('@/services/apiClient');
+        const { api } = await import("@/services/apiClient");
         const progressResponse = await api.get(
-          '/api/user/dashboard/userProgress'
+          "/api/user/dashboard/userProgress",
         );
         const progressData = progressResponse?.data?.data || {};
 
@@ -481,8 +481,8 @@ export function Dashboard() {
 
         setDashboardData(newDashboardData);
       } catch (progressError) {
-        console.error('❌ Failed to fetch user progress:', progressError);
-        console.error('❌ Error details:', {
+        console.error("❌ Failed to fetch user progress:", progressError);
+        console.error("❌ Error details:", {
           message: progressError.message,
           status: progressError.response?.status,
           data: progressError.response?.data,
@@ -507,24 +507,24 @@ export function Dashboard() {
         });
       }
     } catch (err) {
-      console.error('Error fetching user overview:', err);
+      console.error("Error fetching user overview:", err);
 
       // Handle specific error cases
       if (err.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
         // Redirect to login after a delay
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = "/login";
         }, 3000);
       } else if (err.response?.status === 403) {
         setError(
-          'Access denied. You do not have permission to view this data.'
+          "Access denied. You do not have permission to view this data.",
         );
       } else if (err.response?.status === 404) {
-        setError('User data not found. Please contact support.');
+        setError("User data not found. Please contact support.");
       } else {
         setError(
-          err.message || 'Failed to load dashboard data. Please try again.'
+          err.message || "Failed to load dashboard data. Please try again.",
         );
       }
 
@@ -558,12 +558,12 @@ export function Dashboard() {
 
   // Recording course IDs to filter out from My Courses
   const RECORDING_COURSE_IDS = [
-    'a188173c-23a6-4cb7-9653-6a1a809e9914', // Become Private Recordings
-    '7b798545-6f5f-4028-9b1e-e18c7d2b4c47', // Operate Private Recordings
-    '199e328d-8366-4af1-9582-9ea545f8b59e', // Business Credit Recordings
-    'd8e2e17f-af91-46e3-9a81-6e5b0214bc5e', // Private Merchant Recordings
-    'd5330607-9a45-4298-8ead-976dd8810283', // Sovereignty 101 Recordings
-    '814b3edf-86da-4b0d-bb8c-8a6da2d9b4df', // I Want Remedy Now Recordings
+    "a188173c-23a6-4cb7-9653-6a1a809e9914", // Become Private Recordings
+    "7b798545-6f5f-4028-9b1e-e18c7d2b4c47", // Operate Private Recordings
+    "199e328d-8366-4af1-9582-9ea545f8b59e", // Business Credit Recordings
+    "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e", // Private Merchant Recordings
+    "d5330607-9a45-4298-8ead-976dd8810283", // Sovereignty 101 Recordings
+    "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now Recordings
   ];
 
   useEffect(() => {
@@ -573,11 +573,11 @@ export function Dashboard() {
         const data = await fetchUserCourses();
         // Filter out recording courses from My Courses
         const filteredData = data.filter(
-          course => !RECORDING_COURSE_IDS.includes(course.id)
+          (course) => !RECORDING_COURSE_IDS.includes(course.id),
         );
 
         // Process courses to include module counts, durations, and trial status
-        const processedCourses = filteredData.map(course => {
+        const processedCourses = filteredData.map((course) => {
           const trialStatus = getCourseTrialStatus(course);
           return {
             ...course,
@@ -587,14 +587,14 @@ export function Dashboard() {
             image:
               course.thumbnail ||
               course.image ||
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000',
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
             trialStatus,
           };
         });
 
         setUserCourses(processedCourses);
       } catch (err) {
-        setCoursesError('Failed to fetch courses');
+        setCoursesError("Failed to fetch courses");
       } finally {
         setCoursesLoading(false);
       }
@@ -608,7 +608,7 @@ export function Dashboard() {
       // Backend's HttpOnly token cookie will be automatically sent with the request
       const response = await axios.get(`${API_BASE}/api/user/getUserProfile`, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         withCredentials: true,
       });
@@ -617,12 +617,12 @@ export function Dashboard() {
         const userProfile = response.data.data;
         // Set user name for welcome message
         const name =
-          `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
-        setUserName(name || userProfile.email || 'User');
+          `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim();
+        setUserName(name || userProfile.email || "User");
         return userProfile.id;
       }
     } catch (err) {
-      console.error('Error fetching user profile:', err);
+      console.error("Error fetching user profile:", err);
       throw err;
     }
   };
@@ -631,10 +631,10 @@ export function Dashboard() {
   useEffect(() => {
     if (userProfile) {
       const name =
-        `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
-      setUserName(name || userProfile.email || 'User');
+        `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim();
+      setUserName(name || userProfile.email || "User");
       // Set userId in localStorage when userProfile changes
-      localStorage.setItem('userId', userProfile.id);
+      localStorage.setItem("userId", userProfile.id);
 
       // Fetch user history when profile is available
       fetchUserHistory();
@@ -659,7 +659,7 @@ export function Dashboard() {
     const startScroll = () => {
       if (scrollTimeout) return;
 
-      const cards = scrollContainer.querySelectorAll('.important-update-card');
+      const cards = scrollContainer.querySelectorAll(".important-update-card");
       if (cards.length <= 1) {
         // No need to scroll if only one card
         return;
@@ -685,7 +685,7 @@ export function Dashboard() {
 
           scrollContainer.scrollTo({
             left: scrollLeft,
-            behavior: 'smooth',
+            behavior: "smooth",
           });
         }
 
@@ -695,8 +695,8 @@ export function Dashboard() {
       }, 6000);
     };
 
-    scrollContainer.addEventListener('mouseenter', stopScroll);
-    scrollContainer.addEventListener('mouseleave', startScroll);
+    scrollContainer.addEventListener("mouseenter", stopScroll);
+    scrollContainer.addEventListener("mouseleave", startScroll);
 
     // Start the initial scroll
     startScroll();
@@ -704,8 +704,8 @@ export function Dashboard() {
     return () => {
       stopScroll();
       if (scrollContainer) {
-        scrollContainer.removeEventListener('mouseenter', stopScroll);
-        scrollContainer.removeEventListener('mouseleave', startScroll);
+        scrollContainer.removeEventListener("mouseenter", stopScroll);
+        scrollContainer.removeEventListener("mouseleave", startScroll);
       }
     };
   }, []);
@@ -721,50 +721,50 @@ export function Dashboard() {
     if (!memoizedUserProfile?.id) return;
 
     setHistoryLoading(true);
-    setHistoryError('');
+    setHistoryError("");
 
     try {
-      console.log('[Dashboard] Fetching user history for:', userProfile.id);
+      console.log("[Dashboard] Fetching user history for:", userProfile.id);
 
       const [consultations, websites] = await Promise.all([
         fetchUserConsultations(userProfile.id),
         fetchUserWebsiteServices(userProfile.id),
       ]);
 
-      console.log('[Dashboard] Consultation history:', consultations);
-      console.log('[Dashboard] Website history:', websites);
-      console.log('[Dashboard] Consultation data type:', typeof consultations);
-      console.log('[Dashboard] Website data type:', typeof websites);
+      console.log("[Dashboard] Consultation history:", consultations);
+      console.log("[Dashboard] Website history:", websites);
+      console.log("[Dashboard] Consultation data type:", typeof consultations);
+      console.log("[Dashboard] Website data type:", typeof websites);
       console.log(
-        '[Dashboard] Consultation is array:',
-        Array.isArray(consultations)
+        "[Dashboard] Consultation is array:",
+        Array.isArray(consultations),
       );
-      console.log('[Dashboard] Website is array:', Array.isArray(websites));
+      console.log("[Dashboard] Website is array:", Array.isArray(websites));
 
       // Process consultation history
       const processedConsultations = Array.isArray(consultations)
-        ? consultations.map(consultation => ({
+        ? consultations.map((consultation) => ({
             id: consultation.id,
             date: new Date(consultation.created_at).toLocaleDateString(),
-            title: 'Consultation Session',
+            title: "Consultation Session",
             credits: consultation.pricing?.credits || 1000, // Use actual pricing from backend
-            status: consultation.status?.toLowerCase() || 'pending',
+            status: consultation.status?.toLowerCase() || "pending",
           }))
         : [];
 
       // Process website history
       const processedWebsites = Array.isArray(websites)
-        ? websites.map(website => {
+        ? websites.map((website) => {
             // Determine service type and cost from pricing data
             const cost = website.pricing?.credits || 750; // Default to basic if no pricing data
-            const serviceType = cost >= 5000 ? 'Premium' : 'Basic'; // Use cost to determine type
+            const serviceType = cost >= 5000 ? "Premium" : "Basic"; // Use cost to determine type
 
             return {
               id: website.id,
               date: new Date(website.created_at).toLocaleDateString(),
               title: `${serviceType} Website Service`,
               credits: cost,
-              status: website.status?.toLowerCase() || 'pending',
+              status: website.status?.toLowerCase() || "pending",
             };
           })
         : [];
@@ -772,8 +772,8 @@ export function Dashboard() {
       setConsultationHistory(processedConsultations);
       setWebsiteHistory(processedWebsites);
     } catch (error) {
-      console.error('[Dashboard] Failed to fetch user history:', error);
-      setHistoryError('Failed to load history');
+      console.error("[Dashboard] Failed to fetch user history:", error);
+      setHistoryError("Failed to load history");
     } finally {
       setHistoryLoading(false);
     }
@@ -782,13 +782,13 @@ export function Dashboard() {
   // Handle consultation booking
   const handleConsultationBooking = async () => {
     if (!memoizedUserProfile?.id) {
-      setBookingError('User not logged in');
+      setBookingError("User not logged in");
       return;
     }
 
     setIsBookingConsultation(true);
-    setBookingError('');
-    setBookingSuccess('');
+    setBookingError("");
+    setBookingSuccess("");
 
     try {
       // Create a future date for scheduling (e.g., 1 week from now)
@@ -796,36 +796,36 @@ export function Dashboard() {
       scheduledAt.setDate(scheduledAt.getDate() + 7);
       scheduledAt.setHours(14, 0, 0, 0); // 2 PM
 
-      console.log('[Dashboard] Booking consultation for user:', userProfile.id);
-      console.log('[Dashboard] Scheduled at:', scheduledAt.toISOString());
+      console.log("[Dashboard] Booking consultation for user:", userProfile.id);
+      console.log("[Dashboard] Scheduled at:", scheduledAt.toISOString());
 
       // Call the consultation booking API
       const result = await bookConsultation(
         userProfile.id,
-        scheduledAt.toISOString()
+        scheduledAt.toISOString(),
       );
 
-      console.log('[Dashboard] Consultation booking successful:', result);
+      console.log("[Dashboard] Consultation booking successful:", result);
 
       // Refresh balance to reflect credit deduction (with small delay for backend processing)
       try {
-        console.log('[Dashboard] Current balance before refresh:', balance);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for backend processing
+        console.log("[Dashboard] Current balance before refresh:", balance);
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds for backend processing
         debouncedRefreshBalance();
-        console.log('[Dashboard] Balance refreshed after consultation booking');
+        console.log("[Dashboard] Balance refreshed after consultation booking");
         // Note: balance will be updated by the CreditsContext, check the UI for the new value
       } catch (refreshError) {
-        console.warn('[Dashboard] Failed to refresh balance:', refreshError);
+        console.warn("[Dashboard] Failed to refresh balance:", refreshError);
       }
 
       // Show success message
       setBookingSuccess(
-        `Consultation redirection successfull! ${CONSULT_COST} credits deducted.`
+        `Consultation redirection successfull! ${CONSULT_COST} credits deducted.`,
       );
 
       // Auto-clear success message after 5 seconds
       setTimeout(() => {
-        setBookingSuccess('');
+        setBookingSuccess("");
       }, 5000);
 
       // Refresh history to show new booking
@@ -835,10 +835,10 @@ export function Dashboard() {
       setShowConsultConfirmation(false);
       setShowConsultForm(true);
     } catch (error) {
-      console.error('[Dashboard] Consultation booking failed:', error);
+      console.error("[Dashboard] Consultation booking failed:", error);
       setBookingError(
         error?.response?.data?.message ||
-          'Failed to book consultation. Please try again.'
+          "Failed to book consultation. Please try again.",
       );
     } finally {
       setIsBookingConsultation(false);
@@ -848,49 +848,49 @@ export function Dashboard() {
   // Handle website service booking
   const handleWebsiteServiceBooking = async () => {
     if (!memoizedUserProfile?.id) {
-      setBookingError('User not logged in');
+      setBookingError("User not logged in");
       return;
     }
 
     setIsBookingWebsite(true);
-    setBookingError('');
-    setBookingSuccess('');
+    setBookingError("");
+    setBookingSuccess("");
 
     try {
       const serviceType = selectedWebsitePack.id; // 'basic' or 'premium'
 
       console.log(
-        '[Dashboard] Booking website service for user:',
-        userProfile.id
+        "[Dashboard] Booking website service for user:",
+        userProfile.id,
       );
-      console.log('[Dashboard] Service type:', serviceType);
+      console.log("[Dashboard] Service type:", serviceType);
 
       // Call the website service booking API
       const result = await bookWebsiteService(userProfile.id, serviceType);
 
-      console.log('[Dashboard] Website service booking successful:', result);
+      console.log("[Dashboard] Website service booking successful:", result);
 
       // Refresh balance to reflect credit deduction (with small delay for backend processing)
       try {
-        console.log('[Dashboard] Current balance before refresh:', balance);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for backend processing
+        console.log("[Dashboard] Current balance before refresh:", balance);
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds for backend processing
         debouncedRefreshBalance();
         console.log(
-          '[Dashboard] Balance refreshed after website service booking'
+          "[Dashboard] Balance refreshed after website service booking",
         );
         // Note: balance will be updated by the CreditsContext, check the UI for the new value
       } catch (refreshError) {
-        console.warn('[Dashboard] Failed to refresh balance:', refreshError);
+        console.warn("[Dashboard] Failed to refresh balance:", refreshError);
       }
 
       // Show success message
       setBookingSuccess(
-        `${selectedWebsitePack.name} booked successfully! ${selectedWebsitePack.cost} credits deducted.`
+        `${selectedWebsitePack.name} booked successfully! ${selectedWebsitePack.cost} credits deducted.`,
       );
 
       // Auto-clear success message after 5 seconds
       setTimeout(() => {
-        setBookingSuccess('');
+        setBookingSuccess("");
       }, 5000);
 
       // Refresh history to show new booking
@@ -900,10 +900,10 @@ export function Dashboard() {
       setShowWebsiteConfirmation(false);
       setShowWebsiteForm(true);
     } catch (error) {
-      console.error('[Dashboard] Website service booking failed:', error);
+      console.error("[Dashboard] Website service booking failed:", error);
       setBookingError(
         error?.response?.data?.message ||
-          'Failed to book website service. Please try again.'
+          "Failed to book website service. Please try again.",
       );
     } finally {
       setIsBookingWebsite(false);
@@ -912,76 +912,76 @@ export function Dashboard() {
 
   const inProgressCourses = [
     {
-      id: '1',
-      title: 'Constitutional Law Fundamentals',
+      id: "1",
+      title: "Constitutional Law Fundamentals",
       description:
-        'Learn the essentials of US constitutional law including rights, powers, and judicial review.',
+        "Learn the essentials of US constitutional law including rights, powers, and judicial review.",
       image:
-        'https://images.unsplash.com/photo-1589994965851-a8f479c573a9?q=80&w=1000',
+        "https://images.unsplash.com/photo-1589994965851-a8f479c573a9?q=80&w=1000",
       progress: 62,
       lessonsCount: 42,
-      category: 'Legal Studies',
-      duration: '25 hours',
+      category: "Legal Studies",
+      duration: "25 hours",
     },
     {
-      id: '2',
-      title: 'Civil Litigation Procedure',
+      id: "2",
+      title: "Civil Litigation Procedure",
       description:
-        'Master the procedures and strategies involved in civil litigation in American courts.',
+        "Master the procedures and strategies involved in civil litigation in American courts.",
       image:
-        'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=1000',
+        "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=1000",
       progress: 35,
       lessonsCount: 28,
-      category: 'Legal Practice',
-      duration: '18 hours',
+      category: "Legal Practice",
+      duration: "18 hours",
     },
     {
-      id: '3',
-      title: 'Criminal Law and Procedure',
+      id: "3",
+      title: "Criminal Law and Procedure",
       description:
-        'Study the principles of criminal law, defenses, and procedural requirements in the US justice system.',
+        "Study the principles of criminal law, defenses, and procedural requirements in the US justice system.",
       image:
-        'https://images.unsplash.com/photo-1505664194779-8beaceb93744?q=80&w=1000',
+        "https://images.unsplash.com/photo-1505664194779-8beaceb93744?q=80&w=1000",
       progress: 78,
       lessonsCount: 36,
-      category: 'Criminal Justice',
-      duration: '22 hours',
+      category: "Criminal Justice",
+      duration: "22 hours",
     },
     {
-      id: '4',
-      title: 'Intellectual Property Law',
+      id: "4",
+      title: "Intellectual Property Law",
       description:
-        'Explore copyright, trademark, and patent law with real-world case studies.',
+        "Explore copyright, trademark, and patent law with real-world case studies.",
       image:
-        'https://images.unsplash.com/photo-1464983953574-0892a716854b?q=80&w=1000',
+        "https://images.unsplash.com/photo-1464983953574-0892a716854b?q=80&w=1000",
       progress: 50,
       lessonsCount: 30,
-      category: 'IP Law',
-      duration: '20 hours',
+      category: "IP Law",
+      duration: "20 hours",
     },
     {
-      id: '5',
-      title: 'Family Law Essentials',
+      id: "5",
+      title: "Family Law Essentials",
       description:
-        'Understand the basics of family law, including divorce, custody, and adoption.',
+        "Understand the basics of family law, including divorce, custody, and adoption.",
       image:
-        'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1000',
+        "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1000",
       progress: 20,
       lessonsCount: 18,
-      category: 'Family Law',
-      duration: '12 hours',
+      category: "Family Law",
+      duration: "12 hours",
     },
     {
-      id: '6',
-      title: 'International Business Law',
+      id: "6",
+      title: "International Business Law",
       description:
-        'Gain insights into cross-border transactions, trade regulations, and dispute resolution.',
+        "Gain insights into cross-border transactions, trade regulations, and dispute resolution.",
       image:
-        'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?q=80&w=1000',
+        "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?q=80&w=1000",
       progress: 10,
       lessonsCount: 25,
-      category: 'Business Law',
-      duration: '16 hours',
+      category: "Business Law",
+      duration: "16 hours",
     },
   ];
 
@@ -993,12 +993,12 @@ export function Dashboard() {
   const courseScrollRef = useRef(null);
   const [scrollIndex, setScrollIndex] = useState(0);
   const [isSmallScreen, setIsSmallScreen] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 640 : true
+    typeof window !== "undefined" ? window.innerWidth < 640 : true,
   );
   useEffect(() => {
     const handleResize = () => setIsSmallScreen(window.innerWidth < 640);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
   const visibleCards = isSmallScreen ? 1 : 2;
   const totalCards = userCourses.length;
@@ -1053,7 +1053,7 @@ export function Dashboard() {
     </div>
   );
 
-  const handleScroll = direction => {
+  const handleScroll = (direction) => {
     let newIndex = scrollIndex + direction;
     if (newIndex < 0) newIndex = 0;
     if (newIndex > totalCards - visibleCards)
@@ -1064,12 +1064,12 @@ export function Dashboard() {
       const scrollAmount = newIndex * (cardWidth + 16); // 16px gap (gap-4)
       courseScrollRef.current.scrollTo({
         left: scrollAmount,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   };
 
-  const courseSectionTitle = 'My Courses';
+  const courseSectionTitle = "My Courses";
 
   return (
     <div className="relative flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -1078,7 +1078,7 @@ export function Dashboard() {
           <section className="athena-hero-banner mb-8">
             <div className="athena-hero-content">
               <p className="athena-hero-kicker">Welcome Back</p>
-              <h1>Welcome to Athena LMS, {userName || 'Scholar'}!</h1>
+              <h1>Welcome to Athena LMS, {userName || "Scholar"}!</h1>
               <p>
                 Your journey to knowledge excellence continues. Track your
                 progress, unlock achievements, and reach your learning goals.
@@ -1108,7 +1108,7 @@ export function Dashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight break-words bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                        Welcome back{userName ? `, ${userName}` : ''}!
+                        Welcome back{userName ? `, ${userName}` : ""}!
                       </h2>
                       <p className="text-gray-600 text-sm sm:text-base leading-snug">
                         Continue your private education journey and achieve your
@@ -1243,7 +1243,7 @@ export function Dashboard() {
                           >
                             <CourseShimmerCard />
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -1254,7 +1254,7 @@ export function Dashboard() {
                       <button
                         onClick={() => handleScroll(-1)}
                         className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
-                        style={{ marginLeft: '-24px' }}
+                        style={{ marginLeft: "-24px" }}
                         aria-label="Scroll left"
                       >
                         <ChevronLeft size={24} />
@@ -1264,9 +1264,9 @@ export function Dashboard() {
                     <div
                       ref={courseScrollRef}
                       className="flex gap-4 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 pb-1 custom-horizontal-scroll w-full"
-                      style={{ scrollBehavior: 'smooth' }}
+                      style={{ scrollBehavior: "smooth" }}
                     >
-                      {userCourses.map(course => (
+                      {userCourses.map((course) => (
                         <div
                           key={course.id}
                           className="w-full min-w-0 sm:min-w-[296px] sm:max-w-[296px] flex-shrink-0"
@@ -1281,7 +1281,7 @@ export function Dashboard() {
                         <button
                           onClick={() => handleScroll(1)}
                           className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
-                          style={{ marginRight: '-24px' }}
+                          style={{ marginRight: "-24px" }}
                           aria-label="Scroll right"
                         >
                           <ChevronRight size={24} />
@@ -1303,7 +1303,7 @@ export function Dashboard() {
                       variant="default"
                       className={`font-semibold shadow-md transition-all duration-300 `}
                       onClick={() =>
-                        (window.location.href = '/dashboard/catalog')
+                        (window.location.href = "/dashboard/catalog")
                       }
                     >
                       Click to view courses
@@ -1344,8 +1344,8 @@ export function Dashboard() {
                           aria-label={`Go to slide ${index + 1}`}
                           className={`h-2 rounded-full transition-all duration-300 ${
                             index === bannerCarouselIndex
-                              ? 'bg-white w-6'
-                              : 'bg-white/50 hover:bg-white/80 w-2'
+                              ? "bg-white w-6"
+                              : "bg-white/50 hover:bg-white/80 w-2"
                           }`}
                         />
                       ))}
@@ -1386,8 +1386,8 @@ export function Dashboard() {
                           onClick={() => setSidebarCarouselIndex(index)}
                           className={`h-1.5 rounded-full transition-all ${
                             index === sidebarCarouselIndex
-                              ? 'bg-white w-4'
-                              : 'bg-white/50 hover:bg-white/75 w-1.5'
+                              ? "bg-white w-4"
+                              : "bg-white/50 hover:bg-white/75 w-1.5"
                           }`}
                         />
                       ))}
@@ -1446,9 +1446,9 @@ export function Dashboard() {
                           className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://scheduler.zoom.us/daniyal-hashim/athena-lesson-editor-team',
-                              '_blank',
-                              'noopener,noreferrer'
+                              "https://scheduler.zoom.us/daniyal-hashim/athena-lesson-editor-team",
+                              "_blank",
+                              "noopener,noreferrer",
                             )
                           }
                         >
@@ -1477,9 +1477,9 @@ export function Dashboard() {
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm w-full sm:w-auto mt-auto"
                           onClick={() =>
                             window.open(
-                              'https://scheduler.zoom.us/mausam-jha',
-                              '_blank',
-                              'noopener,noreferrer'
+                              "https://scheduler.zoom.us/mausam-jha",
+                              "_blank",
+                              "noopener,noreferrer",
                             )
                           }
                         >
@@ -1601,10 +1601,10 @@ export function Dashboard() {
                 <div
                   className="flex transition-transform duration-300"
                   style={{
-                    width: '200%',
+                    width: "200%",
                     transform: showServiceHistory
-                      ? 'translateX(-50%)'
-                      : 'translateX(0%)',
+                      ? "translateX(-50%)"
+                      : "translateX(0%)",
                   }}
                 >
                   {/* Panel: Services */}
@@ -1640,9 +1640,9 @@ export function Dashboard() {
                             className="bg-blue-600 hover:bg-blue-700 text-white w-full"
                             onClick={() =>
                               window.open(
-                                'https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting',
-                                '_blank',
-                                'noopener,noreferrer'
+                                "https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting",
+                                "_blank",
+                                "noopener,noreferrer",
                               )
                             }
                           >
@@ -1737,14 +1737,14 @@ export function Dashboard() {
                       </div>
                       <div className="flex items-center gap-2 mb-3">
                         <button
-                          onClick={() => setHistoryTab('consultations')}
-                          className={`px-3 py-1.5 rounded-md text-sm border ${historyTab === 'consultations' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => setHistoryTab("consultations")}
+                          className={`px-3 py-1.5 rounded-md text-sm border ${historyTab === "consultations" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
                         >
                           Consultations
                         </button>
                         <button
-                          onClick={() => setHistoryTab('website')}
-                          className={`px-3 py-1.5 rounded-md text-sm border ${historyTab === 'website' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => setHistoryTab("website")}
+                          className={`px-3 py-1.5 rounded-md text-sm border ${historyTab === "website" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"}`}
                         >
                           Website
                         </button>
@@ -1759,9 +1759,9 @@ export function Dashboard() {
                         <div
                           className="max-h-32 overflow-y-auto relative"
                           style={{
-                            maxHeight: '8rem',
-                            scrollbarWidth: 'thin',
-                            scrollbarColor: '#d1d5db #f3f4f6',
+                            maxHeight: "8rem",
+                            scrollbarWidth: "thin",
+                            scrollbarColor: "#d1d5db #f3f4f6",
                           }}
                         >
                           {historyLoading ? (
@@ -1787,24 +1787,24 @@ export function Dashboard() {
                                 </button>
                               </div>
                             </div>
-                          ) : (historyTab === 'consultations'
+                          ) : (historyTab === "consultations"
                               ? consultationHistory
                               : websiteHistory
                             ).length === 0 ? (
                             <div className="flex items-center justify-center py-10">
                               <p className="text-sm text-gray-600">
-                                Your{' '}
-                                {historyTab === 'consultations'
-                                  ? 'consultation'
-                                  : 'website'}{' '}
+                                Your{" "}
+                                {historyTab === "consultations"
+                                  ? "consultation"
+                                  : "website"}{" "}
                                 history will appear here once available.
                               </p>
                             </div>
                           ) : (
-                            (historyTab === 'consultations'
+                            (historyTab === "consultations"
                               ? consultationHistory
                               : websiteHistory
-                            ).map(row => (
+                            ).map((row) => (
                               <div
                                 key={row.id}
                                 className="grid grid-cols-4 border-t"
@@ -1820,7 +1820,7 @@ export function Dashboard() {
                                 </div>
                                 <div className="px-3 py-2 text-sm">
                                   <span
-                                    className={`inline-flex px-2 py-0.5 rounded-full border text-xs ${row.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : row.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}
+                                    className={`inline-flex px-2 py-0.5 rounded-full border text-xs ${row.status === "completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : row.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
                                   >
                                     {row.status}
                                   </span>
@@ -1829,7 +1829,7 @@ export function Dashboard() {
                             ))
                           )}
                           {/* Subtle fade indicator for scrollable content */}
-                          {(historyTab === 'consultations'
+                          {(historyTab === "consultations"
                             ? consultationHistory
                             : websiteHistory
                           ).length > 2 && (
@@ -1863,7 +1863,7 @@ export function Dashboard() {
       {/* Consultation Info Modal */}
       <Dialog open={showConsultInfo} onOpenChange={setShowConsultInfo}>
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto"
         >
           <DialogHeader>
@@ -1894,7 +1894,7 @@ export function Dashboard() {
       {/* Consultation Form Modal (embedded) */}
       <Dialog open={showConsultForm} onOpenChange={setShowConsultForm}>
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-2xl p-0 max-h-[85vh] overflow-auto"
         >
           <DialogHeader className="px-4 pt-4">
@@ -1909,7 +1909,7 @@ export function Dashboard() {
                 title="Consultation form"
                 src="https://api.wonderengine.ai/widget/form/zIoXSg2Bzo4iPGAlPwD0"
                 className="w-full"
-                style={{ height: '70vh' }}
+                style={{ height: "70vh" }}
               />
             </div>
           </div>
@@ -1919,7 +1919,7 @@ export function Dashboard() {
       {/* Website Details Modal */}
       <Dialog open={showWebsiteDetails} onOpenChange={setShowWebsiteDetails}>
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-3xl p-0 max-h-[85vh] overflow-auto"
         >
           <DialogHeader className="px-6 pt-6">
@@ -2186,7 +2186,7 @@ export function Dashboard() {
       {/* Consultation Booking Modal */}
       <Dialog open={showConsultBooking} onOpenChange={setShowConsultBooking}>
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto"
         >
           <DialogHeader>
@@ -2202,9 +2202,9 @@ export function Dashboard() {
               <div className="rounded-lg border p-3">
                 <p className="text-gray-500">Membership</p>
                 <p
-                  className={`text-xs inline-flex px-2 py-0.5 rounded-full border mt-1 ${membership?.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                  className={`text-xs inline-flex px-2 py-0.5 rounded-full border mt-1 ${membership?.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}
                 >
-                  {membership?.isActive ? 'Active' : 'Inactive'}
+                  {membership?.isActive ? "Active" : "Inactive"}
                 </p>
               </div>
               <div className="rounded-lg border p-3">
@@ -2257,7 +2257,7 @@ export function Dashboard() {
                   1:1 video call with an expert
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-emerald-600" />{' '}
+                  <CheckCircle size={16} className="text-emerald-600" />{" "}
                   Actionable recommendations and next steps
                 </li>
               </ul>
@@ -2324,7 +2324,7 @@ export function Dashboard() {
         onOpenChange={setShowConsultConfirmation}
       >
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto"
         >
           <DialogHeader>
@@ -2348,7 +2348,7 @@ export function Dashboard() {
                   </h4>
                   <p className="text-blue-700 text-sm">
                     Clicking "Book Now" will deduct {CONSULT_COST} credits from
-                    your account and redirect you to complete your booking.{' '}
+                    your account and redirect you to complete your booking.{" "}
                     <strong>
                       Credits will not be refunded if you don't complete the
                       booking process
@@ -2401,8 +2401,8 @@ export function Dashboard() {
               variant="outline"
               onClick={() => {
                 setShowConsultConfirmation(false);
-                setBookingSuccess('');
-                setBookingError('');
+                setBookingSuccess("");
+                setBookingError("");
               }}
               className="flex-1"
               disabled={isBookingConsultation}
@@ -2438,7 +2438,7 @@ export function Dashboard() {
                 disabled={isBookingConsultation}
               >
                 {isBookingConsultation
-                  ? 'Redirecting...'
+                  ? "Redirecting..."
                   : `Book Now (${CONSULT_COST} credits)`}
               </Button>
             )}
@@ -2449,7 +2449,7 @@ export function Dashboard() {
       {/* Website Services Modal */}
       <Dialog open={showWebsiteModal} onOpenChange={setShowWebsiteModal}>
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto"
         >
           <DialogHeader>
@@ -2463,14 +2463,14 @@ export function Dashboard() {
           <div className="space-y-3">
             {/* Website Pack Options */}
             <div className="grid grid-cols-1 gap-3">
-              {WEBSITE_PACKS.map(pack => (
+              {WEBSITE_PACKS.map((pack) => (
                 <button
                   key={pack.id}
                   onClick={() => setSelectedWebsitePack(pack)}
                   className={`text-left rounded-lg border p-3 transition ${
                     selectedWebsitePack.id === pack.id
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-gray-200 hover:bg-gray-50'
+                      ? "border-blue-300 bg-blue-50"
+                      : "border-gray-200 hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -2584,7 +2584,7 @@ export function Dashboard() {
         onOpenChange={setShowWebsiteConfirmation}
       >
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto"
         >
           <DialogHeader>
@@ -2605,7 +2605,7 @@ export function Dashboard() {
                     Credits Deduction
                   </h4>
                   <p className="text-blue-700 text-sm">
-                    Clicking "Proceed" will deduct {selectedWebsitePack.cost}{' '}
+                    Clicking "Proceed" will deduct {selectedWebsitePack.cost}{" "}
                     credits for the {selectedWebsitePack.name}.
                   </p>
                 </div>
@@ -2621,14 +2621,14 @@ export function Dashboard() {
                 <span className="font-semibold text-gray-900">
                   {Math.max(
                     0,
-                    (balance || 0) - (selectedWebsitePack?.cost || 0)
+                    (balance || 0) - (selectedWebsitePack?.cost || 0),
                   )}
                 </span>
               </div>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-gray-700 text-sm">
-                Ready to proceed with {selectedWebsitePack.name} for{' '}
+                Ready to proceed with {selectedWebsitePack.name} for{" "}
                 {selectedWebsitePack.cost} credits?
               </p>
             </div>
@@ -2652,8 +2652,8 @@ export function Dashboard() {
               variant="outline"
               onClick={() => {
                 setShowWebsiteConfirmation(false);
-                setBookingSuccess('');
-                setBookingError('');
+                setBookingSuccess("");
+                setBookingError("");
               }}
               className="flex-1"
               disabled={isBookingWebsite}
@@ -2689,7 +2689,7 @@ export function Dashboard() {
                 disabled={isBookingWebsite}
               >
                 {isBookingWebsite
-                  ? 'Processing...'
+                  ? "Processing..."
                   : `Proceed (${selectedWebsitePack.cost} credits)`}
               </Button>
             )}
@@ -2700,7 +2700,7 @@ export function Dashboard() {
       {/* Website Form Modal (embedded) */}
       <Dialog open={showWebsiteForm} onOpenChange={setShowWebsiteForm}>
         <DialogContent
-          onInteractOutside={e => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           className="w-[95vw] sm:max-w-3xl p-0 max-h-[85vh] overflow-auto"
         >
           <DialogHeader className="px-4 pt-4">
@@ -2715,7 +2715,7 @@ export function Dashboard() {
                 title="Website form"
                 src="https://api.wonderengine.ai/widget/form/yhb8k42HP4nBj8voipXd"
                 className="w-full"
-                style={{ height: '70vh' }}
+                style={{ height: "70vh" }}
               />
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const useLessonBlocks = ({
   contentBlocks,
@@ -55,7 +56,68 @@ const useLessonBlocks = ({
   draggedBlockId,
   setDraggedBlockId,
 }) => {
+  // Helper function to calculate order based on insertion position
+  const calculateOrderForInsertion = position => {
+    const blocksToUse =
+      lessonContent?.data?.content && lessonContent.data.content.length > 0
+        ? lessonContent.data.content
+        : contentBlocks;
+
+    if (blocksToUse.length === 0) {
+      return 1; // First block
+    }
+
+    if (position === 0) {
+      // Inserting at the beginning - use order slightly less than first block
+      const firstBlock = blocksToUse[0];
+      const firstOrder =
+        firstBlock?.order !== undefined && firstBlock.order !== null
+          ? firstBlock.order
+          : 1;
+      return Math.max(0, firstOrder - 0.5);
+    } else if (position >= blocksToUse.length) {
+      // Inserting at the end - use order higher than last block
+      const lastBlock = blocksToUse[blocksToUse.length - 1];
+      const lastOrder =
+        lastBlock?.order !== undefined && lastBlock.order !== null
+          ? lastBlock.order
+          : blocksToUse.length;
+      return lastOrder + 1;
+    } else {
+      // Inserting between blocks - use average of previous and next block orders
+      const prevBlock = blocksToUse[position - 1];
+      const nextBlock = blocksToUse[position];
+      const prevOrder =
+        prevBlock?.order !== undefined && prevBlock.order !== null
+          ? prevBlock.order
+          : position;
+      const nextOrder =
+        nextBlock?.order !== undefined && nextBlock.order !== null
+          ? nextBlock.order
+          : position + 1;
+      return (prevOrder + nextOrder) / 2;
+    }
+  };
+
+  // Helper function to calculate order for adding at the end
+  const calculateOrderForEnd = () => {
+    const blocksToUse =
+      lessonContent?.data?.content && lessonContent.data.content.length > 0
+        ? lessonContent.data.content
+        : contentBlocks;
+    if (blocksToUse.length === 0) {
+      return 1;
+    }
+    const lastBlock = blocksToUse[blocksToUse.length - 1];
+    const lastOrder =
+      lastBlock?.order !== undefined && lastBlock.order !== null
+        ? lastBlock.order
+        : blocksToUse.length;
+    return lastOrder + 1;
+  };
+
   const addContentBlock = (blockType, textType = null) => {
+    const calculatedOrder = calculateOrderForEnd();
     const newBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
@@ -63,10 +125,7 @@ const useLessonBlocks = ({
       title: blockType.title,
       textType: textType,
       content: '',
-      order:
-        (lessonContent?.data?.content
-          ? lessonContent.data.content.length
-          : contentBlocks.length) + 1,
+      order: calculatedOrder,
     };
 
     if (lessonContent?.data?.content) {
@@ -83,6 +142,7 @@ const useLessonBlocks = ({
   };
 
   const insertContentBlockAt = (blockType, position, textType = null) => {
+    const calculatedOrder = calculateOrderForInsertion(position);
     const newBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
@@ -90,7 +150,7 @@ const useLessonBlocks = ({
       title: blockType.title,
       textType: textType,
       content: '',
-      order: position + 1,
+      order: calculatedOrder,
     };
 
     if (lessonContent?.data?.content) {
@@ -116,16 +176,22 @@ const useLessonBlocks = ({
 
   const handleStatementSelect = statementBlock => {
     if (insertionPosition !== null) {
+      const calculatedOrder = calculateOrderForInsertion(insertionPosition);
+      const blockWithOrder = {
+        ...statementBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prevBlocks => {
         const newBlocks = [...prevBlocks];
-        newBlocks.splice(insertionPosition, 0, statementBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, statementBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -137,7 +203,12 @@ const useLessonBlocks = ({
       }
       setInsertionPosition(null);
     } else {
-      setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
+      const calculatedOrder = calculateOrderForEnd();
+      const blockWithOrder = {
+        ...statementBlock,
+        order: calculatedOrder,
+      };
+      setContentBlocks(prevBlocks => [...prevBlocks, blockWithOrder]);
     }
   };
 
@@ -205,16 +276,22 @@ const useLessonBlocks = ({
 
   const handleQuoteTemplateSelect = newBlock => {
     if (insertionPosition !== null) {
+      const calculatedOrder = calculateOrderForInsertion(insertionPosition);
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prevBlocks => {
         const newBlocks = [...prevBlocks];
-        newBlocks.splice(insertionPosition, 0, newBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -226,22 +303,33 @@ const useLessonBlocks = ({
       }
       setInsertionPosition(null);
     } else {
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+      const calculatedOrder = calculateOrderForEnd();
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+      setContentBlocks(prevBlocks => [...prevBlocks, blockWithOrder]);
     }
   };
 
   const handleTableTemplateSelect = newBlock => {
     if (insertionPosition !== null) {
+      const calculatedOrder = calculateOrderForInsertion(insertionPosition);
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prevBlocks => {
         const newBlocks = [...prevBlocks];
-        newBlocks.splice(insertionPosition, 0, newBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -253,11 +341,21 @@ const useLessonBlocks = ({
       }
       setInsertionPosition(null);
     } else {
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+      const calculatedOrder = calculateOrderForEnd();
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+      setContentBlocks(prevBlocks => [...prevBlocks, blockWithOrder]);
     }
   };
 
   const handleInteractiveTemplateSelect = newBlock => {
+    const calculatedOrder =
+      insertionPosition !== null
+        ? calculateOrderForInsertion(insertionPosition)
+        : calculateOrderForEnd();
+
     const interactiveBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
@@ -265,7 +363,7 @@ const useLessonBlocks = ({
       title: 'Interactive',
       content: newBlock.content,
       html_css: newBlock.html_css,
-      order: contentBlocks.length + 1,
+      order: calculatedOrder,
     };
 
     if (insertionPosition !== null) {
@@ -313,16 +411,22 @@ const useLessonBlocks = ({
 
   const handleDividerTemplateSelect = newBlock => {
     if (insertionPosition !== null) {
+      const calculatedOrder = calculateOrderForInsertion(insertionPosition);
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prevBlocks => {
         const newBlocks = [...prevBlocks];
-        newBlocks.splice(insertionPosition, 0, newBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -334,7 +438,12 @@ const useLessonBlocks = ({
       }
       setInsertionPosition(null);
     } else {
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+      const calculatedOrder = calculateOrderForEnd();
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+      setContentBlocks(prevBlocks => [...prevBlocks, blockWithOrder]);
     }
     setShowDividerTemplateSidebar(false);
   };
@@ -375,16 +484,22 @@ const useLessonBlocks = ({
 
   const handleListTemplateSelect = newBlock => {
     if (insertionPosition !== null) {
+      const calculatedOrder = calculateOrderForInsertion(insertionPosition);
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prevBlocks => {
         const newBlocks = [...prevBlocks];
-        newBlocks.splice(insertionPosition, 0, newBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -396,7 +511,12 @@ const useLessonBlocks = ({
       }
       setInsertionPosition(null);
     } else {
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+      const calculatedOrder = calculateOrderForEnd();
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+      setContentBlocks(prevBlocks => [...prevBlocks, blockWithOrder]);
     }
   };
 
@@ -522,7 +642,7 @@ const useLessonBlocks = ({
             </div>`;
         }
       } catch (e) {
-        console.error('Error parsing list content:', e);
+        devLogger.error('Error parsing list content:', e);
         extractedListType = 'bulleted';
         htmlContent = `<div class="list-block"><ul class="list-disc list-inside"><li>Error loading list</li></ul></div>`;
       }
@@ -583,7 +703,7 @@ const useLessonBlocks = ({
       }
 
       if (!targetBlock) {
-        console.error('Block not found for checkbox toggle:', blockId);
+        devLogger.error('Block not found for checkbox toggle:', blockId);
         return;
       }
 
@@ -641,7 +761,7 @@ const useLessonBlocks = ({
           }
         }
       } catch (e) {
-        console.log('Could not update content JSON:', e);
+        devLogger.debug('Could not update content JSON:', e);
       }
 
       const updatedBlock = {
@@ -685,7 +805,7 @@ const useLessonBlocks = ({
 
       toast.success('Checkbox state saved');
     } catch (error) {
-      console.error('Error in handleCheckboxToggle:', error);
+      devLogger.error('Error in handleCheckboxToggle:', error);
       toast.error('Error updating checkbox');
     }
   };
@@ -698,7 +818,7 @@ const useLessonBlocks = ({
       );
 
     if (!editingBlock) {
-      console.error('Block not found for update:', blockId);
+      devLogger.error('Block not found for update:', blockId);
       return;
     }
 
@@ -706,7 +826,7 @@ const useLessonBlocks = ({
     try {
       updatedQuoteContent = JSON.parse(updatedContentString);
     } catch (e) {
-      console.error('Error parsing updated content:', e);
+      devLogger.error('Error parsing updated content:', e);
       return;
     }
 
@@ -1195,6 +1315,10 @@ const useLessonBlocks = ({
               content,
               heading,
               subheading,
+              order:
+                block.order !== undefined && block.order !== null
+                  ? block.order
+                  : block.order,
               updatedAt: new Date().toISOString(),
             }
           : block
@@ -1213,6 +1337,10 @@ const useLessonBlocks = ({
                   content,
                   heading,
                   subheading,
+                  order:
+                    block.order !== undefined && block.order !== null
+                      ? block.order
+                      : block.order,
                   updatedAt: new Date().toISOString(),
                 }
               : block
@@ -1431,7 +1559,7 @@ const useLessonBlocks = ({
             quoteComponentRef.current?.setActiveCarouselTab(0);
           }
         } catch (e) {
-          console.error('Error setting carousel content:', e);
+          devLogger.error('Error setting carousel content:', e);
         }
       }
 
@@ -1645,7 +1773,34 @@ const useLessonBlocks = ({
 
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
-      setCurrentTextType(block.textType || 'paragraph');
+
+      // Detect master_heading from HTML content if textType is not set correctly
+      let detectedType = block.textType || 'paragraph';
+      const htmlContent = block.html_css || block.content || '';
+
+      // Check for master heading (has gradient background)
+      if (
+        (htmlContent.includes('linear-gradient') ||
+          htmlContent.includes('bg-gradient-to-r') ||
+          htmlContent.includes('gradient')) &&
+        (htmlContent.includes('<h1') ||
+          htmlContent.includes('text-3xl') ||
+          htmlContent.includes('text-4xl') ||
+          htmlContent.includes('font-extrabold') ||
+          block.gradient)
+      ) {
+        detectedType = 'master_heading';
+      }
+
+      // Also check if textType or text_type is explicitly master_heading
+      if (
+        block.textType === 'master_heading' ||
+        block.text_type === 'master_heading'
+      ) {
+        detectedType = 'master_heading';
+      }
+
+      setCurrentTextType(detectedType);
       setShowTextEditorDialog(true);
       return;
     } else if (block.type === 'table') {
@@ -1859,7 +2014,13 @@ const useLessonBlocks = ({
       const [moved] = updatedBlocks.splice(sourceIndex, 1);
       updatedBlocks.splice(targetIndex, 0, moved);
 
-      setContentBlocks(updatedBlocks);
+      // Re-number orders so visual drag-and-drop order is preserved
+      const reOrderedBlocks = updatedBlocks.map((block, index) => ({
+        ...block,
+        order: index + 1,
+      }));
+
+      setContentBlocks(reOrderedBlocks);
     }
 
     setDraggedBlockId(null);
@@ -1872,16 +2033,60 @@ const useLessonBlocks = ({
 
   const handleImageTemplateSelect = newBlock => {
     if (insertionPosition !== null) {
+      // Calculate correct order based on insertion position
+      const blocksToUse =
+        lessonContent?.data?.content && lessonContent.data.content.length > 0
+          ? lessonContent.data.content
+          : contentBlocks;
+
+      let calculatedOrder;
+      if (insertionPosition === 0) {
+        // Inserting at the beginning - use order slightly less than first block
+        const firstBlock = blocksToUse[0];
+        const firstOrder =
+          firstBlock?.order !== undefined && firstBlock.order !== null
+            ? firstBlock.order
+            : 1;
+        calculatedOrder = Math.max(0, firstOrder - 0.5);
+      } else if (insertionPosition >= blocksToUse.length) {
+        // Inserting at the end - use order higher than last block
+        const lastBlock = blocksToUse[blocksToUse.length - 1];
+        const lastOrder =
+          lastBlock?.order !== undefined && lastBlock.order !== null
+            ? lastBlock.order
+            : blocksToUse.length;
+        calculatedOrder = lastOrder + 1;
+      } else {
+        // Inserting between blocks - use average of previous and next block orders
+        const prevBlock = blocksToUse[insertionPosition - 1];
+        const nextBlock = blocksToUse[insertionPosition];
+        const prevOrder =
+          prevBlock?.order !== undefined && prevBlock.order !== null
+            ? prevBlock.order
+            : insertionPosition;
+        const nextOrder =
+          nextBlock?.order !== undefined && nextBlock.order !== null
+            ? nextBlock.order
+            : insertionPosition + 1;
+        calculatedOrder = (prevOrder + nextOrder) / 2;
+      }
+
+      // Update the block with calculated order
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prev => {
         const newBlocks = [...prev];
-        newBlocks.splice(insertionPosition, 0, newBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -1893,22 +2098,80 @@ const useLessonBlocks = ({
       }
       setInsertionPosition(null);
     } else {
-      setContentBlocks(prev => [...prev, newBlock]);
+      // Adding at the end - calculate order based on last block
+      const blocksToUse =
+        lessonContent?.data?.content && lessonContent.data.content.length > 0
+          ? lessonContent.data.content
+          : contentBlocks;
+      const lastBlock = blocksToUse[blocksToUse.length - 1];
+      const lastOrder =
+        lastBlock?.order !== undefined && lastBlock.order !== null
+          ? lastBlock.order
+          : blocksToUse.length;
+      const blockWithOrder = {
+        ...newBlock,
+        order: lastOrder + 1,
+      };
+      setContentBlocks(prev => [...prev, blockWithOrder]);
     }
   };
 
   const handleImageUpdate = (newBlock, currentBlock) => {
     if (insertionPosition !== null) {
+      // Calculate correct order based on insertion position
+      const blocksToUse =
+        lessonContent?.data?.content && lessonContent.data.content.length > 0
+          ? lessonContent.data.content
+          : contentBlocks;
+
+      let calculatedOrder;
+      if (insertionPosition === 0) {
+        // Inserting at the beginning - use order slightly less than first block
+        const firstBlock = blocksToUse[0];
+        const firstOrder =
+          firstBlock?.order !== undefined && firstBlock.order !== null
+            ? firstBlock.order
+            : 1;
+        calculatedOrder = Math.max(0, firstOrder - 0.5);
+      } else if (insertionPosition >= blocksToUse.length) {
+        // Inserting at the end - use order higher than last block
+        const lastBlock = blocksToUse[blocksToUse.length - 1];
+        const lastOrder =
+          lastBlock?.order !== undefined && lastBlock.order !== null
+            ? lastBlock.order
+            : blocksToUse.length;
+        calculatedOrder = lastOrder + 1;
+      } else {
+        // Inserting between blocks - use average of previous and next block orders
+        const prevBlock = blocksToUse[insertionPosition - 1];
+        const nextBlock = blocksToUse[insertionPosition];
+        const prevOrder =
+          prevBlock?.order !== undefined && prevBlock.order !== null
+            ? prevBlock.order
+            : insertionPosition;
+        const nextOrder =
+          nextBlock?.order !== undefined && nextBlock.order !== null
+            ? nextBlock.order
+            : insertionPosition + 1;
+        calculatedOrder = (prevOrder + nextOrder) / 2;
+      }
+
+      // Update the block with calculated order
+      const blockWithOrder = {
+        ...newBlock,
+        order: calculatedOrder,
+      };
+
       setContentBlocks(prev => {
         const newBlocks = [...prev];
-        newBlocks.splice(insertionPosition, 0, newBlock);
+        newBlocks.splice(insertionPosition, 0, blockWithOrder);
         return newBlocks;
       });
 
       if (lessonContent?.data?.content) {
         setLessonContent(prevLessonContent => {
           const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
+          newContent.splice(insertionPosition, 0, blockWithOrder);
           return {
             ...prevLessonContent,
             data: {
@@ -1938,6 +2201,11 @@ const useLessonBlocks = ({
           block.id === currentBlock.id
             ? {
                 ...newBlock,
+                order:
+                  currentBlock.order !== undefined &&
+                  currentBlock.order !== null
+                    ? currentBlock.order
+                    : newBlock.order || block.order,
                 imageDescription: getPlainText(
                   newBlock.text || newBlock.imageDescription || ''
                 ),
@@ -1955,6 +2223,10 @@ const useLessonBlocks = ({
               b.block_id === currentBlock.id
                 ? {
                     ...b,
+                    order:
+                      b.order !== undefined && b.order !== null
+                        ? b.order
+                        : newBlock.order || b.order,
                     html_css: newBlock.html_css,
                     details: newBlock.details,
                     imageUrl: newBlock.imageUrl,

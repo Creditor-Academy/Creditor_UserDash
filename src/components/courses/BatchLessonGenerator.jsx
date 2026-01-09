@@ -1,10 +1,10 @@
 /**
  * Batch Lesson Generator Component
- * Generates multiple lessons simultaneously using LangChain Bytez batch operations
+ * Generates multiple lessons simultaneously using OpenAI/HuggingFace
  */
 
 import React, { useState } from 'react';
-import { langChainBytezService } from '../../services/langchainBytez';
+import secureAIService from '../../services/secureAIService';
 import { Users, CheckCircle, AlertCircle, Clock, Sparkles } from 'lucide-react';
 
 const BatchLessonGenerator = ({
@@ -33,10 +33,19 @@ const BatchLessonGenerator = ({
     }, 100);
 
     try {
-      // Use batch generation for efficiency
-      const results = await langChainBytezService.batchGenerateLessons(
-        lessonRequests,
-        apiKey
+      // Generate lessons in parallel using OpenAI/HuggingFace
+      const results = await Promise.all(
+        lessonRequests.map(async request => {
+          try {
+            const prompt = `Create a comprehensive lesson for: ${request.lessonTitle}\n\nModule: ${request.moduleTitle}\n\nDescription: ${request.description || ''}`;
+            const content = await secureAIService.generateText(prompt, {
+              maxTokens: 2000,
+            });
+            return { content, error: null };
+          } catch (error) {
+            return { content: null, error: error.message };
+          }
+        })
       );
 
       clearInterval(timer);

@@ -1,4 +1,4 @@
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -350,11 +350,11 @@ export default function Hero() {
               loop
               playsInline
               style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: '12px',
-                objectFit: 'cover',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                width: "100%",
+                height: "100%",
+                borderRadius: "12px",
+                objectFit: "cover",
+                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
               }}
             >
               Your browser does not support the video tag.

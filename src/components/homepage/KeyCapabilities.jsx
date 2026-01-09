@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 import {
   ShoppingCart,
   CreditCard,
@@ -7,43 +7,43 @@ import {
   BarChart3,
   Brain,
   Puzzle,
-} from 'lucide-react';
+} from "lucide-react";
 
 const features = [
   {
-    title: 'E-Commerce Marketplace',
+    title: "E-Commerce Marketplace",
     description:
-      'Shop like Amazon with intelligent search, curated categories, demos, reviews, ratings, and side-by-side comparisons.',
+      "Shop like Amazon with intelligent search, curated categories, demos, reviews, ratings, and side-by-side comparisons.",
     icon: ShoppingCart,
   },
   {
-    title: 'Flexible Purchasing Options',
+    title: "Flexible Purchasing Options",
     description:
-      'Freemium trials, subscriptions, one-time purchases, AI credits, and bundled plans — all in one checkout flow.',
+      "Freemium trials, subscriptions, one-time purchases, AI credits, and bundled plans — all in one checkout flow.",
     icon: CreditCard,
   },
   {
-    title: '8 Modular Flagship Products',
+    title: "8 Modular Flagship Products",
     description:
-      'Choose exactly what you need. Each product integrates seamlessly into the Athena ecosystem.',
+      "Choose exactly what you need. Each product integrates seamlessly into the Athena ecosystem.",
     icon: Layers,
   },
   {
-    title: 'Centralized Dashboard',
+    title: "Centralized Dashboard",
     description:
-      'Deploy tools, track usage, monitor learner progress, analyze performance, and measure ROI in one place.',
+      "Deploy tools, track usage, monitor learner progress, analyze performance, and measure ROI in one place.",
     icon: BarChart3,
   },
   {
-    title: 'AI-Powered Automation',
+    title: "AI-Powered Automation",
     description:
-      'Eliminate repetitive work across authoring, design, delivery, and management with intelligent automation.',
+      "Eliminate repetitive work across authoring, design, delivery, and management with intelligent automation.",
     icon: Brain,
   },
   {
-    title: 'Scalability & Integration',
+    title: "Scalability & Integration",
     description:
-      'Built for solo creators to global enterprises with SCORM compliance and seamless LMS exports.',
+      "Built for solo creators to global enterprises with SCORM compliance and seamless LMS exports.",
     icon: Puzzle,
   },
 ];
@@ -51,14 +51,12 @@ const features = [
 const AthenaPlatformOffers = () => {
   return (
     <section className="relative py-28 px-4 overflow-hidden">
-
       {/* 🌤 Light blue creative background */}
       <div className="absolute inset-0 bg-gradient-to-b from-sky-50 via-white to-sky-50" />
       <div className="absolute top-24 left-24 w-96 h-96 bg-sky-200/30 rounded-full blur-3xl" />
       <div className="absolute bottom-24 right-24 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-6xl mx-auto">
-
         {/* Header */}
         <motion.div
           className="max-w-3xl mb-20"

@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 
 export default function Ready() {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function Ready() {
       ([entry]) => {
         if (entry.isIntersecting) setShowContent(true);
       },
-      { threshold: 0.25 }
+      { threshold: 0.25 },
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
@@ -171,15 +171,15 @@ export default function Ready() {
         <div className="circle circle-3" />
       </div>
 
-      <div className={`ready-content${showContent ? ' show' : ''}`}>
+      <div className={`ready-content${showContent ? " show" : ""}`}>
         <h2 className="ready-heading">Ready to Start Your Journey?</h2>
 
         <p className="ready-subheading">
-          Join thousands of educators transforming learning with{' '}
+          Join thousands of educators transforming learning with{" "}
           <span className="ready-highlight">AI-powered</span> course creation
         </p>
 
-        <button className="ready-cta" onClick={() => navigate('/contact')}>
+        <button className="ready-cta" onClick={() => navigate("/contact")}>
           Join Now
           <ArrowRight size={20} className="ready-cta-icon" />
         </button>

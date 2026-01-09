@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Gavel,
   Mail,
@@ -27,7 +27,7 @@ import {
   CheckCircle,
   UserPlus,
   Phone,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,16 +35,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import axios from 'axios';
+} from "@/components/ui/dialog";
+import axios from "axios";
 import {
   fetchUserProfile,
   setUserRole,
   setUserRoles,
-} from '@/services/userService';
-import { useAuth } from '@/contexts/AuthContext';
-import { SignUp } from '@/pages/Auth/SignUp';
-import { storeAccessToken } from '@/services/tokenService';
+} from "@/services/userService";
+import { useAuth } from "@/contexts/AuthContext";
+import { SignUp } from "@/pages/Auth/SignUp";
+import { storeAccessToken } from "@/services/tokenService";
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -52,10 +52,10 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
   const [isEmailSent, setIsEmailSent] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
-      toast.error('Please enter your email address');
+      toast.error("Please enter your email address");
       return;
     }
 
@@ -64,17 +64,17 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
       const normalizedEmail = email.trim().toLowerCase();
       const response = await axios.post(
         `${API_BASE}/api/auth/forgot-password`,
-        { email: normalizedEmail }
+        { email: normalizedEmail },
       );
       setIsEmailSent(true);
       toast.success(
-        response.data?.message || 'Password reset email sent successfully!'
+        response.data?.message || "Password reset email sent successfully!",
       );
     } catch (error) {
-      console.error('Forgot password error:', error);
+      console.error("Forgot password error:", error);
       toast.error(
         error.response?.data?.message ||
-          'Failed to send reset email. Please try again.'
+          "Failed to send reset email. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -92,7 +92,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
             Check Your Email
           </h3>
           <p className="text-slate-600">
-            We've sent a password reset link to{' '}
+            We've sent a password reset link to{" "}
             <span className="font-medium text-slate-800">{email}</span>
           </p>
         </div>
@@ -139,7 +139,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
               type="email"
               placeholder="Enter your email address"
               value={email}
-              onChange={e => onEmailChange(e.target.value)}
+              onChange={(e) => onEmailChange(e.target.value)}
               disabled={isLoading}
               required
               className="h-11 pl-10 pr-4 border-slate-200 focus:border-blue-500"
@@ -158,7 +158,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
               Sending...
             </div>
           ) : (
-            'Send Reset Link'
+            "Send Reset Link"
           )}
         </Button>
       </form>
@@ -179,8 +179,8 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
 export function Login() {
   const { setAuth } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [animateCard, setAnimateCard] = useState(false);
@@ -198,7 +198,15 @@ export function Login() {
     return () => clearTimeout(t);
   }, []);
 
-  const handleSubmit = async e => {
+  useEffect(() => {
+    // Trigger card animation on mount
+    setAnimateCard(true);
+    // Staggered image entrance
+    const t = setTimeout(() => setAnimateImage(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -207,7 +215,7 @@ export function Login() {
       const normalizedEmail = trimmedEmail.toLowerCase();
       const normalizedPassword = password.trim();
 
-      const loginWithEmail = async emailToUse => {
+      const loginWithEmail = async (emailToUse) => {
         return axios.post(
           `${API_BASE}/api/auth/login`,
           {
@@ -216,7 +224,7 @@ export function Login() {
           },
           {
             withCredentials: true,
-          }
+          },
         );
       };
 
@@ -237,32 +245,65 @@ export function Login() {
       if (response.data.success && response.data.accessToken) {
         // Store tokens using tokenService for consistent token storage
         storeAccessToken(response.data.accessToken);
-        console.log('[Auth] Login success. Token stored.');
+        console.log("[Auth] Login success. Token stored.");
 
         // Set authentication state
         setAuth(response.data.accessToken);
 
-        // Don't set default role - let UserContext fetch profile and set correct role
-        // Dispatch userLoggedIn event to trigger UserContext profile fetch
-        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+        // Dispatch userLoggedIn event to trigger UserContext profile loading
+        window.dispatchEvent(new Event("userLoggedIn"));
 
-        toast.success('Login successful!');
-        navigate('/dashboard');
+        // Fetch user profile to check roles
+        try {
+          const profile = await fetchUserProfile();
+          console.log("[Auth] User profile fetched:", profile);
+
+          // Check if user is superadmin
+          const userRoles = profile.user_roles?.map((r) => r.role) || [];
+          const isSuperAdmin = userRoles.includes("super_admin");
+          console.log(
+            "[Auth] User roles:",
+            userRoles,
+            "Is superadmin:",
+            isSuperAdmin,
+          );
+
+          // Store roles
+          if (userRoles.length > 0) {
+            setUserRoles(userRoles);
+          }
+
+          toast.success("Login successful!");
+
+          // Redirect based on role
+          if (isSuperAdmin) {
+            console.log("[Auth] Redirecting to superadmin dashboard");
+            navigate("/superadmin/dashboard");
+          } else {
+            console.log("[Auth] Redirecting to regular dashboard");
+            navigate("/dashboard");
+          }
+        } catch (profileError) {
+          console.error("[Auth] Error fetching profile:", profileError);
+          // Still redirect to dashboard even if profile fetch fails
+          toast.success("Login successful!");
+          navigate("/dashboard");
+        }
       } else {
-        toast.error(response.data.message || 'Login failed');
+        toast.error(response.data.message || "Login failed");
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
       // Clear any partial auth state on error
       setAuth(null);
 
       if (err.response) {
-        const errorMessage = err.response.data?.message || 'Login failed';
+        const errorMessage = err.response.data?.message || "Login failed";
         toast.error(errorMessage);
       } else if (err.request) {
-        toast.error('Network error. Please check your connection.');
+        toast.error("Network error. Please check your connection.");
       } else {
-        toast.error('An unexpected error occurred.');
+        toast.error("An unexpected error occurred.");
       }
     } finally {
       setIsLoading(false);
@@ -270,7 +311,7 @@ export function Login() {
   };
 
   const handleBackClick = () => {
-    navigate('/'); // Navigate directly to homepage
+    navigate("/"); // Navigate directly to homepage
   };
 
   return (
@@ -282,7 +323,7 @@ export function Login() {
             src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/login.PNG"
             alt="Login illustration"
             className={`max-w-[420px] w-[80%] h-auto object-contain transition-all duration-700 ease-out will-change-transform 
-              ${animateImage ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
+              ${animateImage ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-2"}`}
             loading="eager"
           />
         </div>
@@ -321,7 +362,7 @@ export function Login() {
           {/* Card */}
           <div className="w-full max-w-md relative z-10 p-6">
             <Card
-              className={`border-slate-200 shadow-xl transition-all duration-700 ${animateCard ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+              className={`border-slate-200 shadow-xl transition-all duration-700 ${animateCard ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}
             >
               <CardHeader className="space-y-1 pb-4">
                 <div className="flex justify-center mb-2">
@@ -360,7 +401,7 @@ export function Login() {
                           type="email"
                           placeholder="Enter your email address"
                           value={email}
-                          onChange={e => setEmail(e.target.value)}
+                          onChange={(e) => setEmail(e.target.value)}
                           disabled={isLoading}
                           required
                           className="pl-10 h-11 border-slate-200 focus:border-blue-500"
@@ -387,10 +428,10 @@ export function Login() {
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                           id="password"
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
                           value={password}
-                          onChange={e => setPassword(e.target.value)}
+                          onChange={(e) => setPassword(e.target.value)}
                           disabled={isLoading}
                           required
                           className="pl-10 pr-10 h-11 border-slate-200 focus:border-blue-500"
@@ -399,7 +440,7 @@ export function Login() {
                           type="button"
                           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
                           tabIndex={-1}
-                          onClick={() => setShowPassword(v => !v)}
+                          onClick={() => setShowPassword((v) => !v)}
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -422,7 +463,7 @@ export function Login() {
                           Signing in...
                         </div>
                       ) : (
-                        'Sign In'
+                        "Sign In"
                       )}
                     </Button>
                   </form>
@@ -432,7 +473,7 @@ export function Login() {
               {!showSignUp && !showForgotPassword && (
                 <CardFooter className="flex flex-col space-y-4 pt-2">
                   <div className="text-center text-sm text-slate-500">
-                    Don't have an account?{' '}
+                    Don't have an account?{" "}
                     <button
                       type="button"
                       onClick={() => setShowSignUp(true)}

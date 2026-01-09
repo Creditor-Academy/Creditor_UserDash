@@ -1,5 +1,5 @@
-@import 'react-quill/dist/quill.snow.css';
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&display=swap');
+@import "react-quill/dist/quill.snow.css";
+@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -52,13 +52,17 @@
     margin: 0;
     padding: 0;
   }
+  html {
+    scrollbar-gutter: stable;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-y: scroll;
     font-family:
-      'Inter',
+      "Inter",
       -apple-system,
       BlinkMacSystemFont,
-      'Segoe UI',
+      "Segoe UI",
       sans-serif;
   }
 }
@@ -327,7 +331,7 @@
   }
 
   .dashboard-newyear-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -502,7 +506,7 @@
 }
 
 .newyear-visual-content::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -10px;
   background: linear-gradient(
@@ -636,7 +640,7 @@
 }
 
 .athena-hero-banner::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: radial-gradient(
@@ -1139,7 +1143,7 @@
 
 /* Blue Wave Pattern */
 .login-newyear-bg::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background-image:
@@ -1163,13 +1167,13 @@
 
 /* Snow Image Layer at Bottom */
 .login-newyear-bg::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -10vh;
   left: 0;
   right: 0;
   height: 40vh;
-  background-image: var(--snow-image, url('../assets/snow.png'));
+  background-image: var(--snow-image, url("../assets/snow.png"));
   background-size: cover;
   background-position: center bottom;
   background-repeat: repeat-x;
@@ -1214,7 +1218,7 @@
 .login-message-headline .headline-small {
   font-size: clamp(1rem, 2vw, 1.5rem);
   font-weight: 300;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: rgba(255, 255, 255, 0.95);
   margin-bottom: 0;
 }
@@ -1222,7 +1226,7 @@
 .headline-script-spanning {
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 500;
-  font-family: 'Dancing Script', 'Great Vibes', cursive;
+  font-family: "Dancing Script", "Great Vibes", cursive;
   color: rgba(255, 255, 255, 0.98);
   line-height: 1.1;
   letter-spacing: 0.12em;
@@ -1254,7 +1258,7 @@
 .login-message-headline-mobile .headline-small {
   font-size: 0.875rem;
   font-weight: 300;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   color: rgba(255, 255, 255, 0.95);
   margin-bottom: 0.5rem;
 }
@@ -1262,7 +1266,7 @@
 .login-message-headline-mobile .headline-script-mobile {
   font-size: 1.75rem;
   font-weight: 400;
-  font-family: 'Great Vibes', 'Dancing Script', cursive;
+  font-family: "Great Vibes", "Dancing Script", cursive;
   color: rgba(255, 255, 255, 0.95);
   line-height: 1.1;
   letter-spacing: 0.05em;
@@ -1276,7 +1280,7 @@
   margin-top: 2rem;
   font-weight: 400;
   letter-spacing: 0.01em;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .flip-card-inner {
@@ -1342,7 +1346,7 @@
 /* Horizontal divider line in flip card */
 .flip-card-front::after,
 .flip-card-back::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 0;
@@ -1354,7 +1358,7 @@
 }
 
 .flip-digit {
-  font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace;
+  font-family: "JetBrains Mono", "IBM Plex Mono", "Courier New", monospace;
   font-size: 1.75rem; /* Smaller font for compact display */
   font-weight: 700;
   color: rgba(255, 255, 255, 0.95);

@@ -2,6 +2,35 @@ import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
 import api from './apiClient'; // Enhanced API client
 import axios from 'axios';
 
+/**
+ * Extract error message from various error response formats
+ * Handles multiple backend error response structures
+ */
+function extractErrorMessage(error) {
+  // Try all possible error message locations
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+
+  if (error.response?.data?.errorMessage) {
+    return error.response.data.errorMessage;
+  }
+
+  if (error.response?.data?.error) {
+    return error.response.data.error;
+  }
+
+  if (error.response?.data?.data?.message) {
+    return error.response.data.data.message;
+  }
+
+  if (error.message) {
+    return error.message;
+  }
+
+  return `HTTP ${error.response?.status || 'Unknown'}: ${error.response?.statusText || 'Error'}`;
+}
+
 export async function fetchAllCourses() {
   try {
     // Use the enhanced API client
@@ -17,10 +46,7 @@ export async function fetchAllCourses() {
       message: error.message,
     });
 
-    const backendMessage =
-      error.response?.data?.errorMessage ||
-      error.response?.data?.message ||
-      error.message;
+    const backendMessage = extractErrorMessage(error);
     throw new Error(
       backendMessage ||
         `Failed to fetch courses (${error.response?.status || 'Unknown'})`
@@ -254,53 +280,35 @@ export async function createLesson(courseId, moduleId, lessonData) {
 // Update lesson content using PUT method with lesson ID
 export async function updateLessonContent(lessonId, contentData) {
   try {
-    // Add timeout and retry logic
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    console.log('Updating lesson content for lesson:', lessonId);
+    console.log('Content data:', contentData);
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
+    // Use the enhanced API client instead of raw fetch to avoid CORS issues
+    // Use the existing lessonContent endpoint
+    const response = await api.put(
+      `/api/lessoncontent/update/${lessonId}`,
+      contentData,
       {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        credentials: 'include',
-        body: JSON.stringify(contentData),
-        signal: controller.signal,
+        timeout: 30000, // 30 second timeout
       }
     );
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('Backend response:', response.status, errorText);
-
-      // Try to parse as JSON, fallback to text
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { message: errorText || `HTTP ${response.status}` };
-      }
-
-      throw new Error(
-        errorData.message ||
-          `Failed to update lesson content (${response.status})`
-      );
-    }
-
-    const data = await response.json();
-    return data.data || data;
+    console.log('updateLessonContent success response:', response.data);
+    return response.data.data || response.data;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('Lesson content update timed out');
-      throw new Error('Request timed out - content may be too large');
-    }
-    console.error('Error updating lesson content:', error);
-    throw error;
+    console.error('updateLessonContent error response:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+
+    const backendMessage = extractErrorMessage(error);
+
+    throw new Error(
+      backendMessage ||
+        `Failed to update lesson content (${error.response?.status || 'Unknown'})`
+    );
   }
 }
 
@@ -351,10 +359,15 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         order: i + 1,
         estimated_duration: 60,
         module_status: 'PUBLISHED',
-        thumbnail:
-          moduleData.thumbnail || moduleData.module_thumbnail_url || '',
         price: '0',
       };
+
+      // Only include thumbnail if it has a valid value
+      const thumbnailUrl =
+        moduleData.thumbnail || moduleData.module_thumbnail_url;
+      if (thumbnailUrl && thumbnailUrl.trim() !== '') {
+        modulePayload.thumbnail = thumbnailUrl;
+      }
 
       console.log('Module payload being sent:', modulePayload);
 
@@ -468,6 +481,9 @@ export async function createAIModulesAndLessons(courseId, outlines) {
               !lessonData.content &&
               !lessonData.summary
             ) {
+              console.log(
+                `📝 Generating lesson content from prompt for: "${lessonData.title}"`
+              );
               const { generateLessonFromPrompt } = await import(
                 './aiCourseService'
               );
@@ -482,13 +498,26 @@ export async function createAIModulesAndLessons(courseId, outlines) {
                   keyTakeaways: gen.data.keyTakeaways,
                   summary: gen.data.summary,
                 };
+                console.log(
+                  `✅ Lesson content generated successfully for: ${lessonData.title}`
+                );
+              } else {
+                console.warn(
+                  `⚠️ Lesson content generation returned no data for: ${lessonData.title}`,
+                  gen
+                );
               }
             }
           } catch (genErr) {
+            console.error('❌ Prompt-to-lesson generation failed:', {
+              lesson: lessonData.title,
+              error: genErr.message,
+              stack: genErr.stack,
+            });
             console.warn(
-              'Prompt-to-lesson generation skipped:',
-              genErr?.message || genErr
+              `⚠️ Skipping prompt-to-lesson generation for "${lessonData.title}": ${genErr.message}`
             );
+            // Continue without generated content - lesson creation can still succeed
           }
 
           // Generate AI-powered lesson description
@@ -520,26 +549,64 @@ export async function createAIModulesAndLessons(courseId, outlines) {
               lessonData.introduction || moduleData.title || ''
             );
             qaPairs = qaRes?.data?.qa || [];
+            if (qaPairs.length > 0) {
+              console.log(
+                `✅ Generated ${qaPairs.length} Q&A pairs for lesson: ${lessonData.title}`
+              );
+            }
           } catch (qaError) {
-            console.warn('QA generation skipped:', qaError?.message || qaError);
+            console.error('❌ QA generation failed:', {
+              lesson: lessonData.title,
+              error: qaError.message,
+              stack: qaError.stack,
+            });
+            console.warn(
+              `⚠️ Skipping Q&A generation for "${lessonData.title}": ${qaError.message}`
+            );
+            // Continue without Q&A pairs - lesson creation can still succeed
           }
 
           let illustrativeImage = null;
+          let imgPrompt = '';
           try {
             if (!lessonData.content?.multimedia?.image) {
               const { generateCourseImage } = await import('./aiCourseService');
-              const imgPrompt = `Educational illustration for lesson "${lessonData.title}"`;
+              imgPrompt = `Educational illustration for lesson "${lessonData.title}"`;
+              console.log(
+                `🎨 Generating image for lesson "${lessonData.title}" with prompt: "${imgPrompt}"`
+              );
               const imgRes = await generateCourseImage(imgPrompt, {
                 style: 'illustration',
                 size: '1024x1024',
               });
-              illustrativeImage = imgRes?.data?.url || null;
+              if (imgRes?.success && imgRes?.data?.url) {
+                illustrativeImage = imgRes.data.url;
+                console.log(
+                  `✅ Image generated successfully for lesson: ${lessonData.title}`
+                );
+              } else {
+                console.warn(
+                  `⚠️ Image generation returned no URL for lesson: ${lessonData.title}`,
+                  imgRes
+                );
+              }
+            } else {
+              illustrativeImage = lessonData.content.multimedia.image;
+              console.log(
+                `ℹ️ Using existing image for lesson: ${lessonData.title}`
+              );
             }
           } catch (imgError) {
+            console.error('❌ Image generation failed:', {
+              lesson: lessonData.title,
+              error: imgError.message,
+              stack: imgError.stack,
+              prompt: imgPrompt || 'N/A',
+            });
             console.warn(
-              'Image generation skipped:',
-              imgError?.message || imgError
+              `⚠️ Skipping image generation for "${lessonData.title}": ${imgError.message}`
             );
+            // Continue without image - lesson creation can still succeed
           }
 
           const lessonPayload = {
@@ -547,9 +614,14 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             description: cleanDescription,
             order: lessonData.order || j + 1,
             status: 'PUBLISHED',
-            thumbnail:
-              lessonData.thumbnail || lessonData.lesson_thumbnail_url || '',
           };
+
+          // Only include thumbnail if it has a valid value
+          const lessonThumbnailUrl =
+            lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+          if (lessonThumbnailUrl && lessonThumbnailUrl.trim() !== '') {
+            lessonPayload.thumbnail = lessonThumbnailUrl;
+          }
 
           console.log('Lesson payload being sent:', lessonPayload);
 

@@ -132,8 +132,8 @@ const AthenaStandsout = () => {
             See Athena side-by-side with other platforms
           </h2>
           <p className="text-slate-700 max-w-3xl mx-auto">
-            Purpose-built for AI-first authoring, native social, and live experiences—
-            without bolting on a dozen plugins.
+            Purpose-built for AI-first authoring, native social, and live
+            experiences— without bolting on a dozen plugins.
           </p>
         </motion.div>
 
@@ -163,7 +163,7 @@ const AthenaStandsout = () => {
             <table className="w-full text-[13px] text-left text-slate-800 leading-relaxed">
               <thead className="bg-slate-100 text-slate-600 uppercase text-[11px] tracking-[0.08em]">
                 <tr>
-                  {headers.map((h) => (
+                  {headers.map(h => (
                     <th key={h} className="px-4 py-3 border-b border-slate-200">
                       {h}
                     </th>
@@ -171,7 +171,7 @@ const AthenaStandsout = () => {
                 </tr>
               </thead>
               <tbody>
-                {platforms.map((p) => (
+                {platforms.map(p => (
                   <tr
                     key={p.name}
                     className={`transition-colors ${
@@ -189,15 +189,33 @@ const AthenaStandsout = () => {
                       )}
                       {p.name}
                     </td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.pricing}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.authoring}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.ai}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.branching}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.community}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.chat}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.live}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words">{p.attendance}</td>
-                    <td className="px-4 py-4 align-top whitespace-normal break-words text-slate-700">{p.notes}</td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.pricing}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.authoring}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.ai}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.branching}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.community}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.chat}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.live}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words">
+                      {p.attendance}
+                    </td>
+                    <td className="px-4 py-4 align-top whitespace-normal break-words text-slate-700">
+                      {p.notes}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -218,11 +236,12 @@ const AthenaStandsout = () => {
                 Built to stand out
               </p>
               <h3 className="text-2xl font-semibold text-slate-900">
-                Athena bundles AI-first authoring, social, and live into one LMS.
+                Athena bundles AI-first authoring, social, and live into one
+                LMS.
               </h3>
               <p className="text-slate-700 max-w-3xl">
-                Skip patchwork plugins—launch faster with native creation, community,
-                and classroom-ready attendance and scheduling.
+                Skip patchwork plugins—launch faster with native creation,
+                community, and classroom-ready attendance and scheduling.
               </p>
             </div>
             <a

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { getAuthHeader } from '@/services/authHeader';
-import { Button } from '@/components/ui/button';
-import ExcelJS from 'exceljs';
-import { Search } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { getAuthHeader } from "@/services/authHeader";
+import { Button } from "@/components/ui/button";
+import ExcelJS from "exceljs";
+import { Search } from "lucide-react";
 
 const EventAttendanceModal = ({
   isOpen,
@@ -20,7 +20,7 @@ const EventAttendanceModal = ({
 }) => {
   const [attendanceData, setAttendanceData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -34,17 +34,17 @@ const EventAttendanceModal = ({
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/instructor/events/${eventId}/attendance`,
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
               ...getAuthHeader(),
             },
-            credentials: 'include',
-          }
+            credentials: "include",
+          },
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch attendance data');
+          throw new Error("Failed to fetch attendance data");
         }
 
         const data = await response.json();
@@ -61,10 +61,10 @@ const EventAttendanceModal = ({
         const rawList = raw.eventAttendanceList || raw.eventAttendaceList || [];
 
         const normalizedList = Array.isArray(rawList)
-          ? rawList.map(attendee => {
+          ? rawList.map((attendee) => {
               const user = attendee.user || {};
-              const name = user.name || '';
-              const [firstFromName, ...restName] = name.split(' ');
+              const name = user.name || "";
+              const [firstFromName, ...restName] = name.split(" ");
 
               return {
                 ...attendee,
@@ -72,14 +72,14 @@ const EventAttendanceModal = ({
                   attendee.attendanceTime ||
                   attendee.attendance_time ||
                   attendee.time ||
-                  '',
+                  "",
                 user: {
                   ...user,
                   first_name:
-                    user.first_name || user.firstName || firstFromName || '',
+                    user.first_name || user.firstName || firstFromName || "",
                   last_name:
-                    user.last_name || user.lastName || restName.join(' ') || '',
-                  email: user.email || '',
+                    user.last_name || user.lastName || restName.join(" ") || "",
+                  email: user.email || "",
                 },
               };
             })
@@ -92,7 +92,7 @@ const EventAttendanceModal = ({
         });
       } catch (err) {
         setError(err.message);
-        console.error('Error fetching attendance:', err);
+        console.error("Error fetching attendance:", err);
       } finally {
         setLoading(false);
       }
@@ -102,12 +102,12 @@ const EventAttendanceModal = ({
   }, [eventId, isOpen]);
 
   const filteredAttendees = attendanceData?.eventAttendaceList?.filter(
-    attendee => {
+    (attendee) => {
       if (!attendee || !attendee.user) return false;
       const user = attendee.user;
-      const firstName = (user.first_name || '').toLowerCase();
-      const lastName = (user.last_name || '').toLowerCase();
-      const email = (user.email || '').toLowerCase();
+      const firstName = (user.first_name || "").toLowerCase();
+      const lastName = (user.last_name || "").toLowerCase();
+      const email = (user.email || "").toLowerCase();
       const searchLower = searchTerm.toLowerCase();
 
       return (
@@ -115,83 +115,83 @@ const EventAttendanceModal = ({
         lastName.includes(searchLower) ||
         email.includes(searchLower)
       );
-    }
+    },
   );
 
-  const formatDate = dateString => {
-    if (!dateString) return '';
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     };
-    return date.toLocaleDateString('en-US', options);
+    return date.toLocaleDateString("en-US", options);
   };
 
-  const formatTimeOnly = dateString => {
-    if (!dateString) return '';
+  const formatTimeOnly = (dateString) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return date
-      .toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
+      .toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: true,
       })
       .toLowerCase();
   };
 
-  const formatDateOnly = dateString => {
-    if (!dateString) return '';
+  const formatDateOnly = (dateString) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     };
-    return date.toLocaleDateString('en-US', options);
+    return date.toLocaleDateString("en-US", options);
   };
 
   const handleExportCSV = async () => {
     if (!attendanceData?.eventAttendanceList?.length) return;
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Attendance');
+    const worksheet = workbook.addWorksheet("Attendance");
 
     worksheet.addRow([
-      'Event Title',
-      'Attendance Date',
-      'Attendance Time',
-      'Name',
-      'Email',
-      'Status',
+      "Event Title",
+      "Attendance Date",
+      "Attendance Time",
+      "Name",
+      "Email",
+      "Status",
     ]);
 
-    attendanceData.eventAttendanceList.forEach(attendee => {
+    attendanceData.eventAttendanceList.forEach((attendee) => {
       worksheet.addRow([
         eventTitle,
-        attendee.attendanceDate ?? '',
-        attendee.attendanceTime ?? '',
-        `${attendee.user?.first_name ?? ''} ${attendee.user?.last_name ?? ''}`.trim(),
-        attendee.user?.email ?? '',
-        attendee.isPresent ? 'Present' : 'Absent',
+        attendee.attendanceDate ?? "",
+        attendee.attendanceTime ?? "",
+        `${attendee.user?.first_name ?? ""} ${attendee.user?.last_name ?? ""}`.trim(),
+        attendee.user?.email ?? "",
+        attendee.isPresent ? "Present" : "Absent",
       ]);
     });
 
-    worksheet.columns.forEach(col => (col.width = 30));
+    worksheet.columns.forEach((col) => (col.width = 30));
 
     const buffer = await workbook.csv.writeBuffer();
-    const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([buffer], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
 
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `attendance_${eventTitle
-      .replace(/[^a-z0-9]/gi, '_')
+      .replace(/[^a-z0-9]/gi, "_")
       .toLowerCase()}.csv`;
 
     document.body.appendChild(link);
@@ -317,7 +317,7 @@ const EventAttendanceModal = ({
                     type="text"
                     placeholder="Search by name or email..."
                     value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-2 w-full"
                   />
                 </div>
@@ -361,14 +361,14 @@ const EventAttendanceModal = ({
                           {/* Left section: User info */}
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm uppercase">
-                              {attendee.user?.first_name?.[0] || ''}
-                              {attendee.user?.last_name?.[0] || ''}
+                              {attendee.user?.first_name?.[0] || ""}
+                              {attendee.user?.last_name?.[0] || ""}
                             </div>
 
                             <div>
                               <p className="font-medium text-gray-900">
-                                {attendee.user?.first_name || ''}{' '}
-                                {attendee.user?.last_name || ''}
+                                {attendee.user?.first_name || ""}{" "}
+                                {attendee.user?.last_name || ""}
                               </p>
 
                               <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -386,7 +386,7 @@ const EventAttendanceModal = ({
                                     d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                                   />
                                 </svg>
-                                {attendee.user?.email || 'No email'}
+                                {attendee.user?.email || "No email"}
                               </div>
                             </div>
                           </div>
@@ -442,11 +442,11 @@ const EventAttendanceModal = ({
 
                       <p className="text-gray-500 text-center">
                         {searchTerm
-                          ? 'No attendees found matching your search.'
-                          : 'No attendance records found'}
+                          ? "No attendees found matching your search."
+                          : "No attendance records found"}
                       </p>
                       <p className="text-sm text-gray-400 mt-1">
-                        {searchTerm ? 'Try adjusting your search terms' : ''}
+                        {searchTerm ? "Try adjusting your search terms" : ""}
                       </p>
                     </div>
                   )}

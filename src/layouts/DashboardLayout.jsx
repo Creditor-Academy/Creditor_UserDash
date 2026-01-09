@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Sidebar from '@/components/layout/Sidebar';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import BackButton from '@/components/navigation/BackButton';
-import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import React, { useEffect, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import Sidebar from "@/components/layout/Sidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import BackButton from "@/components/navigation/BackButton";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 
 // Create a context for the sidebar state
 export const SidebarContext = React.createContext({
@@ -14,37 +14,45 @@ export const SidebarContext = React.createContext({
 
 export function DashboardLayout() {
   const location = useLocation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Initialize sidebar state based on the current route so immersive pages
+  // render in their intended collapsed state without a flash/shift.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    const isImmersiveRoute =
+      location.pathname.startsWith("/dashboard/scenario/take/") ||
+      (location.pathname.includes("/lesson/") &&
+        location.pathname.includes("/builder"));
+    return isImmersiveRoute;
+  });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [creditModalOpen, setCreditModalOpen] = useState(false);
 
   // Only show back button on specific pages where navigation back makes sense
   const pathsWithBackButton = [
-    '/profile',
-    '/faqs',
-    '/support',
-    '/guides',
-    '/support/ticket',
-    '/privacy',
-    '/avatar-picker',
+    "/profile",
+    "/faqs",
+    "/support",
+    "/guides",
+    "/support/ticket",
+    "/privacy",
+    "/avatar-picker",
   ];
 
-  const showBackButton = pathsWithBackButton.some(path =>
-    location.pathname.startsWith(path)
+  const showBackButton = pathsWithBackButton.some((path) =>
+    location.pathname.startsWith(path),
   );
 
   // Sidebar width values
-  const expandedWidth = '17rem';
-  const collapsedWidth = '4.5rem';
+  const expandedWidth = "17rem";
+  const collapsedWidth = "4.5rem";
 
   // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileSidebarOpen(false);
     // Auto-collapse sidebar for immersive pages like ScenarioTakePage and LessonBuilder
     const immersive =
-      location.pathname.startsWith('/dashboard/scenario/take/') ||
-      (location.pathname.includes('/lesson/') &&
-        location.pathname.includes('/builder'));
+      location.pathname.startsWith("/dashboard/scenario/take/") ||
+      (location.pathname.includes("/lesson/") &&
+        location.pathname.includes("/builder"));
     setSidebarCollapsed(immersive);
   }, [location.pathname]);
 
@@ -57,7 +65,7 @@ export function DashboardLayout() {
             `fixed top-0 left-0 h-screen z-30 
               bg-blue-700 text-white
               transform transition-transform duration-300 ` +
-            `${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ` +
+            `${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} ` +
             `lg:translate-x-0`
           }
         >
@@ -79,11 +87,11 @@ export function DashboardLayout() {
 
         {/* Main content area */}
         <div
-          className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-[17rem]'}`}
+          className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[17rem]"}`}
         >
           {/* Header - fixed at the top */}
           <header
-            className={`fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-14 sm:h-16 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-[17rem]'}`}
+            className={`fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-14 sm:h-16 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[17rem]"}`}
           >
             <DashboardHeader
               sidebarCollapsed={sidebarCollapsed}

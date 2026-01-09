@@ -1,5 +1,15 @@
-import axios from 'axios';
-import { getAuthHeader } from '@/services/authHeader';
+import axios from "axios";
+import { getAuthHeader } from "@/services/authHeader";
+
+// Base API URL (fallback to production backend if env not set)
+const API_BASE =
+  import.meta.env?.VITE_API_BASE_URL || "https://creditor.onrender.com";
+
+// Dedicated Superadmin notification base URLs
+const SUPERADMIN_API_BASE =
+  import.meta.env?.VITE_API_BASE_URL || "http://localhost:9000";
+const SUPERADMIN_MARK_READ_BASE =
+  import.meta.env?.VITE_API_BASE_URL || "http://localhost:9000";
 
 /*
 BACKEND ROUTES THAT NEED TO BE ENABLED:
@@ -18,34 +28,68 @@ Currently only GET /api/notifications is enabled.
 // Fetch notifications for current user
 export async function fetchNotifications() {
   const url = `${API_BASE}/api/notifications`;
-  console.log('Fetching notifications from:', url);
+  console.log("Fetching notifications from:", url);
   const response = await axios.get(url, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...getAuthHeader(),
     },
     withCredentials: true,
   });
-  console.log('Fetch notifications response:', response.data);
+  console.log("Fetch notifications response:", response.data);
+  return response;
+}
+
+// Fetch notifications for superadmin dashboard (ticket notifications)
+export async function fetchSuperadminNotifications() {
+  const url = `${SUPERADMIN_API_BASE}/api/notifications/getTicketnotifications`;
+  console.log("Fetching superadmin notifications from:", url);
+  const response = await axios.get(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    withCredentials: true,
+  });
+  console.log("Superadmin notifications response:", response.data);
+  return response;
+}
+
+// Mark all notifications as read for superadmin dashboard
+export async function markAllSuperadminNotificationsRead() {
+  const url = `${SUPERADMIN_MARK_READ_BASE}/api/notifications/mark-as-read`;
+  console.log("Superadmin mark all notifications as read:", url);
+  const response = await axios.put(
+    url,
+    {},
+    {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      withCredentials: true,
+    },
+  );
+  console.log("Superadmin mark all as read response:", response.data);
   return response;
 }
 
 // Mark all notifications as read for current user
 export async function markAllNotificationsRead() {
   const url = `${API_BASE}/api/notifications/mark-as-read`;
-  console.log('Marking all notifications as read:', url);
+  console.log("Marking all notifications as read:", url);
   const response = await axios.put(
     url,
     {},
     {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getAuthHeader(),
       },
       withCredentials: true,
-    }
+    },
   );
-  console.log('Mark all as read response:', response.data);
+  console.log("Mark all as read response:", response.data);
   return response;
 }
 
@@ -57,30 +101,30 @@ export async function createPaymentNotification() {
     {},
     {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getAuthHeader(),
       },
       withCredentials: true,
-    }
+    },
   );
 }
 
 // Create course notification for ALL users (admin function)
 export async function createCourseNotification(courseId) {
   const url = `${API_BASE}/api/notifications/course`;
-  console.log('Creating course notification for courseId:', courseId);
+  console.log("Creating course notification for courseId:", courseId);
   const response = await axios.post(
     url,
     { courseId },
     {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getAuthHeader(),
       },
       withCredentials: true,
-    }
+    },
   );
-  console.log('Course notification API response:', response.data);
+  console.log("Course notification API response:", response.data);
   return response;
 }
 
@@ -92,11 +136,11 @@ export async function createModulePublishedNotification(courseId, moduleId) {
     { courseId, moduleId },
     {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getAuthHeader(),
       },
       withCredentials: true,
-    }
+    },
   );
 }
 
@@ -108,11 +152,11 @@ export async function createQuizNotification(quizId) {
     { quizId },
     {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getAuthHeader(),
       },
       withCredentials: true,
-    }
+    },
   );
 }
 
@@ -124,11 +168,11 @@ export async function createSystemNotification(title, message) {
     { title, message },
     {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...getAuthHeader(),
       },
       withCredentials: true,
-    }
+    },
   );
 }
 
@@ -139,7 +183,7 @@ export async function createTicketReplyNotification(ticketId, userId) {
   const payload = { ticketId, userId };
   const options = {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...getAuthHeader(),
     },
     withCredentials: true,
@@ -161,7 +205,7 @@ export async function createNotification(notification) {
   const url = `${API_BASE}/api/notifications/create`;
   return axios.post(url, notification, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...getAuthHeader(),
     },
     withCredentials: true,
@@ -172,7 +216,7 @@ export async function createNotification(notification) {
 export async function broadcastNotificationToAllUsers({
   title,
   message,
-  type = 'info',
+  type = "info",
 }) {
-  return createNotification({ title, message, type, audience: 'all' });
+  return createNotification({ title, message, type, audience: "all" });
 }

@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
-import { Target, TrendingUp } from 'lucide-react';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import React, { useContext } from "react";
+import { Target, TrendingUp } from "lucide-react";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 export function NewYearBanner({ userName }) {
   const { activeTheme } = useContext(SeasonalThemeContext);
@@ -11,7 +11,7 @@ export function NewYearBanner({ userName }) {
           <span>2026</span>
         </div>
         <p className="newyear-hero-kicker">New Year. New Skills. New You.</p>
-        <h1>Welcome to 2026, {userName || 'Scholar'}!</h1>
+        <h1>Welcome to 2026, {userName || "Scholar"}!</h1>
         <p>
           Set ambitious learning goals, track your progress, and unlock your
           full potential this year. Every lesson brings you closer to success.

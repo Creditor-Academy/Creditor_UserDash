@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   FileText,
   X,
@@ -23,13 +23,13 @@ import {
   Heading2,
   Text,
   Bold,
-} from 'lucide-react';
+} from "lucide-react";
 
 // Statement types with their specific styling and content
 const statementTypes = [
   {
-    id: 'statement-a',
-    title: 'Bordered Quote',
+    id: "statement-a",
+    title: "Bordered Quote",
     icon: <FileText className="h-5 w-5" />,
     preview: (
       <div className="border-t border-b border-gray-800 py-8 px-6">
@@ -42,8 +42,8 @@ const statementTypes = [
       "You're the master of your life, the captain of your ship. Steer it with intention. Will you skirt the coast from one safe harbor to the next? Or will you sail into the vast open blue? Every day you get to decide anew what course to chart.",
   },
   {
-    id: 'statement-b',
-    title: 'Elegant Quote',
+    id: "statement-b",
+    title: "Elegant Quote",
     icon: <FileText className="h-5 w-5" />,
     preview: (
       <div className="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm">
@@ -59,25 +59,25 @@ const statementTypes = [
       "You're the master of your life, the captain of your ship. Steer it with intention. Will you skirt the coast from one safe harbor to the next? Or will you sail into the vast open blue? Every day you get to decide anew what course to chart.",
   },
   {
-    id: 'statement-c',
-    title: 'Highlighted Text',
+    id: "statement-c",
+    title: "Highlighted Text",
     icon: <FileText className="h-5 w-5" />,
     preview: (
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
         <p className="text-gray-700 text-xl leading-relaxed">
-          Stop chasing{' '}
+          Stop chasing{" "}
           <span className="font-bold text-gray-900 bg-orange-100 px-1 rounded">
             your thoughts
-          </span>{' '}
-          in circles.{' '}
+          </span>{" "}
+          in circles.{" "}
           <span className="font-bold text-gray-900 bg-orange-100 px-1 rounded">
             Open your eyes
           </span>
-          , breathe deeply, and then{' '}
+          , breathe deeply, and then{" "}
           <span className="font-bold text-gray-900 bg-orange-100 px-1 rounded">
             pay attention
           </span>
-          . The air is sweet.{' '}
+          . The air is sweet.{" "}
           <span className="font-bold text-gray-900 bg-orange-100 px-1 rounded">
             The sun is warm
           </span>
@@ -89,8 +89,8 @@ const statementTypes = [
       "Stop chasing <strong>your thoughts</strong> in circles. <strong>Open your eyes</strong>, breathe deeply, and then <strong>pay attention</strong>. The air is sweet. <strong>The sun is warm</strong>. There's a path ahead.",
   },
   {
-    id: 'statement-d',
-    title: 'Corner Border Quote',
+    id: "statement-d",
+    title: "Corner Border Quote",
     icon: <FileText className="h-5 w-5" />,
     preview: (
       <div className="relative bg-white py-6 px-6">
@@ -104,8 +104,8 @@ const statementTypes = [
       "You're the master of your life, the captain of your ship. Steer it with intention. Will you skirt the coast from one safe harbor to the next? Or will you sail into the vast open blue? Every day you get to decide anew what course to chart.",
   },
   {
-    id: 'note',
-    title: 'Note',
+    id: "note",
+    title: "Note",
     icon: <Info className="h-5 w-5" />,
     preview: (
       <div className="border border-orange-300 bg-orange-50 p-4 rounded">
@@ -139,16 +139,17 @@ const StatementComponent = React.forwardRef(
       sidebarCollapsed,
       setSidebarCollapsed,
       onStatementEdit, // Add this prop to handle statement editing from parent
+      onAICreation,
     },
-    ref
+    ref,
   ) => {
     const [showStatementEditorDialog, setShowStatementEditorDialog] =
       useState(false);
     const [currentStatementType, setCurrentStatementType] = useState(null);
-    const [statementContent, setStatementContent] = useState('');
+    const [statementContent, setStatementContent] = useState("");
     const [currentStatementBlockId, setCurrentStatementBlockId] =
       useState(null);
-    const [previewContent, setPreviewContent] = useState('');
+    const [previewContent, setPreviewContent] = useState("");
     const [textareaRef, setTextareaRef] = useState(null);
 
     // Expose handleEditStatement to parent component
@@ -156,11 +157,11 @@ const StatementComponent = React.forwardRef(
       handleEditStatement,
     }));
 
-    const handleStatementTypeSelect = statementType => {
+    const handleStatementTypeSelect = (statementType) => {
       // Generate HTML content to match the original statement template exactly
-      let htmlContent = '';
+      let htmlContent = "";
 
-      if (statementType.id === 'statement-a') {
+      if (statementType.id === "statement-a") {
         htmlContent = `
         <div class="border-t border-b border-gray-800 py-8 px-6">
           <p class="text-gray-900 text-2xl leading-relaxed text-center font-bold">
@@ -168,7 +169,7 @@ const StatementComponent = React.forwardRef(
           </p>
         </div>
       `;
-      } else if (statementType.id === 'statement-b') {
+      } else if (statementType.id === "statement-b") {
         htmlContent = `
         <div class="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm">
           <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
@@ -178,7 +179,7 @@ const StatementComponent = React.forwardRef(
           </p>
         </div>
       `;
-      } else if (statementType.id === 'statement-c') {
+      } else if (statementType.id === "statement-c") {
         htmlContent = `
         <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
           <p class="text-gray-700 text-xl leading-relaxed">
@@ -186,7 +187,7 @@ const StatementComponent = React.forwardRef(
           </p>
         </div>
       `;
-      } else if (statementType.id === 'statement-d') {
+      } else if (statementType.id === "statement-d") {
         htmlContent = `
         <div class="relative bg-white py-6 px-6">
           <div class="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
@@ -195,7 +196,7 @@ const StatementComponent = React.forwardRef(
           </p>
         </div>
       `;
-      } else if (statementType.id === 'note') {
+      } else if (statementType.id === "note") {
         htmlContent = `
         <div class="border border-orange-300 bg-orange-50 p-4 rounded">
           <div class="flex items-start space-x-3">
@@ -219,12 +220,11 @@ const StatementComponent = React.forwardRef(
       const newBlock = {
         id: `block_${Date.now()}`,
         block_id: `block_${Date.now()}`,
-        type: 'statement',
+        type: "statement",
         title: statementType.title,
         statementType: statementType.id,
         content: statementType.defaultContent,
         html_css: htmlContent,
-        order: 1,
       };
 
       // Call the parent's onStatementSelect function
@@ -241,46 +241,46 @@ const StatementComponent = React.forwardRef(
       blockId,
       statementType,
       content,
-      htmlContent = null
+      htmlContent = null,
     ) => {
       setCurrentStatementBlockId(blockId);
 
       // If statementType is not provided, try to detect it from htmlContent
       let detectedStatementType = statementType;
       if (!detectedStatementType && htmlContent) {
-        if (htmlContent.includes('border-t border-b border-gray-800')) {
-          detectedStatementType = 'statement-a';
-        } else if (htmlContent.includes('absolute top-0 left-1/2')) {
-          detectedStatementType = 'statement-b';
-        } else if (htmlContent.includes('bg-gray-100')) {
-          detectedStatementType = 'statement-c';
-        } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
-          detectedStatementType = 'statement-d';
-        } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
-          detectedStatementType = 'note';
+        if (htmlContent.includes("border-t border-b border-gray-800")) {
+          detectedStatementType = "statement-a";
+        } else if (htmlContent.includes("absolute top-0 left-1/2")) {
+          detectedStatementType = "statement-b";
+        } else if (htmlContent.includes("bg-gray-100")) {
+          detectedStatementType = "statement-c";
+        } else if (htmlContent.includes("absolute top-0 left-0 w-16 h-1")) {
+          detectedStatementType = "statement-d";
+        } else if (htmlContent.includes("border-orange-300 bg-orange-50")) {
+          detectedStatementType = "note";
         }
       }
 
       setCurrentStatementType(detectedStatementType);
 
       // Extract plain text content from HTML or use content directly
-      let actualContent = '';
+      let actualContent = "";
 
-      if (content && content.trim() !== '') {
+      if (content && content.trim() !== "") {
         // Remove HTML tags if content contains them, keep only plain text
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = content;
         actualContent = tempDiv.textContent || tempDiv.innerText || content;
       } else if (htmlContent) {
         // Extract plain text from HTML
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
 
         // Find the content within the statement structure - prioritize <p> tags
-        let contentElement = tempDiv.querySelector('p');
+        let contentElement = tempDiv.querySelector("p");
         if (!contentElement) {
           // Fallback to any element that contains actual text content
-          const allElements = tempDiv.querySelectorAll('*');
+          const allElements = tempDiv.querySelectorAll("*");
           for (let element of allElements) {
             // Skip structural elements and find elements with meaningful text
             if (
@@ -295,19 +295,19 @@ const StatementComponent = React.forwardRef(
 
         if (contentElement) {
           actualContent =
-            contentElement.textContent || contentElement.innerText || '';
+            contentElement.textContent || contentElement.innerText || "";
         } else {
           // Final fallback: get all text content
-          actualContent = tempDiv.textContent || tempDiv.innerText || '';
+          actualContent = tempDiv.textContent || tempDiv.innerText || "";
         }
       }
 
       // Only use default content as absolute last resort
-      if (!actualContent || actualContent.trim() === '') {
+      if (!actualContent || actualContent.trim() === "") {
         const defaultStatementType = statementTypes.find(
-          st => st.id === detectedStatementType
+          (st) => st.id === detectedStatementType,
         );
-        actualContent = defaultStatementType?.defaultContent || '';
+        actualContent = defaultStatementType?.defaultContent || "";
       }
 
       setStatementContent(actualContent.trim());
@@ -316,7 +316,7 @@ const StatementComponent = React.forwardRef(
     };
 
     // Handle content changes and update preview
-    const handleContentChange = content => {
+    const handleContentChange = (content) => {
       setStatementContent(content);
       setPreviewContent(content);
     };
@@ -333,13 +333,13 @@ const StatementComponent = React.forwardRef(
         let newContent;
         // Check if selected text is already bold
         if (
-          selectedText.startsWith('<strong>') &&
-          selectedText.endsWith('</strong>')
+          selectedText.startsWith("<strong>") &&
+          selectedText.endsWith("</strong>")
         ) {
           // Remove bold tags
           newContent =
             statementContent.substring(0, start) +
-            selectedText.replace('<strong>', '').replace('</strong>', '') +
+            selectedText.replace("<strong>", "").replace("</strong>", "") +
             statementContent.substring(end);
         } else {
           // Add bold tags
@@ -355,7 +355,7 @@ const StatementComponent = React.forwardRef(
         // Restore focus and selection
         setTimeout(() => {
           textareaRef.focus();
-          const newEnd = selectedText.startsWith('<strong>')
+          const newEnd = selectedText.startsWith("<strong>")
             ? start + selectedText.length - 17 // Remove 17 chars (<strong></strong>)
             : start + selectedText.length + 17; // Add 17 chars
           textareaRef.setSelectionRange(start, newEnd);
@@ -365,9 +365,9 @@ const StatementComponent = React.forwardRef(
 
     // Generate preview HTML based on statement type and content
     const generatePreviewHtml = (statementType, content) => {
-      const cleanContent = content || '';
+      const cleanContent = content || "";
 
-      if (statementType === 'statement-a') {
+      if (statementType === "statement-a") {
         return (
           <div className="border-t border-b border-gray-800 py-8 px-6">
             <div
@@ -376,7 +376,7 @@ const StatementComponent = React.forwardRef(
             />
           </div>
         );
-      } else if (statementType === 'statement-b') {
+      } else if (statementType === "statement-b") {
         return (
           <div className="relative pt-8 pb-6 px-6">
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-orange-500"></div>
@@ -386,7 +386,7 @@ const StatementComponent = React.forwardRef(
             />
           </div>
         );
-      } else if (statementType === 'statement-c') {
+      } else if (statementType === "statement-c") {
         return (
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
             <div
@@ -395,14 +395,14 @@ const StatementComponent = React.forwardRef(
                 __html: cleanContent
                   .replace(
                     /<strong>/g,
-                    '<span class="font-bold text-gray-900 bg-orange-100 px-1 rounded">'
+                    '<span class="font-bold text-gray-900 bg-orange-100 px-1 rounded">',
                   )
-                  .replace(/<\/strong>/g, '</span>'),
+                  .replace(/<\/strong>/g, "</span>"),
               }}
             />
           </div>
         );
-      } else if (statementType === 'statement-d') {
+      } else if (statementType === "statement-d") {
         return (
           <div className="relative bg-white py-6 px-6">
             <div className="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
@@ -412,7 +412,7 @@ const StatementComponent = React.forwardRef(
             />
           </div>
         );
-      } else if (statementType === 'note') {
+      } else if (statementType === "note") {
         return (
           <div className="border border-orange-300 bg-orange-50 p-4 rounded">
             <div className="flex items-start space-x-3">
@@ -438,9 +438,9 @@ const StatementComponent = React.forwardRef(
     const handleSaveStatement = () => {
       if (onStatementEdit && currentStatementBlockId) {
         // Generate updated HTML content with the new formatted content (original template only)
-        let htmlContent = '';
+        let htmlContent = "";
 
-        if (currentStatementType === 'statement-a') {
+        if (currentStatementType === "statement-a") {
           htmlContent = `
           <div class="border-t border-b border-gray-800 py-8 px-6">
             <p class="text-gray-900 text-2xl leading-relaxed text-center font-bold">
@@ -448,7 +448,7 @@ const StatementComponent = React.forwardRef(
             </p>
           </div>
         `;
-        } else if (currentStatementType === 'statement-b') {
+        } else if (currentStatementType === "statement-b") {
           htmlContent = `
           <div class="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm">
             <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
@@ -458,14 +458,14 @@ const StatementComponent = React.forwardRef(
             </p>
           </div>
         `;
-        } else if (currentStatementType === 'statement-c') {
+        } else if (currentStatementType === "statement-c") {
           // Convert <strong> tags to the proper highlighted format for statement-c
           const formattedContent = statementContent
             .replace(
               /<strong>/g,
-              '<span class="font-bold text-gray-900 bg-orange-100 px-1 rounded">'
+              '<span class="font-bold text-gray-900 bg-orange-100 px-1 rounded">',
             )
-            .replace(/<\/strong>/g, '</span>');
+            .replace(/<\/strong>/g, "</span>");
           htmlContent = `
           <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
             <p class="text-gray-700 text-xl leading-relaxed">
@@ -473,7 +473,7 @@ const StatementComponent = React.forwardRef(
             </p>
           </div>
         `;
-        } else if (currentStatementType === 'statement-d') {
+        } else if (currentStatementType === "statement-d") {
           htmlContent = `
           <div class="relative bg-white py-6 px-6">
             <div class="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
@@ -482,7 +482,7 @@ const StatementComponent = React.forwardRef(
             </p>
           </div>
         `;
-        } else if (currentStatementType === 'note') {
+        } else if (currentStatementType === "note") {
           htmlContent = `
           <div class="border border-orange-300 bg-orange-50 p-4 rounded">
             <div class="flex items-start space-x-3">
@@ -510,8 +510,8 @@ const StatementComponent = React.forwardRef(
       setShowStatementEditorDialog(false);
       setCurrentStatementBlockId(null);
       setCurrentStatementType(null);
-      setStatementContent('');
-      setPreviewContent('');
+      setStatementContent("");
+      setPreviewContent("");
     };
 
     return (
@@ -548,7 +548,72 @@ const StatementComponent = React.forwardRef(
               </div>
 
               <div className="p-6 space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto">
-                {statementTypes.map(statementType => (
+                {/* AI Generation Option */}
+                <div
+                  onClick={() => {
+                    setShowStatementSidebar(false);
+                    if (onAICreation) {
+                      onAICreation({ id: "statement", title: "Statement" });
+                    }
+                  }}
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 rounded-lg border border-purple-200 hover:border-purple-300 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50"
+                >
+                  <div className="p-5">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="text-purple-600 mt-1">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-purple-900 text-base flex items-center gap-2">
+                          Generate with AI
+                          <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                            Recommended
+                          </span>
+                        </h3>
+                        <p className="text-sm text-purple-700 mt-1">
+                          Describe what you want and let AI create professional
+                          statement content instantly
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Mini Preview */}
+                    <div className="bg-white/70 rounded-lg p-3 border border-purple-100">
+                      <div className="flex items-center gap-2 text-purple-600">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          AI-powered statement generation
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {statementTypes.map((statementType) => (
                   <div
                     key={statementType.id}
                     className="cursor-pointer hover:shadow-lg transition-all duration-200 rounded-lg border border-gray-200 hover:border-gray-300 overflow-hidden"
@@ -567,7 +632,10 @@ const StatementComponent = React.forwardRef(
           open={showStatementEditorDialog}
           onOpenChange={setShowStatementEditorDialog}
         >
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] overflow-y-auto"
+            aria-describedby={undefined}
+          >
             <DialogHeader>
               <DialogTitle>Edit Statement</DialogTitle>
             </DialogHeader>
@@ -578,7 +646,7 @@ const StatementComponent = React.forwardRef(
                   Statement Text
                 </label>
                 {/* Bold button only for statement-c */}
-                {currentStatementType === 'statement-c' && (
+                {currentStatementType === "statement-c" && (
                   <div className="mb-2">
                     <Button
                       type="button"
@@ -598,7 +666,7 @@ const StatementComponent = React.forwardRef(
                 <textarea
                   ref={setTextareaRef}
                   value={statementContent}
-                  onChange={e => handleContentChange(e.target.value)}
+                  onChange={(e) => handleContentChange(e.target.value)}
                   placeholder="Enter your statement content..."
                   className="w-full h-40 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={6}
@@ -619,7 +687,7 @@ const StatementComponent = React.forwardRef(
         </Dialog>
       </>
     );
-  }
+  },
 );
 
 export default StatementComponent;

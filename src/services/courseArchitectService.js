@@ -114,7 +114,7 @@ Generate comprehensive content that feels like a professional-level learning pat
         systemPrompt,
         userPrompt,
         {
-          model: 'gpt-4',
+          modelProfile: 'blueprint',
           maxTokens: 4000,
           temperature: 0.7,
         }
@@ -135,7 +135,7 @@ Generate comprehensive content that feels like a professional-level learning pat
       return {
         success: true,
         data: validatedCourse,
-        provider: 'openai-architect',
+        provider: 'ai',
       };
     } catch (error) {
       console.error('❌ Comprehensive course generation failed:', error);
@@ -147,7 +147,7 @@ Generate comprehensive content that feels like a professional-level learning pat
       return {
         success: true,
         data: fallbackCourse,
-        provider: 'fallback-architect',
+        provider: 'fallback',
         warning: `Used fallback generation: ${error.message}`,
       };
     }

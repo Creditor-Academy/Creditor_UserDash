@@ -1,10 +1,10 @@
 /**
  * Streaming Lesson Generator Component
- * Provides real-time streaming course generation with LangChain Bytez
+ * Provides real-time streaming course generation with OpenAI/HuggingFace
  */
 
 import React, { useState, useEffect } from 'react';
-import { langChainBytezService } from '../../services/langchainBytez';
+import secureAIService from '../../services/secureAIService';
 import { Sparkles, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
 const StreamingLessonGenerator = ({
@@ -36,18 +36,24 @@ const StreamingLessonGenerator = ({
       let chunkCount = 0;
       const expectedChunks = 50; // Estimate for progress
 
-      await langChainBytezService.streamCourseGeneration(
-        title,
-        description,
-        subject,
-        apiKey,
-        (chunk, accumulated) => {
-          setStreamingContent(accumulated);
-          chunkCount++;
-          setProgress(Math.min((chunkCount / expectedChunks) * 100, 95));
-          fullContent = accumulated;
-        }
-      );
+      // Generate course content using OpenAI/HuggingFace
+      const prompt = `Create a comprehensive lesson for: ${title}\n\nDescription: ${description}\n\nSubject: ${subject}`;
+
+      const response = await secureAIService.generateText(prompt, {
+        stream: false,
+        maxTokens: 2000,
+      });
+
+      // Simulate streaming by chunking the response
+      const chunks = response.split(' ');
+      for (let i = 0; i < chunks.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const accumulated = chunks.slice(0, i + 1).join(' ');
+        setStreamingContent(accumulated);
+        chunkCount++;
+        setProgress(Math.min((chunkCount / chunks.length) * 100, 95));
+        fullContent = accumulated;
+      }
 
       setProgress(100);
       setStatus('complete');

@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { uploadAudio } from '@/services/audioUploadService';
 import { toast } from 'react-hot-toast';
+import devLogger from '@lessonbuilder/utils/devLogger';
 import { Volume2, Upload, Link2, X, Play, Pause, Loader2 } from 'lucide-react';
 
 const AudioComponent = ({
@@ -59,7 +60,7 @@ const AudioComponent = ({
       const audioElement = tempDiv.querySelector('audio source');
       const url = audioElement ? audioElement.getAttribute('src') : '';
 
-      console.log('Extracted from HTML:', { title, description, url });
+      devLogger.debug('Extracted from HTML:', { title, description, url });
 
       return {
         title,
@@ -68,7 +69,7 @@ const AudioComponent = ({
         uploadMethod: url ? 'file' : 'file', // Default to file method
       };
     } catch (error) {
-      console.error('Error extracting audio from HTML:', error);
+      devLogger.error('Error extracting audio from HTML:', error);
       return {};
     }
   };
@@ -76,8 +77,8 @@ const AudioComponent = ({
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (showAudioDialog && editingAudioBlock) {
-      console.log('=== Audio Edit Dialog Opened ===');
-      console.log('Editing block:', editingAudioBlock);
+      devLogger.debug('=== Audio Edit Dialog Opened ===');
+      devLogger.debug('Editing block:', editingAudioBlock);
 
       // Load existing audio data for editing
       try {
@@ -87,9 +88,9 @@ const AudioComponent = ({
         if (editingAudioBlock.content) {
           try {
             content = JSON.parse(editingAudioBlock.content);
-            console.log('✅ Parsed audio content from JSON:', content);
+            devLogger.debug('✅ Parsed audio content from JSON:', content);
           } catch (e) {
-            console.log(
+            devLogger.debug(
               '❌ Could not parse audio content as JSON, trying HTML extraction'
             );
           }
@@ -97,11 +98,11 @@ const AudioComponent = ({
 
         // If no JSON content or incomplete data, try to extract from HTML
         if ((!content.title || !content.url) && editingAudioBlock.html_css) {
-          console.log('Extracting audio data from HTML...');
+          devLogger.debug('Extracting audio data from HTML...');
           const htmlExtracted = extractAudioFromHTML(
             editingAudioBlock.html_css
           );
-          console.log('HTML extracted data:', htmlExtracted);
+          devLogger.debug('HTML extracted data:', htmlExtracted);
 
           // Merge with any existing content
           content = {
@@ -118,14 +119,14 @@ const AudioComponent = ({
           content.description = editingAudioBlock.description;
         }
 
-        console.log('✅ Final audio data for editing:', content);
+        devLogger.debug('✅ Final audio data for editing:', content);
         setAudioTitle(content.title || '');
         setAudioDescription(content.description || '');
         setAudioUploadMethod(content.uploadMethod || 'file');
         setAudioUrl(content.url || '');
         setAudioPreview(content.url || '');
       } catch (error) {
-        console.error('❌ Error loading audio data:', error);
+        devLogger.error('❌ Error loading audio data:', error);
         // Don't reset on error, just use empty values
         setAudioTitle('');
         setAudioDescription('');
@@ -134,7 +135,7 @@ const AudioComponent = ({
       }
     } else if (showAudioDialog && !editingAudioBlock) {
       // Reset for new audio
-      console.log('Opening new audio dialog');
+      devLogger.debug('Opening new audio dialog');
       resetForm();
     } else if (!showAudioDialog) {
       // Dialog closed, reset form
@@ -252,7 +253,20 @@ const AudioComponent = ({
             throw new Error('Upload failed');
           }
         } catch (uploadError) {
-          console.warn(
+          const isStorageLimitExceeded =
+            uploadError?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+            (uploadError?.message &&
+              (uploadError.message.toLowerCase().includes('limit exceeded') ||
+                uploadError.message.toLowerCase().includes('storage limit')));
+
+          if (isStorageLimitExceeded) {
+            toast.error(
+              'Storage limit exceeded. Please free up space or upgrade before uploading new audio.'
+            );
+            return;
+          }
+
+          devLogger.warn(
             'Cloud upload failed, using local preview:',
             uploadError
           );
@@ -298,7 +312,7 @@ const AudioComponent = ({
           : 'Audio added successfully!'
       );
     } catch (error) {
-      console.error('Error saving audio:', error);
+      devLogger.error('Error saving audio:', error);
       toast.error('Failed to save audio. Please try again.');
     } finally {
       setIsUploading(false);

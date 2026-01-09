@@ -169,8 +169,8 @@ const Footer = () => (
           <address style={styles.address}>
             Athena LMS
             <br />
-            Creditor Academy PMA,12315 NE 97th ST APT E 
-            Kirkland, WA 98033, United States.
+            Creditor Academy PMA,12315 NE 97th ST APT E Kirkland, WA 98033,
+            United States.
             <br />
             <br />
             GF-20, Omaxe Square, Jasola District

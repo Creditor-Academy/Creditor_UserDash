@@ -288,28 +288,37 @@ const CreateCourse = ({ onCourseCreated }) => {
 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {courses.map(course => (
-          <CourseCard
-            key={course.id}
-            course={course}
-            onViewModules={handleViewModules}
-            onViewUsers={handleViewUsers}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteClick}
-            isExpanded={expandedCourseId === course.id}
-          >
-            {expandedCourseId === course.id && (
-              <CourseModulesSection
-                courseId={course.id}
-                modules={courseModules[course.id]}
-                isLoading={!courseModules[course.id]}
-                onCreateModule={handleCreateModuleClick}
-                onEditModule={handleEditModuleClick}
-                onDeleteModule={handleDeleteModuleClick}
-              />
-            )}
-          </CourseCard>
-        ))}
+        {courses.map((course, index) => {
+          const courseKey =
+            course.id ||
+            course._id ||
+            course.courseId ||
+            course.uuid ||
+            `course-${index}`;
+
+          return (
+            <CourseCard
+              key={courseKey}
+              course={course}
+              onViewModules={handleViewModules}
+              onViewUsers={handleViewUsers}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+              isExpanded={expandedCourseId === course.id}
+            >
+              {expandedCourseId === course.id && (
+                <CourseModulesSection
+                  courseId={course.id}
+                  modules={courseModules[course.id]}
+                  isLoading={!courseModules[course.id]}
+                  onCreateModule={handleCreateModuleClick}
+                  onEditModule={handleEditModuleClick}
+                  onDeleteModule={handleDeleteModuleClick}
+                />
+              )}
+            </CourseCard>
+          );
+        })}
       </div>
 
       {/* Pagination */}

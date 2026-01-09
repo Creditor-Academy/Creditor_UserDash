@@ -1,14 +1,14 @@
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, Calendar, Lock } from 'lucide-react';
-import { getCourseTrialStatus } from '../../utils/trialUtils';
-import TrialBadge from '../ui/TrialBadge';
-import { useState } from 'react';
-import TrialExpiredDialog from '../ui/TrialExpiredDialog';
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
+import { BookOpen, Clock, Calendar, Lock } from "lucide-react";
+import { getCourseTrialStatus } from "../../utils/trialUtils";
+import TrialBadge from "../ui/TrialBadge";
+import { useState } from "react";
+import TrialExpiredDialog from "../ui/TrialExpiredDialog";
 
 function formatDuration(secs) {
-  if (!secs) return 'Duration not specified';
+  if (!secs) return "Duration not specified";
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
@@ -49,7 +49,7 @@ export function CourseCard({
           <img
             src={
               image ||
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
             }
             alt={title}
             className="object-cover w-full h-full"
@@ -119,13 +119,13 @@ export function CourseCard({
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors duration-200"
                   onClick={handleCourseClick}
                 >
-                  {trialStatus.isInTrial ? 'Continue Trial' : 'View Course'}
+                  {trialStatus.isInTrial ? "Continue Trial" : "View Course"}
                 </button>
               )}
 
               {trialStatus.isInTrial && !trialStatus.isExpired && (
                 <div className="text-xs text-center text-gray-600">
-                  Trial ends:{' '}
+                  Trial ends:{" "}
                   {new Date(trialStatus.subscriptionEnd).toLocaleDateString()}
                 </div>
               )}

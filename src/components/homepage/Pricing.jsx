@@ -30,11 +30,11 @@ const Pricing = () => {
         },
         { text: 'Add-on flexibility (extra GB or AI credits)', info: false },
       ],
-      sectionHeader: "Starter Includes:",
-      cta: "Join Now",
-      link: "https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8",
+      sectionHeader: 'Starter Includes:',
+      cta: 'Join Now',
+      link: 'https://quickclick.com/cart/cart.php?action=show_information&internal_key=79c1b77c136e0a31897a277a362267b7&internal_timestamp=1763572823&tid=2d9cc1ed67c1e58435c646acd5938ec8',
       popular: true,
-      featured: "Most Popular!",
+      featured: 'Most Popular!',
       buttonStyle: 'white',
     },
     {
@@ -183,73 +183,73 @@ const Pricing = () => {
         {/* Desktop Pricing Cards Grid */}
         <div className="hidden md:flex md:justify-center mb-8">
           <div className="grid grid-cols-2 gap-6 max-w-4xl">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              whileHover={{
-                y: -8,
-                transition: { duration: 0.3, ease: 'easeOut' },
-              }}
-              className="relative group"
-            >
-              {/* Card */}
-              <div
-                className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
-                  plan.popular
-                    ? 'border-4 border-yellow-400 shadow-2xl'
-                    : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
-                } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}
+            {plans.map((plan, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{
+                  y: -8,
+                  transition: { duration: 0.3, ease: 'easeOut' },
+                }}
+                className="relative group"
               >
-                {/* Popular Header - Only on featured plan */}
-                {plan.popular && plan.featured && (
-                  <div
-                    className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                    }}
-                  >
-                    {plan.featured}
-                  </div>
-                )}
+                {/* Card */}
+                <div
+                  className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
+                    plan.popular
+                      ? 'border-4 border-yellow-400 shadow-2xl'
+                      : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
+                  } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}
+                >
+                  {/* Popular Header - Only on featured plan */}
+                  {plan.popular && plan.featured && (
+                    <div
+                      className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                      }}
+                    >
+                      {plan.featured}
+                    </div>
+                  )}
 
-                {/* Alignment Spacer for non-popular cards */}
-                {!plan.popular && <div className="h-14" />}
+                  {/* Alignment Spacer for non-popular cards */}
+                  {!plan.popular && <div className="h-14" />}
 
-                {/* Card Content */}
-                <div className="p-6 flex-1 flex flex-col">
-                  {/* Plan Name - Fixed Height */}
-                  <div className="mb-1 h-[160px] overflow-hidden">
-                    <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                      {plan.name}
-                      {plan.nameHighlight && (
-                        <span className="ml-2 inline-block px-3 py-1 bg-black text-white text-xl font-bold">
-                          {plan.nameHighlight}
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {plan.target}
-                    </p>
-                  </div>
+                  {/* Card Content */}
+                  <div className="p-6 flex-1 flex flex-col">
+                    {/* Plan Name - Fixed Height */}
+                    <div className="mb-1 h-[160px] overflow-hidden">
+                      <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                        {plan.name}
+                        {plan.nameHighlight && (
+                          <span className="ml-2 inline-block px-3 py-1 bg-black text-white text-xl font-bold">
+                            {plan.nameHighlight}
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {plan.target}
+                      </p>
+                    </div>
 
-                  {/* Pricing - Fixed Height for consistent alignment */}
-                  {!plan.isPlusCard && (
-                    <div className="mb-3 h-[80px]">
-                      <div className="flex items-baseline gap-1 mb-1">
-                        <span className="text-5xl font-bold text-gray-900">
-                          {plan.price}
-                        </span>
-                        <span className="text-gray-700 text-xl">
-                          {plan.period}
-                        </span>
-                      </div>
-                      {/* Annual pricing display - commented out for weekly offer */}
-                      {/* {isAnnual && plan.originalPrice && (
+                    {/* Pricing - Fixed Height for consistent alignment */}
+                    {!plan.isPlusCard && (
+                      <div className="mb-3 h-[80px]">
+                        <div className="flex items-baseline gap-1 mb-1">
+                          <span className="text-5xl font-bold text-gray-900">
+                            {plan.price}
+                          </span>
+                          <span className="text-gray-700 text-xl">
+                            {plan.period}
+                          </span>
+                        </div>
+                        {/* Annual pricing display - commented out for weekly offer */}
+                        {/* {isAnnual && plan.originalPrice && (
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-gray-500 line-through text-base">
                             {plan.originalPrice}/mo
@@ -263,55 +263,54 @@ const Pricing = () => {
                           </span>
                         </div>
                       )} */}
-                      <p className="text-sm text-gray-600">
-                        {plan.billingNote}
-                      </p>
+                        <p className="text-sm text-gray-600">
+                          {plan.billingNote}
+                        </p>
+                      </div>
+                    )}
+
+                    {plan.isPlusCard && <div className="mb-3 h-[80px]" />}
+
+                    {/* CTA Button */}
+                    <div className="mb-6">
+                      <a
+                        href={plan.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 text-center ${
+                          plan.buttonStyle === 'yellow'
+                            ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {plan.cta} →
+                      </a>
                     </div>
-                  )}
 
-                  {plan.isPlusCard && <div className="mb-3 h-[80px]" />}
-
-                  {/* CTA Button */}
-                  <div className="mb-6">
-                    <a
-  href={plan.link}
-  target="_blank"
-  rel="noopener noreferrer"
-  className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 text-center ${
-    plan.buttonStyle === 'yellow'
-      ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
-      : 'bg-blue-600 text-white hover:bg-blue-700'
-  }`}
->
-  {plan.cta} →
-</a>
-
-                  </div>
-
-                  {/* Features Section */}
-                  <div
-                    className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}
-                  >
-                    <h4 className="font-bold text-gray-900 mb-4 text-base">
-                      {plan.sectionHeader}
-                    </h4>
-                    <ul className="space-y-3">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="text-sm text-gray-800 flex items-center gap-2 flex-1">
-                            {feature.text}
-                          </span>
-                          {feature.info && (
-                            <Info className="w-4 h-4 text-gray-900 flex-shrink-0 cursor-pointer" />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Features Section */}
+                    <div
+                      className={`pt-6 border-t ${plan.bgGray ? 'border-gray-300' : 'border-gray-200'}`}
+                    >
+                      <h4 className="font-bold text-gray-900 mb-4 text-base">
+                        {plan.sectionHeader}
+                      </h4>
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <span className="text-sm text-gray-800 flex items-center gap-2 flex-1">
+                              {feature.text}
+                            </span>
+                            {feature.info && (
+                              <Info className="w-4 h-4 text-gray-900 flex-shrink-0 cursor-pointer" />
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
           </div>
         </div>
 
@@ -492,7 +491,6 @@ const Pricing = () => {
 };
 
 export default Pricing;
-
 
 // import React from 'react';
 // import { motion } from 'framer-motion';

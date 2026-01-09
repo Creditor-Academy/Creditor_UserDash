@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
   CreditCard,
@@ -15,10 +15,10 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
-import Scorm from '../../assets/analytics.webp';
-import Course from '../../assets/instruct.jpg';
-import Dashboard from '../../assets/chris.jpg';
+} from "lucide-react";
+import Scorm from "../../assets/analytics.webp";
+import Course from "../../assets/instruct.jpg";
+import Dashboard from "../../assets/chris.jpg";
 
 const Buildfeature = () => {
   const [activeSection, setActiveSection] = useState(0);
@@ -28,32 +28,32 @@ const Buildfeature = () => {
   const features = [
     {
       id: 0,
-      title: 'Build Exceptional Learning Experiences',
+      title: "Build Exceptional Learning Experiences",
       description:
         "Create immersive, branded, and high-performing learning environments with Athena LMS. Whether you're teaching a single class or scaling an entire academy, you'll have every tool to craft transformative experiences—without writing a single line of code.",
       items: [
         {
-          text: 'Drag-and-Drop Course Builder – Design stunning courses, quizzes, and multimedia lessons in minutes.',
+          text: "Drag-and-Drop Course Builder – Design stunning courses, quizzes, and multimedia lessons in minutes.",
           icon: BookOpen,
         },
         {
-          text: 'Adaptive Learning Paths – Automatically guide learners based on progress, goals, and performance.',
+          text: "Adaptive Learning Paths – Automatically guide learners based on progress, goals, and performance.",
           icon: Target,
         },
         {
-          text: 'Interactive Communities – Build forums and discussion spaces that keep students connected and engaged.',
+          text: "Interactive Communities – Build forums and discussion spaces that keep students connected and engaged.",
           icon: Users,
         },
         {
-          text: 'Gamification & Rewards – Motivate learners with badges, points, and progress milestones.',
+          text: "Gamification & Rewards – Motivate learners with badges, points, and progress milestones.",
           icon: TrendingUp,
         },
         {
-          text: 'Integrated Video & Live Streaming – Host lectures, webinars, and interactive sessions directly inside the LMS.',
+          text: "Integrated Video & Live Streaming – Host lectures, webinars, and interactive sessions directly inside the LMS.",
           icon: Globe,
         },
         {
-          text: 'AI-Assisted Course Design – Generate outlines, quizzes, and learning materials tailored to your content style.',
+          text: "AI-Assisted Course Design – Generate outlines, quizzes, and learning materials tailored to your content style.",
           icon: Zap,
         },
       ],
@@ -61,32 +61,32 @@ const Buildfeature = () => {
     },
     {
       id: 1,
-      title: 'Sell Smarter. Scale Faster.',
+      title: "Sell Smarter. Scale Faster.",
       description:
-        'Athena LMS turns your course catalog into a high-performing sales engine — blending education with automation. From effortless payments to AI-driven analytics, every feature is built to help you convert, retain, and grow.',
+        "Athena LMS turns your course catalog into a high-performing sales engine — blending education with automation. From effortless payments to AI-driven analytics, every feature is built to help you convert, retain, and grow.",
       items: [
         {
-          text: 'Instant Course Storefronts – Launch a professional sales page for each course in minutes, no coding required.',
+          text: "Instant Course Storefronts – Launch a professional sales page for each course in minutes, no coding required.",
           icon: Globe,
         },
         {
-          text: 'Dynamic Pricing Engine – Create limited-time offers, seasonal discounts, and tiered pricing to boost urgency.',
+          text: "Dynamic Pricing Engine – Create limited-time offers, seasonal discounts, and tiered pricing to boost urgency.",
           icon: CreditCard,
         },
         {
-          text: 'Affiliate & Partner Tracking – Reward your ambassadors with automated commission tracking and payouts.',
+          text: "Affiliate & Partner Tracking – Reward your ambassadors with automated commission tracking and payouts.",
           icon: Users,
         },
         {
-          text: 'AI-Driven Sales Insights – Predict buyer behavior, identify best-selling content, and refine your pricing strategy.',
+          text: "AI-Driven Sales Insights – Predict buyer behavior, identify best-selling content, and refine your pricing strategy.",
           icon: BarChart3,
         },
         {
-          text: 'Global Checkout Experience – Accept worldwide payments with built-in tax, currency, and compliance support.',
+          text: "Global Checkout Experience – Accept worldwide payments with built-in tax, currency, and compliance support.",
           icon: Shield,
         },
         {
-          text: 'Recurring Revenue Tools – Build memberships, subscriptions, and bundles for predictable monthly income.',
+          text: "Recurring Revenue Tools – Build memberships, subscriptions, and bundles for predictable monthly income.",
           icon: TrendingUp,
         },
       ],
@@ -94,32 +94,32 @@ const Buildfeature = () => {
     },
     {
       id: 2,
-      title: 'Analytics: Insights That Drive Impact',
+      title: "Analytics: Insights That Drive Impact",
       description:
-        'Athena LMS puts data to work for you. Go beyond surface metrics with deep analytics that connect learning outcomes, engagement trends, and business growth—all in one visual command center. Turn every course, campaign, and student interaction into a measurable advantage.',
+        "Athena LMS puts data to work for you. Go beyond surface metrics with deep analytics that connect learning outcomes, engagement trends, and business growth—all in one visual command center. Turn every course, campaign, and student interaction into a measurable advantage.",
       items: [
         {
-          text: 'Real-Time Performance Tracking – Monitor enrollment, completion, and engagement rates across all courses instantly.',
+          text: "Real-Time Performance Tracking – Monitor enrollment, completion, and engagement rates across all courses instantly.",
           icon: BarChart3,
         },
         {
-          text: 'Revenue & ROI Analytics – See exactly which programs and campaigns generate the most profit.',
+          text: "Revenue & ROI Analytics – See exactly which programs and campaigns generate the most profit.",
           icon: TrendingUp,
         },
         {
-          text: 'AI-Powered Learner Insights – Identify high-performing students, at-risk learners, and growth opportunities automatically.',
+          text: "AI-Powered Learner Insights – Identify high-performing students, at-risk learners, and growth opportunities automatically.",
           icon: Zap,
         },
         {
-          text: 'Marketing Funnel Tracking – Measure ad-to-enrollment conversion and optimize every lead source.',
+          text: "Marketing Funnel Tracking – Measure ad-to-enrollment conversion and optimize every lead source.",
           icon: Target,
         },
         {
-          text: 'Custom KPI Dashboards – Build visual dashboards for teams, departments, or enterprise clients with full control.',
+          text: "Custom KPI Dashboards – Build visual dashboards for teams, departments, or enterprise clients with full control.",
           icon: Settings,
         },
         {
-          text: 'Automated Report Delivery – Send scheduled summaries to stakeholders with key insights that matter most.',
+          text: "Automated Report Delivery – Send scheduled summaries to stakeholders with key insights that matter most.",
           icon: FileText,
         },
       ],
@@ -144,19 +144,19 @@ const Buildfeature = () => {
       });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleScroll);
 
     // Initial check with a small delay
     setTimeout(handleScroll, 100);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
     };
   }, []);
 
-  const toggleMobileSection = index => {
+  const toggleMobileSection = (index) => {
     setExpandedMobile(expandedMobile === index ? -1 : index);
   };
 
@@ -167,10 +167,10 @@ const Buildfeature = () => {
         className="relative py-12"
         style={{
           // backgroundImage: 'url("/winter-landscape-with-deer-snow.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-          backgroundRepeat: 'no-repeat',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+          backgroundRepeat: "no-repeat",
         }}
       >
         {/* Decorative background elements */}
@@ -188,7 +188,7 @@ const Buildfeature = () => {
           <div className="text-center mb-16 pt-8">
             <h1
               className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-900 mb-6 leading-tight"
-              style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+              style={{ fontFamily: "Georgia, Times New Roman, serif" }}
             >
               Athena's stand-out suite of features
             </h1>
@@ -207,13 +207,13 @@ const Buildfeature = () => {
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    viewport={{ once: false, margin: '-150px' }}
+                    viewport={{ once: false, margin: "-150px" }}
                     className="space-y-4 ml-8 lg:ml-12"
                   >
                     {/* Title */}
                     <h2
                       className="text-3xl lg:text-4xl font-normal text-gray-900 leading-tight"
-                      style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                      style={{ fontFamily: "Georgia, Times New Roman, serif" }}
                     >
                       {feature.title}
                     </h2>
@@ -222,7 +222,7 @@ const Buildfeature = () => {
                     <div className="bg-white bg-opacity-60 p-4 rounded-lg max-w-lg">
                       <p
                         className="text-base text-gray-700 leading-relaxed"
-                        style={{ fontFamily: 'Arial, sans-serif' }}
+                        style={{ fontFamily: "Arial, sans-serif" }}
                       >
                         {feature.description}
                       </p>
@@ -234,9 +234,9 @@ const Buildfeature = () => {
                         const IconComponent = item.icon;
                         // Different background shades for each feature section to match image containers
                         const backgroundShades = [
-                          'bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200', // Build section - cyan theme
-                          'bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200', // Selling section - blue theme
-                          'bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200', // Analytics section - violet theme
+                          "bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200", // Build section - cyan theme
+                          "bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200", // Selling section - blue theme
+                          "bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200", // Analytics section - violet theme
                         ];
 
                         return (
@@ -268,9 +268,9 @@ const Buildfeature = () => {
                 {features.map((feature, index) => {
                   // Different background shades for each image
                   const backgroundShades = [
-                    'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
-                    'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
-                    'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                    "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
+                    "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
+                    "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100", // Analytics section - violet theme
                   ];
 
                   return (
@@ -283,7 +283,7 @@ const Buildfeature = () => {
                       }}
                       transition={{
                         duration: 0.5,
-                        ease: 'easeInOut',
+                        ease: "easeInOut",
                       }}
                       className="absolute inset-0 w-full h-full"
                     >
@@ -303,7 +303,7 @@ const Buildfeature = () => {
                         >
                           <div className="text-center p-6">
                             <div className="text-gray-400 text-lg font-semibold mb-2">
-                              {feature.title.split(':')[0]}
+                              {feature.title.split(":")[0]}
                             </div>
                             <p className="text-gray-500 text-sm">
                               Add screenshot image here
@@ -333,7 +333,7 @@ const Buildfeature = () => {
                   >
                     <h3
                       className="text-lg font-normal text-gray-900 leading-tight pr-4"
-                      style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                      style={{ fontFamily: "Georgia, Times New Roman, serif" }}
                     >
                       {feature.title}
                     </h3>
@@ -351,9 +351,9 @@ const Buildfeature = () => {
                     {expandedMobile === index && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
+                        animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="overflow-hidden"
                       >
                         <div className="px-6 pb-6">
@@ -361,7 +361,7 @@ const Buildfeature = () => {
                           <div className="bg-white bg-opacity-60 p-4 rounded-lg mb-6">
                             <p
                               className="text-base text-gray-700 leading-relaxed"
-                              style={{ fontFamily: 'Arial, sans-serif' }}
+                              style={{ fontFamily: "Arial, sans-serif" }}
                             >
                               {feature.description}
                             </p>
@@ -373,9 +373,9 @@ const Buildfeature = () => {
                               const IconComponent = item.icon;
                               // Different background shades for each feature section
                               const backgroundShades = [
-                                'bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200', // Build section - cyan theme
-                                'bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200', // Selling section - blue theme
-                                'bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200', // Analytics section - violet theme
+                                "bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200", // Build section - cyan theme
+                                "bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200", // Selling section - blue theme
+                                "bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200", // Analytics section - violet theme
                               ];
 
                               return (
@@ -403,9 +403,9 @@ const Buildfeature = () => {
                                 <div
                                   className={`w-full h-full flex items-center justify-center p-4 ${
                                     [
-                                      'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
-                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
-                                      'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                                      "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
+                                      "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
+                                      "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100", // Analytics section - violet theme
                                     ][feature.id]
                                   }`}
                                 >
@@ -419,15 +419,15 @@ const Buildfeature = () => {
                                 <div
                                   className={`w-full h-full flex items-center justify-center ${
                                     [
-                                      'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
-                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
-                                      'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                                      "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
+                                      "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
+                                      "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100", // Analytics section - violet theme
                                     ][feature.id]
                                   }`}
                                 >
                                   <div className="text-center p-6">
                                     <div className="text-gray-400 text-lg font-semibold mb-2">
-                                      {feature.title.split(':')[0]}
+                                      {feature.title.split(":")[0]}
                                     </div>
                                     <p className="text-gray-500 text-sm">
                                       Add screenshot image here
@@ -453,7 +453,7 @@ const Buildfeature = () => {
         className="relative py-16"
         style={{
           background:
-            'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+            "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
         }}
       >
         <div className="container mx-auto px-6 max-w-6xl">

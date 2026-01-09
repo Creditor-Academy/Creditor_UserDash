@@ -1,23 +1,21 @@
-// Lightweight dev-only logger to avoid missing import failures
-const isDev =
-  (typeof import.meta !== 'undefined' &&
-    import.meta.env &&
-    import.meta.env.DEV) ||
-  (typeof process !== 'undefined' &&
-    process.env &&
-    process.env.NODE_ENV !== 'production');
-
-const logIfDev = (method, ...args) => {
-  if (!isDev) return;
-  const logger = console[method] || console.log;
-  logger('[LessonBuilder]', ...args);
-};
+/**
+ * Development logger helper; keeps the console clean in production builds.
+ */
+const isDevelopment = !!import.meta.env?.DEV;
 
 const devLogger = {
-  debug: (...args) => logIfDev('debug', ...args),
-  info: (...args) => logIfDev('info', ...args),
-  warn: (...args) => logIfDev('warn', ...args),
-  error: (...args) => logIfDev('error', ...args),
+  debug: (...args) => {
+    if (isDevelopment) console.debug(...args);
+  },
+  info: (...args) => {
+    if (isDevelopment) console.info(...args);
+  },
+  warn: (...args) => {
+    if (isDevelopment) console.warn(...args);
+  },
+  error: (...args) => {
+    if (isDevelopment) console.error(...args);
+  },
 };
 
 export default devLogger;

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { currentUserId } from '@/data/currentUser';
+import React, { useState, useEffect } from "react";
+import { currentUserId } from "@/data/currentUser";
 import {
   getAllEvents,
   getAllEventsWithCount,
-} from '@/services/calendarService';
-import { fetchUserProfile } from '@/services/userService';
-import { getAuthHeader } from '@/services/authHeader';
-import EventAttendanceModal from '@/components/dashboard/EventAttendanceModal';
+} from "@/services/calendarService";
+import { fetchUserProfile } from "@/services/userService";
+import { getAuthHeader } from "@/services/authHeader";
+import EventAttendanceModal from "@/components/dashboard/EventAttendanceModal";
 
-const DEFAULT_TIMEZONE = 'America/New_York';
+const DEFAULT_TIMEZONE = "America/New_York";
 const AddEvent = () => {
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
@@ -17,19 +17,19 @@ const AddEvent = () => {
   const [events, setEvents] = useState([]);
   const [userTimezone, setUserTimezone] = useState(DEFAULT_TIMEZONE);
   const [courses, setCourses] = useState([]);
-  const [userRole, setUserRole] = useState('');
+  const [userRole, setUserRole] = useState("");
   const [form, setForm] = useState({
-    id: '',
-    title: '',
-    description: '',
-    startTime: '',
-    endTime: '',
+    id: "",
+    title: "",
+    description: "",
+    startTime: "",
+    endTime: "",
     timeZone: DEFAULT_TIMEZONE,
-    location: '',
+    location: "",
     isRecurring: false,
-    recurrence: 'none',
-    zoomLink: '',
-    courseId: '',
+    recurrence: "none",
+    zoomLink: "",
+    courseId: "",
   });
   const [editIndex, setEditIndex] = useState(null);
   const [showPastDateModal, setShowPastDateModal] = useState(false);
@@ -41,7 +41,7 @@ const AddEvent = () => {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState(null);
   const [deletingOccurrenceKey, setDeletingOccurrenceKey] = useState(null); // string or null
-  const [modalMessage, setModalMessage] = useState('');
+  const [modalMessage, setModalMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const EVENTS_PER_PAGE = 5;
   const [showDateEvents, setShowDateEvents] = useState(false);
@@ -66,8 +66,8 @@ const AddEvent = () => {
       const data = await getAllEventsWithCount(50); // Fetch last 50 events
       setAllEvents(data);
     } catch (err) {
-      console.error('Error fetching all events:', err);
-      alert('Failed to fetch previous events');
+      console.error("Error fetching all events:", err);
+      alert("Failed to fetch previous events");
     } finally {
       setLoadingPreviousEvents(false);
     }
@@ -93,14 +93,14 @@ const AddEvent = () => {
   const totalPages = Math.ceil(currentEvents.length / EVENTS_PER_PAGE);
   const paginatedEvents = currentEvents.slice(
     (currentPage - 1) * EVENTS_PER_PAGE,
-    currentPage * EVENTS_PER_PAGE
+    currentPage * EVENTS_PER_PAGE,
   );
 
   const handlePrevPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1));
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
   const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
   // Reset to first page if events change
@@ -110,7 +110,7 @@ const AddEvent = () => {
 
   // Get user role from localStorage
   const getUserRole = () => {
-    return localStorage.getItem('userRole') || '';
+    return localStorage.getItem("userRole") || "";
   };
 
   // Decode JWT token to see what's in it
@@ -120,7 +120,7 @@ const AddEvent = () => {
   };
 
   // URL validation function
-  const isValidUrl = string => {
+  const isValidUrl = (string) => {
     try {
       new URL(string);
       return true;
@@ -131,18 +131,18 @@ const AddEvent = () => {
 
   // Helper to format time in a given timezone
   const formatInTimezone = (dateString, tz, label) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     try {
       // Parse as local time (from datetime-local input)
-      const [datePart, timePart] = dateString.split('T');
-      const [year, month, day] = datePart.split('-').map(Number);
-      const [hour, minute] = timePart.split(':').map(Number);
+      const [datePart, timePart] = dateString.split("T");
+      const [year, month, day] = datePart.split("-").map(Number);
+      const [hour, minute] = timePart.split(":").map(Number);
       // Create a Date object in local time
       const localDate = new Date(year, month - 1, day, hour, minute);
       // Convert to the target timezone
-      return `${label}: ${localDate.toLocaleString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
+      return `${label}: ${localDate.toLocaleString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: true,
         timeZone: tz,
       })}`;
@@ -152,25 +152,25 @@ const AddEvent = () => {
   };
 
   // Validate recurring event data
-  const validateRecurringEvent = formData => {
+  const validateRecurringEvent = (formData) => {
     const errors = [];
 
-    if (formData.recurrence !== 'none') {
+    if (formData.recurrence !== "none") {
       if (!formData.startTime) {
-        errors.push('Start time is required for recurring events');
+        errors.push("Start time is required for recurring events");
       }
       if (!formData.endTime) {
-        errors.push('End time is required for recurring events');
+        errors.push("End time is required for recurring events");
       }
       if (formData.startTime && formData.endTime) {
         const start = new Date(formData.startTime);
         const end = new Date(formData.endTime);
         if (end <= start) {
-          errors.push('End time must be after start time');
+          errors.push("End time must be after start time");
         }
       }
       if (!formData.title.trim()) {
-        errors.push('Title is required for recurring events');
+        errors.push("Title is required for recurring events");
       }
     }
 
@@ -178,48 +178,48 @@ const AddEvent = () => {
   };
 
   // Convert UTC ISO string to local datetime-local format
-  const convertUtcToLocal = utcIsoString => {
-    if (!utcIsoString) return '';
+  const convertUtcToLocal = (utcIsoString) => {
+    if (!utcIsoString) return "";
     try {
       // Parse the UTC ISO string
       const utcDate = new Date(utcIsoString);
 
       // Check if the date is valid
       if (isNaN(utcDate.getTime())) {
-        return '';
+        return "";
       }
 
       // Convert to local time and format as YYYY-MM-DDTHH:MM
       const year = utcDate.getFullYear();
-      const month = String(utcDate.getMonth() + 1).padStart(2, '0');
-      const day = String(utcDate.getDate()).padStart(2, '0');
-      const hours = String(utcDate.getHours()).padStart(2, '0');
-      const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+      const month = String(utcDate.getMonth() + 1).padStart(2, "0");
+      const day = String(utcDate.getDate()).padStart(2, "0");
+      const hours = String(utcDate.getHours()).padStart(2, "0");
+      const minutes = String(utcDate.getMinutes()).padStart(2, "0");
 
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (error) {
-      return '';
+      return "";
     }
   };
 
   // Debug function to test recurring event creation
   const debugRecurringEvent = () => {
     const testPayload = {
-      title: 'Test Recurring Event',
-      description: 'https://meet.google.com/test-recurring',
+      title: "Test Recurring Event",
+      description: "https://meet.google.com/test-recurring",
       startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
       endTime: new Date(
-        Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000
+        Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000,
       ).toISOString(), // Tomorrow + 1 hour
-      location: 'Test Location',
+      location: "Test Location",
       isRecurring: true,
-      calendarType: 'GROUP',
-      visibility: 'PRIVATE',
-      courseName: 'Test Course',
+      calendarType: "GROUP",
+      visibility: "PRIVATE",
+      courseName: "Test Course",
       userRole: getUserRole(),
-      timeZone: 'America/Los_Angeles',
+      timeZone: "America/Los_Angeles",
       recurrenceRule: {
-        frequency: 'WEEKLY',
+        frequency: "WEEKLY",
         interval: 1,
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
         count: null,
@@ -229,31 +229,31 @@ const AddEvent = () => {
         byWeekNo: [],
         byMonth: [],
         bySetPos: [],
-        weekStart: 'MO',
+        weekStart: "MO",
       },
     };
 
     // Test the API call
     fetch(`${import.meta.env.VITE_API_BASE_URL}/calendar/events`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-User-Role': getUserRole(),
+        "Content-Type": "application/json",
+        "X-User-Role": getUserRole(),
       },
       body: JSON.stringify(testPayload),
-      credentials: 'include',
+      credentials: "include",
     })
-      .then(response => {
+      .then((response) => {
         return response.text();
       })
-      .then(text => {
+      .then((text) => {
         try {
           const data = JSON.parse(text);
         } catch (e) {
           // Response is not JSON
         }
       })
-      .catch(error => {});
+      .catch((error) => {});
   };
 
   // Fetch user profile to get timezone and role
@@ -264,7 +264,7 @@ const AddEvent = () => {
         const timezone = data.timezone || DEFAULT_TIMEZONE;
         setUserTimezone(timezone);
         // Update form timezone as well
-        setForm(prev => ({ ...prev, timeZone: timezone }));
+        setForm((prev) => ({ ...prev, timeZone: timezone }));
 
         // Set user role
         const role = getUserRole();
@@ -281,20 +281,20 @@ const AddEvent = () => {
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/course/getAllCourses`,
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
               ...getAuthHeader(),
             },
-            credentials: 'include',
-          }
+            credentials: "include",
+          },
         );
         const data = await response.json();
         if (data && data.data) {
           setCourses(data.data);
           // Set first course as default if available
           if (data.data.length > 0) {
-            setForm(prev => ({ ...prev, courseId: data.data[0].id }));
+            setForm((prev) => ({ ...prev, courseId: data.data[0].id }));
           }
         }
       } catch (err) {}
@@ -322,7 +322,7 @@ const AddEvent = () => {
   for (let d = 1; d <= daysInMonth; d++)
     calendarDays.push(new Date(calendarYear, calendarMonth, d));
 
-  const handleDateClick = date => {
+  const handleDateClick = (date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const clicked = new Date(date);
@@ -349,7 +349,7 @@ const AddEvent = () => {
     }
   };
 
-  const openEventModal = date => {
+  const openEventModal = (date) => {
     // Create a proper datetime string for the selected date in user's timezone
     const createDateTimeString = (date, hour = 9, minute = 0) => {
       // Create a date object for the selected date
@@ -358,52 +358,52 @@ const AddEvent = () => {
 
       // Format as YYYY-MM-DDTHH:MM for datetime-local input
       const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const hours = String(hour).padStart(2, '0');
-      const minutes = String(minute).padStart(2, '0');
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      const hours = String(hour).padStart(2, "0");
+      const minutes = String(minute).padStart(2, "0");
 
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
     setForm({
-      id: '',
-      title: '',
-      description: '',
-      startTime: date ? createDateTimeString(date, 9, 0) : '', // 9:00 AM
-      endTime: date ? createDateTimeString(date, 10, 0) : '', // 10:00 AM (1 hour later)
+      id: "",
+      title: "",
+      description: "",
+      startTime: date ? createDateTimeString(date, 9, 0) : "", // 9:00 AM
+      endTime: date ? createDateTimeString(date, 10, 0) : "", // 10:00 AM (1 hour later)
       timeZone: userTimezone, // Use user's timezone
-      location: '',
+      location: "",
       isRecurring: false,
-      recurrence: 'none',
-      zoomLink: '',
-      courseId: courses.length > 0 ? courses[0].id : '',
+      recurrence: "none",
+      zoomLink: "",
+      courseId: courses.length > 0 ? courses[0].id : "",
     });
     setEditIndex(null); // Reset edit index for new events
     setShowModal(true);
   };
 
-  const handleFormChange = e => {
+  const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   // Fetch event details for editing
-  const fetchEventDetails = async eventId => {
+  const fetchEventDetails = async (eventId) => {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-          credentials: 'include',
-        }
+          credentials: "include",
+        },
       );
       const data = await res.json();
       return data.data || null;
@@ -413,18 +413,18 @@ const AddEvent = () => {
   };
 
   // Fetch deleted occurrences for a recurring event
-  const fetchDeletedOccurrences = async eventId => {
+  const fetchDeletedOccurrences = async (eventId) => {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}/recurrence-exception`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-          credentials: 'include',
-        }
+          credentials: "include",
+        },
       );
       const data = await res.json();
       // Return array of deleted occurrence objects
@@ -433,40 +433,40 @@ const AddEvent = () => {
   };
 
   // Edit handler: fetch event details and populate modal
-  const handleEdit = async index => {
+  const handleEdit = async (index) => {
     const event = currentEvents[index];
     // Fetch latest event details from backend
     const backendEvent = await fetchEventDetails(event.id);
     const e = backendEvent || event;
     setSelectedDate(
-      e.date ? new Date(e.date) : e.startTime ? new Date(e.startTime) : null
+      e.date ? new Date(e.date) : e.startTime ? new Date(e.startTime) : null,
     );
 
     setForm({
       id: e.id,
-      title: e.title || '',
-      description: e.description || '',
+      title: e.title || "",
+      description: e.description || "",
       startTime: convertUtcToLocal(e.startTime),
       endTime: convertUtcToLocal(e.endTime),
       timeZone: e.timeZone || userTimezone,
-      location: e.location || '',
+      location: e.location || "",
       isRecurring: e.isRecurring || false,
-      recurrence: e.recurrence || 'none',
-      zoomLink: e.zoomLink || '',
+      recurrence: e.recurrence || "none",
+      zoomLink: e.zoomLink || "",
       courseId:
-        e.courseId || e.course_id || (courses.length > 0 ? courses[0].id : ''),
+        e.courseId || e.course_id || (courses.length > 0 ? courses[0].id : ""),
     });
     setEditIndex(index);
     setShowModal(true);
     // If recurring, fetch deleted occurrences
     let deletedOccurrences = [];
-    if ((e.isRecurring || e.recurrence !== 'none') && e.id) {
+    if ((e.isRecurring || e.recurrence !== "none") && e.id) {
       deletedOccurrences = await fetchDeletedOccurrences(e.id);
     }
     setRecurringDeleteEvent({ ...e, index, deletedOccurrences });
   };
 
-  const handleDelete = async index => {
+  const handleDelete = async (index) => {
     const event = currentEvents[index];
     // For non-recurring events, use DELETE /calendar/events/:eventId
     if (
@@ -499,19 +499,19 @@ const AddEvent = () => {
       await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${event.id}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Role': getUserRole(), // Add role in header as well
+            "Content-Type": "application/json",
+            "X-User-Role": getUserRole(), // Add role in header as well
             ...getAuthHeader(),
           },
-          credentials: 'include',
-        }
+          credentials: "include",
+        },
       );
       // Refetch events after deletion
       const data = await getAllEvents();
       // Normalize course_id to courseId for all events
-      const normalizedEvents = data.map(ev => ({
+      const normalizedEvents = data.map((ev) => ({
         ...ev,
         courseId: ev.courseId || ev.course_id,
       }));
@@ -537,15 +537,15 @@ const AddEvent = () => {
       await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}/recurrence-exception`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Role': getUserRole(),
+            "Content-Type": "application/json",
+            "X-User-Role": getUserRole(),
             ...getAuthHeader(),
           },
-          credentials: 'include',
+          credentials: "include",
           body: JSON.stringify({ occurrenceDate: occurrenceStartTime }),
-        }
+        },
       );
       // Refetch events after deletion
       const data = await getAllEvents();
@@ -558,7 +558,7 @@ const AddEvent = () => {
       }
 
       setShowRecurringDeleteModal(false);
-      setModalMessage('Event deleted');
+      setModalMessage("Event deleted");
     } catch (err) {
     } finally {
       setDeletingOccurrenceKey(null);
@@ -566,21 +566,21 @@ const AddEvent = () => {
   };
 
   // Delete all occurrences (the whole series)
-  const handleDeleteAllOccurrences = async eventId => {
+  const handleDeleteAllOccurrences = async (eventId) => {
     setDeletingAll(true);
     try {
       // DELETE recurring event series
       await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/recurring/${eventId}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Role': getUserRole(),
+            "Content-Type": "application/json",
+            "X-User-Role": getUserRole(),
             ...getAuthHeader(),
           },
-          credentials: 'include',
-        }
+          credentials: "include",
+        },
       );
       // Refetch events after deletion
       const data = await getAllEvents();
@@ -607,18 +607,18 @@ const AddEvent = () => {
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}/recurrence-exception`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Role': getUserRole(),
+            "Content-Type": "application/json",
+            "X-User-Role": getUserRole(),
             ...getAuthHeader(),
           },
-          credentials: 'include',
+          credentials: "include",
           body: JSON.stringify({ occurrenceDate }),
-        }
+        },
       );
       if (!res.ok) {
-        throw new Error('Failed to restore occurrence');
+        throw new Error("Failed to restore occurrence");
       }
       // Refetch events after restore
       const data = await getAllEvents();
@@ -631,25 +631,25 @@ const AddEvent = () => {
       }
 
       setShowRecurringDeleteModal(false);
-      setModalMessage('Event restored successfully');
+      setModalMessage("Event restored successfully");
     } catch (err) {
-      setModalMessage('Failed to restore event occurrence');
+      setModalMessage("Failed to restore event occurrence");
     } finally {
       setDeletingOccurrenceKey(null);
     }
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Check if user has permission to create events
     const currentRole = getUserRole();
     if (
       !currentRole ||
-      (currentRole !== 'admin' && currentRole !== 'instructor')
+      (currentRole !== "admin" && currentRole !== "instructor")
     ) {
       alert(
-        "You don't have permission to create events. Only administrators and instructors can create events."
+        "You don't have permission to create events. Only administrators and instructors can create events.",
       );
       return;
     }
@@ -663,17 +663,17 @@ const AddEvent = () => {
     // Validate recurring event data
     const validationErrors = validateRecurringEvent(form);
     if (validationErrors.length > 0) {
-      alert('Validation errors:\n' + validationErrors.join('\n'));
+      alert("Validation errors:\n" + validationErrors.join("\n"));
       setIsScheduling(false);
       return;
     }
 
-    const isRecurring = form.recurrence !== 'none';
+    const isRecurring = form.recurrence !== "none";
 
     // Prepare payload for backend
-    const selectedCourse = courses.find(c => c.id === form.courseId);
-    const toIsoUtc = dateString => {
-      if (!dateString) return '';
+    const selectedCourse = courses.find((c) => c.id === form.courseId);
+    const toIsoUtc = (dateString) => {
+      if (!dateString) return "";
 
       try {
         // Create a date object from the input string (which is in user's local timezone)
@@ -682,16 +682,16 @@ const AddEvent = () => {
         // Convert to UTC directly - simpler and more reliable
         return localDate.toISOString();
       } catch (error) {
-        return '';
+        return "";
       }
     };
 
     // Map recurrence value to frequency with proper structure
     const recurrenceMap = {
-      daily: 'DAILY',
-      weekly: 'WEEKLY',
-      monthly: 'MONTHLY',
-      yearly: 'YEARLY',
+      daily: "DAILY",
+      weekly: "WEEKLY",
+      monthly: "MONTHLY",
+      yearly: "YEARLY",
     };
 
     // Create proper recurrence rule structure
@@ -703,7 +703,7 @@ const AddEvent = () => {
       endDate.setFullYear(endDate.getFullYear() + 1);
 
       recurrenceRule = {
-        frequency: recurrenceMap[form.recurrence] || 'DAILY',
+        frequency: recurrenceMap[form.recurrence] || "DAILY",
         interval: 1,
         endDate: endDate.toISOString(),
       };
@@ -714,10 +714,10 @@ const AddEvent = () => {
       description: form.description,
       startTime: toIsoUtc(form.startTime),
       endTime: toIsoUtc(form.endTime),
-      location: form.location || (form.zoomLink ? form.zoomLink : ''),
+      location: form.location || (form.zoomLink ? form.zoomLink : ""),
       isRecurring,
-      calendarType: 'GROUP',
-      visibility: 'PRIVATE',
+      calendarType: "GROUP",
+      visibility: "PRIVATE",
       course_id: selectedCourse ? selectedCourse.id : form.courseId,
     };
 
@@ -735,19 +735,19 @@ const AddEvent = () => {
           : `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${form.id}`;
 
         const patchRes = await fetch(endpoint, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Role': currentRole, // Add role in header as well
+            "Content-Type": "application/json",
+            "X-User-Role": currentRole, // Add role in header as well
             ...getAuthHeader(),
           },
           body: JSON.stringify(payload),
-          credentials: 'include',
+          credentials: "include",
         });
 
         if (!patchRes.ok) {
           const errorText = await patchRes.text();
-          let errorMessage = 'Failed to update event';
+          let errorMessage = "Failed to update event";
           try {
             const errorData = JSON.parse(errorText);
             errorMessage = errorData.message || errorMessage;
@@ -769,9 +769,9 @@ const AddEvent = () => {
           setAllEvents(allData);
         }
 
-        alert('Event updated successfully!');
+        alert("Event updated successfully!");
       } catch (err) {
-        alert(err.message || 'Failed to update event');
+        alert(err.message || "Failed to update event");
       } finally {
         setIsScheduling(false);
       }
@@ -782,22 +782,22 @@ const AddEvent = () => {
         const postRes = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/calendar/events`,
           {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
 
               ...getAuthHeader(),
-              'X-User-Role': currentRole, // If your backend still requires this header, keep it
+              "X-User-Role": currentRole, // If your backend still requires this header, keep it
             },
             body: JSON.stringify(payload),
-            credentials: 'include',
-          }
+            credentials: "include",
+          },
         );
 
         // Log the response status and body for debugging
         const responseText = await postRes.text();
         if (!postRes.ok) {
-          let errorMessage = 'Failed to create event';
+          let errorMessage = "Failed to create event";
           try {
             const errorData = JSON.parse(responseText);
             errorMessage = errorData.message || errorMessage;
@@ -805,14 +805,14 @@ const AddEvent = () => {
             if (
               postRes.status === 403 &&
               errorData.message?.includes(
-                'Access restricted to admin, instructor roles'
+                "Access restricted to admin, instructor roles",
               )
             ) {
               console.error(
-                "Role verification failed. Backend expects role in JWT token but token doesn't contain role information."
+                "Role verification failed. Backend expects role in JWT token but token doesn't contain role information.",
               );
               alert(
-                'Permission Error: Your account role cannot be verified by the server. Please contact support to ensure your instructor role is properly configured in the system.'
+                "Permission Error: Your account role cannot be verified by the server. Please contact support to ensure your instructor role is properly configured in the system.",
               );
               return;
             }
@@ -827,7 +827,7 @@ const AddEvent = () => {
         // Refetch events after adding
         const data = await getAllEvents();
         // Normalize course_id to courseId for all events
-        const normalizedEvents = data.map(ev => ({
+        const normalizedEvents = data.map((ev) => ({
           ...ev,
           courseId: ev.courseId || ev.course_id, // fallback to course_id if courseId is missing
         }));
@@ -840,11 +840,11 @@ const AddEvent = () => {
         }
 
         // Trigger notification refresh to show event notifications from backend
-        window.dispatchEvent(new Event('refresh-notifications'));
+        window.dispatchEvent(new Event("refresh-notifications"));
 
-        alert('Event created successfully!');
+        alert("Event created successfully!");
       } catch (err) {
-        alert('Failed to create event: ' + err.message);
+        alert("Failed to create event: " + err.message);
       } finally {
         setIsScheduling(false);
       }
@@ -871,19 +871,19 @@ const AddEvent = () => {
     }
   };
 
-  const handleYearChange = e => {
+  const handleYearChange = (e) => {
     setCalendarYear(Number(e.target.value));
   };
 
   // Safely extract an event id regardless of backend naming
-  const getEventId = event =>
-    event?.id || event?._id || event?.eventId || event?.event_id || '';
+  const getEventId = (event) =>
+    event?.id || event?._id || event?.eventId || event?.event_id || "";
 
   // Handle opening attendance modal
-  const handleViewAttendance = event => {
+  const handleViewAttendance = (event) => {
     const eventId = getEventId(event);
     if (!eventId) {
-      setModalMessage('Unable to open attendance: missing event id');
+      setModalMessage("Unable to open attendance: missing event id");
       return;
     }
     setSelectedEventForAttendance({ ...event, id: eventId });
@@ -897,10 +897,10 @@ const AddEvent = () => {
   };
 
   // Handle opening event attendance modal
-  const handleViewEventAttendance = event => {
+  const handleViewEventAttendance = (event) => {
     const eventId = getEventId(event);
     if (!eventId) {
-      setModalMessage('Unable to open attendance: missing event id');
+      setModalMessage("Unable to open attendance: missing event id");
       return;
     }
     setSelectedEventForEventAttendance({ ...event, id: eventId });
@@ -914,17 +914,17 @@ const AddEvent = () => {
   };
 
   // Helper: get events for a specific date
-  const getEventsForDate = date => {
+  const getEventsForDate = (date) => {
     if (!date) return [];
 
     const eventsForDate = [];
     const eventsToCheck = showPreviousEvents ? allEvents : events;
 
-    eventsToCheck.forEach(ev => {
+    eventsToCheck.forEach((ev) => {
       // Handle recurring events with occurrences
       if (ev.isRecurring && ev.occurrences && ev.occurrences.length > 0) {
         // Check each occurrence of the recurring event
-        ev.occurrences.forEach(occurrence => {
+        ev.occurrences.forEach((occurrence) => {
           const occurrenceDate = new Date(occurrence.startTime);
 
           if (!isNaN(occurrenceDate.getTime())) {
@@ -936,9 +936,9 @@ const AddEvent = () => {
             if (isSameDate) {
               // Check if this occurrence is not deleted
               const deletedOccurrences = ev.deletedOccurrences || [];
-              const isDeleted = deletedOccurrences.some(deleted => {
+              const isDeleted = deletedOccurrences.some((deleted) => {
                 const deletedDate =
-                  typeof deleted === 'string'
+                  typeof deleted === "string"
                     ? deleted
                     : deleted.occurrence_date;
                 return (
@@ -971,7 +971,7 @@ const AddEvent = () => {
         const evDate = new Date(eventDate);
 
         if (isNaN(evDate.getTime())) {
-          console.log('Invalid date for event:', ev);
+          console.log("Invalid date for event:", ev);
           return;
         }
 
@@ -997,16 +997,16 @@ const AddEvent = () => {
           <span className="text-sm text-gray-600">Role:</span>
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
-              userRole === 'admin'
-                ? 'bg-red-100 text-red-800'
-                : userRole === 'instructor'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-800'
+              userRole === "admin"
+                ? "bg-red-100 text-red-800"
+                : userRole === "instructor"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-gray-100 text-gray-800"
             }`}
           >
-            {userRole || 'Loading...'}
+            {userRole || "Loading..."}
           </span>
-          {userRole && userRole !== 'admin' && userRole !== 'instructor' && (
+          {userRole && userRole !== "admin" && userRole !== "instructor" && (
             <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
               Read-only access
             </span>
@@ -1021,7 +1021,7 @@ const AddEvent = () => {
           token &&
           !token.role &&
           !token.userRole &&
-          (userRole === 'admin' || userRole === 'instructor')
+          (userRole === "admin" || userRole === "instructor")
         ) {
           return (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1045,7 +1045,7 @@ const AddEvent = () => {
                   </h3>
                   <div className="mt-2 text-sm text-yellow-700">
                     <p>
-                      Your account shows you have <strong>{userRole}</strong>{' '}
+                      Your account shows you have <strong>{userRole}</strong>{" "}
                       permissions, if you may experience permission errors when
                       creating events. Please contact support to resolve this
                       issue.
@@ -1081,9 +1081,9 @@ const AddEvent = () => {
 
         <div className="flex items-center gap-4">
           <h3 className="text-xl font-semibold text-gray-700">
-            {new Date(calendarYear, calendarMonth).toLocaleString('default', {
-              month: 'long',
-            })}{' '}
+            {new Date(calendarYear, calendarMonth).toLocaleString("default", {
+              month: "long",
+            })}{" "}
             {calendarYear}
           </h3>
           <select
@@ -1094,11 +1094,11 @@ const AddEvent = () => {
             {(() => {
               const thisYear = new Date().getFullYear();
               return Array.from({ length: 10 }, (_, i) => thisYear + i).map(
-                y => (
+                (y) => (
                   <option key={y} value={y}>
                     {y}
                   </option>
-                )
+                ),
               );
             })()}
           </select>
@@ -1125,7 +1125,7 @@ const AddEvent = () => {
 
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1 mb-8">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div
             key={d}
             className="text-center font-medium text-gray-500 text-sm py-2"
@@ -1142,14 +1142,14 @@ const AddEvent = () => {
             <div
               key={idx}
               className={`min-h-16 p-1 flex flex-col items-center border rounded-lg relative 
-                ${date ? 'hover:bg-blue-50 cursor-pointer' : 'bg-gray-50 cursor-default'}
-                ${isToday ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}
+                ${date ? "hover:bg-blue-50 cursor-pointer" : "bg-gray-50 cursor-default"}
+                ${isToday ? "border-blue-300 bg-blue-50" : "border-gray-200"}`}
               onClick={() => date && handleDateClick(date)}
             >
               <span
-                className={`text-sm ${isToday ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                className={`text-sm ${isToday ? "font-bold text-blue-600" : "text-gray-700"}`}
               >
-                {date ? date.getDate() : ''}
+                {date ? date.getDate() : ""}
               </span>
               {eventsForDate.length > 0 && (
                 <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
@@ -1157,7 +1157,7 @@ const AddEvent = () => {
                     <span
                       key={i}
                       className={`w-1.5 h-1.5 rounded-full ${
-                        event.isRecurring ? 'bg-purple-500' : 'bg-blue-500'
+                        event.isRecurring ? "bg-purple-500" : "bg-blue-500"
                       }`}
                       title={event.title}
                     ></span>
@@ -1186,13 +1186,13 @@ const AddEvent = () => {
               }}
               className={`py-4 px-1 relative font-medium text-sm ${
                 !showPreviousEvents
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300"
               }`}
             >
               Upcoming Events
               <span
-                className={`absolute -bottom-px left-0 w-full h-0.5 ${!showPreviousEvents ? 'bg-blue-600' : ''}`}
+                className={`absolute -bottom-px left-0 w-full h-0.5 ${!showPreviousEvents ? "bg-blue-600" : ""}`}
               />
             </button>
             <button
@@ -1207,8 +1207,8 @@ const AddEvent = () => {
               disabled={loadingPreviousEvents}
               className={`py-4 px-1 relative font-medium text-sm ${
                 showPreviousEvents
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300"
               }`}
             >
               {loadingPreviousEvents ? (
@@ -1236,10 +1236,10 @@ const AddEvent = () => {
                   Loading...
                 </span>
               ) : (
-                'All Events'
+                "All Events"
               )}
               <span
-                className={`absolute -bottom-px left-0 w-full h-0.5 ${showPreviousEvents ? 'bg-blue-600' : ''}`}
+                className={`absolute -bottom-px left-0 w-full h-0.5 ${showPreviousEvents ? "bg-blue-600" : ""}`}
               />
             </button>
           </nav>
@@ -1262,8 +1262,8 @@ const AddEvent = () => {
             </svg>
             <p className="mt-2">
               {showPreviousEvents
-                ? 'No events found'
-                : 'No events scheduled yet'}
+                ? "No events found"
+                : "No events scheduled yet"}
             </p>
           </div>
         ) : (
@@ -1317,7 +1317,7 @@ const AddEvent = () => {
                                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                               />
                             </svg>
-                            {courses.find(c => c.id === event.courseId)
+                            {courses.find((c) => c.id === event.courseId)
                               ?.title || event.courseId}
                           </span>
                         )}
@@ -1349,7 +1349,7 @@ const AddEvent = () => {
                       <button
                         onClick={() =>
                           handleEdit(
-                            currentEvents.findIndex(e => e.id === event.id)
+                            currentEvents.findIndex((e) => e.id === event.id),
                           )
                         }
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
@@ -1395,7 +1395,7 @@ const AddEvent = () => {
                       <button
                         onClick={() =>
                           handleDelete(
-                            currentEvents.findIndex(e => e.id === event.id)
+                            currentEvents.findIndex((e) => e.id === event.id),
                           )
                         }
                         className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
@@ -1437,18 +1437,18 @@ const AddEvent = () => {
                       {(() => {
                         try {
                           const userTz =
-                            localStorage.getItem('userTimezone') ||
-                            'America/New_York';
+                            localStorage.getItem("userTimezone") ||
+                            "America/New_York";
                           const startDate = new Date(event.startTime);
-                          return startDate.toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
+                          return startDate.toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
                             timeZone: userTz,
                           });
                         } catch (error) {
-                          console.error('Error formatting event date:', error);
+                          console.error("Error formatting event date:", error);
                           return new Date(event.startTime).toLocaleDateString();
                         }
                       })()}
@@ -1471,27 +1471,27 @@ const AddEvent = () => {
                       {(() => {
                         try {
                           const userTz =
-                            localStorage.getItem('userTimezone') ||
-                            'America/New_York';
+                            localStorage.getItem("userTimezone") ||
+                            "America/New_York";
                           return `${new Date(event.startTime).toLocaleString(
-                            'en-US',
+                            "en-US",
                             {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              hour: "2-digit",
+                              minute: "2-digit",
                               hour12: true,
                               timeZone: userTz,
-                            }
+                            },
                           )} - ${new Date(event.endTime).toLocaleTimeString(
-                            'en-US',
+                            "en-US",
                             {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              hour: "2-digit",
+                              minute: "2-digit",
                               hour12: true,
                               timeZone: userTz,
-                            }
+                            },
                           )}`;
                         } catch (error) {
-                          console.error('Error formatting event time:', error);
+                          console.error("Error formatting event time:", error);
                           return `${new Date(event.startTime).toLocaleString()} - ${new Date(event.endTime).toLocaleTimeString()}`;
                         }
                       })()}
@@ -1549,7 +1549,7 @@ const AddEvent = () => {
               <button
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-100 text-gray-700'}`}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium ${currentPage === 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-white hover:bg-gray-100 text-gray-700"}`}
               >
                 PREV
               </button>
@@ -1559,7 +1559,7 @@ const AddEvent = () => {
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages || totalPages === 0}
-                className={`px-4 py-2 rounded-lg border text-sm font-medium ${currentPage === totalPages || totalPages === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-100 text-gray-700'}`}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium ${currentPage === totalPages || totalPages === 0 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-white hover:bg-gray-100 text-gray-700"}`}
               >
                 NEXT
               </button>
@@ -1576,8 +1576,8 @@ const AddEvent = () => {
               disabled={isScheduling}
               className={`absolute top-4 right-4 transition-colors duration-200 p-1 rounded-full ${
                 isScheduling
-                  ? 'text-gray-300 cursor-not-allowed'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               }`}
               onClick={() => {
                 if (!isScheduling) {
@@ -1604,7 +1604,7 @@ const AddEvent = () => {
               </svg>
             </button>
             <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
-              {editIndex !== null ? 'Edit Event' : 'Schedule New Event'}
+              {editIndex !== null ? "Edit Event" : "Schedule New Event"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1626,7 +1626,7 @@ const AddEvent = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Meeting Link*{' '}
+                      Meeting Link*{" "}
                       <span className="text-xs text-gray-500">
                         (Enter the meeting URL)
                       </span>
@@ -1684,35 +1684,35 @@ const AddEvent = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <span className="font-medium">PST:</span>{' '}
+                            <span className="font-medium">PST:</span>{" "}
                             {formatInTimezone(
                               form.startTime,
-                              'America/Los_Angeles',
-                              'PST'
+                              "America/Los_Angeles",
+                              "PST",
                             )}
                           </div>
                           <div>
-                            <span className="font-medium">EST:</span>{' '}
+                            <span className="font-medium">EST:</span>{" "}
                             {formatInTimezone(
                               form.startTime,
-                              'America/New_York',
-                              'EST'
+                              "America/New_York",
+                              "EST",
                             )}
                           </div>
                           <div>
-                            <span className="font-medium">MST:</span>{' '}
+                            <span className="font-medium">MST:</span>{" "}
                             {formatInTimezone(
                               form.startTime,
-                              'America/Denver',
-                              'MST'
+                              "America/Denver",
+                              "MST",
                             )}
                           </div>
                           <div>
-                            <span className="font-medium">GMT:</span>{' '}
+                            <span className="font-medium">GMT:</span>{" "}
                             {formatInTimezone(
                               form.startTime,
-                              'Europe/London',
-                              'GMT'
+                              "Europe/London",
+                              "GMT",
                             )}
                           </div>
                         </div>
@@ -1761,7 +1761,7 @@ const AddEvent = () => {
                       onChange={handleFormChange}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none bg-white bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNoZXZyb24tZG93biI+PHBhdGggZD0ibTYgOSA2IDYgNi02Ii8+PC9zdmc+')] bg-no-repeat bg-[center_right_1rem]"
                     >
-                      {courses.map(course => (
+                      {courses.map((course) => (
                         <option key={course.id} value={course.id}>
                           {course.title}
                         </option>
@@ -1775,11 +1775,11 @@ const AddEvent = () => {
                     <select
                       name="recurrence"
                       value={form.recurrence}
-                      onChange={e => {
-                        setForm(prev => ({
+                      onChange={(e) => {
+                        setForm((prev) => ({
                           ...prev,
                           recurrence: e.target.value,
-                          isRecurring: e.target.value !== 'none',
+                          isRecurring: e.target.value !== "none",
                         }));
                       }}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none bg-white bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNoZXZyb24tZG93biI+PHBhdGggZD0ibTYgOSA2IDYgNi02Ii8+PC9zdmc+')] bg-no-repeat bg-[center_right_1rem]"
@@ -1804,8 +1804,8 @@ const AddEvent = () => {
                   }}
                   className={`px-5 py-2.5 border border-gray-300 text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
                     isScheduling
-                      ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                      : 'text-gray-700 bg-white hover:bg-gray-50'
+                      ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                      : "text-gray-700 bg-white hover:bg-gray-50"
                   }`}
                 >
                   Cancel
@@ -1815,8 +1815,8 @@ const AddEvent = () => {
                   disabled={isScheduling}
                   className={`px-5 py-2.5 text-white text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 flex items-center justify-center gap-2 ${
                     isScheduling
-                      ? 'bg-blue-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
                   {isScheduling && (
@@ -1843,11 +1843,11 @@ const AddEvent = () => {
                   )}
                   {isScheduling
                     ? editIndex !== null
-                      ? 'Updating...'
-                      : 'Scheduling...'
+                      ? "Updating..."
+                      : "Scheduling..."
                     : editIndex !== null
-                      ? 'Update Event'
-                      : 'Schedule Event'}
+                      ? "Update Event"
+                      : "Schedule Event"}
                 </button>
               </div>
             </form>
@@ -1965,43 +1965,43 @@ const AddEvent = () => {
                         const deletedOccurrences =
                           recurringDeleteEvent.deletedOccurrences || [];
                         const isDeleted = deletedOccurrences.includes(
-                          occ.startTime
+                          occ.startTime,
                         );
                         // Skip if this occurrence is deleted
                         if (isDeleted) return null;
 
-                        let dateLabel = '-';
-                        let timeLabel = '-';
-                        let endTimeLabel = '-';
+                        let dateLabel = "-";
+                        let timeLabel = "-";
+                        let endTimeLabel = "-";
                         const startDateObj = new Date(occ.startTime);
                         const endDateObj = new Date(occ.endTime);
                         if (!isNaN(startDateObj.getTime())) {
                           dateLabel = startDateObj.toLocaleDateString(
                             undefined,
                             {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
                               timeZone: userTimezone,
-                            }
+                            },
                           );
                           timeLabel = startDateObj.toLocaleTimeString(
                             undefined,
                             {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              hour: "2-digit",
+                              minute: "2-digit",
                               timeZone: userTimezone,
-                            }
+                            },
                           );
                         }
                         if (!isNaN(endDateObj.getTime())) {
                           endTimeLabel = endDateObj.toLocaleTimeString(
                             undefined,
                             {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              hour: "2-digit",
+                              minute: "2-digit",
                               timeZone: userTimezone,
-                            }
+                            },
                           );
                         }
                         return (
@@ -2018,12 +2018,12 @@ const AddEvent = () => {
                               </p>
                             </div>
                             <button
-                              className={`ml-4 px-3 py-1 text-sm rounded-md transition-colors ${deletingOccurrenceKey === occ.startTime ? 'bg-gray-100 text-gray-400' : 'text-red-600 hover:bg-red-50 border border-red-100'}`}
+                              className={`ml-4 px-3 py-1 text-sm rounded-md transition-colors ${deletingOccurrenceKey === occ.startTime ? "bg-gray-100 text-gray-400" : "text-red-600 hover:bg-red-50 border border-red-100"}`}
                               disabled={deletingOccurrenceKey === occ.startTime}
                               onClick={() =>
                                 handleDeleteOccurrence(
                                   recurringDeleteEvent.id,
-                                  occ.startTime
+                                  occ.startTime,
                                 )
                               }
                             >
@@ -2052,7 +2052,7 @@ const AddEvent = () => {
                                   Deleting...
                                 </span>
                               ) : (
-                                'Delete'
+                                "Delete"
                               )}
                             </button>
                           </li>
@@ -2086,25 +2086,25 @@ const AddEvent = () => {
                     {recurringDeleteEvent.deletedOccurrences &&
                     recurringDeleteEvent.deletedOccurrences.length > 0 ? (
                       recurringDeleteEvent.deletedOccurrences.map(
-                        deletedObj => {
+                        (deletedObj) => {
                           // Support both string and object for backward compatibility
                           const occurrenceDate =
-                            typeof deletedObj === 'string'
+                            typeof deletedObj === "string"
                               ? deletedObj
                               : deletedObj.occurrence_date;
-                          let dateLabel = '-';
-                          let timeLabel = '-';
+                          let dateLabel = "-";
+                          let timeLabel = "-";
                           const dateObj = new Date(occurrenceDate);
                           if (!isNaN(dateObj.getTime())) {
                             dateLabel = dateObj.toLocaleDateString(undefined, {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
                               timeZone: userTimezone,
                             });
                             timeLabel = dateObj.toLocaleTimeString(undefined, {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              hour: "2-digit",
+                              minute: "2-digit",
                               timeZone: userTimezone,
                             });
                           }
@@ -2122,14 +2122,14 @@ const AddEvent = () => {
                                 </p>
                               </div>
                               <button
-                                className={`ml-4 px-3 py-1 text-sm rounded-md transition-colors ${deletingOccurrenceKey === occurrenceDate ? 'bg-gray-100 text-gray-400' : 'text-green-600 hover:bg-green-50 border border-green-100'}`}
+                                className={`ml-4 px-3 py-1 text-sm rounded-md transition-colors ${deletingOccurrenceKey === occurrenceDate ? "bg-gray-100 text-gray-400" : "text-green-600 hover:bg-green-50 border border-green-100"}`}
                                 disabled={
                                   deletingOccurrenceKey === occurrenceDate
                                 }
                                 onClick={() =>
                                   handleRestoreOccurrence(
                                     recurringDeleteEvent.id,
-                                    occurrenceDate
+                                    occurrenceDate,
                                   )
                                 }
                               >
@@ -2158,12 +2158,12 @@ const AddEvent = () => {
                                     Restoring...
                                   </span>
                                 ) : (
-                                  'Restore'
+                                  "Restore"
                                 )}
                               </button>
                             </li>
                           );
-                        }
+                        },
                       )
                     ) : (
                       <li className="px-4 py-4 text-center">
@@ -2179,7 +2179,7 @@ const AddEvent = () => {
               {/* Delete All Button */}
               <div className="pt-3 border-t">
                 <button
-                  className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${deletingAll ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                  className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${deletingAll ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 text-white"}`}
                   disabled={deletingAll}
                   onClick={() =>
                     handleDeleteAllOccurrences(recurringDeleteEvent.id)
@@ -2210,7 +2210,7 @@ const AddEvent = () => {
                       Deleting all occurrences...
                     </span>
                   ) : (
-                    'Delete entire series'
+                    "Delete entire series"
                   )}
                 </button>
                 <button
@@ -2314,19 +2314,19 @@ const AddEvent = () => {
 
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-800 border-b pb-3">
-                Events for{' '}
-                {selectedDateForEvents.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
+                Events for{" "}
+                {selectedDateForEvents.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </h2>
 
               <div className="mt-4 flex justify-between items-center">
                 <p className="text-gray-600">
                   {selectedDateEvents.length} event
-                  {selectedDateEvents.length !== 1 ? 's' : ''} scheduled
+                  {selectedDateEvents.length !== 1 ? "s" : ""} scheduled
                 </p>
                 <button
                   onClick={() => {
@@ -2363,7 +2363,7 @@ const AddEvent = () => {
                       {event.courseId && (
                         <div className="mb-2">
                           <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            {courses.find(c => c.id === event.courseId)
+                            {courses.find((c) => c.id === event.courseId)
                               ?.title || event.courseId}
                           </span>
                         </div>
@@ -2390,20 +2390,20 @@ const AddEvent = () => {
                             {(() => {
                               try {
                                 const userTz =
-                                  localStorage.getItem('userTimezone') ||
-                                  'America/New_York';
+                                  localStorage.getItem("userTimezone") ||
+                                  "America/New_York";
                                 return `${new Date(
-                                  event.startTime
-                                ).toLocaleString('en-US', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
+                                  event.startTime,
+                                ).toLocaleString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                   hour12: true,
                                   timeZone: userTz,
                                 })} - ${new Date(
-                                  event.endTime
-                                ).toLocaleTimeString('en-US', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
+                                  event.endTime,
+                                ).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                   hour12: true,
                                   timeZone: userTz,
                                 })}`;
@@ -2479,7 +2479,7 @@ const AddEvent = () => {
                         onClick={() => {
                           setShowDateEvents(false);
                           handleEdit(
-                            currentEvents.findIndex(e => e.id === event.id)
+                            currentEvents.findIndex((e) => e.id === event.id),
                           );
                         }}
                       >
@@ -2510,7 +2510,7 @@ const AddEvent = () => {
                         onClick={() => {
                           setShowDateEvents(false);
                           handleDelete(
-                            currentEvents.findIndex(e => e.id === event.id)
+                            currentEvents.findIndex((e) => e.id === event.id),
                           );
                         }}
                       >
@@ -2531,7 +2531,7 @@ const AddEvent = () => {
             <h3 className="text-lg font-semibold mb-2">{modalMessage}</h3>
             <button
               className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-              onClick={() => setModalMessage('')}
+              onClick={() => setModalMessage("")}
             >
               OK
             </button>

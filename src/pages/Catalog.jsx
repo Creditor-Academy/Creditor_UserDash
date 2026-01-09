@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   BookOpen,
   Search,
@@ -12,26 +12,23 @@ import {
   Award,
   ShoppingCart,
   CheckCircle,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { fetchAllCatalogs as fetchAllCatalogsPrimary } from '@/services/catalogService';
-import { fetchUserCourses } from '@/services/courseService';
-import {
-  getCatalogCourses,
-  fetchAllCatalogs as fetchAllCatalogsFallback,
-} from '@/services/instructorCatalogService';
-import { getUnlockedModulesByUser } from '@/services/modulesService';
-import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import { useCredits } from '@/contexts/CreditsContext';
-import { useUser } from '@/contexts/UserContext';
-import api from '@/services/apiClient';
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { fetchAllCatalogs as fetchAllCatalogsPrimary } from "@/services/catalogService";
+import { fetchUserCourses } from "@/services/courseService";
+import { getCatalogCourses } from "@/services/instructorCatalogService";
+import { getUnlockedModulesByUser } from "@/services/modulesService";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
+import { useCredits } from "@/contexts/CreditsContext";
+import { useUser } from "@/contexts/UserContext";
+import api from "@/services/apiClient";
 
 export function CatalogPage() {
   const [catalogs, setCatalogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [userCourses, setUserCourses] = useState([]);
   const [catalogCourseIdsMap, setCatalogCourseIdsMap] = useState({});
   const [showCreditsModal, setShowCreditsModal] = useState(false);
@@ -39,7 +36,7 @@ export function CatalogPage() {
     useState(false);
   const [selectedCatalogToBuy, setSelectedCatalogToBuy] = useState(null);
   const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
-  const [purchaseNotice, setPurchaseNotice] = useState('');
+  const [purchaseNotice, setPurchaseNotice] = useState("");
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [unlockedModules, setUnlockedModules] = useState([]);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -49,56 +46,42 @@ export function CatalogPage() {
     credits: creditsAlt,
     unlockContent,
     refreshBalance,
-  } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
+  } = (typeof useCredits === "function" ? useCredits() : {}) || {};
 
   useEffect(() => {
     const fetchCatalogs = async () => {
       try {
         setLoading(true);
-        let data = [];
-        try {
-          data = await fetchAllCatalogsPrimary();
-        } catch (primaryErr) {
-          // swallow and try fallback
-        }
-        if (!Array.isArray(data) || data.length === 0) {
-          try {
-            data = await fetchAllCatalogsFallback();
-          } catch (fallbackErr) {
-            // if fallback also fails, rethrow to trigger error UI
-            throw fallbackErr;
-          }
-        }
-        // Use the courseCount already set in fetchAllCatalogs; fallback may not include counts
-        setCatalogs(data || []);
+        const data = await fetchAllCatalogsPrimary();
+        setCatalogs(Array.isArray(data) ? data : []);
         // Preload catalog courses for buy-logic
         try {
           const entries = await Promise.all(
-            (data || []).map(async c => {
+            (data || []).map(async (c) => {
               try {
                 const courses = await getCatalogCourses(c.id);
                 const ids = (courses || [])
                   .map(
-                    course =>
+                    (course) =>
                       course?.id ||
                       course?._id ||
                       course?.courseId ||
-                      course?.course_id
+                      course?.course_id,
                   )
                   .filter(Boolean);
                 return [c.id, new Set(ids)];
               } catch {
                 return [c.id, new Set()];
               }
-            })
+            }),
           );
           const map = {};
           for (const [k, v] of entries) map[k] = v;
           setCatalogCourseIdsMap(map);
         } catch {}
       } catch (err) {
-        console.error('Error fetching catalogs:', err);
-        setError('Failed to load catalogs. Please try again later.');
+        console.error("Error fetching catalogs:", err);
+        setError("Failed to load catalogs. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -114,7 +97,7 @@ export function CatalogPage() {
         const courses = await fetchUserCourses();
         setUserCourses(courses || []);
       } catch (err) {
-        console.error('Error fetching user courses:', err);
+        console.error("Error fetching user courses:", err);
         setUserCourses([]);
       }
     };
@@ -134,7 +117,7 @@ export function CatalogPage() {
         console.log(`[DEBUG] First module structure:`, modules[0]);
         setUnlockedModules(modules || []);
       } catch (err) {
-        console.error('Error fetching unlocked modules:', err);
+        console.error("Error fetching unlocked modules:", err);
         setUnlockedModules([]);
       }
     };
@@ -143,37 +126,37 @@ export function CatalogPage() {
   }, [userProfile?.id]);
 
   const categories = Array.from(
-    new Set((catalogs || []).map(catalog => catalog.category || 'General'))
+    new Set((catalogs || []).map((catalog) => catalog.category || "General")),
   );
 
-  const filteredCatalogs = (catalogs || []).filter(catalog => {
+  const filteredCatalogs = (catalogs || []).filter((catalog) => {
     const matchesSearch =
       catalog.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       catalog.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === 'all' ||
-      (catalog.category || 'General') === selectedCategory;
+      selectedCategory === "all" ||
+      (catalog.category || "General") === selectedCategory;
 
     return matchesSearch && matchesCategory;
   });
 
   // Helper function to check if user has purchased the entire catalog (enrolled in ALL courses)
-  const hasPurchasedEntireCatalog = catalog => {
+  const hasPurchasedEntireCatalog = (catalog) => {
     const userCourseIds = new Set(
       (userCourses || [])
-        .map(c => c?.id || c?._id || c?.courseId || c?.course_id)
-        .filter(Boolean)
+        .map((c) => c?.id || c?._id || c?.courseId || c?.course_id)
+        .filter(Boolean),
     );
     const catalogCourseIds = catalogCourseIdsMap[catalog.id] || new Set();
 
     // Check if user is enrolled in ALL courses within this catalog
     const catalogCourseIdsList = Array.from(catalogCourseIds);
-    const enrolledCoursesInCatalog = catalogCourseIdsList.filter(courseId =>
-      userCourseIds.has(courseId)
+    const enrolledCoursesInCatalog = catalogCourseIdsList.filter((courseId) =>
+      userCourseIds.has(courseId),
     );
 
     console.log(
-      `[DEBUG] Catalog ${catalog.name}: ${enrolledCoursesInCatalog.length}/${catalogCourseIdsList.length} courses enrolled`
+      `[DEBUG] Catalog ${catalog.name}: ${enrolledCoursesInCatalog.length}/${catalogCourseIdsList.length} courses enrolled`,
     );
 
     // User has purchased entire catalog if enrolled in all courses
@@ -184,16 +167,16 @@ export function CatalogPage() {
   };
 
   // Helper function to check if user is enrolled in catalog or has purchased any lessons
-  const isEnrolledInCatalog = catalog => {
+  const isEnrolledInCatalog = (catalog) => {
     console.log(
-      `[DEBUG] Checking enrollment for catalog: ${catalog.name} (ID: ${catalog.id})`
+      `[DEBUG] Checking enrollment for catalog: ${catalog.name} (ID: ${catalog.id})`,
     );
 
     // Check if user is enrolled in any course in this catalog
     const userCourseIds = new Set(
       (userCourses || [])
-        .map(c => c?.id || c?._id || c?.courseId || c?.course_id)
-        .filter(Boolean)
+        .map((c) => c?.id || c?._id || c?.courseId || c?.course_id)
+        .filter(Boolean),
     );
     const catalogCourseIds = catalogCourseIdsMap[catalog.id] || new Set();
 
@@ -204,7 +187,7 @@ export function CatalogPage() {
     for (const id of catalogCourseIds) {
       if (userCourseIds.has(id)) {
         console.log(
-          `[DEBUG] User is enrolled in course ${id} - hiding buy button`
+          `[DEBUG] User is enrolled in course ${id} - hiding buy button`,
         );
         return true;
       }
@@ -215,7 +198,7 @@ export function CatalogPage() {
     console.log(`[DEBUG] First module structure:`, unlockedModules[0]);
 
     const catalogCourseIdsList = Array.from(catalogCourseIds);
-    const hasLessonPurchasesFromCatalog = unlockedModules.some(module => {
+    const hasLessonPurchasesFromCatalog = unlockedModules.some((module) => {
       // Get course_id from the module data
       const courseId = module.course_id || module.courseId;
       console.log(`[DEBUG] Module ${module.module_id} -> Course ${courseId}`);
@@ -224,7 +207,7 @@ export function CatalogPage() {
         courseId && catalogCourseIdsList.includes(courseId);
       if (belongsToCatalog) {
         console.log(
-          `[DEBUG] Module ${module.module_id} belongs to catalog course ${courseId}`
+          `[DEBUG] Module ${module.module_id} belongs to catalog course ${courseId}`,
         );
       }
 
@@ -233,47 +216,47 @@ export function CatalogPage() {
 
     console.log(
       `[DEBUG] Has lesson purchases from catalog:`,
-      hasLessonPurchasesFromCatalog
+      hasLessonPurchasesFromCatalog,
     );
 
     if (hasLessonPurchasesFromCatalog) {
       console.log(
-        `[DEBUG] User has purchased lessons from this catalog - hiding buy button`
+        `[DEBUG] User has purchased lessons from this catalog - hiding buy button`,
       );
       return true;
     }
 
     console.log(
-      `[DEBUG] No enrollment or lesson purchases - showing buy button`
+      `[DEBUG] No enrollment or lesson purchases - showing buy button`,
     );
     return false;
   };
 
   // Helper function to calculate catalog price in credits
-  const getCatalogPriceCredits = catalog => {
+  const getCatalogPriceCredits = (catalog) => {
     // Free catalogs and class recordings should never show a price or buy button
     if (isFreeCourse(catalog) || isClassRecording(catalog)) return 0;
 
-    const catalogName = (catalog.name || '').toLowerCase();
+    const catalogName = (catalog.name || "").toLowerCase();
 
     // Specific pricing for premium catalogs
     if (
-      catalogName.includes('become private') &&
-      catalogName.includes('sov 101')
+      catalogName.includes("become private") &&
+      catalogName.includes("sov 101")
     ) {
       return 14000; // Become Private + SOV 101
-    } else if (catalogName.includes('operate private')) {
+    } else if (catalogName.includes("operate private")) {
       return 14000; // Operate Private
     } else if (
-      (catalogName.includes('business credit') ||
-        catalogName.includes('i want')) &&
-      (catalogName.includes('remedy') ||
-        catalogName.includes('private merchant'))
+      (catalogName.includes("business credit") ||
+        catalogName.includes("i want")) &&
+      (catalogName.includes("remedy") ||
+        catalogName.includes("private merchant"))
     ) {
       return 14000; // Business credit + I want Remedy Now + Private Merchant
-    } else if (catalogName.includes('financial freedom')) {
+    } else if (catalogName.includes("financial freedom")) {
       return 14000; // Financial Freedom
-    } else if (catalogName.includes('master class')) {
+    } else if (catalogName.includes("master class")) {
       return 69; // Master Class
     }
 
@@ -282,7 +265,7 @@ export function CatalogPage() {
   };
 
   // Handle buy catalog click
-  const handleBuyCatalogClick = catalog => {
+  const handleBuyCatalogClick = (catalog) => {
     const price = getCatalogPriceCredits(catalog);
     const currentBalance = Number.isFinite(creditsBalance)
       ? creditsBalance
@@ -311,42 +294,43 @@ export function CatalogPage() {
   };
 
   // 1. Free Courses
-  const freeCourseNames = ['Roadmap Series', 'Start Your Passive Income Now'];
-  const isFreeCourse = catalog =>
+  const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
+  const isFreeCourse = (catalog) =>
     freeCourseNames.some(
-      name => (catalog.name || '').trim().toLowerCase() === name.toLowerCase()
+      (name) =>
+        (catalog.name || "").trim().toLowerCase() === name.toLowerCase(),
     );
   const freeCourses = filteredCatalogs.filter(isFreeCourse);
 
   // 2. Master Class
-  const isMasterClass = catalog =>
-    (catalog.name || '').toLowerCase().includes('master class');
+  const isMasterClass = (catalog) =>
+    (catalog.name || "").toLowerCase().includes("master class");
   const masterClasses = filteredCatalogs.filter(isMasterClass);
 
   // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want, Financial Freedom)
   const premiumCourseNames = [
-    'Become Private',
-    'SOV 101',
-    'Operate Private',
-    'Business credit',
-    'I want',
-    'Financial Freedom',
+    "Become Private",
+    "SOV 101",
+    "Operate Private",
+    "Business credit",
+    "I want",
+    "Financial Freedom",
   ];
-  const isPremiumCourse = catalog =>
-    premiumCourseNames.some(name =>
-      (catalog.name || '').toLowerCase().includes(name.toLowerCase())
+  const isPremiumCourse = (catalog) =>
+    premiumCourseNames.some((name) =>
+      (catalog.name || "").toLowerCase().includes(name.toLowerCase()),
     );
 
   // Custom sorting function for premium courses
-  const getPremiumCourseOrder = catalogName => {
+  const getPremiumCourseOrder = (catalogName) => {
     const name = catalogName.toLowerCase();
-    if (name.includes('become private') || name.includes('sov 101')) {
+    if (name.includes("become private") || name.includes("sov 101")) {
       return 1; // First priority
-    } else if (name.includes('operate private')) {
+    } else if (name.includes("operate private")) {
       return 2; // Second priority
-    } else if (name.includes('business credit') || name.includes('i want')) {
+    } else if (name.includes("business credit") || name.includes("i want")) {
       return 3; // Third priority
-    } else if (name.includes('financial freedom')) {
+    } else if (name.includes("financial freedom")) {
       return 4; // Fourth priority
     }
     return 5; // Default for any other premium courses
@@ -354,38 +338,38 @@ export function CatalogPage() {
 
   const premiumCatalogs = filteredCatalogs
     .filter(
-      catalog =>
+      (catalog) =>
         isPremiumCourse(catalog) &&
         !isFreeCourse(catalog) &&
-        !isMasterClass(catalog)
+        !isMasterClass(catalog),
     )
     .sort(
-      (a, b) => getPremiumCourseOrder(a.name) - getPremiumCourseOrder(b.name)
+      (a, b) => getPremiumCourseOrder(a.name) - getPremiumCourseOrder(b.name),
     );
 
   // 4. Class Recordings
-  const isClassRecording = catalog =>
-    (catalog.name || '').toLowerCase().includes('class recording') ||
-    (catalog.name || '').toLowerCase().includes('class recordings') ||
-    (catalog.name || '').toLowerCase().includes('course recording') ||
-    (catalog.name || '').toLowerCase().includes('course recordings') ||
-    (catalog.name || '').toLowerCase().includes('recordings') ||
-    (catalog.name || '').toLowerCase().includes('recording');
+  const isClassRecording = (catalog) =>
+    (catalog.name || "").toLowerCase().includes("class recording") ||
+    (catalog.name || "").toLowerCase().includes("class recordings") ||
+    (catalog.name || "").toLowerCase().includes("course recording") ||
+    (catalog.name || "").toLowerCase().includes("course recordings") ||
+    (catalog.name || "").toLowerCase().includes("recordings") ||
+    (catalog.name || "").toLowerCase().includes("recording");
   const classRecordings = filteredCatalogs.filter(
-    catalog =>
+    (catalog) =>
       isClassRecording(catalog) &&
       !isFreeCourse(catalog) &&
       !isMasterClass(catalog) &&
-      !isPremiumCourse(catalog)
+      !isPremiumCourse(catalog),
   );
 
   // 5. Catch-all for catalogs that don't fit any special group
   const otherCatalogs = filteredCatalogs.filter(
-    catalog =>
+    (catalog) =>
       !isFreeCourse(catalog) &&
       !isMasterClass(catalog) &&
       !isPremiumCourse(catalog) &&
-      !isClassRecording(catalog)
+      !isClassRecording(catalog),
   );
 
   if (loading) {
@@ -470,20 +454,20 @@ export function CatalogPage() {
               src={catalog.thumbnail}
               alt={catalog.name}
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={e => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
               }}
             />
           ) : null}
           <div
-            className={`absolute inset-0 flex items-center justify-center ${gradientFrom.replace('50', '100')} ${gradientTo.replace('100', '200')}`}
-            style={{ display: catalog.thumbnail ? 'none' : 'flex' }}
+            className={`absolute inset-0 flex items-center justify-center ${gradientFrom.replace("50", "100")} ${gradientTo.replace("100", "200")}`}
+            style={{ display: catalog.thumbnail ? "none" : "flex" }}
           >
             <FolderOpen className="h-16 w-16 opacity-80" />
           </div>
           <div
-            className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientFrom.replace('50', '400')} ${gradientTo.replace('100', '500')}`}
+            className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientFrom.replace("50", "400")} ${gradientTo.replace("100", "500")}`}
           ></div>
         </div>
 
@@ -510,7 +494,7 @@ export function CatalogPage() {
                   ? catalog._count.catalog_courses
                   : catalog.catalog_courseCount !== undefined
                     ? catalog.catalog_courseCount
-                    : catalog.courseCount || 0}{' '}
+                    : catalog.courseCount || 0}{" "}
                 courses
               </span>
             </span>
@@ -526,7 +510,7 @@ export function CatalogPage() {
 
           <div className="flex gap-2">
             <Button
-              className={`flex-1 h-11 ${buttonClass} ${hasPurchasedEntire ? 'ring-2 ring-offset-2 ring-emerald-400' : ''}`}
+              className={`flex-1 h-11 ${buttonClass} ${hasPurchasedEntire ? "ring-2 ring-offset-2 ring-emerald-400" : ""}`}
               asChild
             >
               <Link
@@ -540,7 +524,7 @@ export function CatalogPage() {
                     Open Catalog
                   </>
                 ) : (
-                  'Explore Catalog'
+                  "Explore Catalog"
                 )}
               </Link>
             </Button>
@@ -549,11 +533,11 @@ export function CatalogPage() {
               !isEnrolled &&
               (!isMasterClass(catalog) ||
                 (isMasterClass(catalog) &&
-                  (catalog.name || '')
+                  (catalog.name || "")
                     .toLowerCase()
-                    .includes('private merchant'))) && (
+                    .includes("private merchant"))) && (
                 <Button
-                  onClick={e => {
+                  onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleBuyCatalogClick(catalog);
@@ -594,7 +578,7 @@ export function CatalogPage() {
               <Input
                 placeholder="Search catalogs..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full md:w-80 py-2 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -638,7 +622,7 @@ export function CatalogPage() {
                         badgeText="Free"
                         gradientFrom="from-blue-50"
                         gradientTo="to-blue-100"
-                        buttonClass="w-full bg-[#6164ec] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#6164ec] hover:bg-[#4f52d6] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -659,7 +643,7 @@ export function CatalogPage() {
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {masterClasses.map(catalog => (
+                    {masterClasses.map((catalog) => (
                       <CatalogCard
                         key={catalog.id}
                         catalog={catalog}
@@ -667,7 +651,7 @@ export function CatalogPage() {
                         badgeText="Master Class"
                         gradientFrom="from-green-50"
                         gradientTo="to-green-100"
-                        buttonClass="w-full bg-[#6164ec] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#6164ec] hover:bg-[#4f52d6] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -688,7 +672,7 @@ export function CatalogPage() {
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {premiumCatalogs.map(catalog => (
+                    {premiumCatalogs.map((catalog) => (
                       <CatalogCard
                         key={catalog.id}
                         catalog={catalog}
@@ -696,7 +680,7 @@ export function CatalogPage() {
                         badgeText="Premium"
                         gradientFrom="from-purple-50"
                         gradientTo="to-indigo-100"
-                        buttonClass="w-full bg-[#6164ec] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#6164ec] hover:bg-[#4f52d6] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -743,7 +727,7 @@ export function CatalogPage() {
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {otherCatalogs.map(catalog => (
+                    {otherCatalogs.map((catalog) => (
                       <CatalogCard
                         key={catalog.id}
                         catalog={catalog}
@@ -751,7 +735,7 @@ export function CatalogPage() {
                         badgeText="Catalog"
                         gradientFrom="from-gray-50"
                         gradientTo="to-gray-100"
-                        buttonClass="w-full bg-[#6164ec] hover:bg-[#b00000] text-white font-medium transition-all duration-200"
+                        buttonClass="w-full bg-[#6164ec] hover:bg-[#4f52d6] text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
@@ -789,7 +773,7 @@ export function CatalogPage() {
                 {(() => {
                   const description =
                     selectedCatalogToBuy.description ||
-                    'Complete catalog with multiple courses';
+                    "Complete catalog with multiple courses";
                   const maxLength = 200; // Character limit for truncated description
 
                   if (description.length <= maxLength) {
@@ -807,7 +791,7 @@ export function CatalogPage() {
                         }
                         className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
                       >
-                        {isDescriptionExpanded ? 'View Less' : 'View More'}
+                        {isDescriptionExpanded ? "View Less" : "View More"}
                       </button>
                     </div>
                   );
@@ -860,7 +844,7 @@ export function CatalogPage() {
                 <span className="text-sm font-semibold text-gray-900">
                   {Number.isFinite(creditsBalance)
                     ? creditsBalance
-                    : (creditsAlt ?? 0)}{' '}
+                    : (creditsAlt ?? 0)}{" "}
                   credits
                 </span>
               </div>
@@ -873,7 +857,7 @@ export function CatalogPage() {
                     {(Number.isFinite(creditsBalance)
                       ? creditsBalance
                       : (creditsAlt ?? 0)) -
-                      (selectedCatalogToBuy.priceCredits || 0)}{' '}
+                      (selectedCatalogToBuy.priceCredits || 0)}{" "}
                     credits
                   </span>
                 </div>
@@ -921,9 +905,9 @@ export function CatalogPage() {
 
                     // Call unlock API for catalog
                     await unlockContent(
-                      'CATALOG',
+                      "CATALOG",
                       selectedCatalogToBuy.id,
-                      selectedCatalogToBuy.priceCredits
+                      selectedCatalogToBuy.priceCredits,
                     );
 
                     // Additionally unlock recording courses for eligible titles within this catalog
@@ -936,17 +920,17 @@ export function CatalogPage() {
                       // If APIs aren't available, this block safely no-ops
                       try {
                         const details = await Promise.all(
-                          coursesList.map(async cid => {
+                          coursesList.map(async (cid) => {
                             try {
                               const res = await api.get(
-                                `/api/course/getCourseById/${cid}`
+                                `/api/course/getCourseById/${cid}`,
                               );
                               return res?.data?.data || res?.data;
                             } catch {
-                              _ => null;
+                              (_) => null;
                             }
                             return null;
-                          })
+                          }),
                         );
                         for (const course of details || []) {
                           const title = course?.title || course?.name;
@@ -955,34 +939,34 @@ export function CatalogPage() {
                             title.trim &&
                             title.trim() &&
                             [
-                              'become private',
-                              'sovereignty 101',
-                              'sov 101',
-                              'operate private',
-                              'business credit',
-                              'i want remedy now',
-                              'private merchant',
-                            ].some(k => title.toLowerCase().includes(k))
+                              "become private",
+                              "sovereignty 101",
+                              "sov 101",
+                              "operate private",
+                              "business credit",
+                              "i want remedy now",
+                              "private merchant",
+                            ].some((k) => title.toLowerCase().includes(k))
                           ) {
                             // best-effort unlock of recording sibling
                             const mapTitle = title.toLowerCase();
                             let recId = null;
-                            if (mapTitle.includes('become private'))
-                              recId = 'a188173c-23a6-4cb7-9653-6a1a809e9914';
-                            else if (mapTitle.includes('operate private'))
-                              recId = '7b798545-6f5f-4028-9b1e-e18c7d2b4c47';
-                            else if (mapTitle.includes('business credit'))
-                              recId = '199e328d-8366-4af1-9582-9ea545f8b59e';
-                            else if (mapTitle.includes('private merchant'))
-                              recId = 'd8e2e17f-af91-46e3-9a81-6e5b0214bc5e';
+                            if (mapTitle.includes("become private"))
+                              recId = "a188173c-23a6-4cb7-9653-6a1a809e9914";
+                            else if (mapTitle.includes("operate private"))
+                              recId = "7b798545-6f5f-4028-9b1e-e18c7d2b4c47";
+                            else if (mapTitle.includes("business credit"))
+                              recId = "199e328d-8366-4af1-9582-9ea545f8b59e";
+                            else if (mapTitle.includes("private merchant"))
+                              recId = "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e";
                             else if (
-                              mapTitle.includes('sovereignty 101') ||
-                              mapTitle.includes('sov 101')
+                              mapTitle.includes("sovereignty 101") ||
+                              mapTitle.includes("sov 101")
                             )
-                              recId = 'd5330607-9a45-4298-8ead-976dd8810283';
+                              recId = "d5330607-9a45-4298-8ead-976dd8810283";
                             if (recId) {
                               try {
-                                await unlockContent('COURSE', recId, 0);
+                                await unlockContent("COURSE", recId, 0);
                               } catch {}
                             }
                           }
@@ -990,8 +974,8 @@ export function CatalogPage() {
                       } catch {}
                     } catch (e) {
                       console.warn(
-                        '[Catalog] Optional recording unlock failed:',
-                        e?.message || e
+                        "[Catalog] Optional recording unlock failed:",
+                        e?.message || e,
                       );
                     }
 
@@ -1006,8 +990,8 @@ export function CatalogPage() {
                       setUserCourses(updatedCourses || []);
                     } catch (err) {
                       console.error(
-                        'Error refreshing user courses after purchase:',
-                        err
+                        "Error refreshing user courses after purchase:",
+                        err,
                       );
                     }
 
@@ -1015,40 +999,40 @@ export function CatalogPage() {
                     try {
                       if (userProfile?.id) {
                         const modules = await getUnlockedModulesByUser(
-                          userProfile.id
+                          userProfile.id,
                         );
                         setUnlockedModules(modules || []);
                       }
                     } catch (err) {
                       console.error(
-                        'Error refreshing unlocked modules after purchase:',
-                        err
+                        "Error refreshing unlocked modules after purchase:",
+                        err,
                       );
                     }
 
                     // Show success notice
                     setPurchaseNotice(
-                      `Successfully purchased catalog: ${selectedCatalogToBuy.name}. All included courses are now unlocked.`
+                      `Successfully purchased catalog: ${selectedCatalogToBuy.name}. All included courses are now unlocked.`,
                     );
                     closeAllModals();
-                    setTimeout(() => setPurchaseNotice(''), 4000);
+                    setTimeout(() => setPurchaseNotice(""), 4000);
                   } catch (error) {
-                    console.error('Failed to purchase catalog:', error);
+                    console.error("Failed to purchase catalog:", error);
                     setPurchaseNotice(
-                      `Failed to purchase catalog: ${error.message}`
+                      `Failed to purchase catalog: ${error.message}`,
                     );
-                    setTimeout(() => setPurchaseNotice(''), 4000);
+                    setTimeout(() => setPurchaseNotice(""), 4000);
                   } finally {
                     setIsPurchasing(false);
                   }
                 }}
                 className={`px-4 py-2 rounded-md text-white text-sm ${
                   isPurchasing
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
                 }`}
               >
-                {isPurchasing ? 'Processing...' : 'Confirm & Purchase'}
+                {isPurchasing ? "Processing..." : "Confirm & Purchase"}
               </button>
             </div>
           </div>
@@ -1080,22 +1064,22 @@ export function CatalogPage() {
                   Purchase Details:
                 </div>
                 <div>
-                  <span className="font-medium">Catalog:</span>{' '}
+                  <span className="font-medium">Catalog:</span>{" "}
                   {selectedCatalogToBuy.name}
                 </div>
                 <div>
-                  <span className="font-medium">Price:</span>{' '}
+                  <span className="font-medium">Price:</span>{" "}
                   {selectedCatalogToBuy.priceCredits || 0} credits
                 </div>
                 <div>
-                  <span className="font-medium">Your balance:</span>{' '}
+                  <span className="font-medium">Your balance:</span>{" "}
                   {Number.isFinite(creditsBalance)
                     ? creditsBalance
-                    : (creditsAlt ?? 0)}{' '}
+                    : (creditsAlt ?? 0)}{" "}
                   credits
                 </div>
                 <div>
-                  <span className="font-medium">Courses included:</span>{' '}
+                  <span className="font-medium">Courses included:</span>{" "}
                   {selectedCatalogToBuy.coursesCount ?? 0} courses
                 </div>
               </div>
@@ -1120,11 +1104,11 @@ export function CatalogPage() {
                   </span>
                 </div>
                 <p className="text-orange-700 text-xs">
-                  You need{' '}
+                  You need{" "}
                   {(selectedCatalogToBuy.priceCredits || 0) -
                     (Number.isFinite(creditsBalance)
                       ? creditsBalance
-                      : (creditsAlt ?? 0))}{' '}
+                      : (creditsAlt ?? 0))}{" "}
                   more credits to purchase this catalog.
                 </p>
               </div>

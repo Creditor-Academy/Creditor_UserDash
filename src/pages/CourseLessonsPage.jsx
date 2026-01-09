@@ -1,32 +1,40 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { currentUserId } from '@/data/currentUser';
-import { createModule, fetchAllCourses } from '@/services/courseService';
+import {
+  createModule,
+  fetchAllCourses,
+  deleteCourse,
+} from '@/services/courseService';
+import { useAuth } from '@/contexts/AuthContext';
 import { CreateModuleDialog } from '@/components/courses/CreateModuleDialog';
 import { CreateLessonDialog } from '@/components/courses/CreateLessonDialog';
+import CourseFeedbackForm from '@/components/courses/CourseFeedbackForm';
+import CreateCourseModal from '@/components/courses/CreateCourseModal';
+import CreateCourseOptions from '@/components/courses/CreateCourseOptions';
+import AICourseCreationPanel from '@/components/courses/AICourseCreationPanel';
+import EditCourseModal from '@/components/courses/EditCourseModal';
+import CourseUsersModal from '@/components/courses/CourseUsersModal';
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
-  Search,
   Clock,
   ChevronLeft,
-  Play,
   Eye,
-  Upload,
   Trash2,
   FileText,
   Plus,
-  List,
   BookOpen,
-  Download,
+  MoreVertical,
+  Users,
+  Edit,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { api } from '@/services/apiClient';
 
 const COURSES_PER_PAGE = 6;
 
 const CourseLessonsPage = () => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,46 +47,56 @@ const CourseLessonsPage = () => {
   const [showCreateLessonDialog, setShowCreateLessonDialog] = useState(false);
   const [selectedCourseForLesson, setSelectedCourseForLesson] = useState(null);
   const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
+  const [showFeedbackCourseId, setShowFeedbackCourseId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
-  const exportInProgressRef = useRef(false);
+  const [showCreateCourseOptions, setShowCreateCourseOptions] = useState(false);
+  const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
+  const [showAICoursePanel, setShowAICoursePanel] = useState(false);
+  const [showEditCourseModal, setShowEditCourseModal] = useState(false);
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
+  const [selectedCourseForEdit, setSelectedCourseForEdit] = useState(null);
+  const [selectedCourseForUsers, setSelectedCourseForUsers] = useState(null);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [optionsOpenForCourse, setOptionsOpenForCourse] = useState(null);
   const navigate = useNavigate();
+  const currentUserId = user?.id || user?._id || null;
 
   const isAllowed = true;
 
-  useEffect(() => {
+  const fetchCoursesData = useCallback(async () => {
     if (!isAllowed) return;
-    const fetchCoursesData = async () => {
-      setIsLoading(true);
-      try {
-        const coursesData = await fetchAllCourses();
+    setIsLoading(true);
+    try {
+      const coursesData = await fetchAllCourses();
+      console.log(
+        '✅ OPTIMIZATION: Using module count from course data instead of fetching modules for each course'
+      );
+
+      // Use module count from course data instead of fetching modules for each course
+      const coursesWithModules = coursesData.map(course => {
+        const moduleCount = course._count?.modules || 0;
         console.log(
-          '✅ OPTIMIZATION: Using module count from course data instead of fetching modules for each course'
+          `Course "${course.title}" has ${moduleCount} modules (from _count.modules)`
         );
 
-        // Use module count from course data instead of fetching modules for each course
-        const coursesWithModules = coursesData.map(course => {
-          // Use the module count from _count.modules instead of fetching actual modules
-          const moduleCount = course._count?.modules || 0;
-          console.log(
-            `Course "${course.title}" has ${moduleCount} modules (from _count.modules)`
-          );
-
-          return {
-            ...course,
-            moduleCount, // Add module count for display
-            modules: [], // Don't fetch actual modules unless needed for specific functionality
-          };
-        });
-        setCourses(coursesWithModules);
-      } catch (err) {
-        console.error('Error fetching courses:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchCoursesData();
+        return {
+          ...course,
+          moduleCount, // Add module count for display
+          modules: [], // Don't fetch actual modules unless needed for specific functionality
+        };
+      });
+      setCourses(coursesWithModules);
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [isAllowed]);
+
+  useEffect(() => {
+    fetchCoursesData();
+  }, [fetchCoursesData]);
 
   // Filtered and paginated courses
   const filteredCourses = useMemo(() => {
@@ -223,6 +241,72 @@ const CourseLessonsPage = () => {
     setShowDeleteDialog(lesson);
   };
 
+  const handleViewUsers = courseId => {
+    setSelectedCourseForUsers(courseId);
+    setShowUsersModal(true);
+    setOptionsOpenForCourse(null);
+  };
+
+  const handleEditCourse = course => {
+    setSelectedCourseForEdit(course);
+    setShowEditCourseModal(true);
+    setOptionsOpenForCourse(null);
+  };
+
+  const handleCourseUpdated = updatedCourse => {
+    if (!updatedCourse) return;
+    setCourses(prev =>
+      prev.map(c =>
+        c.id === updatedCourse.id ? { ...c, ...updatedCourse } : c
+      )
+    );
+    fetchCoursesData();
+  };
+
+  const handleDeleteCourseClick = course => {
+    setCourseToDelete(course);
+    setShowDeleteCourseConfirm(true);
+    setOptionsOpenForCourse(null);
+  };
+
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    try {
+      await deleteCourse(courseToDelete.id);
+      setCourses(prev => prev.filter(c => c.id !== courseToDelete.id));
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      alert('Failed to delete course. Please try again.');
+    } finally {
+      setShowDeleteCourseConfirm(false);
+      setCourseToDelete(null);
+      fetchCoursesData();
+    }
+  };
+
+  const handleCreateOptionSelect = option => {
+    // Close options first to mimic Course Management flow
+    setShowCreateCourseOptions(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (option === 'ai') {
+          setShowAICoursePanel(true);
+        } else if (option === 'blank') {
+          setShowCreateCourseModal(true);
+        }
+      });
+    });
+  };
+
+  const handleCourseCreated = newCourse => {
+    if (newCourse) {
+      setCourses(prev => [newCourse, ...prev]);
+    }
+    setShowCreateCourseModal(false);
+    setShowAICoursePanel(false);
+    fetchCoursesData();
+  };
+
   const confirmDelete = async () => {
     if (!showDeleteDialog) return;
 
@@ -265,50 +349,6 @@ const CourseLessonsPage = () => {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}:00`;
-  };
-
-  const handleExportScorm = async () => {
-    if (exportInProgressRef.current) {
-      return;
-    }
-
-    try {
-      setIsExporting(true);
-      exportInProgressRef.current = true;
-      const response = await api.get('/api/export/modules-scorm', {
-        responseType: 'blob',
-      });
-
-      const contentDisposition = response.headers['content-disposition'];
-      let fileName = 'scorm-data.xlsx';
-
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="?([^";]+)"?/i);
-        if (match && match[1]) {
-          fileName = match[1];
-        }
-      }
-
-      const blob = new Blob([response.data], {
-        type:
-          response.headers['content-type'] ||
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting modules as SCORM:', error);
-      alert('Failed to export SCORM package. Please try again.');
-    } finally {
-      setIsExporting(false);
-      exportInProgressRef.current = false;
-    }
   };
 
   if (!isAllowed) {
@@ -392,12 +432,11 @@ const CourseLessonsPage = () => {
           </p>
         </div>
         <Button
-          onClick={handleExportScorm}
-          disabled={isExporting}
+          onClick={() => setShowCreateCourseOptions(true)}
           className="self-start md:self-auto bg-blue-600 hover:bg-blue-700 text-white"
         >
-          <Download className="h-4 w-4 mr-2" />
-          {isExporting ? 'Exporting...' : 'Export SCORM'}
+          <Plus className="h-4 w-4 mr-2" />
+          Create Course
         </Button>
       </div>
 
@@ -428,7 +467,61 @@ const CourseLessonsPage = () => {
               {/* Course Card */}
               <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 flex flex-col h-full">
                 {/* Course Image */}
-                <div className="w-full h-48 flex-shrink-0">
+                <div className="w-full h-48 flex-shrink-0 relative">
+                  <div className="absolute top-3 right-3 z-[2]">
+                    <button
+                      onClick={() =>
+                        setOptionsOpenForCourse(prev =>
+                          prev === course.id ? null : course.id
+                        )
+                      }
+                      className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all duration-200"
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-600" />
+                    </button>
+
+                    {optionsOpenForCourse === course.id && (
+                      <div className="absolute right-0 top-10 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[3]">
+                        <button
+                          onClick={() => handleViewUsers(course.id)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <Users className="w-4 h-4" />
+                          View Users
+                        </button>
+                        <button
+                          onClick={() => handleEditCourse(course)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit Course
+                        </button>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <button
+                          onClick={() => handleDeleteCourseClick(course)}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Course
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute top-3 left-3 z-[2]">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        (course.course_status || '').toUpperCase() ===
+                        'PUBLISHED'
+                          ? 'bg-green-100 text-green-800 border border-green-200'
+                          : (course.course_status || '').toUpperCase() ===
+                              'DRAFT'
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                            : 'bg-gray-100 text-gray-800 border border-gray-200'
+                      }`}
+                    >
+                      {(course.course_status || '').toUpperCase() || 'DRAFT'}
+                    </span>
+                  </div>
                   <img
                     src={
                       course.thumbnail ||
@@ -485,6 +578,13 @@ const CourseLessonsPage = () => {
                     className="w-full px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
                   >
                     View Modules
+                  </Button>
+                  <Button
+                    onClick={() => setShowFeedbackCourseId(course.id)}
+                    variant="outline"
+                    className="w-full mt-3"
+                  >
+                    Give Feedback
                   </Button>
                 </div>
               </Card>
@@ -686,6 +786,35 @@ const CourseLessonsPage = () => {
         courseId={selectedCourseForLesson}
       />
 
+      {showFeedbackCourseId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Give Feedback
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Share your experience to help improve this course.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFeedbackCourseId(null)}
+                className="text-gray-500 hover:text-gray-700 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <CourseFeedbackForm
+              courseId={showFeedbackCourseId}
+              userId={currentUserId}
+              onSubmitSuccess={() => setShowFeedbackCourseId(null)}
+            />
+          </div>
+        </div>
+      )}
+
       {showDeleteDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -708,6 +837,47 @@ const CourseLessonsPage = () => {
           </div>
         </div>
       )}
+
+      <CreateCourseOptions
+        isOpen={showCreateCourseOptions}
+        onClose={() => setShowCreateCourseOptions(false)}
+        onSelectOption={handleCreateOptionSelect}
+      />
+
+      <CreateCourseModal
+        isOpen={showCreateCourseModal}
+        onClose={() => setShowCreateCourseModal(false)}
+        onCourseCreated={handleCourseCreated}
+      />
+
+      <AICourseCreationPanel
+        isOpen={showAICoursePanel}
+        onClose={() => setShowAICoursePanel(false)}
+        onCourseCreated={handleCourseCreated}
+      />
+
+      <EditCourseModal
+        isOpen={showEditCourseModal}
+        onClose={() => setShowEditCourseModal(false)}
+        courseData={selectedCourseForEdit}
+        onCourseUpdated={handleCourseUpdated}
+      />
+
+      <CourseUsersModal
+        isOpen={showUsersModal}
+        onClose={() => setShowUsersModal(false)}
+        courseId={selectedCourseForUsers}
+      />
+
+      <ConfirmationDialog
+        isOpen={showDeleteCourseConfirm}
+        onClose={() => setShowDeleteCourseConfirm(false)}
+        onConfirm={confirmDeleteCourse}
+        title="Delete Course"
+        message={`Are you sure you want to delete the course "${courseToDelete?.title}"? This action cannot be undone.`}
+        confirmText="Delete Course"
+        type="danger"
+      />
     </div>
   );
 };

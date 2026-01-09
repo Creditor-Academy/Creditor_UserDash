@@ -1,6 +1,6 @@
-import api from './apiClient';
-import { uploadImage } from './imageUploadService';
-import { uploadVideo } from './videoUploadService';
+import api from "./apiClient";
+import { uploadImage } from "./imageUploadService";
+import { uploadVideo } from "./videoUploadService";
 
 /**
  * Create a sponsor ad via backend API
@@ -18,7 +18,7 @@ import { uploadVideo } from './videoUploadService';
  */
 export async function createSponsorAd(adData) {
   try {
-    console.log('🚀 Creating sponsor ad:', adData);
+    console.log("🚀 Creating sponsor ad:", adData);
 
     let imageUrl = null;
     let videoUrl = null;
@@ -26,30 +26,30 @@ export async function createSponsorAd(adData) {
 
     // If mediaFile is a File object, upload it first
     if (adData.mediaFile instanceof File) {
-      const isVideo = adData.mediaFile.type.startsWith('video/');
+      const isVideo = adData.mediaFile.type.startsWith("video/");
 
       if (isVideo) {
-        console.log('📤 Uploading video file...');
+        console.log("📤 Uploading video file...");
         const uploadResult = await uploadVideo(adData.mediaFile, {
-          folder: 'sponsor-ads',
+          folder: "sponsor-ads",
           public: true,
-          type: 'video',
+          type: "video",
         });
         videoUrl = uploadResult.videoUrl;
         mediaUrl = videoUrl;
-        console.log('✅ Video uploaded:', videoUrl);
+        console.log("✅ Video uploaded:", videoUrl);
       } else {
-        console.log('📤 Uploading image file...');
+        console.log("📤 Uploading image file...");
         const uploadResult = await uploadImage(adData.mediaFile, {
-          folder: 'sponsor-ads',
+          folder: "sponsor-ads",
           public: true,
-          type: 'image',
+          type: "image",
         });
         imageUrl = uploadResult.imageUrl;
         mediaUrl = imageUrl;
-        console.log('✅ Image uploaded:', imageUrl);
+        console.log("✅ Image uploaded:", imageUrl);
       }
-    } else if (typeof mediaUrl === 'string') {
+    } else if (typeof mediaUrl === "string") {
       // If it's a string URL, determine if it's a video or image
       const isVideoUrl = /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(mediaUrl);
       if (isVideoUrl) {
@@ -60,14 +60,14 @@ export async function createSponsorAd(adData) {
     }
 
     // Convert dates to ISO format if needed
-    const formatDate = date => {
+    const formatDate = (date) => {
       if (!date) return null;
       if (date instanceof Date) {
         return date.toISOString();
       }
-      if (typeof date === 'string') {
+      if (typeof date === "string") {
         // If it's already ISO format, return as is
-        if (date.includes('T')) {
+        if (date.includes("T")) {
           return date;
         }
         // If it's a date string like "2025-01-01", convert to ISO
@@ -81,32 +81,32 @@ export async function createSponsorAd(adData) {
 
     // Map frontend fields to backend API format
     const payload = {
-      title: adData.title?.trim() || '',
-      description: adData.description?.trim() || '',
-      image_url: imageUrl || '',
-      video_url: videoUrl || '',
-      link_url: adData.linkUrl?.trim() || '',
-      sponsor_name: adData.sponsorName?.trim() || '',
+      title: adData.title?.trim() || "",
+      description: adData.description?.trim() || "",
+      image_url: imageUrl || "",
+      video_url: videoUrl || "",
+      link_url: adData.linkUrl?.trim() || "",
+      sponsor_name: adData.sponsorName?.trim() || "",
       start_date: formatDate(adData.startDate),
       end_date: formatDate(adData.endDate),
-      position: adData.position || 'DASHBOARD',
+      position: adData.position || "DASHBOARD",
       organization_id: adData.organizationId || null,
     };
 
-    console.log('📤 Sending request to backend:', payload);
+    console.log("📤 Sending request to backend:", payload);
 
     // Make API call
-    const response = await api.post('/api/admin/ads', payload);
+    const response = await api.post("/api/admin/ads", payload);
 
-    console.log('✅ Sponsor ad created successfully:', response.data);
+    console.log("✅ Sponsor ad created successfully:", response.data);
 
     return {
       success: true,
       data: response.data,
-      message: 'Sponsor ad created successfully',
+      message: "Sponsor ad created successfully",
     };
   } catch (error) {
-    console.error('❌ Failed to create sponsor ad:', {
+    console.error("❌ Failed to create sponsor ad:", {
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
@@ -121,7 +121,7 @@ export async function createSponsorAd(adData) {
 
     throw new Error(
       backendMessage ||
-        `Failed to create sponsor ad (${error.response?.status || 'Unknown'})`
+        `Failed to create sponsor ad (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -140,11 +140,11 @@ export async function getAllSponsorAds() {
         requestId: `sponsor-ads-${Date.now()}`,
       },
     };
-    const response = await api.get('/api/admin/ads', config);
-    console.log('✅ Fetched sponsor ads:', response.data);
+    const response = await api.get("/api/admin/ads", config);
+    console.log("✅ Fetched sponsor ads:", response.data);
     return response.data.data || response.data || [];
   } catch (error) {
-    console.error('❌ Failed to fetch sponsor ads:', error);
+    console.error("❌ Failed to fetch sponsor ads:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -152,7 +152,7 @@ export async function getAllSponsorAds() {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to fetch sponsor ads (${error.response?.status || 'Unknown'})`
+        `Failed to fetch sponsor ads (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -165,15 +165,15 @@ export async function getAllSponsorAds() {
 
 export async function fetchDashboardSponsorAds() {
   try {
-    const response = await api.get('/api/user/dashboard/ads');
+    const response = await api.get("/api/user/dashboard/ads");
 
     // Handle the response structure: { code: 200, data: { ads: [...] }, success: true, message: "..." }
     const ads = response.data?.data?.ads || response.data?.ads || [];
 
-    console.log('✅ Dashboard sponsor ads fetched:', ads);
+    console.log("✅ Dashboard sponsor ads fetched:", ads);
     return ads;
   } catch (error) {
-    console.error('❌ Failed to fetch dashboard sponsor ads:', error);
+    console.error("❌ Failed to fetch dashboard sponsor ads:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -181,7 +181,7 @@ export async function fetchDashboardSponsorAds() {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to fetch dashboard sponsor ads (${error.response?.status || 'Unknown'})`
+        `Failed to fetch dashboard sponsor ads (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -194,9 +194,9 @@ export async function trackSponsorAdClick(adId) {
   if (!adId) return;
   try {
     await api.post(`/api/user/ads/${adId}/click`);
-    console.log('✅ Tracked sponsor ad click', adId);
+    console.log("✅ Tracked sponsor ad click", adId);
   } catch (error) {
-    console.error('❌ Failed to track sponsor ad click:', error);
+    console.error("❌ Failed to track sponsor ad click:", error);
     // We don't throw here to avoid disrupting UI; logging is enough
   }
 }
@@ -215,26 +215,26 @@ export async function updateSponsorAd(adId, adData) {
 
     // If mediaFile is a File object, upload it first
     if (adData.mediaFile instanceof File) {
-      const isVideo = adData.mediaFile.type.startsWith('video/');
+      const isVideo = adData.mediaFile.type.startsWith("video/");
 
       if (isVideo) {
         const uploadResult = await uploadVideo(adData.mediaFile, {
-          folder: 'sponsor-ads',
+          folder: "sponsor-ads",
           public: true,
-          type: 'video',
+          type: "video",
         });
         videoUrl = uploadResult.videoUrl;
         imageUrl = null; // Clear image URL if uploading video
       } else {
         const uploadResult = await uploadImage(adData.mediaFile, {
-          folder: 'sponsor-ads',
+          folder: "sponsor-ads",
           public: true,
-          type: 'image',
+          type: "image",
         });
         imageUrl = uploadResult.imageUrl;
         videoUrl = null; // Clear video URL if uploading image
       }
-    } else if (adData.mediaUrl && typeof adData.mediaUrl === 'string') {
+    } else if (adData.mediaUrl && typeof adData.mediaUrl === "string") {
       // Determine if existing URL is video or image
       const isVideoUrl = /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(adData.mediaUrl);
       if (isVideoUrl) {
@@ -246,11 +246,11 @@ export async function updateSponsorAd(adId, adData) {
       }
     }
 
-    const formatDate = date => {
+    const formatDate = (date) => {
       if (!date) return null;
       if (date instanceof Date) return date.toISOString();
-      if (typeof date === 'string') {
-        if (date.includes('T')) return date;
+      if (typeof date === "string") {
+        if (date.includes("T")) return date;
         const d = new Date(date);
         if (!isNaN(d.getTime())) return d.toISOString();
       }
@@ -258,27 +258,27 @@ export async function updateSponsorAd(adId, adData) {
     };
 
     const payload = {
-      title: adData.title?.trim() || '',
-      description: adData.description?.trim() || '',
-      image_url: imageUrl || '',
-      video_url: videoUrl || '',
-      link_url: adData.linkUrl?.trim() || '',
-      sponsor_name: adData.sponsorName?.trim() || '',
+      title: adData.title?.trim() || "",
+      description: adData.description?.trim() || "",
+      image_url: imageUrl || "",
+      video_url: videoUrl || "",
+      link_url: adData.linkUrl?.trim() || "",
+      sponsor_name: adData.sponsorName?.trim() || "",
       start_date: formatDate(adData.startDate),
       end_date: formatDate(adData.endDate),
-      position: adData.position || 'DASHBOARD',
+      position: adData.position || "DASHBOARD",
       organization_id: adData.organizationId || null,
     };
 
     const response = await api.put(`/api/admin/ads/${adId}`, payload);
-    console.log('✅ Sponsor ad updated:', response.data);
+    console.log("✅ Sponsor ad updated:", response.data);
     return {
       success: true,
       data: response.data,
-      message: 'Sponsor ad updated successfully',
+      message: "Sponsor ad updated successfully",
     };
   } catch (error) {
-    console.error('❌ Failed to update sponsor ad:', error);
+    console.error("❌ Failed to update sponsor ad:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -286,7 +286,7 @@ export async function updateSponsorAd(adId, adData) {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to update sponsor ad (${error.response?.status || 'Unknown'})`
+        `Failed to update sponsor ad (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -299,13 +299,13 @@ export async function updateSponsorAd(adId, adData) {
 export async function deleteSponsorAd(adId) {
   try {
     const response = await api.delete(`/api/admin/ads/${adId}`);
-    console.log('✅ Sponsor ad deleted:', response.data);
+    console.log("✅ Sponsor ad deleted:", response.data);
     return {
       success: true,
-      message: 'Sponsor ad deleted successfully',
+      message: "Sponsor ad deleted successfully",
     };
   } catch (error) {
-    console.error('❌ Failed to delete sponsor ad:', error);
+    console.error("❌ Failed to delete sponsor ad:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -313,7 +313,7 @@ export async function deleteSponsorAd(adId) {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to delete sponsor ad (${error.response?.status || 'Unknown'})`
+        `Failed to delete sponsor ad (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -338,41 +338,41 @@ export async function deleteSponsorAd(adId) {
  */
 export async function submitSponsorAdRequest(requestData) {
   try {
-    console.log('🚀 Submitting sponsor ad request:', requestData);
+    console.log("🚀 Submitting sponsor ad request:", requestData);
 
     let imageUrl = null;
     let videoUrl = null;
 
     // If mediaFile is a File object, upload it first
     if (requestData.mediaFile instanceof File) {
-      const isVideo = requestData.mediaFile.type.startsWith('video/');
+      const isVideo = requestData.mediaFile.type.startsWith("video/");
 
       if (isVideo) {
-        console.log('📤 Uploading video file...');
+        console.log("📤 Uploading video file...");
         const uploadResult = await uploadVideo(requestData.mediaFile, {
-          folder: 'sponsor-ads',
+          folder: "sponsor-ads",
           public: true,
-          type: 'video',
+          type: "video",
         });
         videoUrl = uploadResult.videoUrl;
-        console.log('✅ Video uploaded:', videoUrl);
+        console.log("✅ Video uploaded:", videoUrl);
       } else {
-        console.log('📤 Uploading image file...');
+        console.log("📤 Uploading image file...");
         const uploadResult = await uploadImage(requestData.mediaFile, {
-          folder: 'sponsor-ads',
+          folder: "sponsor-ads",
           public: true,
-          type: 'image',
+          type: "image",
         });
         imageUrl = uploadResult.imageUrl;
-        console.log('✅ Image uploaded:', imageUrl);
+        console.log("✅ Image uploaded:", imageUrl);
       }
     } else if (
       requestData.mediaFile &&
-      typeof requestData.mediaFile === 'string'
+      typeof requestData.mediaFile === "string"
     ) {
       // If it's a string URL, determine if it's a video or image
       const isVideoUrl = /\.(mp4|webm|ogg|mov|mkv|avi)$/i.test(
-        requestData.mediaFile
+        requestData.mediaFile,
       );
       if (isVideoUrl) {
         videoUrl = requestData.mediaFile;
@@ -382,14 +382,14 @@ export async function submitSponsorAdRequest(requestData) {
     }
 
     // Convert dates to ISO format if needed
-    const formatDate = date => {
+    const formatDate = (date) => {
       if (!date) return null;
       if (date instanceof Date) {
         return date.toISOString();
       }
-      if (typeof date === 'string') {
+      if (typeof date === "string") {
         // If it's already ISO format, return as is
-        if (date.includes('T')) {
+        if (date.includes("T")) {
           return date;
         }
         // If it's a date string like "2025-01-01", convert to ISO
@@ -403,18 +403,18 @@ export async function submitSponsorAdRequest(requestData) {
 
     // Map frontend placement to backend position
     const PLACEMENT_TO_POSITION = {
-      dashboard_banner: 'DASHBOARD',
-      dashboard_sidebar: 'SIDEBAR',
-      sidebar_ad: 'SIDEBAR',
-      course_player: 'COURSE_PLAYER',
-      course_player_sidebar: 'COURSE_PLAYER',
-      course_listing_page: 'COURSE_LISTING',
-      course_listing_tile: 'COURSE_LISTING',
-      popup: 'POPUP',
+      dashboard_banner: "DASHBOARD",
+      dashboard_sidebar: "SIDEBAR",
+      sidebar_ad: "SIDEBAR",
+      course_player: "COURSE_PLAYER",
+      course_player_sidebar: "COURSE_PLAYER",
+      course_listing_page: "COURSE_LISTING",
+      course_listing_tile: "COURSE_LISTING",
+      popup: "POPUP",
     };
 
     const preferredPosition =
-      PLACEMENT_TO_POSITION[requestData.placement] || 'DASHBOARD';
+      PLACEMENT_TO_POSITION[requestData.placement] || "DASHBOARD";
 
     // Upload website media (images and videos)
     const websiteMedia = [];
@@ -424,24 +424,24 @@ export async function submitSponsorAdRequest(requestData) {
         if (imageFile instanceof File) {
           try {
             const uploadResult = await uploadImage(imageFile, {
-              folder: 'sponsor-ads/website-media',
+              folder: "sponsor-ads/website-media",
               public: true,
-              type: 'image',
+              type: "image",
             });
             websiteMedia.push({
-              type: 'image',
+              type: "image",
               url: uploadResult.imageUrl,
-              caption: imageFile.name || '',
+              caption: imageFile.name || "",
             });
           } catch (error) {
-            console.error('Failed to upload website image:', error);
+            console.error("Failed to upload website image:", error);
           }
-        } else if (typeof imageFile === 'string') {
+        } else if (typeof imageFile === "string") {
           // If it's already a URL
           websiteMedia.push({
-            type: 'image',
+            type: "image",
             url: imageFile,
-            caption: '',
+            caption: "",
           });
         }
       }
@@ -452,24 +452,24 @@ export async function submitSponsorAdRequest(requestData) {
         if (videoFile instanceof File) {
           try {
             const uploadResult = await uploadVideo(videoFile, {
-              folder: 'sponsor-ads/website-media',
+              folder: "sponsor-ads/website-media",
               public: true,
-              type: 'video',
+              type: "video",
             });
             websiteMedia.push({
-              type: 'video',
+              type: "video",
               url: uploadResult.videoUrl,
-              caption: videoFile.name || '',
+              caption: videoFile.name || "",
             });
           } catch (error) {
-            console.error('Failed to upload website video:', error);
+            console.error("Failed to upload website video:", error);
           }
-        } else if (typeof videoFile === 'string') {
+        } else if (typeof videoFile === "string") {
           // If it's already a URL
           websiteMedia.push({
-            type: 'video',
+            type: "video",
             url: videoFile,
-            caption: '',
+            caption: "",
           });
         }
       }
@@ -479,42 +479,42 @@ export async function submitSponsorAdRequest(requestData) {
     // Backend also enforces a max length of 1000 characters for additional_notes,
     // so we keep it empty for now (field is optional and not required).
     const payload = {
-      title: requestData.title?.trim() || '',
-      description: requestData.description?.trim() || '',
-      sponsor_name: requestData.sponsor_name?.trim() || '',
-      company_name: requestData.company_name?.trim() || '',
-      contact_email: requestData.contact_email?.trim() || '',
-      contact_phone: requestData.contact_phone?.trim() || '',
-      image_url: imageUrl || '',
+      title: requestData.title?.trim() || "",
+      description: requestData.description?.trim() || "",
+      sponsor_name: requestData.sponsor_name?.trim() || "",
+      company_name: requestData.company_name?.trim() || "",
+      contact_email: requestData.contact_email?.trim() || "",
+      contact_phone: requestData.contact_phone?.trim() || "",
+      image_url: imageUrl || "",
       video_url: videoUrl || null,
       link_url:
-        requestData.link_url?.trim() || requestData.websiteUrl?.trim() || '',
+        requestData.link_url?.trim() || requestData.websiteUrl?.trim() || "",
       preferred_position: preferredPosition,
       preferred_start_date: formatDate(requestData.preferred_start_date),
       preferred_end_date: formatDate(requestData.preferred_end_date),
       budget: parseFloat(requestData.budget) || 0,
-      additional_notes: '',
+      additional_notes: "",
       // Intentionally NOT sending website_overview / offer_details /
       // website_features_highlights / website_media or long
       // additional_notes until backend schema is updated to accept them.
     };
 
-    console.log('📤 Sending request to backend:', payload);
+    console.log("📤 Sending request to backend:", payload);
 
     // Make API call
-    const response = await api.post('/api/user/ads/apply', payload);
+    const response = await api.post("/api/user/ads/apply", payload);
 
-    console.log('✅ Sponsor ad request submitted successfully:', response.data);
+    console.log("✅ Sponsor ad request submitted successfully:", response.data);
 
     return {
       success: true,
       data: response.data?.data || response.data,
       message:
         response.data?.message ||
-        'Ad application submitted successfully. Admin will review your request.',
+        "Ad application submitted successfully. Admin will review your request.",
     };
   } catch (error) {
-    console.error('❌ Failed to submit sponsor ad request:', {
+    console.error("❌ Failed to submit sponsor ad request:", {
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
@@ -529,7 +529,7 @@ export async function submitSponsorAdRequest(requestData) {
 
     throw new Error(
       backendMessage ||
-        `Failed to submit ad request (${error.response?.status || 'Unknown'})`
+        `Failed to submit ad request (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -547,16 +547,16 @@ export async function getUserAdApplications() {
         requestId: `user-applications-${Date.now()}`,
       },
     };
-    const response = await api.get('/api/user/ads/applications', config);
+    const response = await api.get("/api/user/ads/applications", config);
 
     // Handle the response structure: { code: 200, data: { applications: [...] }, success: true, message: "..." }
     const applications =
       response.data?.data?.applications || response.data?.applications || [];
 
-    console.log('✅ User ad applications fetched:', applications);
+    console.log("✅ User ad applications fetched:", applications);
     return applications;
   } catch (error) {
-    console.error('❌ Failed to fetch user ad applications:', error);
+    console.error("❌ Failed to fetch user ad applications:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -564,7 +564,7 @@ export async function getUserAdApplications() {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to fetch ad applications (${error.response?.status || 'Unknown'})`
+        `Failed to fetch ad applications (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -577,21 +577,21 @@ export async function getUserAdApplications() {
 export async function getUserAdApplicationById(applicationId) {
   try {
     if (!applicationId) {
-      throw new Error('Application ID is required');
+      throw new Error("Application ID is required");
     }
 
     const response = await api.get(
-      `/api/user/ads/applications/${applicationId}`
+      `/api/user/ads/applications/${applicationId}`,
     );
 
     // Handle the response structure: { code: 200, data: { ... }, success: true, message: "..." }
     const application =
       response.data?.data || response.data?.application || response.data;
 
-    console.log('✅ User ad application fetched:', application);
+    console.log("✅ User ad application fetched:", application);
     return application;
   } catch (error) {
-    console.error('❌ Failed to fetch ad application:', error);
+    console.error("❌ Failed to fetch ad application:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -599,7 +599,7 @@ export async function getUserAdApplicationById(applicationId) {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to fetch ad application (${error.response?.status || 'Unknown'})`
+        `Failed to fetch ad application (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -610,7 +610,7 @@ export async function getUserAdApplicationById(applicationId) {
  */
 export async function getAllAdApplications() {
   try {
-    const response = await api.get('/api/admin/ads/applications');
+    const response = await api.get("/api/admin/ads/applications");
 
     // Handle the response structure: { code: 200, data: { applications: [...] }, success: true, message: "..." }
     const applications =
@@ -619,10 +619,10 @@ export async function getAllAdApplications() {
       response.data ||
       [];
 
-    console.log('✅ All ad applications fetched:', applications);
+    console.log("✅ All ad applications fetched:", applications);
     return applications;
   } catch (error) {
-    console.error('❌ Failed to fetch ad applications:', error);
+    console.error("❌ Failed to fetch ad applications:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -630,7 +630,7 @@ export async function getAllAdApplications() {
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to fetch ad applications (${error.response?.status || 'Unknown'})`
+        `Failed to fetch ad applications (${error.response?.status || "Unknown"})`,
     );
   }
 }
@@ -645,44 +645,44 @@ export async function getAllAdApplications() {
 export async function updateApplicationStatus(
   applicationId,
   status,
-  adminNotes = ''
+  adminNotes = "",
 ) {
   try {
     if (!applicationId) {
-      throw new Error('Application ID is required');
+      throw new Error("Application ID is required");
     }
     if (!status) {
-      throw new Error('Status is required');
+      throw new Error("Status is required");
     }
 
     // Validate status value
-    const validStatuses = ['APPROVED', 'REJECTED', 'PENDING'];
+    const validStatuses = ["APPROVED", "REJECTED", "PENDING"];
     if (!validStatuses.includes(status.toUpperCase())) {
       throw new Error(
-        `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+        `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
       );
     }
 
     const payload = {
       status: status.toUpperCase(),
-      admin_notes: adminNotes?.trim() || '',
+      admin_notes: adminNotes?.trim() || "",
     };
 
-    console.log('📤 Updating application status:', { applicationId, payload });
+    console.log("📤 Updating application status:", { applicationId, payload });
 
     const response = await api.put(
       `/api/admin/ads/applications/${applicationId}/status`,
-      payload
+      payload,
     );
 
     // Handle the response structure: { code: 200, data: { ... }, success: true, message: "..." }
     const updatedApplication =
       response.data?.data || response.data?.application || response.data;
 
-    console.log('✅ Application status updated:', updatedApplication);
+    console.log("✅ Application status updated:", updatedApplication);
     return updatedApplication;
   } catch (error) {
-    console.error('❌ Failed to update application status:', error);
+    console.error("❌ Failed to update application status:", error);
     const backendMessage =
       error.response?.data?.errorMessage ||
       error.response?.data?.message ||
@@ -690,7 +690,7 @@ export async function updateApplicationStatus(
       error.message;
     throw new Error(
       backendMessage ||
-        `Failed to update application status (${error.response?.status || 'Unknown'})`
+        `Failed to update application status (${error.response?.status || "Unknown"})`,
     );
   }
 }

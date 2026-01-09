@@ -1,7 +1,7 @@
-import { createContext } from 'react';
+import { createContext } from "react";
 
 const defaultValue = {
-  activeTheme: 'newYear', // 'default' | 'newYear'
+  activeTheme: "newYear", // 'default' | 'newYear'
   setTheme: () => {},
 };
 

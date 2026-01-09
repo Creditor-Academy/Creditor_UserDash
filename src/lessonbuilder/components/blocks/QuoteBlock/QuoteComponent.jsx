@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import ImageEditor from '../MediaBlocks/ImageEditor';
+import devLogger from '@lessonbuilder/utils/devLogger';
 
 const QuoteComponent = forwardRef(
   (
@@ -27,6 +28,7 @@ const QuoteComponent = forwardRef(
       onQuoteTemplateSelect,
       onQuoteUpdate,
       editingQuoteBlock,
+      onAICreation,
     },
     ref
   ) => {
@@ -113,7 +115,7 @@ const QuoteComponent = forwardRef(
           throw new Error('Upload failed - no image URL returned');
         }
       } catch (error) {
-        console.error('Error uploading edited image:', error);
+        devLogger.error('Error uploading edited image:', error);
         toast.error(
           error.message || 'Failed to upload edited image. Please try again.'
         );
@@ -368,7 +370,7 @@ const QuoteComponent = forwardRef(
             ]);
           }
         } catch (e) {
-          console.error('Error parsing quote content:', e);
+          devLogger.error('Error parsing quote content:', e);
           setQuoteText('');
           setQuoteAuthor('');
           setQuoteImage('');
@@ -653,6 +655,71 @@ const QuoteComponent = forwardRef(
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="space-y-4">
+                  {/* AI Generation Option */}
+                  <div
+                    onClick={() => {
+                      setShowQuoteTemplateSidebar(false);
+                      if (onAICreation) {
+                        onAICreation({ id: 'quote', title: 'Quote' });
+                      }
+                    }}
+                    className="p-4 border border-purple-200 rounded-lg hover:border-purple-300 hover:shadow-md cursor-pointer transition-all duration-200 group bg-gradient-to-br from-purple-50 to-pink-50"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                        <svg
+                          className="w-5 h-5 text-purple-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-purple-900 mb-1 flex items-center gap-2">
+                          Generate with AI
+                          <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                            Recommended
+                          </span>
+                        </h3>
+                        <p className="text-xs text-purple-700 leading-relaxed">
+                          Describe what you want and let AI create professional
+                          quote content instantly
+                        </p>
+
+                        {/* Preview */}
+                        <div className="mt-3 overflow-hidden rounded-lg border border-purple-100">
+                          <div className="bg-white/70 p-4">
+                            <div className="flex items-center gap-2 text-purple-600">
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                                />
+                              </svg>
+                              <span className="text-sm font-medium">
+                                AI-powered quote generation
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {quoteTemplates.map(template => (
                     <div
                       key={template.id}
@@ -793,7 +860,10 @@ const QuoteComponent = forwardRef(
           open={showQuoteEditDialog}
           onOpenChange={setShowQuoteEditDialog}
         >
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+            aria-describedby={undefined}
+          >
             <DialogHeader>
               <DialogTitle>
                 Edit{' '}

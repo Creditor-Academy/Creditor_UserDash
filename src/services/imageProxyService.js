@@ -90,7 +90,7 @@ export async function handleCorsImage(imageUrl, options = {}) {
     return imageUrl;
   }
 
-  console.log('🔍 Detected OpenAI DALL-E URL, handling CORS...');
+  console.log('🔍 Detected provider image URL, handling CORS...');
 
   // Strategy 1: Try backend proxy upload (preferred)
   if (options.useProxy !== false) {
@@ -118,7 +118,7 @@ export async function handleCorsImage(imageUrl, options = {}) {
   }
 
   // Strategy 3: Return original URL (last resort)
-  console.log('🔄 Using original OpenAI URL (may have CORS issues)');
+  console.log('🔄 Using original source URL (may have CORS issues)');
   return imageUrl;
 }
 

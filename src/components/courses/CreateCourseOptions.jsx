@@ -10,37 +10,32 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
     {
       id: 'ai',
       title: 'AI Course',
-      description: 'Upcoming Feature',
+      description: 'Generate with AI',
+      tag: 'POWERED BY AI',
       icon: Sparkles,
-      gradient: 'from-purple-500 to-indigo-600',
-      hoverGradient: 'from-purple-600 to-indigo-700',
-      disabled: true,
-      disabledGradient: 'from-gray-200 to-gray-300',
+      color:
+        'bg-gradient-to-br from-cyan-400/90 via-sky-500/90 to-blue-600/90 hover:from-cyan-300 hover:via-sky-400 hover:to-blue-500 border border-cyan-200/70 shadow-lg shadow-cyan-200/60 backdrop-blur-md',
     },
     {
       id: 'blank',
       title: 'Manual Course',
       description: 'Create from scratch',
+      tag: 'MANUAL',
       icon: PenTool,
-      gradient: 'from-slate-700 to-slate-800',
-      hoverGradient: 'from-slate-800 to-slate-900',
-      disabled: false,
+      color: 'bg-gray-600 hover:bg-gray-700',
     },
   ];
 
   const overlayVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { duration: 0.2 },
-    },
+    visible: { opacity: 1 },
   };
 
   const modalVariants = {
     hidden: {
       opacity: 0,
-      scale: 0.96,
-      y: 10,
+      scale: 0.95,
+      y: 20,
     },
     visible: {
       opacity: 1,
@@ -48,8 +43,8 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       y: 0,
       transition: {
         type: 'spring',
-        stiffness: 400,
-        damping: 25,
+        stiffness: 300,
+        damping: 30,
       },
     },
     exit: {
@@ -68,8 +63,7 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
       opacity: 1,
       y: 0,
       transition: {
-        delay: i * 0.1,
-        duration: 0.3,
+        duration: 0.2,
       },
     }),
   };
@@ -96,11 +90,11 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden"
+          className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-sm w-full border border-white/20 overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-white/30 bg-gradient-to-r from-white/50 to-white/30 backdrop-blur-md">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 tracking-tight">
                 Create Course
@@ -115,46 +109,22 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
               onClick={onClose}
               className="rounded-full hover:bg-gray-100 h-9 w-9 transition-colors"
               aria-label="Close dialog"
+              title="Close course creation options"
             >
               <X className="w-4 h-4 text-gray-500" />
             </Button>
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-6 bg-gradient-to-b from-white/50 to-white/30 backdrop-blur-sm">
             <div className="grid grid-cols-2 gap-4">
-              {courseOptions.map((option, index) => (
+              {courseOptions.map(option => (
                 <motion.div
                   key={option.id}
-                  custom={index}
-                  variants={optionVariants}
-                  initial="hidden"
-                  animate="visible"
-                  whileHover={
-                    option.disabled
-                      ? {}
-                      : {
-                          scale: 1.03,
-                          y: -2,
-                          transition: { duration: 0.2 },
-                        }
-                  }
-                  whileTap={option.disabled ? {} : { scale: 0.98 }}
-                  className={`
-                    relative rounded-xl p-5 
-                    ${
-                      option.disabled
-                        ? `bg-gradient-to-br ${option.disabledGradient} cursor-not-allowed opacity-60`
-                        : `bg-gradient-to-br ${option.gradient} cursor-pointer shadow-lg hover:shadow-xl`
-                    }
-                    transition-all duration-300 text-white group overflow-hidden
-                  `}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`${option.color} rounded-2xl p-4 cursor-pointer transition-all duration-200 text-white text-center group relative overflow-hidden`}
                   onClick={e => {
-                    if (option.disabled) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      return;
-                    }
                     e.preventDefault();
                     e.stopPropagation();
                     onSelectOption(option.id);
@@ -175,6 +145,11 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
                   )}
 
                   <div className="flex flex-col items-center space-y-3 relative z-10">
+                    {option.tag && (
+                      <span className="text-xs font-bold px-2 py-1 bg-white/20 rounded-full backdrop-blur-sm border border-white/30">
+                        {option.tag}
+                      </span>
+                    )}
                     <motion.div
                       animate={
                         option.disabled
@@ -220,19 +195,6 @@ const CreateCourseOptions = ({ isOpen, onClose, onSelectOption }) => {
                 </motion.div>
               ))}
             </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mt-5 pt-4 border-t border-gray-100"
-            >
-              <p className="text-xs text-gray-500 text-center leading-relaxed">
-                <span className="font-medium text-gray-600">AI Course</span> is
-                an upcoming feature that will help you create courses faster
-                with intelligent automation.
-              </p>
-            </motion.div>
           </div>
         </motion.div>
       </motion.div>

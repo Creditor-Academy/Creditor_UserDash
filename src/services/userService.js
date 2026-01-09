@@ -20,13 +20,24 @@ export function setUserRole(role) {
   window.dispatchEvent(new Event('userRoleChanged'));
 }
 
-// Utility function to set all user roles (enforces single role)
+// Utility function to set all user roles (supports multiple roles)
 export function setUserRoles(roles) {
   if (Array.isArray(roles) && roles.length > 0) {
-    // Enforce single role - take only the first role
-    const singleRole = roles[0];
-    localStorage.setItem('userRoles', JSON.stringify([singleRole]));
-    localStorage.setItem('userRole', singleRole);
+    // Store all roles
+    localStorage.setItem('userRoles', JSON.stringify(roles));
+
+    // Determine primary role based on priority
+    const priorityRoles = ['super_admin', 'admin', 'instructor', 'user'];
+    const primaryRole =
+      priorityRoles.find(role => roles.includes(role)) || roles[0] || 'user';
+    localStorage.setItem('userRole', primaryRole);
+
+    console.log(
+      'setUserRoles: Stored roles:',
+      roles,
+      'Primary role:',
+      primaryRole
+    );
   } else {
     localStorage.setItem('userRoles', JSON.stringify(['user']));
     localStorage.setItem('userRole', 'user');

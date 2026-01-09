@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Volume2, VolumeX } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { trackSponsorAdClick } from '@/services/sponsorAdsService';
+import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowUpRight, Volume2, VolumeX } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { trackSponsorAdClick } from "@/services/sponsorAdsService";
 
 const SponsorSidebarAd = ({ ad, className }) => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const SponsorSidebarAd = ({ ad, className }) => {
 
   // ✅ FORCE BACKGROUND AUTOPLAY (CRITICAL FIX)
   useEffect(() => {
-    if (!videoRef.current || mediaType !== 'video') return;
+    if (!videoRef.current || mediaType !== "video") return;
 
     const video = videoRef.current;
 
@@ -39,7 +39,7 @@ const SponsorSidebarAd = ({ ad, className }) => {
   }, [mediaType]);
 
   const handleMuteToggle = () => {
-    setIsMuted(prev => {
+    setIsMuted((prev) => {
       if (videoRef.current) {
         videoRef.current.muted = !prev;
       }
@@ -56,12 +56,12 @@ const SponsorSidebarAd = ({ ad, className }) => {
   return (
     <Card
       className={cn(
-        'relative overflow-hidden rounded-xl border border-gray-200 shadow-md h-[200px]',
-        className
+        "relative overflow-hidden rounded-xl border border-gray-200 shadow-md h-[200px]",
+        className,
       )}
     >
       {/* 🔹 BACKGROUND MEDIA */}
-      {mediaUrl && mediaType === 'video' ? (
+      {mediaUrl && mediaType === "video" ? (
         <video
           ref={videoRef}
           src={mediaUrl}
@@ -84,7 +84,7 @@ const SponsorSidebarAd = ({ ad, className }) => {
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70 z-10" />
 
       {/* Mute / Unmute */}
-      {mediaType === 'video' && (
+      {mediaType === "video" && (
         <button
           onClick={handleMuteToggle}
           className="absolute top-2 right-2 z-30 bg-black/50 rounded-full p-1.5"

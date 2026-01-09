@@ -29,9 +29,9 @@ export async function uploadVideo(file, options = {}) {
         'Please upload a valid video (MP4, WEBM, OGG, MOV, MKV, AVI)'
       );
     }
-    // Video size limit (500MB)
-    if (file.size > 500 * 1024 * 1024) {
-      throw new Error('Video size should be less than 500MB');
+    // Video size limit (3GB)
+    if (file.size > 3 * 1024 * 1024 * 1024) {
+      throw new Error('Video size should be less than 3GB');
     }
 
     const fieldName = options.fieldName || 'resource';
@@ -47,7 +47,24 @@ export async function uploadVideo(file, options = {}) {
     const response = await api.post(RESOURCE_UPLOAD_API, formData, {
       timeout: 600000, // Allow large uploads
       withCredentials: true,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
+
+    const responseMessage =
+      response.data?.message || response.data?.error || '';
+    const normalizedResponseMessage = responseMessage.toLowerCase();
+    if (
+      normalizedResponseMessage.includes('limit exceeded') ||
+      normalizedResponseMessage.includes('storage limit')
+    ) {
+      const limitError = new Error(
+        responseMessage || 'Storage limit exceeded while uploading video'
+      );
+      limitError.code = 'STORAGE_LIMIT_EXCEEDED';
+      limitError.isStorageLimitExceeded = true;
+      throw limitError;
+    }
 
     if (response?.data) {
       const { data, url, success, message } = response.data;
@@ -72,6 +89,20 @@ export async function uploadVideo(file, options = {}) {
         error.response.data?.message ||
         error.response.data?.error ||
         `Upload failed with status ${error.response.status}`;
+
+      const normalizedMessage = (errorMessage || '').toLowerCase();
+      if (
+        normalizedMessage.includes('limit exceeded') ||
+        normalizedMessage.includes('storage limit')
+      ) {
+        const limitError = new Error(
+          errorMessage || 'Storage limit exceeded while uploading video'
+        );
+        limitError.code = 'STORAGE_LIMIT_EXCEEDED';
+        limitError.isStorageLimitExceeded = true;
+        throw limitError;
+      }
+
       throw new Error(errorMessage);
     } else if (error.request) {
       throw new Error(

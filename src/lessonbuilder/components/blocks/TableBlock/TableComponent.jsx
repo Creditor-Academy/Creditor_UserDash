@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   X,
   Plus,
@@ -15,7 +15,8 @@ import {
   Columns,
   Minus,
   MoreHorizontal,
-} from 'lucide-react';
+} from "lucide-react";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 const TableComponent = ({
   onTemplateSelect,
@@ -23,12 +24,17 @@ const TableComponent = ({
   onTableUpdate,
   editingBlock = null,
   isEditing = false,
+  onAICreation,
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [tableData, setTableData] = useState(null);
   const [isEditMode, setIsEditMode] = useState(isEditing || false);
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBulkPasteDialog, setShowBulkPasteDialog] = useState(false);
+  const [bulkPasteText, setBulkPasteText] = useState("");
+  const [pasteSuccess, setPasteSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const componentRef = useRef();
 
   // Animation effect for smooth appearance
@@ -48,8 +54,8 @@ const TableComponent = ({
 
       // Initialize with default data first
       const defaultData = {
-        headers: ['Column 1', 'Column 2'],
-        data: [['', '']],
+        headers: ["Column 1", "Column 2"],
+        data: [["", ""]],
       };
 
       // Parse existing table data from the block
@@ -58,19 +64,19 @@ const TableComponent = ({
           const parsedData = JSON.parse(editingBlock.content);
           if (parsedData && parsedData.headers && parsedData.data) {
             setTableData(parsedData);
-            setSelectedTemplate(parsedData.templateId || 'two_columns');
+            setSelectedTemplate(parsedData.templateId || "two_columns");
           } else {
             setTableData(defaultData);
-            setSelectedTemplate('two_columns');
+            setSelectedTemplate("two_columns");
           }
         } else {
           setTableData(defaultData);
-          setSelectedTemplate('two_columns');
+          setSelectedTemplate("two_columns");
         }
       } catch (e) {
-        console.error('Error parsing table data:', e);
+        devLogger.error("Error parsing table data:", e);
         setTableData(defaultData);
-        setSelectedTemplate('two_columns');
+        setSelectedTemplate("two_columns");
       }
     } else {
       setIsEditMode(false);
@@ -87,55 +93,55 @@ const TableComponent = ({
   // Table templates with different formats
   const tableTemplates = [
     {
-      id: 'two_columns',
-      title: 'Two Columns',
-      description: 'Responsive two-column layout for side-by-side content',
+      id: "two_columns",
+      title: "Two Columns",
+      description: "Responsive two-column layout for side-by-side content",
       icon: <Columns className="h-6 w-6" />,
-      type: 'layout',
+      type: "layout",
       defaultData: {
         columns: 2,
         rows: 1,
-        headers: ['Left Column', 'Right Column'],
+        headers: ["Left Column", "Right Column"],
         data: [
           [
-            'Add your content here. You can include text, lists, or images.',
-            'Add your content here. You can include text, lists, or images.',
+            "Add your content here. You can include text, lists, or images.",
+            "Add your content here. You can include text, lists, or images.",
           ],
         ],
       },
     },
     {
-      id: 'three_columns',
-      title: 'Three Columns',
-      description: 'Balanced three-column layout for features or highlights',
+      id: "three_columns",
+      title: "Three Columns",
+      description: "Balanced three-column layout for features or highlights",
       icon: <Grid className="h-6 w-6" />,
-      type: 'layout',
+      type: "layout",
       defaultData: {
         columns: 3,
         rows: 1,
-        headers: ['Column 1', 'Column 2', 'Column 3'],
+        headers: ["Column 1", "Column 2", "Column 3"],
         data: [
           [
-            'Feature or content description',
-            'Feature or content description',
-            'Feature or content description',
+            "Feature or content description",
+            "Feature or content description",
+            "Feature or content description",
           ],
         ],
       },
     },
     {
-      id: 'responsive_table',
-      title: 'Responsive Table',
-      description: 'Fully responsive table with add/remove functionality',
+      id: "responsive_table",
+      title: "Responsive Table",
+      description: "Fully responsive table with add/remove functionality",
       icon: <MoreHorizontal className="h-6 w-6" />,
-      type: 'responsive',
+      type: "responsive",
       defaultData: {
         columns: 4,
         rows: 2,
-        headers: ['Name', 'Position', 'Department', 'Email'],
+        headers: ["Name", "Position", "Department", "Email"],
         data: [
-          ['John Doe', 'Manager', 'Sales', 'john@example.com'],
-          ['Jane Smith', 'Developer', 'IT', 'jane@example.com'],
+          ["John Doe", "Manager", "Sales", "john@example.com"],
+          ["Jane Smith", "Developer", "IT", "jane@example.com"],
         ],
       },
     },
@@ -145,29 +151,29 @@ const TableComponent = ({
   useEffect(() => {
     if (isEditing && editingBlock) {
       try {
-        const parsedData = JSON.parse(editingBlock.content || '{}');
+        const parsedData = JSON.parse(editingBlock.content || "{}");
         setTableData(parsedData);
         setSelectedTemplate(parsedData.templateId);
         setIsEditMode(true);
       } catch (e) {
-        console.error('Error parsing table data:', e);
+        devLogger.error("Error parsing table data:", e);
       }
     }
   }, [isEditing, editingBlock]);
 
-  const handleTemplateSelect = template => {
+  const handleTemplateSelect = (template) => {
     const htmlContent = generateTableHTML(
       template.defaultData,
       template.id,
-      false
+      false,
     );
 
     const tableBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
-      type: 'table',
+      type: "table",
       title: template.title,
-      textType: 'table',
+      textType: "table",
       templateId: template.id,
       tableType: template.id,
       content: JSON.stringify({
@@ -190,15 +196,15 @@ const TableComponent = ({
 
   const addRow = () => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
-      data: [...prev.data, new Array(prev.headers.length).fill('')],
+      data: [...prev.data, new Array(prev.headers.length).fill("")],
     }));
   };
 
-  const removeRow = rowIndex => {
+  const removeRow = (rowIndex) => {
     if (!tableData || tableData.data.length <= 1) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       data: prev.data.filter((_, index) => index !== rowIndex),
     }));
@@ -206,128 +212,234 @@ const TableComponent = ({
 
   const addColumn = () => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       headers: [...prev.headers, `Header ${prev.headers.length + 1}`],
-      data: prev.data.map(row => [...row, '']),
+      data: prev.data.map((row) => [...row, ""]),
     }));
   };
 
-  const removeColumn = colIndex => {
+  const removeColumn = (colIndex) => {
     if (!tableData || tableData.headers.length <= 1) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       headers: prev.headers.filter((_, index) => index !== colIndex),
-      data: prev.data.map(row => row.filter((_, index) => index !== colIndex)),
+      data: prev.data.map((row) =>
+        row.filter((_, index) => index !== colIndex),
+      ),
     }));
   };
 
   const updateCell = (rowIndex, colIndex, value) => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       data: prev.data.map((row, rIndex) =>
         rIndex === rowIndex
           ? row.map((cell, cIndex) => (cIndex === colIndex ? value : cell))
-          : row
+          : row,
       ),
     }));
   };
 
   const updateHeader = (colIndex, value) => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       headers: prev.headers.map((header, index) =>
-        index === colIndex ? value : header
+        index === colIndex ? value : header,
       ),
     }));
   };
 
-  const generateTableHTML = (data, templateId, isPreview = false) => {
-    const template = tableTemplates.find(t => t.id === templateId);
+  const handleBulkPaste = (pastedText) => {
+    try {
+      if (!pastedText || !pastedText.trim()) {
+        return;
+      }
 
-    if (template?.type === 'layout') {
+      // Split by newlines for rows and tabs for columns
+      const rows = pastedText
+        .trim()
+        .split("\n")
+        .filter((row) => row.trim().length > 0);
+
+      if (rows.length === 0) {
+        return;
+      }
+
+      // Parse each row by tabs
+      const parsedData = rows
+        .map((row) => {
+          const cells = row.split("\t").map((cell) => cell.trim());
+          return cells.length > 0 ? cells : [];
+        })
+        .filter((row) => row.length > 0);
+
+      if (parsedData.length === 0 || parsedData[0].length === 0) {
+        return;
+      }
+
+      // Determine the number of columns (max columns across all rows)
+      const numCols = Math.max(...parsedData.map((row) => row.length));
+      const numRows = parsedData.length;
+
+      // Prepare new table data
+      let newHeaders = [];
+      let newData = [];
+
+      // If multiple rows, first row becomes headers
+      if (numRows > 1) {
+        for (let i = 0; i < numCols; i++) {
+          newHeaders.push(parsedData[0][i] || `Column ${i + 1}`);
+        }
+        // Rest becomes data rows
+        for (let i = 1; i < numRows; i++) {
+          const row = [];
+          for (let j = 0; j < numCols; j++) {
+            row.push(parsedData[i][j] || "");
+          }
+          newData.push(row);
+        }
+      } else {
+        // Single row: treat as data, auto-generate headers
+        for (let i = 0; i < numCols; i++) {
+          newHeaders.push(`Column ${i + 1}`);
+        }
+        newData.push(parsedData[0]);
+      }
+
+      // Ensure we have valid data
+      if (newData.length === 0) {
+        newData = [new Array(numCols).fill("")];
+      }
+
+      setTableData((prev) => ({
+        ...(prev || {}),
+        headers: newHeaders,
+        data: newData,
+        columns: numCols,
+        rows: newData.length,
+      }));
+
+      const dataRowCount = newData.length;
+      setSuccessMessage(
+        `Pasted ${dataRowCount} data row(s) × ${numCols} column(s)`,
+      );
+      setPasteSuccess(true);
+
+      // Auto-close dialog after 1.5 seconds
+      setTimeout(() => {
+        setShowBulkPasteDialog(false);
+        setBulkPasteText("");
+        setPasteSuccess(false);
+        setSuccessMessage("");
+      }, 1500);
+    } catch (error) {
+      console.error("Paste error:", error);
+    }
+  };
+
+  const generateTableHTML = (data, templateId, isPreview = false) => {
+    const template = tableTemplates.find((t) => t.id === templateId);
+
+    if (template?.type === "layout") {
       // Generate pure column layout HTML without containers
       const colClass = isPreview
-        ? 'grid-cols-1'
+        ? "grid-cols-1"
         : data.columns === 2
-          ? 'md:grid-cols-2'
+          ? "md:grid-cols-2"
           : data.columns === 3
-            ? 'md:grid-cols-3'
+            ? "md:grid-cols-3"
             : `md:grid-cols-${data.columns}`;
 
-      const gridGap = isPreview ? 'gap-1' : 'gap-8';
-      const padding = isPreview ? 'p-1' : 'p-6';
-      const textSize = isPreview ? 'text-xs' : 'text-base';
-      const headerSize = isPreview ? 'text-xs' : 'text-lg';
+      const gridGap = isPreview ? "gap-1" : "gap-6";
+      const padding = isPreview ? "p-1.5" : "p-4";
+      const textSize = isPreview ? "text-[10px]" : "text-sm";
+      const headerSize = isPreview ? "text-[11px]" : "text-base";
 
       return `
         <div class="grid ${colClass} ${gridGap}">
           ${data.data[0]
             .map(
               (content, index) => `
-            <div class="group relative ${padding} rounded-lg border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 min-h-fit">
-              <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-lg"></div>
-              <div class="flex items-start mb-2">
-                <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
-                <h3 class="font-bold ${headerSize} text-gray-900 break-words leading-tight">${data.headers[index]}</h3>
+            <div class="group relative ${padding} rounded border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 min-h-fit">
+              <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t"></div>
+              <div class="flex items-start mb-1">
+                <div class="w-0.5 h-0.5 bg-blue-500 rounded-full mr-1 mt-1 flex-shrink-0"></div>
+                <h3 class="font-bold ${headerSize} text-gray-900 break-words leading-tight line-clamp-2">${data.headers[index]}</h3>
               </div>
-              <div class="text-gray-700 leading-relaxed ${textSize} break-words whitespace-pre-wrap overflow-wrap-anywhere">${content}</div>
+              <div class="text-gray-700 leading-relaxed ${textSize} break-words line-clamp-3 overflow-hidden">${content.substring(0, 60)}</div>
             </div>
-          `
+          `,
             )
-            .join('')}
+            .join("")}
         </div>
       `;
     } else {
-      // Generate pure table HTML without wrapper containers
-      const padding = isPreview ? 'px-1 py-0.5' : 'px-6 py-4';
-      const textSize = isPreview ? 'text-xs' : 'text-sm';
-      const headerTextSize = isPreview ? 'text-xs' : 'text-sm';
-      const tableClass = isPreview ? 'w-full text-xs' : 'min-w-full';
+      // Generate responsive table HTML with proper mobile support
+      const padding = isPreview ? "px-2 py-1" : "px-6 py-4";
+      const textSize = isPreview ? "text-[10px]" : "text-sm";
+      const headerTextSize = isPreview ? "text-[10px]" : "text-sm";
+      const tableClass = isPreview ? "w-full text-[10px]" : "min-w-full";
 
       return `
-        <div class="relative">
+        <div class="relative w-full">
           <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm table-scrollbar">
-            <table class="${tableClass} divide-y divide-gray-200 min-w-full">
+            <table class="${tableClass} divide-y divide-gray-200">
             <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
                 ${data.headers
                   .map(
                     (header, index) => `
-                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top" style="min-width: 150px; max-width: 300px;">
+                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top whitespace-nowrap" style="min-width: ${isPreview ? "80px" : "150px"}; max-width: ${isPreview ? "120px" : "300px"};">
                     <div class="flex items-start">
-                      <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
-                      <span class="break-words leading-tight">${header}</span>
+                      <div class="w-0.5 h-0.5 bg-blue-500 rounded-full mr-1 mt-1 flex-shrink-0"></div>
+                      <span class="break-words leading-tight line-clamp-2">${header}</span>
                     </div>
                   </th>
-                `
+                `,
                   )
-                  .join('')}
+                  .join("")}
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
               ${data.data
                 .map(
                   (row, rowIndex) => `
-                <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'}">
+                <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? "bg-white" : "bg-gray-25"}">
                   ${row
                     .map(
                       (cell, cellIndex) => `
-                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: 150px; max-width: 300px;">
-                      <div class="font-medium ${textSize} break-words whitespace-pre-wrap leading-relaxed">${cell}</div>
+                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: ${isPreview ? "80px" : "150px"}; max-width: ${isPreview ? "120px" : "300px"};">
+                      <div class="font-medium ${textSize} break-words leading-relaxed line-clamp-2">${cell.substring(0, 40)}</div>
                     </td>
-                  `
+                  `,
                     )
-                    .join('')}
+                    .join("")}
                 </tr>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
             </tbody>
             </table>
           </div>
+          <style>
+            @media (max-width: 768px) {
+              .table-scrollbar {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+              }
+              table {
+                font-size: 0.875rem;
+              }
+              th, td {
+                padding: 0.5rem 0.75rem !important;
+                min-width: 100px !important;
+                max-width: 150px !important;
+              }
+            }
+          </style>
         </div>
       `;
     }
@@ -336,19 +448,27 @@ const TableComponent = ({
   const handleSave = () => {
     if (!tableData || !selectedTemplate) return;
 
-    const template = tableTemplates.find(t => t.id === selectedTemplate);
+    const template = tableTemplates.find((t) => t.id === selectedTemplate);
     const htmlContent = generateTableHTML(tableData, selectedTemplate, false);
 
     const tableBlock = {
       id: editingBlock?.id || `block_${Date.now()}`,
       block_id: editingBlock?.block_id || `block_${Date.now()}`,
-      type: 'table',
+      type: "table",
       title: template.title,
-      textType: 'table',
+      textType: "table",
       templateId: selectedTemplate,
       tableType: selectedTemplate,
+      tableData: {
+        headers: tableData.headers || [],
+        data: tableData.data || [],
+        templateId: selectedTemplate,
+        columns: tableData.headers?.length || 0,
+        rows: tableData.data?.length || 0,
+      },
       content: JSON.stringify({
-        ...tableData,
+        headers: tableData.headers || [],
+        data: tableData.data || [],
         templateId: selectedTemplate,
         tableType: selectedTemplate,
       }),
@@ -365,7 +485,7 @@ const TableComponent = ({
           tableType: selectedTemplate,
         }),
         htmlContent,
-        selectedTemplate
+        selectedTemplate,
       );
     } else if (onTemplateSelect) {
       onTemplateSelect(tableBlock);
@@ -383,7 +503,7 @@ const TableComponent = ({
       );
     }
 
-    const template = tableTemplates.find(t => t.id === selectedTemplate);
+    const template = tableTemplates.find((t) => t.id === selectedTemplate);
     if (!template) {
       return (
         <div className="p-4 text-center text-red-500">Template not found</div>
@@ -391,7 +511,7 @@ const TableComponent = ({
     }
 
     // Render different editors based on table type
-    if (template?.type === 'layout') {
+    if (template?.type === "layout") {
       return renderColumnEditor(template);
     } else {
       return renderDataTableEditor(template);
@@ -437,8 +557,8 @@ const TableComponent = ({
                     </label>
                     <input
                       type="text"
-                      value={header || ''}
-                      onChange={e => updateHeader(index, e.target.value)}
+                      value={header || ""}
+                      onChange={(e) => updateHeader(index, e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={`Column ${index + 1} Header`}
                     />
@@ -453,9 +573,9 @@ const TableComponent = ({
                         tableData.data[0] &&
                         tableData.data[0][index]
                           ? tableData.data[0][index]
-                          : ''
+                          : ""
                       }
-                      onChange={e => updateCell(0, index, e.target.value)}
+                      onChange={(e) => updateCell(0, index, e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       rows="4"
                       placeholder={`Add your content here. You can include text, lists, or images.`}
@@ -516,6 +636,14 @@ const TableComponent = ({
             </h4>
             <div className="flex space-x-2">
               <Button
+                onClick={() => setShowBulkPasteDialog(true)}
+                size="sm"
+                className="bg-purple-500 hover:bg-purple-600 text-white flex items-center gap-1"
+                title="Paste Excel-like data (6x23 format supported)"
+              >
+                📋 Paste Data
+              </Button>
+              <Button
                 onClick={addRow}
                 size="sm"
                 className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-1"
@@ -534,6 +662,13 @@ const TableComponent = ({
             </div>
           </div>
 
+          {/* Bulk Paste Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            <strong>💡 Tip:</strong> Click "Paste Data" to quickly import
+            Excel-like data. Copy from Excel/Sheets, paste here with
+            tab-separated columns and newline-separated rows.
+          </div>
+
           {/* Headers */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -550,8 +685,8 @@ const TableComponent = ({
                   <div key={index} className="relative">
                     <input
                       type="text"
-                      value={header || ''}
-                      onChange={e => updateHeader(index, e.target.value)}
+                      value={header || ""}
+                      onChange={(e) => updateHeader(index, e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm w-full"
                       placeholder={`Header ${index + 1}`}
                     />
@@ -595,8 +730,8 @@ const TableComponent = ({
                         row.map((cell, cellIndex) => (
                           <div key={cellIndex} className="relative">
                             <textarea
-                              value={cell || ''}
-                              onChange={e =>
+                              value={cell || ""}
+                              onChange={(e) =>
                                 updateCell(rowIndex, cellIndex, e.target.value)
                               }
                               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm w-full"
@@ -666,6 +801,77 @@ const TableComponent = ({
   const renderTemplateSelection = () => (
     <div className="space-y-6">
       <div className="grid gap-6">
+        {/* AI Generation Option */}
+        <div
+          onClick={() => {
+            onClose();
+            if (onAICreation) {
+              onAICreation({ id: "tables", title: "Table" });
+            }
+          }}
+          className="group relative p-6 border-2 border-purple-200 rounded-2xl cursor-pointer hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 hover:border-purple-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-pink-50"
+        >
+          {/* Gradient accent */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-2xl opacity-100 transition-opacity duration-300"></div>
+
+          <div className="flex items-start gap-5 mb-6">
+            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center text-purple-600 group-hover:from-purple-200 group-hover:to-pink-200 group-hover:text-purple-700 transition-all duration-300">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-lg text-purple-900 group-hover:text-purple-900 transition-colors duration-300 mb-2 flex items-center gap-2">
+                Generate with AI
+                <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full">
+                  Recommended
+                </span>
+              </h3>
+              <p className="text-purple-700 group-hover:text-purple-800 transition-colors duration-300 leading-relaxed">
+                Describe what you want and let AI create professional table
+                content instantly
+              </p>
+            </div>
+            <div className="flex-shrink-0 opacity-100 transition-opacity duration-300">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <Plus className="h-4 w-4 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Preview */}
+          <div className="bg-white/70 rounded-xl border border-purple-200 p-4 group-hover:border-purple-300 transition-colors duration-300">
+            <div className="flex items-center gap-2 text-purple-600">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              <span className="text-sm font-medium">
+                AI-powered table generation
+              </span>
+            </div>
+          </div>
+        </div>
+
         {tableTemplates.map((template, index) => (
           <div
             key={template.id}
@@ -696,8 +902,8 @@ const TableComponent = ({
             </div>
 
             {/* Enhanced Preview */}
-            <div className="bg-white rounded-xl border border-gray-200 p-2 group-hover:border-blue-200 transition-colors duration-300">
-              <div className="flex items-center justify-between mb-1">
+            <div className="bg-white rounded-xl border border-gray-200 p-3 group-hover:border-blue-200 transition-colors duration-300">
+              <div className="flex items-center justify-between mb-2">
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Preview
                 </div>
@@ -706,13 +912,13 @@ const TableComponent = ({
                 </div>
               </div>
               <div
-                className="w-full overflow-hidden max-w-full"
-                style={{ maxWidth: '100%' }}
+                className="w-full overflow-x-auto max-w-full text-xs"
+                style={{ maxWidth: "100%" }}
                 dangerouslySetInnerHTML={{
                   __html: generateTableHTML(
                     template.defaultData,
                     template.id,
-                    true
+                    true,
                   ),
                 }}
               />
@@ -723,12 +929,220 @@ const TableComponent = ({
     </div>
   );
 
+  // Render Bulk Paste Dialog
+  const renderBulkPasteDialog = () => (
+    <Dialog open={showBulkPasteDialog} onOpenChange={setShowBulkPasteDialog}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg -mx-6 -mt-6 px-6 py-6 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">
+                Import Data from Spreadsheet
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">
+                Paste Excel, Google Sheets, or CSV data
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          {/* Instructions Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 text-sm mb-2">
+                  How to use:
+                </h3>
+                <ul className="space-y-1.5 text-sm text-blue-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">1.</span>
+                    <span>
+                      Copy data from Excel, Google Sheets, or any spreadsheet
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">2.</span>
+                    <span>Paste it in the text area below</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">3.</span>
+                    <span>Supports any size: 6×23, 10×50, 100×100, etc.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">4.</span>
+                    <span>First row becomes headers (optional)</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Example Card */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-gray-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M5 9V7a1 1 0 011-1h8a1 1 0 011 1v2M5 9c0 1.657-.895 3-2 3s-2-1.343-2-3m14 0c0 1.657.895 3 2 3s2-1.343 2-3m-9-3h2m-6 3h12a2 2 0 002-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v5a2 2 0 002 2z" />
+              </svg>
+              Example Format:
+            </h3>
+            <div className="bg-white border border-gray-300 rounded-lg p-3 font-mono text-xs text-gray-700 overflow-x-auto">
+              <div>Name Age City</div>
+              <div>John 25 New York</div>
+              <div>Jane 30 Los Angeles</div>
+              <div>Bob 28 Chicago</div>
+            </div>
+          </div>
+
+          {/* Textarea */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">
+              Paste your data here:
+            </label>
+            <textarea
+              value={bulkPasteText}
+              onChange={(e) => setBulkPasteText(e.target.value)}
+              placeholder="Name	Age	City
+John	25	New York
+Jane	30	Los Angeles
+Bob	28	Chicago"
+              className="w-full h-48 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none font-mono text-sm transition-all duration-200 resize-none"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              💡 Tip: Use Tab to separate columns and Enter to separate rows
+            </p>
+          </div>
+
+          {/* Success Message */}
+          {pasteSuccess && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 flex items-center gap-3 animate-in fade-in duration-300">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-6 h-6 text-green-600 animate-bounce"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-green-900">
+                  Data imported successfully!
+                </p>
+                <p className="text-sm text-green-700">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+            <Button
+              onClick={() => {
+                setShowBulkPasteDialog(false);
+                setBulkPasteText("");
+                setPasteSuccess(false);
+                setSuccessMessage("");
+              }}
+              variant="outline"
+              className="px-6 py-2 rounded-lg font-medium"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (bulkPasteText.trim()) {
+                  handleBulkPaste(bulkPasteText);
+                }
+              }}
+              disabled={pasteSuccess}
+              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {pasteSuccess ? (
+                <>
+                  <svg
+                    className="w-4 h-4 inline mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Done
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4 inline mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Import Data
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Render edit dialog when in edit mode
   if (isEditMode) {
     if (isLoading) {
       return (
         <Dialog open={true} onOpenChange={onClose}>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex items-center justify-center">
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] flex items-center justify-center"
+            aria-describedby={undefined}
+          >
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading table editor...</p>
@@ -738,46 +1152,52 @@ const TableComponent = ({
       );
     }
 
-    const template = tableTemplates.find(t => t.id === selectedTemplate);
+    const template = tableTemplates.find((t) => t.id === selectedTemplate);
 
     return (
-      <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent
-          className={`max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out transform ${
-            isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-          }`}
-        >
-          {/* Fixed Header */}
-          <DialogHeader className="flex-shrink-0 sticky top-0 bg-white z-10 border-b border-gray-200 pb-4">
-            <DialogTitle>
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg text-white">
-                    {template?.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      Edit {template?.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {template?.description}
-                    </p>
+      <>
+        <Dialog open={true} onOpenChange={onClose}>
+          <DialogContent
+            className={`max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out transform ${
+              isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            }`}
+            aria-describedby={undefined}
+          >
+            {/* Fixed Header */}
+            <DialogHeader className="flex-shrink-0 sticky top-0 bg-white z-10 border-b border-gray-200 pb-4">
+              <DialogTitle>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg text-white">
+                      {template?.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Edit {template?.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {template?.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+              </DialogTitle>
+            </DialogHeader>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              {template?.type === 'layout'
-                ? renderColumnEditor(template, true)
-                : renderDataTableEditor(template, true)}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                {template?.type === "layout"
+                  ? renderColumnEditor(template, true)
+                  : renderDataTableEditor(template, true)}
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Paste Dialog */}
+        {renderBulkPasteDialog()}
+      </>
     );
   }
 
@@ -785,14 +1205,14 @@ const TableComponent = ({
   return (
     <div
       className={`fixed inset-0 bg-black flex items-center justify-start z-50 transition-all duration-300 ease-out ${
-        isVisible ? 'bg-opacity-50' : 'bg-opacity-0'
+        isVisible ? "bg-opacity-50" : "bg-opacity-0"
       }`}
     >
       <div
         className={`bg-white h-full w-[480px] shadow-2xl flex flex-col transform transition-all duration-500 ease-out ${
           isVisible
-            ? 'translate-x-0 opacity-100'
-            : '-translate-x-full opacity-0'
+            ? "translate-x-0 opacity-100"
+            : "-translate-x-full opacity-0"
         }`}
       >
         {/* Header */}
@@ -825,6 +1245,9 @@ const TableComponent = ({
           {renderTemplateSelection()}
         </div>
       </div>
+
+      {/* Bulk Paste Dialog */}
+      {renderBulkPasteDialog()}
     </div>
   );
 };

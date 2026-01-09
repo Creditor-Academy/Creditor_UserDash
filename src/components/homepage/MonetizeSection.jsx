@@ -1,15 +1,15 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Check, ArrowUpRight } from 'lucide-react';
-import DashLogo from '../../assets/dashlogo.webp';
+import React from "react";
+import { motion } from "framer-motion";
+import { Check, ArrowUpRight } from "lucide-react";
+import DashLogo from "../../assets/dashlogo.webp";
 
 const MonetizeSection = () => {
   const features = [
-    'No developer experience needed',
-    'Drag-and-drop course builder',
-    'AI-powered course outline generator',
-    'Built-in selling and payment solutions',
-    'Advanced analytics',
+    "No developer experience needed",
+    "Drag-and-drop course builder",
+    "AI-powered course outline generator",
+    "Built-in selling and payment solutions",
+    "Advanced analytics",
   ];
 
   return (
@@ -17,7 +17,7 @@ const MonetizeSection = () => {
       className="py-20 pt-32 md:pt-20 px-4 relative overflow-hidden"
       style={{
         background:
-          'linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%)',
+          "linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%)",
       }}
     >
       <div className="max-w-7xl mx-auto">
@@ -34,7 +34,7 @@ const MonetizeSection = () => {
             <div>
               <h2
                 className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight"
-                style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                style={{ fontFamily: "Georgia, Times New Roman, serif" }}
               >
                 Monetize your
                 <br />
@@ -46,14 +46,14 @@ const MonetizeSection = () => {
             <div className="space-y-4">
               <p
                 className="text-lg text-slate-200 leading-relaxed"
-                style={{ fontFamily: 'Arial, sans-serif' }}
+                style={{ fontFamily: "Arial, sans-serif" }}
               >
                 Transform your expertise into courses, communities, and other
                 high-quality learning experiences.
               </p>
               <p
                 className="text-lg text-slate-200 leading-relaxed"
-                style={{ fontFamily: 'Arial, sans-serif' }}
+                style={{ fontFamily: "Arial, sans-serif" }}
               >
                 Our platform is designed to drive revenue growth for businesses
                 like yours.
@@ -76,7 +76,7 @@ const MonetizeSection = () => {
                   </div>
                   <span
                     className="text-slate-100"
-                    style={{ fontFamily: 'Arial, sans-serif' }}
+                    style={{ fontFamily: "Arial, sans-serif" }}
                   >
                     {feature}
                   </span>
@@ -123,11 +123,11 @@ const MonetizeSection = () => {
                 className="absolute -inset-4 rounded-2xl"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(59,130,246,0.35), rgba(37,99,235,0.35))',
+                    "linear-gradient(135deg, rgba(59,130,246,0.35), rgba(37,99,235,0.35))",
                   boxShadow:
-                    '0 0 40px rgba(59,130,246,0.45), 0 0 80px rgba(37,99,235,0.3)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.15)',
+                    "0 0 40px rgba(59,130,246,0.45), 0 0 80px rgba(37,99,235,0.3)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.15)",
                 }}
               />
 

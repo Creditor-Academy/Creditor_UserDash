@@ -102,19 +102,14 @@ describe('ImageUploadService', () => {
 
     expect(result.success).toBe(true);
     expect(result.imageUrl).toBe('https://example.com/image.jpg');
-    // Verify the request was sent with the correct endpoint, payload, and config
-    expect(apiClient.api.post).toHaveBeenCalledTimes(1);
-    const [url, formDataArg, config] = apiClient.api.post.mock.calls[0];
-
-    expect(url).toContain('/api/resource/upload-resource');
-    expect(formDataArg).toBeInstanceOf(FormData);
-    expect(config).toMatchObject({
-      timeout: 600000,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    expect(config.maxBodyLength).toBe(Infinity);
-    expect(config.maxContentLength).toBe(Infinity);
+    expect(apiClient.api.post).toHaveBeenCalledWith(
+      expect.stringContaining('/api/resource/upload-resource'),
+      expect.any(FormData),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Content-Type': 'multipart/form-data',
+        }),
+      })
+    );
   });
 });

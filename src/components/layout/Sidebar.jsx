@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Book,
   ChevronLeft,
@@ -20,25 +20,27 @@ import {
   CreditCard,
   CalendarDays,
   Handshake,
-} from 'lucide-react';
-import { currentUserId } from '@/data/currentUser';
-import { getUserRole } from '@/services/userService';
-import { useAuth } from '@/contexts/AuthContext';
+} from "lucide-react";
+import { currentUserId } from "@/data/currentUser";
+import { getUserRole } from "@/services/userService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import api from "@/services/apiClient";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { motion } from 'framer-motion';
-import caTextLogo from '@/assets/CA_text_logo.png';
-import caManLogo from '@/assets/CA_man_logo.png';
+} from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
+import caTextLogo from "@/assets/CA_text_logo.png";
+import caManLogo from "@/assets/CA_man_logo.png";
 
 const SidebarItem = ({
   icon: Icon,
@@ -52,7 +54,7 @@ const SidebarItem = ({
 }) => {
   const handleClick = () => {
     if (external) {
-      window.open(href, '_blank', 'noopener,noreferrer');
+      window.open(href, "_blank", "noopener,noreferrer");
       return;
     }
     if (onNavigate) {
@@ -65,10 +67,10 @@ const SidebarItem = ({
       <button
         onClick={handleClick}
         className={cn(
-          'sidebar-menu-item flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left',
+          "sidebar-menu-item flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left",
           active
-            ? cn('bg-blue-50 text-blue-600 border-blue-500')
-            : cn('text-gray-600 hover:text-gray-900')
+            ? cn("bg-blue-50 text-blue-600 border-blue-500")
+            : cn("text-gray-600 hover:text-gray-900"),
         )}
       >
         <Icon size={collapsed ? 24 : 20} />
@@ -88,29 +90,29 @@ const SidebarItem = ({
               <button
                 onClick={handleClick}
                 className={cn(
-                  'sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left',
-                  collapsed ? 'justify-center px-2' : '',
+                  "sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left",
+                  collapsed ? "justify-center px-2" : "",
                   active
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600 shadow-md font-semibold'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600 shadow-md font-semibold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm",
                 )}
               >
                 <Icon
                   size={collapsed ? 24 : 20}
                   className={cn(
-                    'transition-all duration-200',
+                    "transition-all duration-200",
                     active
-                      ? 'text-blue-700'
-                      : 'text-gray-500 group-hover:text-gray-700'
+                      ? "text-blue-700"
+                      : "text-gray-500 group-hover:text-gray-700",
                   )}
                 />
                 {!collapsed && (
                   <span
                     className={cn(
-                      'sidebar-menu-label transition-colors duration-200',
+                      "sidebar-menu-label transition-colors duration-200",
                       active
-                        ? 'font-semibold text-blue-700'
-                        : 'text-gray-700 group-hover:text-gray-900'
+                        ? "font-semibold text-blue-700"
+                        : "text-gray-700 group-hover:text-gray-900",
                     )}
                   >
                     {label}
@@ -122,29 +124,29 @@ const SidebarItem = ({
                 to={href}
                 onClick={handleClick}
                 className={cn(
-                  'sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left',
-                  collapsed ? 'justify-center px-2' : '',
+                  "sidebar-menu-item flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left",
+                  collapsed ? "justify-center px-2" : "",
                   active
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600 shadow-md font-semibold'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm'
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-600 shadow-md font-semibold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm",
                 )}
               >
                 <Icon
                   size={collapsed ? 24 : 20}
                   className={cn(
-                    'transition-all duration-200',
+                    "transition-all duration-200",
                     active
-                      ? 'text-blue-700'
-                      : 'text-gray-500 group-hover:text-gray-700'
+                      ? "text-blue-700"
+                      : "text-gray-500 group-hover:text-gray-700",
                   )}
                 />
                 {!collapsed && (
                   <span
                     className={cn(
-                      'sidebar-menu-label transition-colors duration-200',
+                      "sidebar-menu-label transition-colors duration-200",
                       active
-                        ? 'font-semibold text-blue-700'
-                        : 'text-gray-700 group-hover:text-gray-900'
+                        ? "font-semibold text-blue-700"
+                        : "text-gray-700 group-hover:text-gray-900",
                     )}
                   >
                     {label}
@@ -171,22 +173,104 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
+  const { userProfile } = useUser();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [organizationName, setOrganizationName] = useState("Creditor Academy");
+  const [logoUrl, setLogoUrl] = useState(null);
+  // const { activeTheme } = useContext(SeasonalThemeContext);
 
-  const isActive = path => {
-    if (path === '/dashboard') {
+  // Fetch organization name and logo from user profile
+  useEffect(() => {
+    // First, try to get organization data from userProfile context
+    if (userProfile && userProfile.organizations) {
+      if (userProfile.organizations.name) {
+        console.log(
+          "Organization name from context:",
+          userProfile.organizations.name,
+        );
+        setOrganizationName(userProfile.organizations.name);
+      }
+      if (userProfile.organizations.logo_url) {
+        console.log(
+          "Organization logo from context:",
+          userProfile.organizations.logo_url,
+        );
+        setLogoUrl(userProfile.organizations.logo_url);
+      }
+      return;
+    }
+
+    // If not in context, fetch from API
+    const fetchOrganizationData = async () => {
+      try {
+        const response = await api.get("/api/user/getUserProfile");
+        console.log("UserProfile API Response:", response.data);
+
+        // Handle different response structures
+        const data = response.data?.data || response.data;
+
+        if (data && data.organizations) {
+          if (data.organizations.name) {
+            console.log("Organization name found:", data.organizations.name);
+            setOrganizationName(data.organizations.name);
+          }
+          if (data.organizations.logo_url) {
+            console.log(
+              "Organization logo found:",
+              data.organizations.logo_url,
+            );
+            setLogoUrl(data.organizations.logo_url);
+          }
+        } else {
+          console.warn("Organization data not found in response:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching organization data:", error);
+        // Keep default "Creditor Academy" on error
+      }
+    };
+
+    fetchOrganizationData();
+  }, [userProfile]);
+  // const isNewYear = activeTheme === "newYear";
+
+  const getNewYearAccentForLabel = (sidebarLabel) => {
+    switch (sidebarLabel) {
+      case "Dashboard":
+        return "✨";
+      case "My Courses":
+        return "📚";
+      case "Study Groups":
+        return "🎊";
+      case "Course Catalog":
+        return "🎆";
+      case "Attendance":
+        return "🗓️";
+      case "Messages":
+        return "💬";
+      case "Sponsor Center":
+        return "🎁";
+      case "Creditor Card":
+        return "💳";
+      default:
+        return "✨";
+    }
+  };
+
+  const isActive = (path) => {
+    if (path === "/dashboard") {
       // Only active on the dashboard root, not on subpages
-      return location.pathname === '/dashboard';
+      return location.pathname === "/dashboard";
     }
     return location.pathname === path;
   };
 
-  const handleNavigate = path => {
-    if (collapsed && path !== '/instructor') {
+  const handleNavigate = (path) => {
+    if (collapsed && path !== "/instructor") {
       setCollapsed(false);
     }
 
-    if (path === '/instructor') {
+    if (path === "/instructor") {
       setCollapsed(true);
     }
 
@@ -194,10 +278,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   };
 
   const handleLogoClick = () => {
-    if (window.location.pathname === '/dashboard') {
+    if (window.location.pathname === "/dashboard") {
       window.location.reload();
     } else {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
     if (collapsed) {
       setCollapsed(false);
@@ -220,25 +304,25 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
     // { icon: BookOpen, label: "User Guides", path: "/dashboard/guides" },
     {
       icon: Contact,
-      label: 'Create Ticket',
-      path: '/dashboard/support/ticket',
+      label: "Create Ticket",
+      path: "/dashboard/support/ticket",
     },
     {
       icon: FileQuestion,
-      label: 'My Tickets',
-      path: '/dashboard/support/tickets',
+      label: "My Tickets",
+      path: "/dashboard/support/tickets",
     },
   ];
 
   // Animation variants with smooth transition
   const sidebarVariants = {
     expanded: {
-      width: '17rem',
-      transition: { type: 'spring', stiffness: 400, damping: 40 },
+      width: "17rem",
+      transition: { type: "spring", stiffness: 400, damping: 40 },
     },
     collapsed: {
-      width: '4.5rem',
-      transition: { type: 'spring', stiffness: 400, damping: 40 },
+      width: "4.5rem",
+      transition: { type: "spring", stiffness: 400, damping: 40 },
     },
   };
 
@@ -254,22 +338,22 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
 
   const itemVariants = {
     hidden: { x: -10, opacity: 0 },
-    show: { x: 0, opacity: 1, transition: { type: 'spring', stiffness: 300 } },
+    show: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 300 } },
   };
 
   return (
     <motion.div
       className="sidebar-panel h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
       variants={sidebarVariants}
-      animate={collapsed ? 'collapsed' : 'expanded'}
+      animate={collapsed ? "collapsed" : "expanded"}
       initial={false}
     >
       {/* Header */}
       <div
         className={cn(
-          'sidebar-header relative flex items-center p-4 pr-0 shadow-md',
-          'bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800',
-          collapsed ? 'justify-center' : 'justify-between'
+          "sidebar-header relative flex items-center p-4 pr-0 shadow-md",
+          "bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800",
+          collapsed ? "justify-center" : "justify-between",
         )}
       >
         <div className="sidebar-lights" aria-hidden="true" />
@@ -284,20 +368,29 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             transition={{ duration: 0.3 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="relative sidebar-logo-mark">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                <img
-                  src={caManLogo}
-                  alt="Creditor Academy Logo"
-                  className="w-full h-full object-contain p-1"
-                />
-              </div>
-            </div>
-            <img
-              src={caTextLogo}
-              alt="Creditor Academy"
-              className="h-8 w-auto object-contain"
-            />
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt={`${organizationName} Logo`}
+                className="object-cover"
+                style={{
+                  height: "4rem",
+                  width: "4rem",
+                  borderRadius: "50%",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+                }}
+                onError={(e) => {
+                  // Hide image if it fails to load
+                  e.target.style.display = "none";
+                }}
+              />
+            )}
+            <h1
+              className="font-bold"
+              style={{ color: "white", fontSize: "1.3rem" }}
+            >
+              {organizationName}
+            </h1>
           </motion.button>
         )}
 
@@ -314,14 +407,10 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <div className="relative sidebar-logo-mark">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                      <img
-                        src={caManLogo}
-                        alt="Creditor Academy Logo"
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-blue-600 font-bold text-sm">
+                      {organizationName?.charAt(0).toUpperCase() || "C"}
+                    </span>
                   </div>
                 </motion.button>
               </TooltipTrigger>
@@ -379,7 +468,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={Home}
                   label="Dashboard"
                   href="/dashboard"
-                  active={isActive('/dashboard')}
+                  active={isActive("/dashboard")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -390,7 +479,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={Book}
                   label="My Courses"
                   href="/dashboard/courses"
-                  active={isActive('/dashboard/courses')}
+                  active={isActive("/dashboard/courses")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -401,7 +490,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={Users}
                   label="Study Groups"
                   href="/dashboard/groups"
-                  active={isActive('/dashboard/groups')}
+                  active={isActive("/dashboard/groups")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -412,7 +501,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={Library}
                   label="Course Catalog"
                   href="/dashboard/catalog"
-                  active={isActive('/dashboard/catalog')}
+                  active={isActive("/dashboard/catalog")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -423,7 +512,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={CalendarDays}
                   label="Attendance"
                   href="/dashboard/attendance"
-                  active={isActive('/dashboard/attendance')}
+                  active={isActive("/dashboard/attendance")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -435,7 +524,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={MessageSquare}
                   label="Messages"
                   href="/dashboard/messages"
-                  active={isActive('/dashboard/messages')}
+                  active={isActive("/dashboard/messages")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -447,7 +536,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   label="Sponsor Center"
                   href="/dashboard/sponsor-center/submit"
                   active={location.pathname.startsWith(
-                    '/dashboard/sponsor-center'
+                    "/dashboard/sponsor-center",
                   )}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
@@ -471,24 +560,24 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
             <motion.div variants={itemVariants}>
               <div className="px-3 pt-2">
                 <motion.button
-                  onClick={() => setMoreOpen(v => !v)}
+                  onClick={() => setMoreOpen((v) => !v)}
                   aria-label={
-                    moreOpen ? 'Show less options' : 'Show more options'
+                    moreOpen ? "Show less options" : "Show more options"
                   }
                   className={cn(
-                    'w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors',
+                    "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors",
                     moreOpen
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-white text-gray-700 hover:bg-gray-50",
                   )}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span>{moreOpen ? 'Less' : 'More'}</span>
+                  <span>{moreOpen ? "Less" : "More"}</span>
                   <ChevronDown
                     size={14}
                     className={cn(
-                      'transition-transform',
-                      moreOpen ? '-rotate-180' : 'rotate-0'
+                      "transition-transform",
+                      moreOpen ? "-rotate-180" : "rotate-0",
                     )}
                   />
                 </motion.button>
@@ -510,7 +599,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                   icon={Bot}
                   label="Credit chatbot"
                   href="/dashboard/chatbot"
-                  active={isActive('/dashboard/chatbot')}
+                  active={isActive("/dashboard/chatbot")}
                   collapsed={collapsed}
                   onNavigate={handleNavigate}
                 />
@@ -546,7 +635,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
                 icon={GraduationCap}
                 label="Instructor Portal"
                 href="/instructor"
-                active={isActive('/instructor')}
+                active={isActive("/instructor")}
                 collapsed={collapsed}
                 onNavigate={handleNavigate}
               />

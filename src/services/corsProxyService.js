@@ -78,7 +78,7 @@ export async function downloadImageWithCorsWorkaround(
   );
   if (isOpenAIBlob) {
     console.log(
-      '🎯 Detected OpenAI blob storage URL, using specialized approach'
+      '🎯 Detected provider blob storage URL, using specialized approach'
     );
   }
 
@@ -119,7 +119,7 @@ export async function downloadImageWithCorsWorkaround(
     }
   } else {
     console.log(
-      '⏭️ Skipping canvas conversion for OpenAI blob storage (CORS restricted)'
+      '⏭️ Skipping canvas conversion for provider blob storage (CORS restricted)'
     );
   }
 
