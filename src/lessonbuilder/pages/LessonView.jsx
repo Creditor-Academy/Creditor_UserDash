@@ -49,12 +49,9 @@ const LessonView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingLesson, setLoadingLesson] = useState(null); // Track which lesson is being loaded
 
-  // Progress tracking state
+  // Progress tracking state - REMOVED: All progress comes from backend
+  // Only keep minimal UI state for display purposes
   const [currentLessonProgress, setCurrentLessonProgress] = useState(null);
-  const [activeMasterHeadingIndex, setActiveMasterHeadingIndex] =
-    useState(null); // Start with null instead of 0
-  const [totalMasterHeadings, setTotalMasterHeadings] = useState(0);
-  const [lastCompletedHeadingIndex, setLastCompletedHeadingIndex] = useState(0);
   const [currentLessonId, setCurrentLessonId] = useState(null);
 
   // Fetch module and lessons data
@@ -297,105 +294,8 @@ const LessonView = () => {
   // Progress is already fetched in handleViewLesson when user clicks "View Lesson"
   // No need to fetch again here
 
-  // Progress update function - only triggers when moving forward
-  const updateProgressIfNeeded = async newHeadingIndex => {
-    if (
-      !currentLessonId ||
-      !currentLessonProgress ||
-      totalMasterHeadings === 0
-    ) {
-      return;
-    }
-
-    // Don't update if lesson is already completed
-    if (currentLessonProgress.progress >= 100) {
-      console.log('Lesson already completed, skipping progress update');
-      return;
-    }
-
-    // Only update when moving forward AND new index > last completed
-    if (newHeadingIndex > lastCompletedHeadingIndex) {
-      const newProgress = ((newHeadingIndex + 1) / totalMasterHeadings) * 100;
-      const clampedProgress = Math.min(100, Math.max(0, newProgress));
-      const isCompleted = clampedProgress >= 100;
-
-      console.log('Updating progress:', {
-        lessonId: currentLessonId,
-        oldProgress: currentLessonProgress.progress,
-        newProgress: clampedProgress,
-        newHeadingIndex,
-        lastCompletedIndex: lastCompletedHeadingIndex,
-        isCompleted,
-      });
-
-      try {
-        await updateLessonProgress(
-          currentLessonId,
-          clampedProgress,
-          isCompleted
-        );
-
-        // Update local state to reflect the change
-        setCurrentLessonProgress(prev => ({
-          ...prev,
-          progress: clampedProgress,
-          completed: isCompleted,
-        }));
-
-        setLastCompletedHeadingIndex(newHeadingIndex);
-
-        toast({
-          title: isCompleted ? 'Lesson Completed! 🎉' : 'Progress Updated',
-          description: isCompleted
-            ? 'Congratulations! You have completed this lesson.'
-            : `Progress updated to ${Math.round(clampedProgress)}%`,
-        });
-      } catch (error) {
-        console.error('Error updating progress:', error);
-        toast({
-          title: 'Progress Update Failed',
-          description: 'Failed to save your progress. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      console.log(
-        'No progress update needed - navigating backward or to same section'
-      );
-    }
-  };
-
-  // Function to handle master heading navigation
-  const handleMasterHeadingNavigation = direction => {
-    if (totalMasterHeadings === 0 || activeMasterHeadingIndex === null) return;
-
-    let newIndex = activeMasterHeadingIndex;
-
-    if (direction === 'forward') {
-      newIndex = Math.min(
-        activeMasterHeadingIndex + 1,
-        totalMasterHeadings - 1
-      );
-    } else if (direction === 'backward') {
-      newIndex = Math.max(activeMasterHeadingIndex - 1, 0);
-    }
-
-    console.log('Navigating to heading:', {
-      direction,
-      oldIndex: activeMasterHeadingIndex,
-      newIndex,
-      totalHeadings: totalMasterHeadings,
-      lastCompletedIndex,
-      currentProgress: currentLessonProgress?.progress,
-    });
-
-    setActiveMasterHeadingIndex(newIndex);
-
-    // Only update progress when moving forward
-    if (direction === 'forward') {
-      updateProgressIfNeeded(newIndex);
-    }
-  };
+  // REMOVED: Progress update and navigation functions
+  // Progress is now managed entirely by LessonPreview component via useLessonProgressTracker hook
 
   const filteredLessons = useMemo(() => {
     if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
@@ -482,77 +382,51 @@ const LessonView = () => {
           'No SCORM URL found, navigating to preview page with progress'
         );
 
-        // Calculate target section based on progress
+        // Calculate target section based on backend progress
         let targetSection = null;
         let calculatedHeadingIndex = 0;
         let shouldPreventProgressUpdates = false;
 
-        if (lessonProgress && lessonProgress.progress >= 0) {
-          // Parse lesson content to find sections
-          const lessonContent = data.allContent || data.content || [];
-          const sections = lessonContent.filter(
-            item => item.type === 'text' && item.textType === 'master_heading'
-          );
+        // Parse lesson content to find master heading sections
+        const lessonContent = data.allContent || data.content || [];
+        const sections = lessonContent.filter(
+          item => item.type === 'text' && item.textType === 'master_heading'
+        );
 
-          if (sections.length > 0) {
-            const progressPercentage = lessonProgress.progress;
+        if (sections.length > 0) {
+          const progressPercentage = lessonProgress?.progress || 0;
 
-            // Apply resume logic based on progress percentage
-            let startIndex = 0; // Default to first section
+          // Calculate which master heading to show based on backend progress
+          // Formula: headingIndex = Math.floor((progress / 100) * totalMasterHeadings)
+          let startIndex = 0;
 
-            if (progressPercentage === 0) {
-              // New lesson: start from first section
-              startIndex = 0;
-            } else if (progressPercentage >= 100) {
-              // Completed lesson: restart from first section (keep progress as 100% in backend)
-              startIndex = 0;
-              shouldPreventProgressUpdates = true; // Don't update progress for completed lessons
-            } else {
-              // In progress: resume from calculated section
-              startIndex = Math.floor(
-                (progressPercentage / 100) * sections.length
-              );
-            }
-
-            calculatedHeadingIndex = startIndex;
-            targetSection =
-              sections[Math.min(startIndex, sections.length - 1)]?.id;
-
-            // Set state immediately when progress is fetched
-            const totalHeadings = sections.length;
-            const lastCompletedIndex = Math.floor(
-              (progressPercentage / 100) * totalHeadings
+          if (progressPercentage >= 100) {
+            // Completed lesson: always start from first master heading (index 0)
+            // but prevent progress updates to keep backend at 100%
+            startIndex = 0;
+            shouldPreventProgressUpdates = true;
+          } else if (progressPercentage > 0) {
+            // In progress: resume from calculated master heading
+            startIndex = Math.floor(
+              (progressPercentage / 100) * sections.length
             );
-
-            setCurrentLessonProgress(lessonProgress);
-            setTotalMasterHeadings(totalHeadings);
-            setLastCompletedHeadingIndex(lastCompletedIndex);
-            setActiveMasterHeadingIndex(startIndex);
-
-            console.log('Progress state set in handleViewLesson:', {
-              progressPercentage,
-              totalHeadings,
-              lastCompletedIndex,
-              targetIndex: startIndex,
-              activeIndex: startIndex,
-              calculation: `Math.floor((${progressPercentage} / 100) * ${totalHeadings}) = ${lastCompletedIndex}`,
-            });
-
-            console.log('Resume logic applied:', {
-              backendProgress: progressPercentage,
-              totalSections: sections.length,
-              calculatedStartIndex: startIndex,
-              calculatedHeadingIndex,
-              targetSection,
-              shouldPreventProgressUpdates,
-              logic:
-                progressPercentage === 0
-                  ? 'New lesson'
-                  : progressPercentage >= 100
-                    ? 'Completed lesson - restart'
-                    : 'Resume in progress',
-            });
+          } else {
+            // New lesson (0%): start from first master heading
+            startIndex = 0;
           }
+
+          calculatedHeadingIndex = startIndex;
+          targetSection =
+            sections[Math.min(startIndex, sections.length - 1)]?.id;
+
+          console.log('Backend progress calculation:', {
+            backendProgress: progressPercentage,
+            totalMasterHeadings: sections.length,
+            calculatedHeadingIndex: startIndex,
+            targetSection,
+            shouldPreventProgressUpdates,
+            formula: `Math.floor((${progressPercentage} / 100) * ${sections.length}) = ${startIndex}`,
+          });
         }
 
         // Navigate to preview with progress state
@@ -912,23 +786,6 @@ const LessonView = () => {
                       ></div>
                     </div>
                     <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
-                      <span>
-                        Section{' '}
-                        {activeMasterHeadingIndex !== null
-                          ? activeMasterHeadingIndex + 1
-                          : 0}{' '}
-                        of {totalMasterHeadings}
-                        <span className="ml-2 text-orange-600 font-mono text-xs">
-                          (Index: {activeMasterHeadingIndex}, Target:{' '}
-                          {currentLessonProgress
-                            ? Math.floor(
-                                (currentLessonProgress.progress / 100) *
-                                  totalMasterHeadings
-                              )
-                            : 0}
-                          )
-                        </span>
-                      </span>
                       <span
                         className={`font-medium ${
                           currentLessonProgress?.progress >= 100
@@ -941,42 +798,6 @@ const LessonView = () => {
                           : 'In Progress'}
                       </span>
                     </div>
-
-                    {/* Master Heading Navigation */}
-                    {totalMasterHeadings > 0 && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            handleMasterHeadingNavigation('backward')
-                          }
-                          disabled={
-                            activeMasterHeadingIndex === null ||
-                            activeMasterHeadingIndex === 0
-                          }
-                          className="flex-1"
-                        >
-                          <ChevronLeft className="h-3 w-3 mr-1" />
-                          Previous
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            handleMasterHeadingNavigation('forward')
-                          }
-                          disabled={
-                            activeMasterHeadingIndex === null ||
-                            activeMasterHeadingIndex >= totalMasterHeadings - 1
-                          }
-                          className="flex-1"
-                        >
-                          Next
-                          <ChevronRight className="h-3 w-3 ml-1" />
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>

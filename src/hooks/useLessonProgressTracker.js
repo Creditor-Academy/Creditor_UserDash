@@ -9,22 +9,45 @@ import { toast } from '@/hooks/use-toast';
  * @param {string} lessonId - The lesson ID
  * @param {Array} headingSections - Array of master heading sections
  * @param {number} currentHeadingIndex - Current active master heading index
+ * @param {boolean} shouldPreventProgressUpdates - Whether to prevent progress updates (e.g., completed lessons)
+ * @param {Object} initialBackendProgress - Initial progress from backend { progress: number, completed: boolean }
  * @returns {Object} Progress tracking state and utilities
  */
 export const useLessonProgressTracker = (
   lessonId,
   headingSections,
   currentHeadingIndex,
-  shouldPreventProgressUpdates = false
+  shouldPreventProgressUpdates = false,
+  initialBackendProgress = null
 ) => {
-  const [progress, setProgress] = useState(0);
-  const [isCompleted, setIsCompleted] = useState(false);
+  // Initialize with backend progress if available
+  const initialProgress = initialBackendProgress?.progress || 0;
+  const initialCompleted = initialBackendProgress?.completed || false;
+
+  const [progress, setProgress] = useState(initialProgress);
+  const [isCompleted, setIsCompleted] = useState(initialCompleted);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Track last sent progress to prevent duplicate API calls
-  const lastSentProgress = useRef(0);
-  const lastSentCompleted = useRef(false);
+  const lastSentProgress = useRef(initialProgress);
+  const lastSentCompleted = useRef(initialCompleted);
+
+  // Track initial backend progress to prevent overwriting 100% progress
+  const backendProgressRef = useRef(initialProgress);
+  const backendCompletedRef = useRef(initialCompleted);
+
+  // Update backend progress ref when initial progress changes
+  useEffect(() => {
+    if (initialBackendProgress) {
+      backendProgressRef.current = initialBackendProgress.progress;
+      backendCompletedRef.current = initialBackendProgress.completed;
+      setProgress(initialBackendProgress.progress);
+      setIsCompleted(initialBackendProgress.completed);
+      lastSentProgress.current = initialBackendProgress.progress;
+      lastSentCompleted.current = initialBackendProgress.completed;
+    }
+  }, [initialBackendProgress?.progress, initialBackendProgress?.completed]);
 
   /**
    * Calculate progress based on current heading index
@@ -46,6 +69,16 @@ export const useLessonProgressTracker = (
    * @param {boolean} completed - Whether lesson is completed
    */
   const updateProgressInBackend = async (newProgress, completed) => {
+    // CRITICAL: Never update if backend progress is already 100%
+    if (backendProgressRef.current >= 100 || backendCompletedRef.current) {
+      console.log('Backend progress is already 100%, preventing update:', {
+        backendProgress: backendProgressRef.current,
+        backendCompleted: backendCompletedRef.current,
+        attemptedProgress: newProgress,
+      });
+      return;
+    }
+
     // Prevent duplicate API calls
     if (
       lastSentProgress.current === newProgress &&
@@ -77,6 +110,10 @@ export const useLessonProgressTracker = (
       // Update last sent values
       lastSentProgress.current = newProgress;
       lastSentCompleted.current = completed;
+
+      // Update backend progress ref
+      backendProgressRef.current = newProgress;
+      backendCompletedRef.current = completed;
 
       // Update local state
       setProgress(newProgress);
@@ -118,6 +155,15 @@ export const useLessonProgressTracker = (
       return;
     }
 
+    // CRITICAL: Never update if backend progress is already 100%
+    if (backendProgressRef.current >= 100 || backendCompletedRef.current) {
+      console.log('Backend progress is already 100%, skipping update:', {
+        backendProgress: backendProgressRef.current,
+        backendCompleted: backendCompletedRef.current,
+      });
+      return;
+    }
+
     const newProgress = calculateProgress(currentHeadingIndex);
     const shouldBeCompleted = currentHeadingIndex >= headingSections.length - 1;
 
@@ -127,10 +173,22 @@ export const useLessonProgressTracker = (
       calculatedProgress: newProgress,
       shouldBeCompleted,
       shouldPreventProgressUpdates,
+      backendProgress: backendProgressRef.current,
     });
 
-    // Update progress when heading changes
-    updateProgressInBackend(newProgress, shouldBeCompleted);
+    // Only update if new progress is greater than current backend progress
+    // This prevents going backwards in progress
+    if (newProgress > backendProgressRef.current) {
+      updateProgressInBackend(newProgress, shouldBeCompleted);
+    } else {
+      console.log(
+        'New progress is not greater than backend progress, skipping update:',
+        {
+          newProgress,
+          backendProgress: backendProgressRef.current,
+        }
+      );
+    }
   }, [
     lessonId,
     headingSections?.length,

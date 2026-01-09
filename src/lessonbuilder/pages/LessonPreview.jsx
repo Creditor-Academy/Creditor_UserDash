@@ -26,6 +26,7 @@ import { toast } from '@/hooks/use-toast';
 import ImmersiveReader from '@/components/courses/ImmersiveReader';
 import { getTtsToken } from '@/services/speechify';
 import { useLessonProgressTracker } from '@/hooks/useLessonProgressTracker';
+import { getLessonProgress } from '@/services/progressService';
 
 // Helper function to decode HTML entities
 const decodeHtmlEntities = text => {
@@ -124,9 +125,9 @@ const LessonPreview = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [currentSection, setCurrentSection] = useState(null);
-  const [completedSections, setCompletedSections] = useState(new Set());
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
+  // REMOVED: completedSections - progress comes from backend only
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const videoRef = useRef(null);
@@ -135,22 +136,26 @@ const LessonPreview = () => {
   const [readerContent, setReaderContent] = useState('');
   const [readerTitle, setReaderTitle] = useState('');
 
-  // Get progress state from navigation
+  // Get progress state from navigation (may be null if accessed directly)
   const progressState = location.state || {};
   const {
-    lessonProgress,
+    lessonProgress: navLessonProgress,
     targetSection,
     calculatedHeadingIndex,
     shouldPreventProgressUpdates,
     resumeFromProgress,
   } = progressState;
 
-  // Initialize event-driven lesson progress tracking
+  // Store backend progress in state so it can be used throughout component
+  const [lessonProgress, setLessonProgress] = useState(navLessonProgress);
+
+  // Initialize event-driven lesson progress tracking with backend progress
   const lessonProgressTracker = useLessonProgressTracker(
     lessonId,
     lessonData?.headingSections || [],
     currentPage,
-    shouldPreventProgressUpdates
+    shouldPreventProgressUpdates,
+    lessonProgress // Pass backend progress as initial state
   );
 
   useEffect(() => {
@@ -417,6 +422,27 @@ const LessonPreview = () => {
       setLoading(true);
       setError(null);
 
+      // Fetch lesson progress from backend (always fetch latest)
+      let backendProgress = lessonProgress; // Use from state if available
+      try {
+        // Always fetch latest progress from backend to ensure accuracy
+        backendProgress = await getLessonProgress(lessonId);
+        console.log(
+          'Fetched latest progress from backend in LessonPreview:',
+          backendProgress
+        );
+        setLessonProgress(backendProgress); // Update state with latest progress
+      } catch (progressError) {
+        console.warn(
+          'Failed to fetch progress, using navigation state or starting fresh:',
+          progressError
+        );
+        // Use navigation state progress if available, otherwise start from beginning
+        if (!backendProgress) {
+          backendProgress = null; // Will start from beginning
+        }
+      }
+
       const baseUrl =
         import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
       const response = await fetch(`${baseUrl}/api/lessoncontent/${lessonId}`, {
@@ -468,63 +494,89 @@ const LessonPreview = () => {
       setPages(computedPages);
 
       // Handle progress-based navigation - TREAT BACKEND PROGRESS AS SOURCE OF TRUTH
-      if (resumeFromProgress && targetSection && lessonProgress) {
+      // Use backendProgress (fetched above) or lessonProgress from navigation state
+      const progressToUse = backendProgress || lessonProgress;
+      let calculatedTargetSection = targetSection;
+      let calculatedHeadingIdx = calculatedHeadingIndex;
+      let preventUpdates = shouldPreventProgressUpdates;
+
+      // If we have backend progress but no target section, calculate it
+      if (
+        progressToUse &&
+        progressToUse.progress >= 0 &&
+        !calculatedTargetSection
+      ) {
+        const sections = transformedData.headingSections || [];
+        if (sections.length > 0) {
+          const progressPercentage = progressToUse.progress;
+          let startIndex = 0;
+
+          if (progressPercentage >= 100) {
+            startIndex = 0;
+            preventUpdates = true;
+          } else if (progressPercentage > 0) {
+            startIndex = Math.floor(
+              (progressPercentage / 100) * sections.length
+            );
+          }
+
+          calculatedHeadingIdx = startIndex;
+          calculatedTargetSection =
+            sections[Math.min(startIndex, sections.length - 1)]?.id;
+
+          console.log('Calculated target from backend progress:', {
+            backendProgress: progressPercentage,
+            totalSections: sections.length,
+            calculatedHeadingIndex: startIndex,
+            targetSection: calculatedTargetSection,
+          });
+        }
+      }
+
+      if (
+        progressToUse &&
+        progressToUse.progress >= 0 &&
+        calculatedTargetSection
+      ) {
         console.log('Resuming lesson from backend progress:', {
-          lessonProgress,
-          targetSection,
-          calculatedHeadingIndex,
-          shouldPreventProgressUpdates,
-          resumeFromProgress,
+          backendProgress: progressToUse,
+          targetSection: calculatedTargetSection,
+          calculatedHeadingIndex: calculatedHeadingIdx,
+          shouldPreventProgressUpdates: preventUpdates,
+          resumeFromProgress: !!progressToUse && progressToUse.progress > 0,
         });
 
-        // Use the calculated heading index from LessonView
+        // Use the calculated heading index
         const targetIndex =
-          calculatedHeadingIndex >= 0
-            ? calculatedHeadingIndex
+          calculatedHeadingIdx >= 0
+            ? calculatedHeadingIdx
             : transformedData.headingSections?.findIndex(
-                s => s.id === targetSection
+                s => s.id === calculatedTargetSection
               );
 
         if (targetIndex >= 0) {
           console.log('Setting lesson state from backend progress:', {
             targetIndex,
-            targetSection,
-            calculatedHeadingIndex,
+            targetSection: calculatedTargetSection,
+            calculatedHeadingIndex: calculatedHeadingIdx,
             totalSections: transformedData.headingSections?.length,
+            backendProgress: progressToUse.progress,
           });
 
           // CRITICAL: Set state based on backend progress calculation
           setCurrentPage(targetIndex);
-          setCurrentSection(targetSection);
+          setCurrentSection(calculatedTargetSection);
 
-          // Mark completed sections based on backend progress
-          const progressPercentage = lessonProgress.progress;
-          const totalSections = transformedData.headingSections?.length || 1;
-
-          // Use the SAME formula as backend: completedHeadings = floor((progress / 100) * totalMasterHeadings)
-          const completedCount = Math.floor(
-            (progressPercentage / 100) * totalSections
-          );
-
-          const completedSet = new Set();
-          // Mark sections BEFORE the current target as completed
-          for (let i = 0; i < completedCount && i < targetIndex; i++) {
-            completedSet.add(transformedData.headingSections[i].id);
+          // Update progress state for use in component
+          // Store in a way that can be accessed by the hook
+          if (progressToUse) {
+            // Progress will be passed to hook via initialBackendProgress
           }
-          setCompletedSections(completedSet);
-
-          console.log('Backend progress resume setup:', {
-            backendProgress: progressPercentage,
-            totalSections,
-            completedCount,
-            targetIndex,
-            completedSections: Array.from(completedSet),
-          });
 
           // Scroll to target section after DOM is ready
           setTimeout(() => {
             const targetElement = document.getElementById(
-              `section-${targetSection}`
+              `section-${calculatedTargetSection}`
             );
             if (targetElement) {
               const headerOffset = 100;
@@ -532,7 +584,10 @@ const LessonPreview = () => {
               const offsetPosition =
                 elementPosition + window.pageYOffset - headerOffset;
               window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-              console.log('Scrolled to resumed section:', targetSection);
+              console.log(
+                'Scrolled to resumed section:',
+                calculatedTargetSection
+              );
             }
           }, 300);
         } else {
@@ -1056,12 +1111,7 @@ const LessonPreview = () => {
   };
 
   const handleContinue = () => {
-    setCompletedSections(prev => {
-      const done = new Set(prev);
-      const currentHeading = lessonData?.headingSections?.[currentPage]?.id;
-      if (currentHeading) done.add(currentHeading);
-      return done;
-    });
+    // REMOVED: completedSections state - progress is managed by backend
     const nextPage = pages.length > 0 ? (currentPage + 1) % pages.length : 0;
     setCurrentPage(nextPage);
     const nextHeadingId = lessonData?.headingSections?.[nextPage]?.id;
@@ -1085,9 +1135,7 @@ const LessonPreview = () => {
     }
   };
 
-  const markSectionComplete = sectionId => {
-    setCompletedSections(prev => new Set([...prev, sectionId]));
-  };
+  // REMOVED: markSectionComplete - progress is managed by backend
 
   const handleBackToBuilder = () => {
     navigate(
@@ -1600,12 +1648,15 @@ const LessonPreview = () => {
   const isBackendCompleted =
     lessonProgress?.completed || backendProgress >= 100;
 
-  // Calculate completed sections based on backend progress
+  // Calculate completed sections based on backend progress for UI display
   const calculateCompletedSections = () => {
     if (!lessonProgress || !lessonData.headingSections) return new Set();
 
     const progressPercentage = lessonProgress.progress;
     const totalSections = lessonData.headingSections.length;
+
+    // Calculate how many sections are completed based on backend progress
+    // Formula: completedCount = Math.floor((progress / 100) * totalSections)
     const completedCount = Math.floor(
       (progressPercentage / 100) * totalSections
     );
@@ -1683,11 +1734,11 @@ const LessonPreview = () => {
                 <div className="bg-blue-700 rounded-full h-2 mb-2">
                   <div
                     className="bg-white rounded-full h-2 transition-all duration-300"
-                    style={{ width: `${backendProgress}%` }}
+                    style={{ width: `${Math.round(backendProgress)}%` }}
                   ></div>
                 </div>
                 <div className="text-sm opacity-75">
-                  {backendProgress}% COMPLETE
+                  {Math.round(backendProgress)}% COMPLETE
                 </div>
               </div>
 
