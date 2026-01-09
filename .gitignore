@@ -16,10 +16,6 @@ dist-ssr
 coverage
 *.lcov
 
-
-# Environment variables
-.env
-**/.env
 # AI Service Configuration (Keep private)
 ai-config.json
 ai-models.json

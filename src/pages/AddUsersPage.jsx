@@ -1,32 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
-import axios from 'axios';
-import { X } from 'lucide-react';
-import { useUser } from '@/contexts/UserContext';
+import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
+import axios from "axios";
+import { X } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  'https://creditor-backend-9upi.onrender.com';
+  "https://creditor-backend-9upi.onrender.com";
 
-const LOCAL_STORAGE_KEY = 'addedUsersList';
+const LOCAL_STORAGE_KEY = "addedUsersList";
 
-const normalizeUserPayload = user => ({
-  email: (user.email || '').trim().toLowerCase(),
-  password: (user.password || '').trim(),
-  first_name: (user.first_name || '').trim(),
-  last_name: (user.last_name || '').trim(),
+const normalizeUserPayload = (user) => ({
+  email: (user.email || "").trim().toLowerCase(),
+  password: (user.password || "").trim(),
+  first_name: (user.first_name || "").trim(),
+  last_name: (user.last_name || "").trim(),
 });
 
 const AddUsersForm = () => {
   const { userProfile } = useUser();
   const [numUsers, setNumUsers] = useState(1);
   const [users, setUsers] = useState([
-    { email: '', first_name: '', last_name: '', password: '' },
+    { email: "", first_name: "", last_name: "", password: "" },
   ]);
   const [passwordErrors, setPasswordErrors] = useState({}); // Track password validation errors
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [addedUsers, setAddedUsers] = useState([]);
   const [showUserList, setShowUserList] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -37,24 +37,24 @@ const AddUsersForm = () => {
   const [userStatsLoading, setUserStatsLoading] = useState(true);
 
   // Check if user already exists in localStorage (for UI feedback only)
-  const isUserAlreadyAdded = email => {
+  const isUserAlreadyAdded = (email) => {
     return addedUsers.some(
-      user => user.email.toLowerCase() === email.toLowerCase()
+      (user) => user.email.toLowerCase() === email.toLowerCase(),
     );
   };
 
   // Password validation function
-  const validatePassword = password => {
+  const validatePassword = (password) => {
     if (!password) return null; // Don't validate empty passwords
 
     const hasAlphabets = /[a-zA-Z]/.test(password);
     const hasNumbers = /[0-9]/.test(password);
     const hasSpecialChars = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
-      password
+      password,
     );
 
     if (!hasAlphabets || !hasNumbers || !hasSpecialChars) {
-      return 'Password must contain alphabets, special characters, and numbers';
+      return "Password must contain alphabets, special characters, and numbers";
     }
 
     return null; // Password is valid
@@ -90,7 +90,7 @@ const AddUsersForm = () => {
           userProfile?.org_id ||
           userProfile?.organizationId ||
           userProfile?.organization?.id ||
-          localStorage.getItem('orgId');
+          localStorage.getItem("orgId");
 
         if (!orgId) {
           setUserStatsLoading(false);
@@ -102,37 +102,14 @@ const AddUsersForm = () => {
           `${API_BASE}/api/org/SingleOrg/${orgId}`,
           {
             withCredentials: true,
-          }
+          },
         );
         const orgDataResult = orgResponse?.data?.data || orgResponse?.data;
         setOrgData(orgDataResult);
 
-        // Fetch user count for the organization
-        try {
-          const usersResponse = await axios.get(
-            `${API_BASE}/api/org/get-all-users`,
-            {
-              withCredentials: true,
-            }
-          );
-          const usersData =
-            usersResponse?.data?.data || usersResponse?.data || [];
-          const orgUsers = Array.isArray(usersData)
-            ? usersData.filter(
-                user =>
-                  user.organization_id === orgId ||
-                  user.org_id === orgId ||
-                  user.organizationId === orgId
-              )
-            : [];
-          setUserCount(orgUsers.length);
-        } catch (err) {
-          console.error('Error fetching user count:', err);
-          // Fallback: use addedUsers length if API fails
-          setUserCount(addedUsers.length);
-        }
+        // User count functionality removed - API not for admin roles
       } catch (err) {
-        console.error('Error fetching organization data:', err);
+        console.error("Error fetching organization data:", err);
       } finally {
         setUserStatsLoading(false);
       }
@@ -141,7 +118,7 @@ const AddUsersForm = () => {
     fetchUserStats();
   }, [userProfile, addedUsers.length]);
 
-  const handleNumUsersChange = e => {
+  const handleNumUsersChange = (e) => {
     const value = parseInt(e.target.value, 10);
     setNumUsers(value);
 
@@ -150,18 +127,18 @@ const AddUsersForm = () => {
       setExcelFile(null);
       setExcelData([]);
       setShowExcelPreview(false);
-      setError(''); // Clear any existing errors
+      setError(""); // Clear any existing errors
     }
 
-    setUsers(prev => {
+    setUsers((prev) => {
       const newUsers = [...prev];
       if (value > prev.length) {
         for (let i = prev.length; i < value; i++) {
           newUsers.push({
-            email: '',
-            first_name: '',
-            last_name: '',
-            password: '',
+            email: "",
+            first_name: "",
+            last_name: "",
+            password: "",
           });
         }
       } else {
@@ -171,7 +148,7 @@ const AddUsersForm = () => {
     });
 
     // Update password errors to match new user count
-    setPasswordErrors(prev => {
+    setPasswordErrors((prev) => {
       const newErrors = {};
       for (let i = 0; i < value; i++) {
         if (prev[i] !== undefined) {
@@ -183,44 +160,48 @@ const AddUsersForm = () => {
   };
 
   const handleUserChange = (idx, field, value) => {
-    setUsers(prev => {
+    setUsers((prev) => {
       const arr = [...prev];
       arr[idx][field] = value;
       return arr;
     });
 
     // Validate password when password field changes
-    if (field === 'password') {
+    if (field === "password") {
       const validationError = validatePassword(value);
-      setPasswordErrors(prev => ({
+      setPasswordErrors((prev) => ({
         ...prev,
         [idx]: validationError,
       }));
     }
   };
 
-  const handleExcelUpload = e => {
+  const handleExcelUpload = (e) => {
     const file = e.target.files[0];
     setExcelFile(file);
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = evt => {
+    reader.onload = (evt) => {
       const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
+      const workbook = XLSX.read(data, { type: "array" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       const [header, ...rows] = json;
-      const headerMap = header.map(h => h && h.toString().toLowerCase().trim());
+      const headerMap = header.map(
+        (h) => h && h.toString().toLowerCase().trim(),
+      );
 
       // More flexible column name matching
-      const emailIdx = headerMap.findIndex(h => h.includes('email'));
-      const passwordIdx = headerMap.findIndex(h => h.includes('password'));
+      const emailIdx = headerMap.findIndex((h) => h.includes("email"));
+      const passwordIdx = headerMap.findIndex((h) => h.includes("password"));
       const firstNameIdx = headerMap.findIndex(
-        h => h.includes('first') && (h.includes('name') || h.includes('_name'))
+        (h) =>
+          h.includes("first") && (h.includes("name") || h.includes("_name")),
       );
       const lastNameIdx = headerMap.findIndex(
-        h => h.includes('last') && (h.includes('name') || h.includes('_name'))
+        (h) =>
+          h.includes("last") && (h.includes("name") || h.includes("_name")),
       );
 
       if (
@@ -230,33 +211,33 @@ const AddUsersForm = () => {
         lastNameIdx === -1
       ) {
         const missingColumns = [];
-        if (emailIdx === -1) missingColumns.push('email');
-        if (passwordIdx === -1) missingColumns.push('password');
-        if (firstNameIdx === -1) missingColumns.push('first_name/firstName');
-        if (lastNameIdx === -1) missingColumns.push('last_name/lastName');
+        if (emailIdx === -1) missingColumns.push("email");
+        if (passwordIdx === -1) missingColumns.push("password");
+        if (firstNameIdx === -1) missingColumns.push("first_name/firstName");
+        if (lastNameIdx === -1) missingColumns.push("last_name/lastName");
 
         setError(
-          `Missing required columns: ${missingColumns.join(', ')}. Available columns: ${headerMap.join(', ')}`
+          `Missing required columns: ${missingColumns.join(", ")}. Available columns: ${headerMap.join(", ")}`,
         );
         return;
       }
 
       const parsedUsers = rows
         .filter(
-          row =>
+          (row) =>
             row[emailIdx] &&
             row[passwordIdx] &&
             row[firstNameIdx] &&
-            row[lastNameIdx]
+            row[lastNameIdx],
         )
-        .map(row => ({
+        .map((row) => ({
           email: String(row[emailIdx]).trim().toLowerCase(),
           password: String(row[passwordIdx]).trim(),
           first_name: String(row[firstNameIdx]).trim(),
           last_name: String(row[lastNameIdx]).trim(),
         }))
         .filter(
-          user =>
+          (user) =>
             user.email &&
             user.password &&
             user.first_name &&
@@ -264,12 +245,12 @@ const AddUsersForm = () => {
             user.email.length > 0 &&
             user.password.length > 0 &&
             user.first_name.length > 0 &&
-            user.last_name.length > 0
+            user.last_name.length > 0,
         );
 
       if (parsedUsers.length === 0) {
         setError(
-          'No valid user data found in Excel file. Please ensure all required fields are filled and not empty.'
+          "No valid user data found in Excel file. Please ensure all required fields are filled and not empty.",
         );
         return;
       }
@@ -287,7 +268,7 @@ const AddUsersForm = () => {
 
       if (hasPasswordErrors) {
         setError(
-          'Some passwords in the Excel file do not meet the requirements. Passwords must contain alphabets, special characters, and numbers.'
+          "Some passwords in the Excel file do not meet the requirements. Passwords must contain alphabets, special characters, and numbers.",
         );
         setPasswordErrors(excelPasswordErrors);
         return;
@@ -296,45 +277,45 @@ const AddUsersForm = () => {
       setExcelData(parsedUsers);
       setUsers(parsedUsers);
       setShowExcelPreview(true);
-      setError('');
+      setError("");
       setPasswordErrors({}); // Clear any existing password errors
     };
     reader.readAsArrayBuffer(file);
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
     setSuccess(false);
 
     try {
       // Check for password validation errors
       const hasPasswordErrors = Object.values(passwordErrors).some(
-        error => error !== null
+        (error) => error !== null,
       );
       if (hasPasswordErrors) {
-        setError('Please fix password validation errors before submitting.');
+        setError("Please fix password validation errors before submitting.");
         setLoading(false);
         return;
       }
 
       // Validate user data before sending
       const validUsers = users.filter(
-        user =>
+        (user) =>
           user.email &&
           user.password &&
           user.first_name &&
           user.last_name &&
-          user.email.trim() !== '' &&
-          user.password.trim() !== '' &&
-          user.first_name.trim() !== '' &&
-          user.last_name.trim() !== ''
+          user.email.trim() !== "" &&
+          user.password.trim() !== "" &&
+          user.first_name.trim() !== "" &&
+          user.last_name.trim() !== "",
       );
 
       if (validUsers.length === 0) {
         setError(
-          'Please ensure all users have valid email, password, first name, and last name.'
+          "Please ensure all users have valid email, password, first name, and last name.",
         );
         setLoading(false);
         return;
@@ -342,7 +323,7 @@ const AddUsersForm = () => {
 
       if (validUsers.length !== users.length) {
         setError(
-          `Only ${validUsers.length} out of ${users.length} users have valid data. Please check all fields.`
+          `Only ${validUsers.length} out of ${users.length} users have valid data. Please check all fields.`,
         );
         setLoading(false);
         return;
@@ -359,10 +340,10 @@ const AddUsersForm = () => {
         payload,
         {
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           withCredentials: true,
-        }
+        },
       );
 
       // Process the backend response
@@ -402,14 +383,14 @@ const AddUsersForm = () => {
         if (addedUsers.length === 0 && existingUsers.length > 0) {
           // No users were added, all already exist - show error popup
           let errorMessage =
-            'The following users already exist in the database:\n\n';
-          existingUsers.forEach(user => {
-            const firstName = user.first_name || user.firstName || '';
-            const lastName = user.last_name || user.lastName || '';
+            "The following users already exist in the database:\n\n";
+          existingUsers.forEach((user) => {
+            const firstName = user.first_name || user.firstName || "";
+            const lastName = user.last_name || user.lastName || "";
             errorMessage += `• ${user.email} (${firstName} ${lastName})\n`;
           });
           errorMessage +=
-            '\nPlease use different email addresses or check the existing users list.';
+            "\nPlease use different email addresses or check the existing users list.";
           setError(errorMessage);
           setLoading(false);
           return;
@@ -420,7 +401,7 @@ const AddUsersForm = () => {
           setSuccess(true);
         } else {
           setError(
-            'No users were added. Please check your data and try again.'
+            "No users were added. Please check your data and try again.",
           );
           setLoading(false);
           return;
@@ -430,19 +411,19 @@ const AddUsersForm = () => {
 
         // Remove any overlap: if a user is in addedUsers, do not include in existing/failed list
         const addedEmailsSet = new Set(
-          addedUsers.map(u => u.email.toLowerCase())
+          addedUsers.map((u) => u.email.toLowerCase()),
         );
         const nonOverlappingExistingUsers = existingUsers.filter(
-          u => !addedEmailsSet.has((u.email || '').toLowerCase())
+          (u) => !addedEmailsSet.has((u.email || "").toLowerCase()),
         );
 
         // Try to match failed users with original user data to get names
         const enhancedFailedUsers = nonOverlappingExistingUsers.map(
-          failedUser => {
+          (failedUser) => {
             // Try to find the original user data by email
             const originalUser = validUsers.find(
-              user =>
-                user.email.toLowerCase() === failedUser.email.toLowerCase()
+              (user) =>
+                user.email.toLowerCase() === failedUser.email.toLowerCase(),
             );
 
             if (originalUser) {
@@ -454,24 +435,24 @@ const AddUsersForm = () => {
             }
 
             return failedUser;
-          }
+          },
         );
 
         setRecentlyAddedUsers(addedUsers); // Track recently added users
         setFailedUsers(enhancedFailedUsers); // Track failed users with enhanced data
 
-        setAddedUsers(prev => {
+        setAddedUsers((prev) => {
           // Filter out users that already exist in the current list to prevent duplicates
-          const existingEmails = prev.map(user => user.email.toLowerCase());
+          const existingEmails = prev.map((user) => user.email.toLowerCase());
           const newUsers = addedUsers.filter(
-            user => !existingEmails.includes(user.email.toLowerCase())
+            (user) => !existingEmails.includes(user.email.toLowerCase()),
           );
 
           const updated = [...prev, ...newUsers];
           // Save to localStorage here for immediate persistence
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
           // Update user count
-          setUserCount(prevCount => prevCount + newUsers.length);
+          setUserCount((prevCount) => prevCount + newUsers.length);
           return updated;
         });
 
@@ -479,9 +460,9 @@ const AddUsersForm = () => {
         if (nonOverlappingExistingUsers.length > 0) {
           let message = `Successfully added ${addedUsers.length} user(s). ${nonOverlappingExistingUsers.length} user(s) already exist in the database and were skipped.\n\n`;
           message += `Users that were NOT added (already exist):\n`;
-          nonOverlappingExistingUsers.forEach(user => {
-            const firstName = user.first_name || user.firstName || '';
-            const lastName = user.last_name || user.lastName || '';
+          nonOverlappingExistingUsers.forEach((user) => {
+            const firstName = user.first_name || user.firstName || "";
+            const lastName = user.last_name || user.lastName || "";
             message += `• ${user.email} (${firstName} ${lastName})\n`;
           });
           setSuccessMessage(message);
@@ -489,14 +470,14 @@ const AddUsersForm = () => {
           setSuccessMessage(`Successfully added ${addedUsers.length} user(s)!`);
         }
 
-        setUsers([{ email: '', first_name: '', last_name: '', password: '' }]);
+        setUsers([{ email: "", first_name: "", last_name: "", password: "" }]);
         setNumUsers(1);
         setExcelFile(null);
         setExcelData([]);
         setShowExcelPreview(false);
         setPasswordErrors({}); // Clear password errors on success
       } else {
-        setError(response.data.message || 'Failed to add users.');
+        setError(response.data.message || "Failed to add users.");
       }
     } catch (err) {
       // Handle specific error cases
@@ -513,12 +494,12 @@ const AddUsersForm = () => {
           if (addedUsers.length === 0 && existingUsers.length > 0) {
             // No users were added, all already exist - show error popup
             let errorMessage =
-              'The following users already exist in the database:\n\n';
-            existingUsers.forEach(user => {
+              "The following users already exist in the database:\n\n";
+            existingUsers.forEach((user) => {
               errorMessage += `• ${user.email} (${user.first_name} ${user.last_name})\n`;
             });
             errorMessage +=
-              '\nPlease use different email addresses or check the existing users list.';
+              "\nPlease use different email addresses or check the existing users list.";
             setError(errorMessage);
             setLoading(false);
             return;
@@ -529,7 +510,7 @@ const AddUsersForm = () => {
             setSuccess(true);
           } else {
             setError(
-              'No users were added. Please check your data and try again.'
+              "No users were added. Please check your data and try again.",
             );
             setLoading(false);
             return;
@@ -539,19 +520,19 @@ const AddUsersForm = () => {
 
           // Remove any overlap: if a user is in addedUsers, do not include in existing/failed list
           const addedEmailsSet = new Set(
-            addedUsers.map(u => u.email.toLowerCase())
+            addedUsers.map((u) => u.email.toLowerCase()),
           );
           const nonOverlappingExistingUsers = existingUsers.filter(
-            u => !addedEmailsSet.has((u.email || '').toLowerCase())
+            (u) => !addedEmailsSet.has((u.email || "").toLowerCase()),
           );
 
           // Try to match failed users with original user data to get names
           const enhancedFailedUsers = nonOverlappingExistingUsers.map(
-            failedUser => {
+            (failedUser) => {
               // Try to find the original user data by email
               const originalUser = validUsers.find(
-                user =>
-                  user.email.toLowerCase() === failedUser.email.toLowerCase()
+                (user) =>
+                  user.email.toLowerCase() === failedUser.email.toLowerCase(),
               );
 
               if (originalUser) {
@@ -563,23 +544,23 @@ const AddUsersForm = () => {
               }
 
               return failedUser;
-            }
+            },
           );
 
           setRecentlyAddedUsers(addedUsers);
           setFailedUsers(enhancedFailedUsers); // Track failed users with enhanced data
 
-          setAddedUsers(prev => {
+          setAddedUsers((prev) => {
             // Filter out users that already exist in the current list to prevent duplicates
-            const existingEmails = prev.map(user => user.email.toLowerCase());
+            const existingEmails = prev.map((user) => user.email.toLowerCase());
             const newUsers = addedUsers.filter(
-              user => !existingEmails.includes(user.email.toLowerCase())
+              (user) => !existingEmails.includes(user.email.toLowerCase()),
             );
 
             const updated = [...prev, ...newUsers];
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
             // Update user count
-            setUserCount(prevCount => prevCount + newUsers.length);
+            setUserCount((prevCount) => prevCount + newUsers.length);
             return updated;
           });
 
@@ -587,20 +568,20 @@ const AddUsersForm = () => {
           if (nonOverlappingExistingUsers.length > 0) {
             let message = `Successfully added ${addedUsers.length} user(s). ${nonOverlappingExistingUsers.length} user(s) already exist in the database and were skipped.\n\n`;
             message += `Users that were NOT added (already exist):\n`;
-            nonOverlappingExistingUsers.forEach(user => {
-              const firstName = user.first_name || user.firstName || '';
-              const lastName = user.last_name || user.lastName || '';
+            nonOverlappingExistingUsers.forEach((user) => {
+              const firstName = user.first_name || user.firstName || "";
+              const lastName = user.last_name || user.lastName || "";
               message += `• ${user.email} (${firstName} ${lastName})\n`;
             });
             setSuccessMessage(message);
           } else {
             setSuccessMessage(
-              `Successfully added ${addedUsers.length} user(s)!`
+              `Successfully added ${addedUsers.length} user(s)!`,
             );
           }
 
           setUsers([
-            { email: '', first_name: '', last_name: '', password: '' },
+            { email: "", first_name: "", last_name: "", password: "" },
           ]);
           setNumUsers(1);
           setExcelFile(null);
@@ -610,32 +591,32 @@ const AddUsersForm = () => {
         } else {
           // Complete failure - show error message
           let errorMessage =
-            'The following users already exist in the database:\n\n';
+            "The following users already exist in the database:\n\n";
 
           if (
             errorData.existingUsers &&
             Array.isArray(errorData.existingUsers)
           ) {
-            errorData.existingUsers.forEach(user => {
-              const firstName = user.first_name || user.firstName || '';
-              const lastName = user.last_name || user.lastName || '';
+            errorData.existingUsers.forEach((user) => {
+              const firstName = user.first_name || user.firstName || "";
+              const lastName = user.last_name || user.lastName || "";
               errorMessage += `• ${user.email} (${firstName} ${lastName})\n`;
             });
             errorMessage +=
-              '\nPlease use different email addresses or check the existing users list.';
+              "\nPlease use different email addresses or check the existing users list.";
           } else if (errorData.failed && Array.isArray(errorData.failed)) {
-            errorData.failed.forEach(user => {
-              const firstName = user.first_name || user.firstName || '';
-              const lastName = user.last_name || user.lastName || '';
+            errorData.failed.forEach((user) => {
+              const firstName = user.first_name || user.firstName || "";
+              const lastName = user.last_name || user.lastName || "";
               errorMessage += `• ${user.email} (${firstName} ${lastName})\n`;
             });
             errorMessage +=
-              '\nPlease use different email addresses or check the existing users list.';
+              "\nPlease use different email addresses or check the existing users list.";
           } else if (errorData.message) {
             errorMessage = errorData.message;
           } else {
             errorMessage =
-              'One or more users with the same email already exist in the database. Please use different email addresses.';
+              "One or more users with the same email already exist in the database. Please use different email addresses.";
           }
 
           setError(errorMessage);
@@ -647,19 +628,19 @@ const AddUsersForm = () => {
           setError(errorData.message);
         } else {
           setError(
-            'Invalid data provided. Please check all fields and try again.'
+            "Invalid data provided. Please check all fields and try again.",
           );
         }
       } else if (err.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
+        setError("Authentication failed. Please log in again.");
       } else if (err.response?.status === 403) {
-        setError('You do not have permission to add users.');
+        setError("You do not have permission to add users.");
       } else if (err.response?.status === 500) {
-        setError('Server error. Please try again later.');
+        setError("Server error. Please try again later.");
       } else {
         setError(
           err.response?.data?.message ||
-            'Failed to add users. Please try again.'
+            "Failed to add users. Please try again.",
         );
       }
     } finally {
@@ -669,12 +650,12 @@ const AddUsersForm = () => {
 
   const resetForm = () => {
     setSuccess(false);
-    setError('');
-    setSuccessMessage('');
+    setError("");
+    setSuccessMessage("");
     setPasswordErrors({});
     setRecentlyAddedUsers([]);
     setFailedUsers([]);
-    setUsers([{ email: '', first_name: '', last_name: '', password: '' }]);
+    setUsers([{ email: "", first_name: "", last_name: "", password: "" }]);
     setNumUsers(1);
     setExcelFile(null);
     setExcelData([]);
@@ -703,12 +684,12 @@ const AddUsersForm = () => {
           </div>
           <div className="text-sm space-y-1">
             <p>
-              ✅ Successfully added:{' '}
+              ✅ Successfully added:{" "}
               <strong>{recentlyAddedUsers.length} user(s)</strong>
             </p>
             {failedUsers.length > 0 && (
               <p>
-                ❌ Failed to add: <strong>{failedUsers.length} user(s)</strong>{' '}
+                ❌ Failed to add: <strong>{failedUsers.length} user(s)</strong>{" "}
                 (already exist)
               </p>
             )}
@@ -730,7 +711,7 @@ const AddUsersForm = () => {
             onClick={() => setShowUserList(!showUserList)}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors font-medium"
           >
-            {showUserList ? 'Hide User List' : 'View Added Users'}
+            {showUserList ? "Hide User List" : "View Added Users"}
           </button>
         </div>
 
@@ -802,8 +783,8 @@ const AddUsersForm = () => {
                   {failedUsers.map((user, index) => (
                     <tr key={index}>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {user.first_name || user.firstName || ''}{' '}
-                        {user.last_name || user.lastName || ''}
+                        {user.first_name || user.firstName || ""}{" "}
+                        {user.last_name || user.lastName || ""}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                         {user.email}
@@ -879,7 +860,7 @@ const AddUsersForm = () => {
             </svg>
             <span className="text-sm text-green-700">{successMessage}</span>
             <button
-              onClick={() => setSuccessMessage('')}
+              onClick={() => setSuccessMessage("")}
               className="ml-auto text-green-500 hover:text-green-700"
             >
               <X size={20} />
@@ -907,7 +888,7 @@ const AddUsersForm = () => {
             </svg>
             <span className="text-sm text-red-700">{error}</span>
             <button
-              onClick={() => setError('')}
+              onClick={() => setError("")}
               className="ml-auto text-red-500 hover:text-red-700"
             >
               <X size={20} />
@@ -1020,11 +1001,11 @@ const AddUsersForm = () => {
                 ,
                 <span className="font-mono bg-green-100 px-1 mx-1 rounded">
                   first_name
-                </span>{' '}
+                </span>{" "}
                 (or firstName),
                 <span className="font-mono bg-green-100 px-1 mx-1 rounded">
                   last_name
-                </span>{' '}
+                </span>{" "}
                 (or lastName)
               </p>
             </div>
@@ -1129,12 +1110,12 @@ const AddUsersForm = () => {
                       placeholder="user@example.com"
                       className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
                         user.email && isUserAlreadyAdded(user.email)
-                          ? 'border-yellow-500 focus:border-yellow-500 focus:ring-yellow-500'
-                          : 'border-gray-300'
+                          ? "border-yellow-500 focus:border-yellow-500 focus:ring-yellow-500"
+                          : "border-gray-300"
                       }`}
                       value={user.email}
-                      onChange={e =>
-                        handleUserChange(idx, 'email', e.target.value)
+                      onChange={(e) =>
+                        handleUserChange(idx, "email", e.target.value)
                       }
                       required
                     />
@@ -1166,12 +1147,12 @@ const AddUsersForm = () => {
                       placeholder="••••••••"
                       className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
                         passwordErrors[idx]
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300'
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "border-gray-300"
                       }`}
                       value={user.password}
-                      onChange={e =>
-                        handleUserChange(idx, 'password', e.target.value)
+                      onChange={(e) =>
+                        handleUserChange(idx, "password", e.target.value)
                       }
                       required
                     />
@@ -1203,8 +1184,8 @@ const AddUsersForm = () => {
                       placeholder="John"
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={user.first_name}
-                      onChange={e =>
-                        handleUserChange(idx, 'first_name', e.target.value)
+                      onChange={(e) =>
+                        handleUserChange(idx, "first_name", e.target.value)
                       }
                       required
                     />
@@ -1218,8 +1199,8 @@ const AddUsersForm = () => {
                       placeholder="Doe"
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       value={user.last_name}
-                      onChange={e =>
-                        handleUserChange(idx, 'last_name', e.target.value)
+                      onChange={(e) =>
+                        handleUserChange(idx, "last_name", e.target.value)
                       }
                       required
                     />
@@ -1248,11 +1229,11 @@ const AddUsersForm = () => {
           {error && (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-              onClick={() => setError('')}
+              onClick={() => setError("")}
             >
               <div
                 className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center mb-4">
                   <div className="flex-shrink-0">
@@ -1284,7 +1265,7 @@ const AddUsersForm = () => {
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setError('')}
+                    onClick={() => setError("")}
                     className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
                     Close
@@ -1295,7 +1276,7 @@ const AddUsersForm = () => {
           )}
           <button
             type="submit"
-            className={`w-full md:w-auto px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`w-full md:w-auto px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${loading ? "opacity-75 cursor-not-allowed" : ""}`}
             disabled={loading || (!showExcelPreview && numUsers > 10)}
           >
             {loading ? (
@@ -1323,7 +1304,7 @@ const AddUsersForm = () => {
                 Processing...
               </span>
             ) : (
-              'Add Users'
+              "Add Users"
             )}
           </button>
         </div>

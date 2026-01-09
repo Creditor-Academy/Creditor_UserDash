@@ -3,7 +3,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   forwardRef,
-} from 'react';
+} from "react";
 import {
   Layers,
   X,
@@ -23,61 +23,61 @@ import {
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
   Check,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { toast } from 'react-hot-toast';
-import { uploadImage } from '@/services/imageUploadService';
-import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
-import ImageEditor from '../MediaBlocks/ImageEditor';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import devLogger from '@lessonbuilder/utils/devLogger';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
+import { uploadImage } from "@/services/imageUploadService";
+import { uploadAudio as uploadAudioResource } from "@/services/audioUploadService";
+import ImageEditor from "../MediaBlocks/ImageEditor";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 const accordionQuillModules = {
   toolbar: [
-    ['bold', 'italic', 'underline'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['clean'],
+    ["bold", "italic", "underline"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
   ],
 };
 
-const accordionQuillFormats = ['bold', 'italic', 'underline', 'list', 'bullet'];
+const accordionQuillFormats = ["bold", "italic", "underline", "list", "bullet"];
 
-const stripHtmlTags = value =>
-  (value || '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
+const stripHtmlTags = (value) =>
+  (value || "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
     .trim();
 
-const enhanceListMarkup = html => {
+const enhanceListMarkup = (html) => {
   if (!html) return html;
 
   // Ensure this runs only in a browser environment
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
+  if (typeof window === "undefined" || typeof document === "undefined") {
     return html;
   }
 
-  const tempDiv = document.createElement('div');
+  const tempDiv = document.createElement("div");
   tempDiv.innerHTML = html;
 
   const addClasses = (elements, classes) => {
-    elements.forEach(element => {
-      const existing = element.getAttribute('class') || '';
+    elements.forEach((element) => {
+      const existing = element.getAttribute("class") || "";
       const merged = `${existing} ${classes}`.trim();
-      element.setAttribute('class', merged);
+      element.setAttribute("class", merged);
     });
   };
 
-  addClasses(tempDiv.querySelectorAll('ul'), 'list-disc pl-6 space-y-1');
-  addClasses(tempDiv.querySelectorAll('ol'), 'list-decimal pl-6 space-y-1');
-  addClasses(tempDiv.querySelectorAll('li'), 'leading-relaxed');
+  addClasses(tempDiv.querySelectorAll("ul"), "list-disc pl-6 space-y-1");
+  addClasses(tempDiv.querySelectorAll("ol"), "list-decimal pl-6 space-y-1");
+  addClasses(tempDiv.querySelectorAll("li"), "leading-relaxed");
 
   return tempDiv.innerHTML;
 };
@@ -94,46 +94,46 @@ const InteractiveComponent = forwardRef(
       editingInteractiveBlock,
       onAICreation,
     },
-    ref
+    ref,
   ) => {
     // Interactive editing state
-    const [selectedTemplate, setSelectedTemplate] = useState('');
+    const [selectedTemplate, setSelectedTemplate] = useState("");
     const [tabsData, setTabsData] = useState([
       {
-        title: 'Tab 1',
-        content: 'Content for tab 1',
+        title: "Tab 1",
+        content: "Content for tab 1",
         image: null,
         audio: null,
       },
       {
-        title: 'Tab 2',
-        content: 'Content for tab 2',
+        title: "Tab 2",
+        content: "Content for tab 2",
         image: null,
         audio: null,
       },
       {
-        title: 'Tab 3',
-        content: 'Content for tab 3',
+        title: "Tab 3",
+        content: "Content for tab 3",
         image: null,
         audio: null,
       },
     ]);
     const [accordionData, setAccordionData] = useState([
       {
-        title: 'Section 1',
-        content: 'Content for section 1',
+        title: "Section 1",
+        content: "Content for section 1",
         image: null,
         audio: null,
       },
       {
-        title: 'Section 2',
-        content: 'Content for section 2',
+        title: "Section 2",
+        content: "Content for section 2",
         image: null,
         audio: null,
       },
       {
-        title: 'Section 3',
-        content: 'Content for section 3',
+        title: "Section 3",
+        content: "Content for section 3",
         image: null,
         audio: null,
       },
@@ -144,72 +144,72 @@ const InteractiveComponent = forwardRef(
     });
     const [timelineData, setTimelineData] = useState([
       {
-        id: '1',
-        date: '2024-01-15',
-        title: 'Project Kickoff',
-        description: 'Initial project planning and team formation',
+        id: "1",
+        date: "2024-01-15",
+        title: "Project Kickoff",
+        description: "Initial project planning and team formation",
         image: null,
         audio: null,
       },
       {
-        id: '2',
+        id: "2",
         date: null,
-        title: 'Design Phase',
-        description: 'Creating wireframes and mockups for the application',
+        title: "Design Phase",
+        description: "Creating wireframes and mockups for the application",
         image: null,
         audio: null,
       },
       {
-        id: '3',
-        date: '2024-03-15',
-        title: 'Development Start',
-        description: 'Beginning of active development and coding phase',
+        id: "3",
+        date: "2024-03-15",
+        title: "Development Start",
+        description: "Beginning of active development and coding phase",
         image: null,
         audio: null,
       },
     ]);
     const [processData, setProcessData] = useState([
       {
-        id: '1',
-        title: 'Understand your physical being',
+        id: "1",
+        title: "Understand your physical being",
         description:
           "Recognizing your physical being is key to maintaining overall well-being. By staying attuned to your body's signals, you can make informed choices that support both your health and daily activities.",
         image: null,
         audio: null,
       },
       {
-        id: '2',
-        title: 'Step 2',
+        id: "2",
+        title: "Step 2",
         description:
-          'Content for step 2 will go here. This is where you can describe the second phase of your process.',
+          "Content for step 2 will go here. This is where you can describe the second phase of your process.",
         image: null,
         audio: null,
       },
       {
-        id: '3',
-        title: 'Step 3',
+        id: "3",
+        title: "Step 3",
         description:
-          'Content for step 3 will go here. This is where you can describe the third phase of your process.',
+          "Content for step 3 will go here. This is where you can describe the third phase of your process.",
         image: null,
         audio: null,
       },
       {
-        id: '4',
-        title: 'Step 4',
+        id: "4",
+        title: "Step 4",
         description:
-          'Content for step 4 will go here. This is where you can describe the final phase of your process.',
+          "Content for step 4 will go here. This is where you can describe the final phase of your process.",
         image: null,
         audio: null,
       },
     ]);
     const [quizData, setQuizData] = useState({
-      title: 'Quiz',
+      title: "Quiz",
       questions: [
         {
-          question: 'Sample question?',
-          options: ['Option A', 'Option B', 'Option C', 'Option D'],
+          question: "Sample question?",
+          options: ["Option A", "Option B", "Option C", "Option D"],
           correctAnswer: 0,
-          explanation: 'This is the correct answer because...',
+          explanation: "This is the correct answer because...",
         },
       ],
     });
@@ -225,18 +225,18 @@ const InteractiveComponent = forwardRef(
     const [isImageProcessing, setIsImageProcessing] = useState(false);
 
     // Helper function to extract tabs data from HTML
-    const extractTabsFromHTML = htmlContent => {
+    const extractTabsFromHTML = (htmlContent) => {
       const extractedData = [];
 
       try {
         // Create a temporary DOM element to parse HTML
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
 
         // Find all tab buttons to get titles
-        const tabButtons = tempDiv.querySelectorAll('.tab-button');
+        const tabButtons = tempDiv.querySelectorAll(".tab-button");
         // Find all tab panels to get content
-        const tabPanels = tempDiv.querySelectorAll('.tab-panel');
+        const tabPanels = tempDiv.querySelectorAll(".tab-panel");
 
         tabPanels.forEach((panel, index) => {
           // Extract title from tab button
@@ -246,40 +246,40 @@ const InteractiveComponent = forwardRef(
             : `Tab ${index + 1}`;
 
           // Extract content from tab panel - look for the content div
-          const contentDiv = panel.querySelector('.text-gray-700');
-          let content = '';
+          const contentDiv = panel.querySelector(".text-gray-700");
+          let content = "";
           if (contentDiv) {
             // Get text content while preserving line breaks
             content = contentDiv.innerHTML
-              .replace(/<\/p>/g, '\n')
-              .replace(/<\/li>/g, '\n')
-              .replace(/<br\s*\/?>/g, '\n')
-              .replace(/<[^>]+>/g, '')
+              .replace(/<\/p>/g, "\n")
+              .replace(/<\/li>/g, "\n")
+              .replace(/<br\s*\/?>/g, "\n")
+              .replace(/<[^>]+>/g, "")
               .trim();
           }
 
           // Extract image if present
           let image = null;
-          const imageElement = panel.querySelector('img');
+          const imageElement = panel.querySelector("img");
           if (imageElement) {
             image = {
               src: imageElement.src,
-              name: imageElement.alt || 'Tab image',
+              name: imageElement.alt || "Tab image",
               size: 0,
             };
           }
 
           // Extract audio if present
           let audio = null;
-          const audioElement = panel.querySelector('audio source');
+          const audioElement = panel.querySelector("audio source");
           if (audioElement) {
-            const audioSrc = audioElement.getAttribute('src');
-            const audioType = audioElement.getAttribute('type');
+            const audioSrc = audioElement.getAttribute("src");
+            const audioType = audioElement.getAttribute("type");
             if (audioSrc) {
               audio = {
                 src: audioSrc,
-                type: audioType || 'audio/mpeg',
-                name: 'Tab audio',
+                type: audioType || "audio/mpeg",
+                name: "Tab audio",
                 size: 0,
               };
             }
@@ -293,36 +293,36 @@ const InteractiveComponent = forwardRef(
           });
         });
       } catch (error) {
-        devLogger.error('Error extracting tabs data from HTML:', error);
+        devLogger.error("Error extracting tabs data from HTML:", error);
       }
 
       return extractedData;
     };
 
     // Helper function to extract accordion data from HTML
-    const extractAccordionFromHTML = htmlContent => {
+    const extractAccordionFromHTML = (htmlContent) => {
       const extractedData = [];
 
       try {
         // Create a temporary DOM element to parse HTML
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
 
         // Find all accordion items
-        const accordionItems = tempDiv.querySelectorAll('.accordion-item');
+        const accordionItems = tempDiv.querySelectorAll(".accordion-item");
 
         accordionItems.forEach((item, index) => {
           // Extract title from accordion header
-          const headerButton = item.querySelector('.accordion-header span');
+          const headerButton = item.querySelector(".accordion-header span");
           const title = headerButton
             ? headerButton.textContent.trim()
             : `Section ${index + 1}`;
 
           // Extract content from accordion content div - preserve formatting
           const contentDiv = item.querySelector(
-            '.accordion-content .text-gray-700'
+            ".accordion-content .text-gray-700",
           );
-          let content = '';
+          let content = "";
           if (contentDiv) {
             // Preserve original HTML so list formatting and other rich text survives
             content = contentDiv.innerHTML.trim();
@@ -330,26 +330,26 @@ const InteractiveComponent = forwardRef(
 
           // Extract image if present
           let image = null;
-          const imageElement = item.querySelector('.accordion-content img');
+          const imageElement = item.querySelector(".accordion-content img");
           if (imageElement) {
             image = {
               src: imageElement.src,
-              name: imageElement.alt || 'Accordion image',
+              name: imageElement.alt || "Accordion image",
               size: 0, // Size not available from HTML
             };
           }
 
           // Extract audio if present
           let audio = null;
-          const audioElement = item.querySelector('audio source');
+          const audioElement = item.querySelector("audio source");
           if (audioElement) {
-            const audioSrc = audioElement.getAttribute('src');
-            const audioType = audioElement.getAttribute('type');
+            const audioSrc = audioElement.getAttribute("src");
+            const audioType = audioElement.getAttribute("type");
             if (audioSrc) {
               audio = {
                 src: audioSrc,
-                type: audioType || 'audio/mpeg',
-                name: 'Accordion audio',
+                type: audioType || "audio/mpeg",
+                name: "Accordion audio",
                 size: 0,
               };
             }
@@ -363,17 +363,17 @@ const InteractiveComponent = forwardRef(
           });
         });
       } catch (error) {
-        devLogger.error('Error extracting accordion data from HTML:', error);
+        devLogger.error("Error extracting accordion data from HTML:", error);
       }
 
       return extractedData;
     };
 
     // Helper function to extract labeled graphic data from HTML
-    const extractLabeledGraphicFromHTML = htmlContent => {
+    const extractLabeledGraphicFromHTML = (htmlContent) => {
       devLogger.debug(
-        'Extracting labeled graphic from HTML:',
-        htmlContent.substring(0, 500) + '...'
+        "Extracting labeled graphic from HTML:",
+        htmlContent.substring(0, 500) + "...",
       );
       const extractedData = {
         image: null,
@@ -382,28 +382,28 @@ const InteractiveComponent = forwardRef(
 
       try {
         // Create a temporary DOM element to parse HTML
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
 
         // Extract image from the labeled graphic container
         const imageElement = tempDiv.querySelector(
-          '.labeled-graphic-container img'
+          ".labeled-graphic-container img",
         );
         if (imageElement) {
           extractedData.image = {
             src: imageElement.src,
-            name: imageElement.alt || 'Labeled graphic image',
+            name: imageElement.alt || "Labeled graphic image",
             size: 0, // Size not available from HTML
           };
         }
 
         // Extract hotspots
-        const hotspotElements = tempDiv.querySelectorAll('.hotspot');
-        devLogger.debug('Found hotspot elements:', hotspotElements.length);
+        const hotspotElements = tempDiv.querySelectorAll(".hotspot");
+        devLogger.debug("Found hotspot elements:", hotspotElements.length);
         hotspotElements.forEach((hotspot, index) => {
           const hotspotId =
-            hotspot.getAttribute('data-hotspot-id') || (index + 1).toString();
-          const style = hotspot.getAttribute('style') || '';
+            hotspot.getAttribute("data-hotspot-id") || (index + 1).toString();
+          const style = hotspot.getAttribute("style") || "";
 
           // Extract position from style attribute
           const leftMatch = style.match(/left:\s*([0-9.]+)%/);
@@ -412,41 +412,41 @@ const InteractiveComponent = forwardRef(
           if (leftMatch && topMatch) {
             // Try to find corresponding content overlay using more flexible selector
             let contentElement = tempDiv.querySelector(
-              `[id*="content-"][id*="-${hotspotId}"]`
+              `[id*="content-"][id*="-${hotspotId}"]`,
             );
-            let label = 'Hotspot';
-            let description = 'Click to edit description';
+            let label = "Hotspot";
+            let description = "Click to edit description";
             let audio = null;
 
             if (contentElement) {
-              const labelElement = contentElement.querySelector('h3');
-              const descElement = contentElement.querySelector('p');
+              const labelElement = contentElement.querySelector("h3");
+              const descElement = contentElement.querySelector("p");
               if (labelElement) label = labelElement.textContent.trim();
               if (descElement) description = descElement.textContent.trim();
 
               // Try to extract audio information
-              const audioElement = contentElement.querySelector('audio source');
+              const audioElement = contentElement.querySelector("audio source");
               if (audioElement) {
-                const audioSrc = audioElement.getAttribute('src');
-                const audioType = audioElement.getAttribute('type');
+                const audioSrc = audioElement.getAttribute("src");
+                const audioType = audioElement.getAttribute("type");
                 // Try to get audio name from the file info display
                 const audioNameElement = contentElement.querySelector(
-                  '.text-xs.font-medium.text-gray-800'
+                  ".text-xs.font-medium.text-gray-800",
                 );
                 const audioSizeElement = contentElement.querySelector(
-                  '.text-xs.text-gray-500'
+                  ".text-xs.text-gray-500",
                 );
 
                 if (audioSrc) {
                   audio = {
                     src: audioSrc,
-                    type: audioType || 'audio/mpeg',
+                    type: audioType || "audio/mpeg",
                     name: audioNameElement
                       ? audioNameElement.textContent.trim()
-                      : 'Audio file',
+                      : "Audio file",
                     size: audioSizeElement
                       ? parseInt(
-                          audioSizeElement.textContent.replace(/[^\d]/g, '')
+                          audioSizeElement.textContent.replace(/[^\d]/g, ""),
                         ) * 1024
                       : 0,
                   };
@@ -455,38 +455,38 @@ const InteractiveComponent = forwardRef(
             } else {
               // Fallback: try to find content by index if ID-based search fails
               const allContentElements =
-                tempDiv.querySelectorAll('.hotspot-content');
+                tempDiv.querySelectorAll(".hotspot-content");
               if (allContentElements[index]) {
                 const labelElement =
-                  allContentElements[index].querySelector('h3');
+                  allContentElements[index].querySelector("h3");
                 const descElement =
-                  allContentElements[index].querySelector('p');
+                  allContentElements[index].querySelector("p");
                 if (labelElement) label = labelElement.textContent.trim();
                 if (descElement) description = descElement.textContent.trim();
 
                 // Try to extract audio from fallback element
                 const audioElement =
-                  allContentElements[index].querySelector('audio source');
+                  allContentElements[index].querySelector("audio source");
                 if (audioElement) {
-                  const audioSrc = audioElement.getAttribute('src');
-                  const audioType = audioElement.getAttribute('type');
+                  const audioSrc = audioElement.getAttribute("src");
+                  const audioType = audioElement.getAttribute("type");
                   const audioNameElement = allContentElements[
                     index
-                  ].querySelector('.text-xs.font-medium.text-gray-800');
+                  ].querySelector(".text-xs.font-medium.text-gray-800");
                   const audioSizeElement = allContentElements[
                     index
-                  ].querySelector('.text-xs.text-gray-500');
+                  ].querySelector(".text-xs.text-gray-500");
 
                   if (audioSrc) {
                     audio = {
                       src: audioSrc,
-                      type: audioType || 'audio/mpeg',
+                      type: audioType || "audio/mpeg",
                       name: audioNameElement
                         ? audioNameElement.textContent.trim()
-                        : 'Audio file',
+                        : "Audio file",
                       size: audioSizeElement
                         ? parseInt(
-                            audioSizeElement.textContent.replace(/[^\d]/g, '')
+                            audioSizeElement.textContent.replace(/[^\d]/g, ""),
                           ) * 1024
                         : 0,
                     };
@@ -503,71 +503,71 @@ const InteractiveComponent = forwardRef(
               description: description,
               audio: audio,
             };
-            devLogger.debug('Extracted hotspot:', hotspotData);
+            devLogger.debug("Extracted hotspot:", hotspotData);
             extractedData.hotspots.push(hotspotData);
           }
         });
       } catch (error) {
         devLogger.error(
-          'Error extracting labeled graphic data from HTML:',
-          error
+          "Error extracting labeled graphic data from HTML:",
+          error,
         );
       }
 
-      devLogger.debug('Final extracted data:', extractedData);
+      devLogger.debug("Final extracted data:", extractedData);
       return extractedData;
     };
 
     // Helper function to extract timeline data from HTML
-    const extractTimelineFromHTML = htmlContent => {
+    const extractTimelineFromHTML = (htmlContent) => {
       const extractedData = [];
 
       try {
         // Create a temporary DOM element to parse HTML
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
 
         // Find all timeline items
-        const timelineItems = tempDiv.querySelectorAll('.timeline-item');
+        const timelineItems = tempDiv.querySelectorAll(".timeline-item");
 
         timelineItems.forEach((item, index) => {
           // Extract date from timeline date span
-          const dateElement = item.querySelector('.timeline-date');
+          const dateElement = item.querySelector(".timeline-date");
           const date = dateElement
             ? dateElement.textContent.trim()
-            : new Date().toISOString().split('T')[0];
+            : new Date().toISOString().split("T")[0];
 
           // Extract title from timeline title
-          const titleElement = item.querySelector('.timeline-title');
+          const titleElement = item.querySelector(".timeline-title");
           const title = titleElement
             ? titleElement.textContent.trim()
             : `Event ${index + 1}`;
 
           // Extract description from timeline content
-          const contentElement = item.querySelector('.timeline-content p');
+          const contentElement = item.querySelector(".timeline-content p");
           const description = contentElement
             ? contentElement.textContent.trim()
-            : '';
+            : "";
 
           // Extract image if present
-          const imageElement = item.querySelector('.timeline-content img');
+          const imageElement = item.querySelector(".timeline-content img");
           const image = imageElement
             ? {
                 src: imageElement.src,
-                name: imageElement.alt || 'Timeline image',
+                name: imageElement.alt || "Timeline image",
                 size: 0,
               }
             : null;
 
           // Extract audio if present
           const audioElement = item.querySelector(
-            '.timeline-content audio source'
+            ".timeline-content audio source",
           );
           const audio = audioElement
             ? {
-                src: audioElement.getAttribute('src'),
-                type: audioElement.getAttribute('type') || 'audio/mpeg',
-                name: 'Timeline audio',
+                src: audioElement.getAttribute("src"),
+                type: audioElement.getAttribute("type") || "audio/mpeg",
+                name: "Timeline audio",
                 size: 0,
               }
             : null;
@@ -582,56 +582,56 @@ const InteractiveComponent = forwardRef(
           });
         });
       } catch (error) {
-        devLogger.error('Error extracting timeline data from HTML:', error);
+        devLogger.error("Error extracting timeline data from HTML:", error);
       }
 
       return extractedData;
     };
 
     // Helper function to extract process data from HTML
-    const extractProcessFromHTML = htmlContent => {
+    const extractProcessFromHTML = (htmlContent) => {
       const extractedData = [];
 
       try {
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = htmlContent;
 
         // Find all process steps
-        const processSteps = tempDiv.querySelectorAll('.process-step');
+        const processSteps = tempDiv.querySelectorAll(".process-step");
 
         processSteps.forEach((step, index) => {
           // Extract title from h2
-          const titleElement = step.querySelector('h2');
+          const titleElement = step.querySelector("h2");
           const title = titleElement
             ? titleElement.textContent.trim()
             : `Step ${index + 1}`;
 
           // Extract description - get all text content before image/audio
-          const descElement = step.querySelector('.text-gray-700');
-          const description = descElement ? descElement.textContent.trim() : '';
+          const descElement = step.querySelector(".text-gray-700");
+          const description = descElement ? descElement.textContent.trim() : "";
 
           // Extract image if present
           let image = null;
-          const imageElement = step.querySelector('img');
+          const imageElement = step.querySelector("img");
           if (imageElement) {
             image = {
               src: imageElement.src,
-              name: imageElement.alt || 'Process step image',
+              name: imageElement.alt || "Process step image",
               size: 0,
             };
           }
 
           // Extract audio if present
           let audio = null;
-          const audioElement = step.querySelector('audio source');
+          const audioElement = step.querySelector("audio source");
           if (audioElement) {
-            const audioSrc = audioElement.getAttribute('src');
-            const audioType = audioElement.getAttribute('type');
+            const audioSrc = audioElement.getAttribute("src");
+            const audioType = audioElement.getAttribute("type");
             if (audioSrc) {
               audio = {
                 src: audioSrc,
-                type: audioType || 'audio/mpeg',
-                name: 'Process audio',
+                type: audioType || "audio/mpeg",
+                name: "Process audio",
                 size: 0,
               };
             }
@@ -646,9 +646,9 @@ const InteractiveComponent = forwardRef(
           });
         });
 
-        devLogger.debug('Extracted process data from HTML:', extractedData);
+        devLogger.debug("Extracted process data from HTML:", extractedData);
       } catch (error) {
-        devLogger.error('Error extracting process data from HTML:', error);
+        devLogger.error("Error extracting process data from HTML:", error);
       }
 
       return extractedData;
@@ -670,7 +670,7 @@ const InteractiveComponent = forwardRef(
       ]);
     };
 
-    const removeTimelineItem = index => {
+    const removeTimelineItem = (index) => {
       if (timelineData.length > 1) {
         setTimelineData(timelineData.filter((_, i) => i !== index));
       }
@@ -697,7 +697,7 @@ const InteractiveComponent = forwardRef(
       ]);
     };
 
-    const removeProcessItem = index => {
+    const removeProcessItem = (index) => {
       if (processData.length > 1) {
         setProcessData(processData.filter((_, i) => i !== index));
       }
@@ -720,9 +720,9 @@ const InteractiveComponent = forwardRef(
     // Interactive templates
     const interactiveTemplates = [
       {
-        id: 'tabs',
-        title: 'Tabs',
-        description: 'Interactive tabbed content',
+        id: "tabs",
+        title: "Tabs",
+        description: "Interactive tabbed content",
         icon: <Layers className="h-6 w-6" />,
         preview: (
           <div className="w-full h-32 bg-white rounded-lg border p-3">
@@ -762,9 +762,9 @@ const InteractiveComponent = forwardRef(
         ),
       },
       {
-        id: 'accordion',
-        title: 'Accordion',
-        description: 'Collapsible content sections',
+        id: "accordion",
+        title: "Accordion",
+        description: "Collapsible content sections",
         icon: <ChevronDown className="h-6 w-6" />,
         preview: (
           <div className="w-full h-32 bg-white rounded-lg border p-3 space-y-2">
@@ -781,9 +781,9 @@ const InteractiveComponent = forwardRef(
         ),
       },
       {
-        id: 'labeled-graphic',
-        title: 'Labeled Graphic',
-        description: 'Interactive image with clickable hotspots',
+        id: "labeled-graphic",
+        title: "Labeled Graphic",
+        description: "Interactive image with clickable hotspots",
         icon: <Target className="h-6 w-6" />,
         preview: (
           <div className="w-full h-32 bg-white rounded-lg border p-3 relative">
@@ -803,9 +803,9 @@ const InteractiveComponent = forwardRef(
         ),
       },
       {
-        id: 'timeline',
-        title: 'Timeline',
-        description: 'Interactive timeline with events and milestones',
+        id: "timeline",
+        title: "Timeline",
+        description: "Interactive timeline with events and milestones",
         icon: <Clock className="h-6 w-6" />,
         preview: (
           <div className="w-full h-40 bg-white rounded-lg border p-4">
@@ -854,9 +854,9 @@ const InteractiveComponent = forwardRef(
         ),
       },
       {
-        id: 'process',
-        title: 'Process',
-        description: 'Step-by-step process with navigation',
+        id: "process",
+        title: "Process",
+        description: "Step-by-step process with navigation",
         icon: <Layers className="h-6 w-6" />,
         preview: (
           <div className="w-full h-40 bg-white rounded-lg p-4">
@@ -890,8 +890,8 @@ const InteractiveComponent = forwardRef(
     useEffect(() => {
       if (editingInteractiveBlock && showInteractiveEditDialog) {
         devLogger.debug(
-          'Loading interactive block for editing:',
-          editingInteractiveBlock
+          "Loading interactive block for editing:",
+          editingInteractiveBlock,
         );
 
         // First, try to determine template from multiple sources
@@ -907,7 +907,7 @@ const InteractiveComponent = forwardRef(
             template = content.template;
           } catch (error) {
             devLogger.debug(
-              'Could not parse content as JSON, trying HTML detection'
+              "Could not parse content as JSON, trying HTML detection",
             );
           }
         }
@@ -917,8 +917,8 @@ const InteractiveComponent = forwardRef(
           try {
             const content = JSON.parse(editingInteractiveBlock.content);
             // Check if it's a quiz structure
-            if (content.type === 'quiz' && content.questions) {
-              template = 'quiz';
+            if (content.type === "quiz" && content.questions) {
+              template = "quiz";
             }
           } catch (error) {
             // Not JSON, continue to HTML detection
@@ -930,52 +930,52 @@ const InteractiveComponent = forwardRef(
           const htmlContent = editingInteractiveBlock.html_css;
           if (
             htmlContent.includes('data-template="accordion"') ||
-            htmlContent.includes('accordion-header') ||
-            htmlContent.includes('accordion-content')
+            htmlContent.includes("accordion-header") ||
+            htmlContent.includes("accordion-content")
           ) {
-            template = 'accordion';
+            template = "accordion";
           } else if (
             htmlContent.includes('data-template="tabs"') ||
-            htmlContent.includes('tab-button')
+            htmlContent.includes("tab-button")
           ) {
-            template = 'tabs';
+            template = "tabs";
           } else if (
             htmlContent.includes('data-template="labeled-graphic"') ||
-            htmlContent.includes('labeled-graphic-container')
+            htmlContent.includes("labeled-graphic-container")
           ) {
-            template = 'labeled-graphic';
+            template = "labeled-graphic";
           } else if (
             htmlContent.includes('data-template="timeline"') ||
-            htmlContent.includes('timeline-container')
+            htmlContent.includes("timeline-container")
           ) {
-            template = 'timeline';
+            template = "timeline";
           } else if (
             htmlContent.includes('data-template="process"') ||
-            htmlContent.includes('interactive-process')
+            htmlContent.includes("interactive-process")
           ) {
-            template = 'process';
+            template = "process";
           } else if (
-            htmlContent.includes('quiz') ||
-            (htmlContent.includes('border-blue-500') &&
-              htmlContent.includes('Question'))
+            htmlContent.includes("quiz") ||
+            (htmlContent.includes("border-blue-500") &&
+              htmlContent.includes("Question"))
           ) {
             // Quiz HTML pattern detection
-            template = 'quiz';
+            template = "quiz";
           }
         }
 
         // Also check metadata for quiz type
         if (
           !template &&
-          editingInteractiveBlock.metadata?.interactiveType === 'quiz'
+          editingInteractiveBlock.metadata?.interactiveType === "quiz"
         ) {
-          template = 'quiz';
+          template = "quiz";
         }
-        if (!template && editingInteractiveBlock.metadata?.variant === 'quiz') {
-          template = 'quiz';
+        if (!template && editingInteractiveBlock.metadata?.variant === "quiz") {
+          template = "quiz";
         }
 
-        devLogger.debug('Detected template:', template);
+        devLogger.debug("Detected template:", template);
 
         if (template) {
           setSelectedTemplate(template);
@@ -984,207 +984,207 @@ const InteractiveComponent = forwardRef(
           try {
             if (editingInteractiveBlock.content) {
               devLogger.debug(
-                'Raw content from database:',
-                editingInteractiveBlock.content
+                "Raw content from database:",
+                editingInteractiveBlock.content,
               );
               const content = JSON.parse(editingInteractiveBlock.content);
-              devLogger.debug('Parsed content:', content);
-              if (template === 'tabs' && content.tabsData) {
+              devLogger.debug("Parsed content:", content);
+              if (template === "tabs" && content.tabsData) {
                 setTabsData(content.tabsData);
-              } else if (template === 'accordion' && content.accordionData) {
+              } else if (template === "accordion" && content.accordionData) {
                 setAccordionData(content.accordionData);
               } else if (
-                template === 'labeled-graphic' &&
+                template === "labeled-graphic" &&
                 content.labeledGraphicData
               ) {
                 devLogger.debug(
-                  'Loading labeled graphic data:',
-                  content.labeledGraphicData
+                  "Loading labeled graphic data:",
+                  content.labeledGraphicData,
                 );
                 setLabeledGraphicData(content.labeledGraphicData);
-              } else if (template === 'timeline' && content.timelineData) {
-                devLogger.debug('Loading timeline data:', content.timelineData);
+              } else if (template === "timeline" && content.timelineData) {
+                devLogger.debug("Loading timeline data:", content.timelineData);
                 setTimelineData(content.timelineData);
-              } else if (template === 'process' && content.processData) {
-                devLogger.debug('Loading process data:', content.processData);
+              } else if (template === "process" && content.processData) {
+                devLogger.debug("Loading process data:", content.processData);
                 setProcessData(content.processData);
-              } else if (template === 'quiz') {
+              } else if (template === "quiz") {
                 // Quiz content structure: { type: 'quiz', title: string, questions: array }
-                devLogger.debug('Loading quiz data:', content);
+                devLogger.debug("Loading quiz data:", content);
                 if (content.questions && Array.isArray(content.questions)) {
                   devLogger.debug(
-                    'Quiz questions found:',
-                    content.questions.length
+                    "Quiz questions found:",
+                    content.questions.length,
                   );
                   setQuizData({
-                    title: content.title || 'Quiz',
+                    title: content.title || "Quiz",
                     questions: content.questions,
                   });
-                } else if (content.type === 'quiz' && content.questions) {
+                } else if (content.type === "quiz" && content.questions) {
                   // Handle direct quiz structure
                   setQuizData({
-                    title: content.title || 'Quiz',
+                    title: content.title || "Quiz",
                     questions: content.questions,
                   });
                 }
               }
             } else {
               devLogger.debug(
-                'No JSON content found, trying to extract from HTML'
+                "No JSON content found, trying to extract from HTML",
               );
               // If no structured content, try to extract from HTML
-              if (template === 'tabs' && editingInteractiveBlock.html_css) {
+              if (template === "tabs" && editingInteractiveBlock.html_css) {
                 const extractedData = extractTabsFromHTML(
-                  editingInteractiveBlock.html_css
+                  editingInteractiveBlock.html_css,
                 );
                 if (extractedData.length > 0) {
                   devLogger.debug(
-                    'Extracted tabs data from HTML:',
-                    extractedData
+                    "Extracted tabs data from HTML:",
+                    extractedData,
                   );
                   setTabsData(extractedData);
                 }
               } else if (
-                template === 'accordion' &&
+                template === "accordion" &&
                 editingInteractiveBlock.html_css
               ) {
                 const extractedData = extractAccordionFromHTML(
-                  editingInteractiveBlock.html_css
+                  editingInteractiveBlock.html_css,
                 );
                 if (extractedData.length > 0) {
                   devLogger.debug(
-                    'Extracted accordion data from HTML:',
-                    extractedData
+                    "Extracted accordion data from HTML:",
+                    extractedData,
                   );
                   setAccordionData(extractedData);
                 }
               } else if (
-                template === 'labeled-graphic' &&
+                template === "labeled-graphic" &&
                 editingInteractiveBlock.html_css
               ) {
                 const extractedData = extractLabeledGraphicFromHTML(
-                  editingInteractiveBlock.html_css
+                  editingInteractiveBlock.html_css,
                 );
                 if (extractedData.image) {
                   devLogger.debug(
-                    'Extracted labeled graphic data from HTML:',
-                    extractedData
+                    "Extracted labeled graphic data from HTML:",
+                    extractedData,
                   );
                   setLabeledGraphicData(extractedData);
                 }
               } else if (
-                template === 'timeline' &&
+                template === "timeline" &&
                 editingInteractiveBlock.html_css
               ) {
                 const extractedData = extractTimelineFromHTML(
-                  editingInteractiveBlock.html_css
+                  editingInteractiveBlock.html_css,
                 );
                 if (extractedData.length > 0) {
                   devLogger.debug(
-                    'Extracted timeline data from HTML:',
-                    extractedData
+                    "Extracted timeline data from HTML:",
+                    extractedData,
                   );
                   setTimelineData(extractedData);
                 }
               } else if (
-                template === 'process' &&
+                template === "process" &&
                 editingInteractiveBlock.html_css
               ) {
                 const extractedData = extractProcessFromHTML(
-                  editingInteractiveBlock.html_css
+                  editingInteractiveBlock.html_css,
                 );
                 if (extractedData.length > 0) {
                   devLogger.debug(
-                    'Extracted process data from HTML:',
-                    extractedData
+                    "Extracted process data from HTML:",
+                    extractedData,
                   );
                   setProcessData(extractedData);
                 }
               }
             }
           } catch (error) {
-            devLogger.error('Error parsing interactive block content:', error);
+            devLogger.error("Error parsing interactive block content:", error);
             // Set default data if parsing fails
-            if (template === 'tabs') {
+            if (template === "tabs") {
               setTabsData([
                 {
-                  title: 'Tab 1',
-                  content: 'Content for tab 1',
+                  title: "Tab 1",
+                  content: "Content for tab 1",
                   image: null,
                   audio: null,
                 },
                 {
-                  title: 'Tab 2',
-                  content: 'Content for tab 2',
+                  title: "Tab 2",
+                  content: "Content for tab 2",
                   image: null,
                   audio: null,
                 },
                 {
-                  title: 'Tab 3',
-                  content: 'Content for tab 3',
+                  title: "Tab 3",
+                  content: "Content for tab 3",
                   image: null,
                   audio: null,
                 },
               ]);
-            } else if (template === 'accordion') {
+            } else if (template === "accordion") {
               setAccordionData([
                 {
-                  title: 'Section 1',
-                  content: 'Content for section 1',
+                  title: "Section 1",
+                  content: "Content for section 1",
                   image: null,
                   audio: null,
                 },
                 {
-                  title: 'Section 2',
-                  content: 'Content for section 2',
+                  title: "Section 2",
+                  content: "Content for section 2",
                   image: null,
                   audio: null,
                 },
                 {
-                  title: 'Section 3',
-                  content: 'Content for section 3',
+                  title: "Section 3",
+                  content: "Content for section 3",
                   image: null,
                   audio: null,
                 },
               ]);
-            } else if (template === 'labeled-graphic') {
+            } else if (template === "labeled-graphic") {
               setLabeledGraphicData({
                 image: null,
                 hotspots: [],
               });
-            } else if (template === 'timeline') {
+            } else if (template === "timeline") {
               setTimelineData([
                 {
-                  id: '1',
-                  date: '2024-01-15',
-                  title: 'Event 1',
-                  description: 'Description for event 1',
+                  id: "1",
+                  date: "2024-01-15",
+                  title: "Event 1",
+                  description: "Description for event 1",
                   image: null,
                   audio: null,
                 },
                 {
-                  id: '2',
+                  id: "2",
                   date: null,
-                  title: 'Event 2',
-                  description: 'Description for event 2',
+                  title: "Event 2",
+                  description: "Description for event 2",
                   image: null,
                   audio: null,
                 },
               ]);
-            } else if (template === 'process') {
+            } else if (template === "process") {
               setProcessData([
                 {
-                  id: '1',
-                  title: 'Understand your physical being',
+                  id: "1",
+                  title: "Understand your physical being",
                   description:
-                    'Recognizing your physical being is key to maintaining overall well-being.',
+                    "Recognizing your physical being is key to maintaining overall well-being.",
                   image: null,
                   audio: null,
                 },
                 {
-                  id: '2',
-                  title: 'Step 2',
-                  description: 'Content for step 2 will go here.',
+                  id: "2",
+                  title: "Step 2",
+                  description: "Content for step 2 will go here.",
                   image: null,
                   audio: null,
                 },
@@ -1195,152 +1195,152 @@ const InteractiveComponent = forwardRef(
       }
     }, [editingInteractiveBlock, showInteractiveEditDialog]);
 
-    const handleTemplateSelect = template => {
+    const handleTemplateSelect = (template) => {
       setSelectedTemplate(template.id);
 
       // Create fresh default content based on template type
       const defaultTabsData = [
         {
-          title: 'Tab 1',
-          content: 'Content for tab 1',
+          title: "Tab 1",
+          content: "Content for tab 1",
           image: null,
           audio: null,
         },
         {
-          title: 'Tab 2',
-          content: 'Content for tab 2',
+          title: "Tab 2",
+          content: "Content for tab 2",
           image: null,
           audio: null,
         },
         {
-          title: 'Tab 3',
-          content: 'Content for tab 3',
+          title: "Tab 3",
+          content: "Content for tab 3",
           image: null,
           audio: null,
         },
       ];
       const defaultAccordionData = [
         {
-          title: 'Section 1',
-          content: 'Content for section 1',
+          title: "Section 1",
+          content: "Content for section 1",
           image: null,
           audio: null,
         },
         {
-          title: 'Section 2',
-          content: 'Content for section 2',
+          title: "Section 2",
+          content: "Content for section 2",
           image: null,
           audio: null,
         },
         {
-          title: 'Section 3',
-          content: 'Content for section 3',
+          title: "Section 3",
+          content: "Content for section 3",
           image: null,
           audio: null,
         },
       ];
       const defaultLabeledGraphicData = {
         image: {
-          src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-          name: 'sample-landscape.jpg',
+          src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+          name: "sample-landscape.jpg",
           size: 245760,
         },
         hotspots: [
           {
-            id: '1',
+            id: "1",
             x: 25,
             y: 30,
-            label: 'Mountain Peak',
-            description: 'The highest point in the landscape',
+            label: "Mountain Peak",
+            description: "The highest point in the landscape",
             audio: null,
           },
           {
-            id: '2',
+            id: "2",
             x: 70,
             y: 60,
-            label: 'Forest Area',
-            description: 'Dense woodland with various tree species',
+            label: "Forest Area",
+            description: "Dense woodland with various tree species",
             audio: null,
           },
         ],
       };
       const defaultTimelineData = [
         {
-          id: '1',
-          date: '2024-01-15',
-          title: 'Project Kickoff',
-          description: 'Initial project planning and team formation',
+          id: "1",
+          date: "2024-01-15",
+          title: "Project Kickoff",
+          description: "Initial project planning and team formation",
           image: null,
           audio: null,
         },
         {
-          id: '2',
+          id: "2",
           date: null,
-          title: 'Design Phase',
-          description: 'Creating wireframes and mockups for the application',
+          title: "Design Phase",
+          description: "Creating wireframes and mockups for the application",
           image: null,
           audio: null,
         },
         {
-          id: '3',
-          date: '2024-03-15',
-          title: 'Development Start',
-          description: 'Beginning of active development and coding phase',
+          id: "3",
+          date: "2024-03-15",
+          title: "Development Start",
+          description: "Beginning of active development and coding phase",
           image: null,
           audio: null,
         },
       ];
       const defaultProcessData = [
         {
-          id: '1',
-          title: 'Understand your physical being',
+          id: "1",
+          title: "Understand your physical being",
           description:
             "Recognizing your physical being is key to maintaining overall well-being. By staying attuned to your body's signals, you can make informed choices that support both your health and daily activities.",
           image: null,
           audio: null,
         },
         {
-          id: '2',
-          title: 'Step 2',
+          id: "2",
+          title: "Step 2",
           description:
-            'Content for step 2 will go here. This is where you can describe the second phase of your process.',
+            "Content for step 2 will go here. This is where you can describe the second phase of your process.",
           image: null,
           audio: null,
         },
         {
-          id: '3',
-          title: 'Step 3',
+          id: "3",
+          title: "Step 3",
           description:
-            'Content for step 3 will go here. This is where you can describe the third phase of your process.',
+            "Content for step 3 will go here. This is where you can describe the third phase of your process.",
           image: null,
           audio: null,
         },
         {
-          id: '4',
-          title: 'Step 4',
+          id: "4",
+          title: "Step 4",
           description:
-            'Content for step 4 will go here. This is where you can describe the final phase of your process.',
+            "Content for step 4 will go here. This is where you can describe the final phase of your process.",
           image: null,
           audio: null,
         },
       ];
 
       let defaultData, dataKey;
-      if (template.id === 'tabs') {
+      if (template.id === "tabs") {
         defaultData = defaultTabsData;
-        dataKey = 'tabsData';
-      } else if (template.id === 'accordion') {
+        dataKey = "tabsData";
+      } else if (template.id === "accordion") {
         defaultData = defaultAccordionData;
-        dataKey = 'accordionData';
-      } else if (template.id === 'labeled-graphic') {
+        dataKey = "accordionData";
+      } else if (template.id === "labeled-graphic") {
         defaultData = defaultLabeledGraphicData;
-        dataKey = 'labeledGraphicData';
-      } else if (template.id === 'timeline') {
+        dataKey = "labeledGraphicData";
+      } else if (template.id === "timeline") {
         defaultData = defaultTimelineData;
-        dataKey = 'timelineData';
-      } else if (template.id === 'process') {
+        dataKey = "timelineData";
+      } else if (template.id === "process") {
         defaultData = defaultProcessData;
-        dataKey = 'processData';
+        dataKey = "processData";
       }
 
       const interactiveContent = {
@@ -1352,7 +1352,7 @@ const InteractiveComponent = forwardRef(
 
       // Add the template directly to the lesson editor
       onInteractiveTemplateSelect({
-        type: 'interactive',
+        type: "interactive",
         template: template.id,
         content: JSON.stringify(interactiveContent),
         html_css: htmlContent,
@@ -1374,7 +1374,7 @@ const InteractiveComponent = forwardRef(
       ]);
     };
 
-    const removeTabsItem = index => {
+    const removeTabsItem = (index) => {
       if (tabsData.length > 1) {
         setTabsData(tabsData.filter((_, i) => i !== index));
       }
@@ -1398,7 +1398,7 @@ const InteractiveComponent = forwardRef(
       ]);
     };
 
-    const removeAccordionItem = index => {
+    const removeAccordionItem = (index) => {
       if (accordionData.length > 1) {
         setAccordionData(accordionData.filter((_, i) => i !== index));
       }
@@ -1416,33 +1416,33 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 500 * 1024 * 1024) {
           // 500MB limit
-          toast.error('Image size should be less than 500MB');
+          toast.error("Image size should be less than 500MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-          'image/webp',
+          "image/jpeg",
+          "image/png",
+          "image/jpg",
+          "image/gif",
+          "image/webp",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only JPG, PNG, GIF, or WebP images');
+          toast.error("Please upload only JPG, PNG, GIF, or WebP images");
           return;
         }
 
         // Open image editor instead of uploading directly
         setImageToEdit(file);
-        setImageEditContext({ type: 'accordion', index });
+        setImageEditContext({ type: "accordion", index });
         setShowImageEditor(true);
       }
     };
 
-    const removeAccordionImage = index => {
-      updateAccordionItem(index, 'image', null);
-      toast.success('Image removed successfully!');
+    const removeAccordionImage = (index) => {
+      updateAccordionItem(index, "image", null);
+      toast.success("Image removed successfully!");
     };
 
     // Audio handling functions
@@ -1451,66 +1451,66 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 100 * 1024 * 1024) {
           // 100MB limit for audio
-          toast.error('Audio file size should be less than 100MB');
+          toast.error("Audio file size should be less than 100MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'audio/mpeg',
-          'audio/wav',
-          'audio/ogg',
-          'audio/mp3',
-          'audio/m4a',
+          "audio/mpeg",
+          "audio/wav",
+          "audio/ogg",
+          "audio/mp3",
+          "audio/m4a",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+          toast.error("Please upload only MP3, WAV, OGG, or M4A audio files");
           return;
         }
 
         try {
           // Upload audio to cloud API
           const uploadResult = await uploadAudioResource(file, {
-            folder: 'lesson-audio',
+            folder: "lesson-audio",
             public: true,
-            type: 'audio',
+            type: "audio",
           });
 
           if (uploadResult.success && uploadResult.audioUrl) {
-            updateAccordionItem(index, 'audio', {
+            updateAccordionItem(index, "audio", {
               src: uploadResult.audioUrl, // Use cloud URL
               name: file.name,
               size: file.size,
               type: file.type,
               uploadedData: uploadResult,
             });
-            toast.success('Audio uploaded successfully!');
+            toast.success("Audio uploaded successfully!");
           } else {
-            throw new Error('Audio upload failed');
+            throw new Error("Audio upload failed");
           }
         } catch (error) {
           const isStorageLimitExceeded =
-            error?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+            error?.code === "STORAGE_LIMIT_EXCEEDED" ||
             (error?.message &&
-              (error.message.toLowerCase().includes('limit exceeded') ||
-                error.message.toLowerCase().includes('storage limit')));
+              (error.message.toLowerCase().includes("limit exceeded") ||
+                error.message.toLowerCase().includes("storage limit")));
 
           if (isStorageLimitExceeded) {
             toast.error(
-              'Storage limit exceeded. Please free up space or upgrade before uploading new audio.'
+              "Storage limit exceeded. Please free up space or upgrade before uploading new audio.",
             );
             return;
           }
 
-          devLogger.error('Error uploading audio:', error);
+          devLogger.error("Error uploading audio:", error);
           toast.error(
-            error.message || 'Failed to upload audio. Please try again.'
+            error.message || "Failed to upload audio. Please try again.",
           );
 
           // Fallback to local URL for immediate preview
           const reader = new FileReader();
-          reader.onload = e => {
-            updateAccordionItem(index, 'audio', {
+          reader.onload = (e) => {
+            updateAccordionItem(index, "audio", {
               src: e.target.result,
               name: file.name,
               size: file.size,
@@ -1523,9 +1523,9 @@ const InteractiveComponent = forwardRef(
       }
     };
 
-    const removeAccordionAudio = index => {
-      updateAccordionItem(index, 'audio', null);
-      toast.success('Audio removed successfully!');
+    const removeAccordionAudio = (index) => {
+      updateAccordionItem(index, "audio", null);
+      toast.success("Audio removed successfully!");
     };
 
     // Image handling functions for tabs
@@ -1534,33 +1534,33 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 500 * 1024 * 1024) {
           // 500MB limit
-          toast.error('Image size should be less than 500MB');
+          toast.error("Image size should be less than 500MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-          'image/webp',
+          "image/jpeg",
+          "image/png",
+          "image/jpg",
+          "image/gif",
+          "image/webp",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only JPG, PNG, GIF, or WebP images');
+          toast.error("Please upload only JPG, PNG, GIF, or WebP images");
           return;
         }
 
         // Open image editor for cropping before upload
         setImageToEdit(file);
-        setImageEditContext({ type: 'tab', index });
+        setImageEditContext({ type: "tab", index });
         setShowImageEditor(true);
       }
     };
 
-    const removeTabImage = index => {
-      updateTabsItem(index, 'image', null);
-      toast.success('Image removed successfully!');
+    const removeTabImage = (index) => {
+      updateTabsItem(index, "image", null);
+      toast.success("Image removed successfully!");
     };
 
     // Audio handling functions for tabs
@@ -1569,53 +1569,53 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 100 * 1024 * 1024) {
           // 100MB limit for audio
-          toast.error('Audio file size should be less than 100MB');
+          toast.error("Audio file size should be less than 100MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'audio/mpeg',
-          'audio/wav',
-          'audio/ogg',
-          'audio/mp3',
-          'audio/m4a',
+          "audio/mpeg",
+          "audio/wav",
+          "audio/ogg",
+          "audio/mp3",
+          "audio/m4a",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+          toast.error("Please upload only MP3, WAV, OGG, or M4A audio files");
           return;
         }
 
         try {
           // Upload audio to cloud API
           const uploadResult = await uploadAudioResource(file, {
-            folder: 'lesson-audio',
+            folder: "lesson-audio",
             public: true,
-            type: 'audio',
+            type: "audio",
           });
 
           if (uploadResult.success && uploadResult.audioUrl) {
-            updateTabsItem(index, 'audio', {
+            updateTabsItem(index, "audio", {
               src: uploadResult.audioUrl, // Use cloud URL
               name: file.name,
               size: file.size,
               type: file.type,
               uploadedData: uploadResult,
             });
-            toast.success('Audio uploaded successfully!');
+            toast.success("Audio uploaded successfully!");
           } else {
-            throw new Error('Audio upload failed');
+            throw new Error("Audio upload failed");
           }
         } catch (error) {
-          devLogger.error('Error uploading audio:', error);
+          devLogger.error("Error uploading audio:", error);
           toast.error(
-            error.message || 'Failed to upload audio. Please try again.'
+            error.message || "Failed to upload audio. Please try again.",
           );
 
           // Fallback to local URL for immediate preview
           const reader = new FileReader();
-          reader.onload = e => {
-            updateTabsItem(index, 'audio', {
+          reader.onload = (e) => {
+            updateTabsItem(index, "audio", {
               src: e.target.result,
               name: file.name,
               size: file.size,
@@ -1628,51 +1628,51 @@ const InteractiveComponent = forwardRef(
       }
     };
 
-    const removeTabAudio = index => {
-      updateTabsItem(index, 'audio', null);
-      toast.success('Audio removed successfully!');
+    const removeTabAudio = (index) => {
+      updateTabsItem(index, "audio", null);
+      toast.success("Audio removed successfully!");
     };
 
     // Labeled Graphic functions
-    const handleLabeledGraphicImageUpload = async event => {
+    const handleLabeledGraphicImageUpload = async (event) => {
       const file = event.target.files[0];
       if (file) {
         if (file.size > 500 * 1024 * 1024) {
           // 500MB limit
-          toast.error('Image size should be less than 500MB');
+          toast.error("Image size should be less than 500MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-          'image/webp',
+          "image/jpeg",
+          "image/png",
+          "image/jpg",
+          "image/gif",
+          "image/webp",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only JPG, PNG, GIF, or WebP images');
+          toast.error("Please upload only JPG, PNG, GIF, or WebP images");
           return;
         }
 
         // Open image editor instead of uploading directly
         setImageToEdit(file);
-        setImageEditContext({ type: 'labeledGraphic' });
+        setImageEditContext({ type: "labeledGraphic" });
         setShowImageEditor(true);
       }
     };
 
     const removeLabeledGraphicImage = () => {
-      setLabeledGraphicData(prev => ({
+      setLabeledGraphicData((prev) => ({
         ...prev,
         image: null,
         hotspots: [], // Clear hotspots when image is removed
       }));
-      toast.success('Image removed successfully!');
+      toast.success("Image removed successfully!");
     };
 
-    const addHotspot = event => {
+    const addHotspot = (event) => {
       if (!labeledGraphicData.image) return;
 
       const rect = event.currentTarget.getBoundingClientRect();
@@ -1683,12 +1683,12 @@ const InteractiveComponent = forwardRef(
         id: Date.now().toString(),
         x: Math.round(x),
         y: Math.round(y),
-        label: 'New Hotspot',
-        description: 'Click to edit description',
+        label: "New Hotspot",
+        description: "Click to edit description",
         audio: null,
       };
 
-      setLabeledGraphicData(prev => ({
+      setLabeledGraphicData((prev) => ({
         ...prev,
         hotspots: [...prev.hotspots, newHotspot],
       }));
@@ -1698,64 +1698,64 @@ const InteractiveComponent = forwardRef(
       setShowHotspotDialog(true);
     };
 
-    const editHotspot = hotspot => {
+    const editHotspot = (hotspot) => {
       setEditingHotspot(hotspot);
       setShowHotspotDialog(true);
     };
 
-    const updateHotspot = updatedHotspot => {
-      setLabeledGraphicData(prev => ({
+    const updateHotspot = (updatedHotspot) => {
+      setLabeledGraphicData((prev) => ({
         ...prev,
-        hotspots: prev.hotspots.map(h =>
-          h.id === updatedHotspot.id ? updatedHotspot : h
+        hotspots: prev.hotspots.map((h) =>
+          h.id === updatedHotspot.id ? updatedHotspot : h,
         ),
       }));
       setShowHotspotDialog(false);
       setEditingHotspot(null);
-      toast.success('Hotspot updated successfully!');
+      toast.success("Hotspot updated successfully!");
     };
 
-    const removeHotspot = hotspotId => {
-      setLabeledGraphicData(prev => ({
+    const removeHotspot = (hotspotId) => {
+      setLabeledGraphicData((prev) => ({
         ...prev,
-        hotspots: prev.hotspots.filter(h => h.id !== hotspotId),
+        hotspots: prev.hotspots.filter((h) => h.id !== hotspotId),
       }));
-      toast.success('Hotspot removed successfully!');
+      toast.success("Hotspot removed successfully!");
     };
 
     // Hotspot audio handling functions
-    const handleHotspotAudioUpload = async event => {
+    const handleHotspotAudioUpload = async (event) => {
       const file = event.target.files[0];
       if (file) {
         if (file.size > 100 * 1024 * 1024) {
           // 100MB limit for audio
-          toast.error('Audio file size should be less than 100MB');
+          toast.error("Audio file size should be less than 100MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'audio/mpeg',
-          'audio/wav',
-          'audio/ogg',
-          'audio/mp3',
-          'audio/m4a',
+          "audio/mpeg",
+          "audio/wav",
+          "audio/ogg",
+          "audio/mp3",
+          "audio/m4a",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+          toast.error("Please upload only MP3, WAV, OGG, or M4A audio files");
           return;
         }
 
         try {
           // Upload audio to cloud API
           const uploadResult = await uploadAudioResource(file, {
-            folder: 'lesson-audio',
+            folder: "lesson-audio",
             public: true,
-            type: 'audio',
+            type: "audio",
           });
 
           if (uploadResult.success && uploadResult.audioUrl) {
-            setEditingHotspot(prev => ({
+            setEditingHotspot((prev) => ({
               ...prev,
               audio: {
                 src: uploadResult.audioUrl, // Use cloud URL
@@ -1765,20 +1765,20 @@ const InteractiveComponent = forwardRef(
                 uploadedData: uploadResult,
               },
             }));
-            toast.success('Audio uploaded successfully!');
+            toast.success("Audio uploaded successfully!");
           } else {
-            throw new Error('Audio upload failed');
+            throw new Error("Audio upload failed");
           }
         } catch (error) {
-          devLogger.error('Error uploading audio:', error);
+          devLogger.error("Error uploading audio:", error);
           toast.error(
-            error.message || 'Failed to upload audio. Please try again.'
+            error.message || "Failed to upload audio. Please try again.",
           );
 
           // Fallback to local URL for immediate preview
           const reader = new FileReader();
-          reader.onload = e => {
-            setEditingHotspot(prev => ({
+          reader.onload = (e) => {
+            setEditingHotspot((prev) => ({
               ...prev,
               audio: {
                 src: e.target.result,
@@ -1795,11 +1795,11 @@ const InteractiveComponent = forwardRef(
     };
 
     const removeHotspotAudio = () => {
-      setEditingHotspot(prev => ({
+      setEditingHotspot((prev) => ({
         ...prev,
         audio: null,
       }));
-      toast.success('Audio removed successfully!');
+      toast.success("Audio removed successfully!");
     };
 
     // Timeline image handling functions
@@ -1808,26 +1808,26 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 500 * 1024 * 1024) {
           // 500MB limit
-          toast.error('Image size should be less than 500MB');
+          toast.error("Image size should be less than 500MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-          'image/webp',
+          "image/jpeg",
+          "image/png",
+          "image/jpg",
+          "image/gif",
+          "image/webp",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only JPG, PNG, GIF, or WebP images');
+          toast.error("Please upload only JPG, PNG, GIF, or WebP images");
           return;
         }
 
         // Open image editor
         setImageToEdit(file);
-        setImageEditContext({ type: 'timeline', index });
+        setImageEditContext({ type: "timeline", index });
         setShowImageEditor(true);
       }
     };
@@ -1838,53 +1838,53 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 100 * 1024 * 1024) {
           // 100MB limit for audio
-          toast.error('Audio file size should be less than 100MB');
+          toast.error("Audio file size should be less than 100MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'audio/mpeg',
-          'audio/wav',
-          'audio/ogg',
-          'audio/mp3',
-          'audio/m4a',
+          "audio/mpeg",
+          "audio/wav",
+          "audio/ogg",
+          "audio/mp3",
+          "audio/m4a",
         ];
         if (!validTypes.includes(file.type)) {
-          toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+          toast.error("Please upload only MP3, WAV, OGG, or M4A audio files");
           return;
         }
 
         try {
           // Upload audio to cloud API
           const uploadResult = await uploadAudioResource(file, {
-            folder: 'lesson-audio',
+            folder: "lesson-audio",
             public: true,
-            type: 'audio',
+            type: "audio",
           });
 
           if (uploadResult.success && uploadResult.audioUrl) {
-            updateTimelineItem(index, 'audio', {
+            updateTimelineItem(index, "audio", {
               src: uploadResult.audioUrl, // Use cloud URL
               name: file.name,
               size: file.size,
               type: file.type,
               uploadedData: uploadResult,
             });
-            toast.success('Audio uploaded successfully!');
+            toast.success("Audio uploaded successfully!");
           } else {
-            throw new Error('Audio upload failed');
+            throw new Error("Audio upload failed");
           }
         } catch (error) {
-          devLogger.error('Error uploading audio:', error);
+          devLogger.error("Error uploading audio:", error);
           toast.error(
-            error.message || 'Failed to upload audio. Please try again.'
+            error.message || "Failed to upload audio. Please try again.",
           );
 
           // Fallback to local URL for immediate preview
           const reader = new FileReader();
-          reader.onload = e => {
-            updateTimelineItem(index, 'audio', {
+          reader.onload = (e) => {
+            updateTimelineItem(index, "audio", {
               src: e.target.result,
               name: file.name,
               size: file.size,
@@ -1903,27 +1903,27 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 500 * 1024 * 1024) {
           // 500MB limit
-          toast.error('Image size should be less than 500MB');
+          toast.error("Image size should be less than 500MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-          'image/webp',
+          "image/jpeg",
+          "image/png",
+          "image/jpg",
+          "image/gif",
+          "image/webp",
         ];
         if (!validTypes.includes(file.type)) {
           toast.error(
-            'Please upload a valid image file (JPEG, PNG, JPG, GIF, or WebP)'
+            "Please upload a valid image file (JPEG, PNG, JPG, GIF, or WebP)",
           );
           return;
         }
 
         setImageToEdit(file);
-        setImageEditContext({ type: 'process', index });
+        setImageEditContext({ type: "process", index });
         setShowImageEditor(true);
       }
     };
@@ -1934,21 +1934,21 @@ const InteractiveComponent = forwardRef(
       if (file) {
         if (file.size > 100 * 1024 * 1024) {
           // 100MB limit for audio
-          toast.error('Audio file size should be less than 100MB');
+          toast.error("Audio file size should be less than 100MB");
           return;
         }
 
         // Check file type
         const validTypes = [
-          'audio/mpeg',
-          'audio/wav',
-          'audio/ogg',
-          'audio/mp3',
-          'audio/m4a',
+          "audio/mpeg",
+          "audio/wav",
+          "audio/ogg",
+          "audio/mp3",
+          "audio/m4a",
         ];
         if (!validTypes.includes(file.type)) {
           toast.error(
-            'Please upload a valid audio file (MP3, WAV, OGG, or M4A)'
+            "Please upload a valid audio file (MP3, WAV, OGG, or M4A)",
           );
           return;
         }
@@ -1957,31 +1957,31 @@ const InteractiveComponent = forwardRef(
           // Upload audio file
           const uploadResult = await uploadAudioResource(file, {
             public: true,
-            type: 'audio',
+            type: "audio",
           });
 
           if (uploadResult.success && uploadResult.audioUrl) {
-            updateProcessItem(index, 'audio', {
+            updateProcessItem(index, "audio", {
               src: uploadResult.audioUrl, // Use cloud URL
               name: file.name,
               size: file.size,
               type: file.type,
               uploadedData: uploadResult,
             });
-            toast.success('Audio uploaded successfully!');
+            toast.success("Audio uploaded successfully!");
           } else {
-            throw new Error('Audio upload failed');
+            throw new Error("Audio upload failed");
           }
         } catch (error) {
-          devLogger.error('Error uploading audio:', error);
+          devLogger.error("Error uploading audio:", error);
           toast.error(
-            error.message || 'Failed to upload audio. Please try again.'
+            error.message || "Failed to upload audio. Please try again.",
           );
 
           // Fallback to local URL for immediate preview
           const reader = new FileReader();
-          reader.onload = e => {
-            updateProcessItem(index, 'audio', {
+          reader.onload = (e) => {
+            updateProcessItem(index, "audio", {
               src: e.target.result,
               name: file.name,
               size: file.size,
@@ -1995,7 +1995,7 @@ const InteractiveComponent = forwardRef(
     };
 
     // Handle image save from image editor
-    const handleImageEditorSave = async editedFile => {
+    const handleImageEditorSave = async (editedFile) => {
       if (!imageEditContext) return;
 
       const { type, index } = imageEditContext;
@@ -2006,13 +2006,13 @@ const InteractiveComponent = forwardRef(
 
       try {
         // Show uploading state for labeled graphic
-        if (type === 'labeledGraphic') {
+        if (type === "labeledGraphic") {
           setLabeledGraphicImageUploading(true);
         }
 
         // Upload edited image to cloud API
         const uploadResult = await uploadImage(editedFile, {
-          folder: 'lesson-images',
+          folder: "lesson-images",
           public: true,
         });
 
@@ -2025,47 +2025,47 @@ const InteractiveComponent = forwardRef(
           };
 
           // Update the appropriate state based on context type
-          if (type === 'accordion') {
-            updateAccordionItem(index, 'image', imageData);
-          } else if (type === 'tab') {
-            updateTabsItem(index, 'image', imageData);
-          } else if (type === 'labeledGraphic') {
-            setLabeledGraphicData(prev => ({
+          if (type === "accordion") {
+            updateAccordionItem(index, "image", imageData);
+          } else if (type === "tab") {
+            updateTabsItem(index, "image", imageData);
+          } else if (type === "labeledGraphic") {
+            setLabeledGraphicData((prev) => ({
               ...prev,
               image: imageData,
             }));
-          } else if (type === 'timeline') {
-            updateTimelineItem(index, 'image', imageData);
-          } else if (type === 'process') {
-            updateProcessItem(index, 'image', imageData);
+          } else if (type === "timeline") {
+            updateTimelineItem(index, "image", imageData);
+          } else if (type === "process") {
+            updateProcessItem(index, "image", imageData);
           }
 
-          toast.success('Image edited and uploaded successfully!');
+          toast.success("Image edited and uploaded successfully!");
         } else {
-          throw new Error('Upload failed - no image URL returned');
+          throw new Error("Upload failed - no image URL returned");
         }
       } catch (error) {
         const isStorageLimitExceeded =
-          error?.code === 'STORAGE_LIMIT_EXCEEDED' ||
+          error?.code === "STORAGE_LIMIT_EXCEEDED" ||
           (error?.message &&
-            (error.message.toLowerCase().includes('limit exceeded') ||
-              error.message.toLowerCase().includes('storage limit')));
+            (error.message.toLowerCase().includes("limit exceeded") ||
+              error.message.toLowerCase().includes("storage limit")));
 
         if (isStorageLimitExceeded) {
           toast.error(
-            'Storage limit exceeded. Please free up space or upgrade before uploading new images.'
+            "Storage limit exceeded. Please free up space or upgrade before uploading new images.",
           );
           return;
         }
 
-        devLogger.error('Error uploading edited image:', error);
+        devLogger.error("Error uploading edited image:", error);
         toast.error(
-          error.message || 'Failed to upload image. Please try again.'
+          error.message || "Failed to upload image. Please try again.",
         );
 
         // Fallback to local URL for immediate preview
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = (e) => {
           const imageData = {
             src: e.target.result,
             name: editedFile.name,
@@ -2073,25 +2073,25 @@ const InteractiveComponent = forwardRef(
             isLocal: true,
           };
 
-          if (type === 'accordion') {
-            updateAccordionItem(index, 'image', imageData);
-          } else if (type === 'tab') {
-            updateTabsItem(index, 'image', imageData);
-          } else if (type === 'labeledGraphic') {
-            setLabeledGraphicData(prev => ({
+          if (type === "accordion") {
+            updateAccordionItem(index, "image", imageData);
+          } else if (type === "tab") {
+            updateTabsItem(index, "image", imageData);
+          } else if (type === "labeledGraphic") {
+            setLabeledGraphicData((prev) => ({
               ...prev,
               image: imageData,
             }));
-          } else if (type === 'timeline') {
-            updateTimelineItem(index, 'image', imageData);
-          } else if (type === 'process') {
-            updateProcessItem(index, 'image', imageData);
+          } else if (type === "timeline") {
+            updateTimelineItem(index, "image", imageData);
+          } else if (type === "process") {
+            updateProcessItem(index, "image", imageData);
           }
         };
         reader.readAsDataURL(editedFile);
       } finally {
         // Hide uploading state and clean up
-        if (type === 'labeledGraphic') {
+        if (type === "labeledGraphic") {
           setLabeledGraphicImageUploading(false);
         }
         setIsImageProcessing(false);
@@ -2110,8 +2110,8 @@ const InteractiveComponent = forwardRef(
     };
 
     // Helper function to format content with bullet points and line breaks
-    const formatContent = content => {
-      if (!content) return '';
+    const formatContent = (content) => {
+      if (!content) return "";
 
       const trimmedContent = content.trim();
 
@@ -2121,8 +2121,8 @@ const InteractiveComponent = forwardRef(
       }
 
       // Split content by lines
-      const lines = content.split('\n');
-      let formattedHTML = '';
+      const lines = content.split("\n");
+      let formattedHTML = "";
       let inList = false;
 
       lines.forEach((line, index) => {
@@ -2138,18 +2138,18 @@ const InteractiveComponent = forwardRef(
             formattedHTML += isNumbered
               ? '<ol class="list-decimal ml-6 space-y-2">'
               : '<ul class="list-disc ml-6 space-y-2">';
-            inList = isNumbered ? 'ol' : 'ul';
+            inList = isNumbered ? "ol" : "ul";
           }
 
           // Remove bullet/number marker and add as list item
           const cleanedLine = trimmedLine
-            .replace(/^[-*•]\s+/, '')
-            .replace(/^\d+\.\s+/, '');
+            .replace(/^[-*•]\s+/, "")
+            .replace(/^\d+\.\s+/, "");
           formattedHTML += `<li>${cleanedLine}</li>`;
         } else {
           // Close list if we were in one
           if (inList) {
-            formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
+            formattedHTML += inList === "ol" ? "</ol>" : "</ul>";
             inList = false;
           }
 
@@ -2162,7 +2162,7 @@ const InteractiveComponent = forwardRef(
 
       // Close list if still open
       if (inList) {
-        formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
+        formattedHTML += inList === "ol" ? "</ol>" : "</ul>";
       }
 
       if (formattedHTML) {
@@ -2173,7 +2173,7 @@ const InteractiveComponent = forwardRef(
     };
 
     const generateInteractiveHTML = (template, data) => {
-      if (template === 'tabs') {
+      if (template === "tabs") {
         const tabsId = `tabs-${Date.now()}`;
         const tabsHTML = `
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-blue-500 to-purple-600">
@@ -2182,7 +2182,7 @@ const InteractiveComponent = forwardRef(
               ${data
                 .map(
                   (tab, index) => `
-                <button class="tab-button px-4 py-2 text-lg font-bold transition-colors duration-200 ${index === 0 ? 'border-b-2 border-blue-500 text-blue-700 bg-blue-50' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'}" 
+                <button class="tab-button px-4 py-2 text-lg font-bold transition-colors duration-200 ${index === 0 ? "border-b-2 border-blue-500 text-blue-700 bg-blue-50" : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"}" 
                         style="font-weight:900; font-size:18px; font-family:'Times New Roman', Times, serif;" 
                         role="tab" 
                         data-tab="${index}"
@@ -2190,22 +2190,22 @@ const InteractiveComponent = forwardRef(
                         onclick="window.switchTab && window.switchTab('${tabsId}', ${index})">
                   <span style="font-weight:900; font-size:18px; font-family:'Times New Roman', Times, serif;">${tab.title}</span>
                 </button>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
             </div>
             <div class="tab-content">
               ${data
                 .map(
                   (tab, index) => `
-                <div class="tab-panel ${index === 0 ? 'block' : 'hidden'}" data-panel="${index}" role="tabpanel">
-                  <div class="text-gray-700 leading-relaxed ${tab.image || tab.audio ? 'mb-4' : ''}">${formatContent(tab.content)}</div>
+                <div class="tab-panel ${index === 0 ? "block" : "hidden"}" data-panel="${index}" role="tabpanel">
+                  <div class="text-gray-700 leading-relaxed ${tab.image || tab.audio ? "mb-4" : ""}">${formatContent(tab.content)}</div>
                   ${
                     tab.image
                       ? `
-                    <div class="flex justify-center ${tab.audio ? '' : 'mb-4'}">
+                    <div class="flex justify-center ${tab.audio ? "" : "mb-4"}">
                       <div class="relative max-w-full">
-                        <img src="${tab.image.src}" alt="${tab.image.name || 'Tab image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                        <img src="${tab.image.src}" alt="${tab.image.name || "Tab image"}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
                         ${
                           tab.audio
                             ? `
@@ -2216,12 +2216,12 @@ const InteractiveComponent = forwardRef(
                             </audio>
                           </div>
                         `
-                            : ''
+                            : ""
                         }
                       </div>
                     </div>
                   `
-                      : ''
+                      : ""
                   }
                   ${
                     tab.audio && !tab.image
@@ -2244,18 +2244,18 @@ const InteractiveComponent = forwardRef(
                       </audio>
                     </div>
                   `
-                      : ''
+                      : ""
                   }
                 </div>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
             </div>
           </div>
         </div>
       `;
         return tabsHTML;
-      } else if (template === 'accordion') {
+      } else if (template === "accordion") {
         const accordionId = `accordion-${Date.now()}`;
         const accordionHTML = `
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-green-500 to-teal-600">
@@ -2268,7 +2268,7 @@ const InteractiveComponent = forwardRef(
                         data-container="${accordionId}"
                         onclick="window.toggleAccordion && window.toggleAccordion('${accordionId}', ${index})">
                   <span class="font-medium">${item.title}</span>
-                  <svg class="accordion-icon w-5 h-5 transform transition-transform duration-200 ${index === 0 ? 'rotate-180' : ''}" 
+                  <svg class="accordion-icon w-5 h-5 transform transition-transform duration-200 ${index === 0 ? "rotate-180" : ""}" 
                        data-icon="${index}" 
                        fill="none" 
                        stroke="currentColor" 
@@ -2276,17 +2276,17 @@ const InteractiveComponent = forwardRef(
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
-                <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'pb-4' : ''}" 
+                <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? "pb-4" : ""}" 
                      data-content="${index}"
-                     style="max-height: ${index === 0 ? '2000px' : '0'}; overflow-y: auto;">
+                     style="max-height: ${index === 0 ? "2000px" : "0"}; overflow-y: auto;">
                   <div class="pl-4">
-                    <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${formatContent(item.content)}</div>
+                    <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? "mb-4" : ""}">${formatContent(item.content)}</div>
                     ${
                       item.image
                         ? `
-                      <div class="flex justify-center ${item.audio ? '' : 'mb-4'}">
+                      <div class="flex justify-center ${item.audio ? "" : "mb-4"}">
                         <div class="relative max-w-full">
-                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; height: auto; width: auto; object-fit: contain;" />
+                          <img src="${item.image.src}" alt="${item.image.name || "Accordion image"}" class="rounded-lg shadow-sm" style="max-width: 100%; height: auto; width: auto; object-fit: contain;" />
                           ${
                             item.audio
                               ? `
@@ -2297,12 +2297,12 @@ const InteractiveComponent = forwardRef(
                               </audio>
                             </div>
                           `
-                              : ''
+                              : ""
                           }
                         </div>
                       </div>
                     `
-                        : ''
+                        : ""
                     }
                     ${
                       item.audio && !item.image
@@ -2325,43 +2325,43 @@ const InteractiveComponent = forwardRef(
                         </audio>
                       </div>
                     `
-                        : ''
+                        : ""
                     }
                   </div>
                 </div>
               </div>
-            `
+            `,
               )
-              .join('')}
+              .join("")}
           </div>
         </div>
       `;
         return accordionHTML;
-      } else if (template === 'labeled-graphic') {
+      } else if (template === "labeled-graphic") {
         const labeledGraphicId = `labeled-graphic-${Date.now()}`;
         const labeledGraphicHTML = `
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-orange-500 to-red-600">
           <div class="labeled-graphic-container" data-template="labeled-graphic" id="${labeledGraphicId}">
             <div class="relative inline-block w-full max-w-4xl mx-auto">
-              <img src="${data.image.src}" alt="${data.image.name || 'Labeled graphic'}" 
+              <img src="${data.image.src}" alt="${data.image.name || "Labeled graphic"}" 
                    class="w-full h-auto rounded-lg shadow-sm" 
                    style="max-height: 600px; object-fit: contain;" />
               ${data.hotspots
                 .map(
-                  hotspot => `
+                  (hotspot) => `
                 <div class="hotspot absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer" 
                      style="left: ${hotspot.x}%; top: ${hotspot.y}%;"
                      data-hotspot-id="${hotspot.id}"
                      onclick="window.toggleHotspotContent && window.toggleHotspotContent('${labeledGraphicId}', '${hotspot.id}')">
                   <div class="w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-lg hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center text-white font-bold text-sm cursor-pointer">+</div>
                 </div>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
               
               <!-- Content overlays for each hotspot -->
               ${data.hotspots
-                .map(hotspot => {
+                .map((hotspot) => {
                   // Smart positioning logic
                   const isLeftSide = hotspot.x < 30; // Left 30% of image
                   const isRightSide = hotspot.x > 70; // Right 30% of image
@@ -2374,18 +2374,18 @@ const InteractiveComponent = forwardRef(
                   if (isLeftSide) {
                     // Hotspot on left - show overlay to the right
                     overlayLeft = Math.min(hotspot.x + 8, 75);
-                    arrowPosition = '15px'; // Arrow on left side of overlay
-                    arrowDirection = 'left';
+                    arrowPosition = "15px"; // Arrow on left side of overlay
+                    arrowDirection = "left";
                   } else if (isRightSide) {
                     // Hotspot on right - show overlay to the left
                     overlayLeft = Math.max(hotspot.x - 25, 5);
-                    arrowPosition = 'calc(100% - 35px)'; // Arrow on right side of overlay
-                    arrowDirection = 'right';
+                    arrowPosition = "calc(100% - 35px)"; // Arrow on right side of overlay
+                    arrowDirection = "right";
                   } else {
                     // Hotspot in center - default positioning
                     overlayLeft = Math.min(hotspot.x + 5, 70);
-                    arrowPosition = '25px';
-                    arrowDirection = 'center';
+                    arrowPosition = "25px";
+                    arrowDirection = "center";
                   }
 
                   if (isTopSide) {
@@ -2431,16 +2431,16 @@ const InteractiveComponent = forwardRef(
                       </audio>
                     </div>
                   `
-                      : ''
+                      : ""
                   }
                   <!-- Smart arrow positioning -->
                   ${
-                    arrowDirection === 'left'
+                    arrowDirection === "left"
                       ? `
                     <div class="absolute w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-blue-500"
                          style="left: -8px; top: 20px;"></div>
                   `
-                      : arrowDirection === 'right'
+                      : arrowDirection === "right"
                         ? `
                     <div class="absolute w-0 h-0 border-t-8 border-b-8 border-l-8 border-transparent border-l-blue-500"
                          style="right: -8px; top: 20px;"></div>
@@ -2452,13 +2452,13 @@ const InteractiveComponent = forwardRef(
                   }
                 </div>`;
                 })
-                .join('')}
+                .join("")}
             </div>
           </div>
         </div>
       `;
         return labeledGraphicHTML;
-      } else if (template === 'timeline') {
+      } else if (template === "timeline") {
         const timelineId = `timeline-${Date.now()}`;
         const timelineHTML = `
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-purple-500 to-pink-600">
@@ -2484,14 +2484,14 @@ const InteractiveComponent = forwardRef(
                         item.date
                           ? `
                         <div class="timeline-date text-sm font-medium text-blue-600 mb-2">
-                          ${new Date(item.date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
+                          ${new Date(item.date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
                           })}
                         </div>
                       `
-                          : ''
+                          : ""
                       }
                       
                       <!-- Title -->
@@ -2507,13 +2507,13 @@ const InteractiveComponent = forwardRef(
                           <div class="mb-3 flex justify-center">
                             <div class="relative max-w-full">
                               <img src="${item.image.src}" 
-                                   alt="${item.image.name || 'Timeline image'}" 
+                                   alt="${item.image.name || "Timeline image"}" 
                                    class="rounded-lg shadow-sm" 
                                    style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
                             </div>
                           </div>
                         `
-                            : ''
+                            : ""
                         }
                         
                         ${
@@ -2537,21 +2537,21 @@ const InteractiveComponent = forwardRef(
                             </audio>
                           </div>
                         `
-                            : ''
+                            : ""
                         }
                       </div>
                     </div>
                   </div>
                 </div>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
             </div>
           </div>
         </div>
       `;
         return timelineHTML;
-      } else if (template === 'process') {
+      } else if (template === "process") {
         const processId = `process-${Date.now()}`;
         const processHTML = `
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -2577,7 +2577,7 @@ const InteractiveComponent = forwardRef(
                 ${data
                   .map(
                     (step, index) => `
-                  <div class="process-step ${index === 0 ? 'block' : 'hidden'}" data-step="${index}">
+                  <div class="process-step ${index === 0 ? "block" : "hidden"}" data-step="${index}">
                     <!-- Step title -->
                     <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">${step.title}</h2>
                     
@@ -2586,7 +2586,7 @@ const InteractiveComponent = forwardRef(
                       step.image
                         ? `
                       <div class="mb-6">
-                        <img src="${step.image.src}" alt="${step.image.name || 'Process step image'}" 
+                        <img src="${step.image.src}" alt="${step.image.name || "Process step image"}" 
                              class="w-full h-64 object-cover rounded-lg shadow-sm mx-auto" />
                       </div>
                     `
@@ -2628,12 +2628,12 @@ const InteractiveComponent = forwardRef(
                         </audio>
                       </div>
                     `
-                        : ''
+                        : ""
                     }
                   </div>
-                `
+                `,
                   )
-                  .join('')}
+                  .join("")}
               </div>
               
               <!-- Progress indicator -->
@@ -2648,10 +2648,10 @@ const InteractiveComponent = forwardRef(
                     ${
                       index < data.length - 1
                         ? `
-                      <button onclick="window.processCarouselGoTo && window.processCarouselGoTo(this, ${index})" class="process-carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md' : 'bg-slate-300 hover:bg-slate-400 hover:scale-105'}" data-index="${index}"></button>
+                      <button onclick="window.processCarouselGoTo && window.processCarouselGoTo(this, ${index})" class="process-carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? "bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md" : "bg-slate-300 hover:bg-slate-400 hover:scale-105"}" data-index="${index}"></button>
                     `
                         : `
-                      <button onclick="window.processCarouselGoTo && window.processCarouselGoTo(this, ${index})" class="process-carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md' : 'bg-slate-300 hover:bg-slate-400 hover:scale-105'}" data-index="${index}"></button>
+                      <button onclick="window.processCarouselGoTo && window.processCarouselGoTo(this, ${index})" class="process-carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? "bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md" : "bg-slate-300 hover:bg-slate-400 hover:scale-105"}" data-index="${index}"></button>
                       <div class="ml-2">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -2659,9 +2659,9 @@ const InteractiveComponent = forwardRef(
                       </div>
                     `
                     }
-                  `
+                  `,
                     )
-                    .join('')}
+                    .join("")}
                 </div>
               </div>
             </div>
@@ -2669,17 +2669,17 @@ const InteractiveComponent = forwardRef(
         </div>
       `;
         return processHTML;
-      } else if (template === 'quiz') {
+      } else if (template === "quiz") {
         // Handle quiz data structure: { type: 'quiz', title: string, questions: array }
         const quizData = data.questions || (Array.isArray(data) ? data : []);
-        const quizTitle = data.title || 'Quiz';
+        const quizTitle = data.title || "Quiz";
 
         let quizHTML = `<div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">`;
         quizHTML += `<h3 class="text-xl font-semibold text-gray-900 mb-6">${quizTitle}</h3>`;
 
         if (quizData && quizData.length > 0) {
           quizData.forEach((q, idx) => {
-            const question = q.question || q.text || '';
+            const question = q.question || q.text || "";
             const options = q.options || [];
             const correctAnswer =
               q.correctAnswer !== undefined
@@ -2687,7 +2687,7 @@ const InteractiveComponent = forwardRef(
                 : q.correct !== undefined
                   ? q.correct
                   : 0;
-            const explanation = q.explanation || '';
+            const explanation = q.explanation || "";
 
             quizHTML += `<div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">`;
             quizHTML += `<p class="font-semibold text-gray-800 mb-4 text-lg">${idx + 1}. ${question}</p>`;
@@ -2695,7 +2695,7 @@ const InteractiveComponent = forwardRef(
 
             options.forEach((option, optIndex) => {
               const isCorrect = optIndex === correctAnswer;
-              quizHTML += `<div class="flex items-start p-3 rounded-lg ${isCorrect ? 'bg-green-50 border-l-4 border-green-500' : 'bg-white border border-gray-200'}">`;
+              quizHTML += `<div class="flex items-start p-3 rounded-lg ${isCorrect ? "bg-green-50 border-l-4 border-green-500" : "bg-white border border-gray-200"}">`;
               quizHTML += `<span class="mr-3 font-medium text-gray-700">${String.fromCharCode(97 + optIndex)})</span>`;
               quizHTML += `<span class="flex-1 text-gray-700">${option}</span>`;
               if (isCorrect) {
@@ -2722,52 +2722,52 @@ const InteractiveComponent = forwardRef(
         quizHTML += `</div>`;
         return quizHTML;
       }
-      return '';
+      return "";
     };
 
     // Add JavaScript functions for process carousel navigation
     useEffect(() => {
       // Process carousel navigation functions (based on quotes carousel logic)
-      window.processCarouselPrev = button => {
-        devLogger.debug('Process Carousel Prev clicked');
-        const carousel = button.closest('.process-carousel');
+      window.processCarouselPrev = (button) => {
+        devLogger.debug("Process Carousel Prev clicked");
+        const carousel = button.closest(".process-carousel");
         if (!carousel) {
-          devLogger.debug('No process carousel found for prev button');
+          devLogger.debug("No process carousel found for prev button");
           return;
         }
 
-        const slides = carousel.querySelectorAll('.process-step');
-        const dots = carousel.querySelectorAll('.process-carousel-dot');
-        let currentIndex = parseInt(carousel.dataset.current || '0');
+        const slides = carousel.querySelectorAll(".process-step");
+        const dots = carousel.querySelectorAll(".process-carousel-dot");
+        let currentIndex = parseInt(carousel.dataset.current || "0");
 
         devLogger.debug(
-          'Process carousel prev - current index:',
+          "Process carousel prev - current index:",
           currentIndex,
-          'total slides:',
-          slides.length
+          "total slides:",
+          slides.length,
         );
         const newIndex =
           currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
         showProcessCarouselSlide(carousel, slides, dots, newIndex);
       };
 
-      window.processCarouselNext = button => {
-        devLogger.debug('Process Carousel Next clicked');
-        const carousel = button.closest('.process-carousel');
+      window.processCarouselNext = (button) => {
+        devLogger.debug("Process Carousel Next clicked");
+        const carousel = button.closest(".process-carousel");
         if (!carousel) {
-          devLogger.debug('No process carousel found for next button');
+          devLogger.debug("No process carousel found for next button");
           return;
         }
 
-        const slides = carousel.querySelectorAll('.process-step');
-        const dots = carousel.querySelectorAll('.process-carousel-dot');
-        let currentIndex = parseInt(carousel.dataset.current || '0');
+        const slides = carousel.querySelectorAll(".process-step");
+        const dots = carousel.querySelectorAll(".process-carousel-dot");
+        let currentIndex = parseInt(carousel.dataset.current || "0");
 
         devLogger.debug(
-          'Process carousel next - current index:',
+          "Process carousel next - current index:",
           currentIndex,
-          'total slides:',
-          slides.length
+          "total slides:",
+          slides.length,
         );
         const newIndex =
           currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
@@ -2775,21 +2775,21 @@ const InteractiveComponent = forwardRef(
       };
 
       window.processCarouselGoTo = (button, index) => {
-        devLogger.debug('Process Carousel GoTo clicked');
-        const carousel = button.closest('.process-carousel');
+        devLogger.debug("Process Carousel GoTo clicked");
+        const carousel = button.closest(".process-carousel");
         if (!carousel) {
-          devLogger.debug('No process carousel found for goTo button');
+          devLogger.debug("No process carousel found for goTo button");
           return;
         }
 
-        const slides = carousel.querySelectorAll('.process-step');
-        const dots = carousel.querySelectorAll('.process-carousel-dot');
+        const slides = carousel.querySelectorAll(".process-step");
+        const dots = carousel.querySelectorAll(".process-carousel-dot");
 
         devLogger.debug(
-          'Process carousel goTo - target index:',
+          "Process carousel goTo - target index:",
           index,
-          'total slides:',
-          slides.length
+          "total slides:",
+          slides.length,
         );
         showProcessCarouselSlide(carousel, slides, dots, index);
       };
@@ -2797,11 +2797,11 @@ const InteractiveComponent = forwardRef(
       const showProcessCarouselSlide = (carousel, slides, dots, index) => {
         slides.forEach((slide, i) => {
           if (i === index) {
-            slide.classList.remove('hidden');
-            slide.classList.add('block');
+            slide.classList.remove("hidden");
+            slide.classList.add("block");
           } else {
-            slide.classList.remove('block');
-            slide.classList.add('hidden');
+            slide.classList.remove("block");
+            slide.classList.add("hidden");
           }
         });
 
@@ -2809,35 +2809,35 @@ const InteractiveComponent = forwardRef(
           // Normalize: remove all known active/inactive styles first
           dot.classList.remove(
             // inactive variants
-            'bg-gray-300',
-            'hover:bg-gray-400',
-            'bg-slate-300',
-            'hover:bg-slate-400',
-            'hover:scale-105',
+            "bg-gray-300",
+            "hover:bg-gray-400",
+            "bg-slate-300",
+            "hover:bg-slate-400",
+            "hover:scale-105",
             // active variants
-            'bg-white',
-            'scale-110',
-            'shadow-md',
-            'bg-gradient-to-r',
-            'from-blue-500',
-            'to-purple-500'
+            "bg-white",
+            "scale-110",
+            "shadow-md",
+            "bg-gradient-to-r",
+            "from-blue-500",
+            "to-purple-500",
           );
 
           if (i === index) {
             // Active state: use gradient styling like quotes carousel
             dot.classList.add(
-              'bg-gradient-to-r',
-              'from-blue-500',
-              'to-purple-500',
-              'scale-110',
-              'shadow-md'
+              "bg-gradient-to-r",
+              "from-blue-500",
+              "to-purple-500",
+              "scale-110",
+              "shadow-md",
             );
           } else {
             // Inactive state: use slate gray like quotes carousel
             dot.classList.add(
-              'bg-slate-300',
-              'hover:bg-slate-400',
-              'hover:scale-105'
+              "bg-slate-300",
+              "hover:bg-slate-400",
+              "hover:scale-105",
             );
           }
         });
@@ -2846,14 +2846,14 @@ const InteractiveComponent = forwardRef(
       };
 
       // Add keyboard navigation support
-      window.addEventListener('keydown', event => {
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
           const focusedElement = document.activeElement;
-          const processContainer = focusedElement?.closest('.process-carousel');
+          const processContainer = focusedElement?.closest(".process-carousel");
 
           if (processContainer && processContainer.id) {
             event.preventDefault();
-            if (event.key === 'ArrowLeft') {
+            if (event.key === "ArrowLeft") {
               window.processCarouselPrev &&
                 window.processCarouselPrev({ closest: () => processContainer });
             } else {
@@ -2865,8 +2865,8 @@ const InteractiveComponent = forwardRef(
       });
 
       // Add click navigation to process content area
-      window.addEventListener('click', event => {
-        const processContainer = event.target?.closest('.process-carousel');
+      window.addEventListener("click", (event) => {
+        const processContainer = event.target?.closest(".process-carousel");
         if (processContainer && processContainer.id) {
           // Focus the container for keyboard navigation
           processContainer.focus();
@@ -2883,90 +2883,91 @@ const InteractiveComponent = forwardRef(
 
     const handleSave = () => {
       if (!selectedTemplate) {
-        toast.error('Please select a template');
+        toast.error("Please select a template");
         return;
       }
 
       let data, dataKey;
-      if (selectedTemplate === 'tabs') {
+      if (selectedTemplate === "tabs") {
         data = tabsData;
-        dataKey = 'tabsData';
+        dataKey = "tabsData";
         // Validate that all items have content
         const hasEmptyItems = data.some(
-          item => !item.title.trim() || !item.content.trim()
+          (item) => !item.title.trim() || !item.content.trim(),
         );
         if (hasEmptyItems) {
-          toast.error('Please fill in all titles and content');
+          toast.error("Please fill in all titles and content");
           return;
         }
-      } else if (selectedTemplate === 'accordion') {
+      } else if (selectedTemplate === "accordion") {
         data = accordionData;
-        dataKey = 'accordionData';
+        dataKey = "accordionData";
         // Validate that all items have content
         const hasEmptyItems = data.some(
-          item => !item.title.trim() || stripHtmlTags(item.content).length === 0
+          (item) =>
+            !item.title.trim() || stripHtmlTags(item.content).length === 0,
         );
         if (hasEmptyItems) {
-          toast.error('Please fill in all titles and content');
+          toast.error("Please fill in all titles and content");
           return;
         }
-      } else if (selectedTemplate === 'labeled-graphic') {
+      } else if (selectedTemplate === "labeled-graphic") {
         data = labeledGraphicData;
-        dataKey = 'labeledGraphicData';
+        dataKey = "labeledGraphicData";
         // Validate that image is uploaded
         if (!data.image) {
-          toast.error('Please upload an image for the labeled graphic');
+          toast.error("Please upload an image for the labeled graphic");
           return;
         }
-      } else if (selectedTemplate === 'timeline') {
+      } else if (selectedTemplate === "timeline") {
         data = timelineData;
-        dataKey = 'timelineData';
+        dataKey = "timelineData";
         // Validate that all items have content (date is optional)
         const hasEmptyItems = data.some(
-          item => !item.title.trim() || !item.description.trim()
+          (item) => !item.title.trim() || !item.description.trim(),
         );
         if (hasEmptyItems) {
-          toast.error('Please fill in all titles and descriptions');
+          toast.error("Please fill in all titles and descriptions");
           return;
         }
-      } else if (selectedTemplate === 'process') {
+      } else if (selectedTemplate === "process") {
         data = processData;
-        dataKey = 'processData';
+        dataKey = "processData";
         // Validate that all items have content
         const hasEmptyItems = data.some(
-          item => !item.title.trim() || !item.description.trim()
+          (item) => !item.title.trim() || !item.description.trim(),
         );
         if (hasEmptyItems) {
-          toast.error('Please fill in all titles and descriptions');
+          toast.error("Please fill in all titles and descriptions");
           return;
         }
-      } else if (selectedTemplate === 'quiz') {
+      } else if (selectedTemplate === "quiz") {
         // For quiz, use the existing quizData structure
         data = quizData.questions || [];
-        dataKey = 'questions';
+        dataKey = "questions";
         const interactiveContent = {
-          type: 'quiz',
-          title: quizData.title || 'Quiz',
+          type: "quiz",
+          title: quizData.title || "Quiz",
           questions: quizData.questions || [],
         };
-        const htmlContent = generateInteractiveHTML('quiz', interactiveContent);
+        const htmlContent = generateInteractiveHTML("quiz", interactiveContent);
         if (editingInteractiveBlock) {
           onInteractiveUpdate(editingInteractiveBlock.id, {
             content: JSON.stringify(interactiveContent),
             html_css: htmlContent,
-            subtype: 'quiz',
+            subtype: "quiz",
           });
         } else {
           onInteractiveTemplateSelect({
-            type: 'interactive',
-            subtype: 'quiz',
-            template: 'quiz',
+            type: "interactive",
+            subtype: "quiz",
+            template: "quiz",
             content: JSON.stringify(interactiveContent),
             html_css: htmlContent,
           });
         }
         setShowInteractiveEditDialog(false);
-        toast.success('Quiz content saved successfully!');
+        toast.success("Quiz content saved successfully!");
         return;
       }
 
@@ -2985,7 +2986,7 @@ const InteractiveComponent = forwardRef(
         });
       } else {
         onInteractiveTemplateSelect({
-          type: 'interactive',
+          type: "interactive",
           subtype: selectedTemplate, // Add subtype for proper identification
           template: selectedTemplate,
           content: JSON.stringify(interactiveContent),
@@ -2994,48 +2995,48 @@ const InteractiveComponent = forwardRef(
       }
 
       setShowInteractiveEditDialog(false);
-      toast.success('Interactive content saved successfully!');
+      toast.success("Interactive content saved successfully!");
     };
 
     const handleCancel = () => {
       setShowInteractiveEditDialog(false);
-      setSelectedTemplate('');
+      setSelectedTemplate("");
       setTabsData([
         {
-          title: 'Tab 1',
-          content: 'Content for tab 1',
+          title: "Tab 1",
+          content: "Content for tab 1",
           image: null,
           audio: null,
         },
         {
-          title: 'Tab 2',
-          content: 'Content for tab 2',
+          title: "Tab 2",
+          content: "Content for tab 2",
           image: null,
           audio: null,
         },
         {
-          title: 'Tab 3',
-          content: 'Content for tab 3',
+          title: "Tab 3",
+          content: "Content for tab 3",
           image: null,
           audio: null,
         },
       ]);
       setAccordionData([
         {
-          title: 'Section 1',
-          content: 'Content for section 1',
+          title: "Section 1",
+          content: "Content for section 1",
           image: null,
           audio: null,
         },
         {
-          title: 'Section 2',
-          content: 'Content for section 2',
+          title: "Section 2",
+          content: "Content for section 2",
           image: null,
           audio: null,
         },
         {
-          title: 'Section 3',
-          content: 'Content for section 3',
+          title: "Section 3",
+          content: "Content for section 3",
           image: null,
           audio: null,
         },
@@ -3046,18 +3047,18 @@ const InteractiveComponent = forwardRef(
       });
       setTimelineData([
         {
-          id: '1',
-          date: '2024-01-15',
-          title: 'Event 1',
-          description: 'Description for event 1',
+          id: "1",
+          date: "2024-01-15",
+          title: "Event 1",
+          description: "Description for event 1",
           image: null,
           audio: null,
         },
         {
-          id: '2',
+          id: "2",
           date: null,
-          title: 'Event 2',
-          description: 'Description for event 2',
+          title: "Event 2",
+          description: "Description for event 2",
           image: null,
           audio: null,
         },
@@ -3095,7 +3096,7 @@ const InteractiveComponent = forwardRef(
                   onClick={() => {
                     setShowInteractiveTemplateSidebar(false);
                     if (onAICreation) {
-                      onAICreation({ id: 'interactive', title: 'Interactive' });
+                      onAICreation({ id: "interactive", title: "Interactive" });
                     }
                   }}
                   className="border border-purple-200 rounded-lg p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 bg-gradient-to-br from-purple-50 to-pink-50"
@@ -3153,7 +3154,7 @@ const InteractiveComponent = forwardRef(
                   </div>
                 </div>
 
-                {interactiveTemplates.map(template => (
+                {interactiveTemplates.map((template) => (
                   <div
                     key={template.id}
                     className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
@@ -3187,7 +3188,7 @@ const InteractiveComponent = forwardRef(
         {/* Interactive Edit Dialog */}
         <Dialog
           open={showInteractiveEditDialog}
-          onOpenChange={open => {
+          onOpenChange={(open) => {
             if (!open && !isImageProcessing) {
               setShowInteractiveEditDialog(false);
             }
@@ -3223,25 +3224,25 @@ const InteractiveComponent = forwardRef(
             )}
             <DialogHeader>
               <DialogTitle>
-                {editingInteractiveBlock ? 'Edit' : 'Create'}{' '}
-                {selectedTemplate === 'tabs'
-                  ? 'Tabs'
-                  : selectedTemplate === 'accordion'
-                    ? 'Accordion'
-                    : selectedTemplate === 'labeled-graphic'
-                      ? 'Labeled Graphic'
-                      : selectedTemplate === 'timeline'
-                        ? 'Timeline'
-                        : selectedTemplate === 'process'
-                          ? 'Process'
-                          : selectedTemplate === 'quiz'
-                            ? 'Quiz'
-                            : 'Interactive Content'}
+                {editingInteractiveBlock ? "Edit" : "Create"}{" "}
+                {selectedTemplate === "tabs"
+                  ? "Tabs"
+                  : selectedTemplate === "accordion"
+                    ? "Accordion"
+                    : selectedTemplate === "labeled-graphic"
+                      ? "Labeled Graphic"
+                      : selectedTemplate === "timeline"
+                        ? "Timeline"
+                        : selectedTemplate === "process"
+                          ? "Process"
+                          : selectedTemplate === "quiz"
+                            ? "Quiz"
+                            : "Interactive Content"}
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-6">
-              {selectedTemplate === 'tabs' && (
+              {selectedTemplate === "tabs" && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">Tabs Configuration</h3>
@@ -3284,8 +3285,8 @@ const InteractiveComponent = forwardRef(
                             <input
                               type="text"
                               value={tab.title}
-                              onChange={e =>
-                                updateTabsItem(index, 'title', e.target.value)
+                              onChange={(e) =>
+                                updateTabsItem(index, "title", e.target.value)
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Enter tab title"
@@ -3297,8 +3298,8 @@ const InteractiveComponent = forwardRef(
                             </label>
                             <textarea
                               value={tab.content}
-                              onChange={e =>
-                                updateTabsItem(index, 'content', e.target.value)
+                              onChange={(e) =>
+                                updateTabsItem(index, "content", e.target.value)
                               }
                               rows={3}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3335,7 +3336,9 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={e => handleTabImageUpload(index, e)}
+                                  onChange={(e) =>
+                                    handleTabImageUpload(index, e)
+                                  }
                                   className="hidden"
                                   id={`tab-image-upload-${index}`}
                                 />
@@ -3402,7 +3405,9 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="audio/*"
-                                  onChange={e => handleTabAudioUpload(index, e)}
+                                  onChange={(e) =>
+                                    handleTabAudioUpload(index, e)
+                                  }
                                   className="hidden"
                                   id={`tab-audio-upload-${index}`}
                                 />
@@ -3428,7 +3433,7 @@ const InteractiveComponent = forwardRef(
                 </div>
               )}
 
-              {selectedTemplate === 'accordion' && (
+              {selectedTemplate === "accordion" && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">
@@ -3473,11 +3478,11 @@ const InteractiveComponent = forwardRef(
                             <input
                               type="text"
                               value={item.title}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateAccordionItem(
                                   index,
-                                  'title',
-                                  e.target.value
+                                  "title",
+                                  e.target.value,
                                 )
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3492,8 +3497,8 @@ const InteractiveComponent = forwardRef(
                               <ReactQuill
                                 theme="snow"
                                 value={item.content}
-                                onChange={value =>
-                                  updateAccordionItem(index, 'content', value)
+                                onChange={(value) =>
+                                  updateAccordionItem(index, "content", value)
                                 }
                                 modules={accordionQuillModules}
                                 formats={accordionQuillFormats}
@@ -3531,7 +3536,7 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={e => handleImageUpload(index, e)}
+                                  onChange={(e) => handleImageUpload(index, e)}
                                   className="hidden"
                                   id={`image-upload-${index}`}
                                 />
@@ -3567,7 +3572,7 @@ const InteractiveComponent = forwardRef(
                                           {item.audio.name}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                          {Math.round(item.audio.size / 1024)}{' '}
+                                          {Math.round(item.audio.size / 1024)}{" "}
                                           KB
                                         </p>
                                       </div>
@@ -3601,7 +3606,7 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="audio/*"
-                                  onChange={e => handleAudioUpload(index, e)}
+                                  onChange={(e) => handleAudioUpload(index, e)}
                                   className="hidden"
                                   id={`audio-upload-${index}`}
                                 />
@@ -3627,7 +3632,7 @@ const InteractiveComponent = forwardRef(
                 </div>
               )}
 
-              {selectedTemplate === 'labeled-graphic' && (
+              {selectedTemplate === "labeled-graphic" && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">
@@ -3647,19 +3652,19 @@ const InteractiveComponent = forwardRef(
                             <div
                               className="relative cursor-crosshair border-2 border-dashed border-blue-300 rounded-lg overflow-hidden"
                               onClick={addHotspot}
-                              style={{ maxWidth: '600px', maxHeight: '400px' }}
+                              style={{ maxWidth: "600px", maxHeight: "400px" }}
                             >
                               <img
                                 src={labeledGraphicData.image.src}
                                 alt={labeledGraphicData.image.name}
                                 className="w-full h-auto rounded-lg"
                                 style={{
-                                  maxHeight: '400px',
-                                  objectFit: 'contain',
+                                  maxHeight: "400px",
+                                  objectFit: "contain",
                                 }}
                               />
                               {/* Render hotspots */}
-                              {labeledGraphicData.hotspots.map(hotspot => (
+                              {labeledGraphicData.hotspots.map((hotspot) => (
                                 <div
                                   key={hotspot.id}
                                   className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
@@ -3667,7 +3672,7 @@ const InteractiveComponent = forwardRef(
                                     left: `${hotspot.x}%`,
                                     top: `${hotspot.y}%`,
                                   }}
-                                  onClick={e => {
+                                  onClick={(e) => {
                                     e.stopPropagation();
                                     editHotspot(hotspot);
                                   }}
@@ -3697,7 +3702,7 @@ const InteractiveComponent = forwardRef(
                           </div>
                           <p className="text-xs text-gray-500">
                             {labeledGraphicData.image.name} (
-                            {Math.round(labeledGraphicData.image.size / 1024)}{' '}
+                            {Math.round(labeledGraphicData.image.size / 1024)}{" "}
                             KB)
                           </p>
                         </div>
@@ -3743,7 +3748,7 @@ const InteractiveComponent = forwardRef(
                           />
                           <label
                             htmlFor="labeled-graphic-image-upload"
-                            className={`cursor-pointer flex flex-col items-center space-y-3 ${labeledGraphicImageUploading ? 'pointer-events-none opacity-50' : ''}`}
+                            className={`cursor-pointer flex flex-col items-center space-y-3 ${labeledGraphicImageUploading ? "pointer-events-none opacity-50" : ""}`}
                           >
                             <Target className="h-12 w-12 text-gray-400" />
                             <div className="text-center">
@@ -3770,7 +3775,7 @@ const InteractiveComponent = forwardRef(
                           Hotspots ({labeledGraphicData.hotspots.length})
                         </h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {labeledGraphicData.hotspots.map(hotspot => (
+                          {labeledGraphicData.hotspots.map((hotspot) => (
                             <div
                               key={hotspot.id}
                               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
@@ -3813,7 +3818,7 @@ const InteractiveComponent = forwardRef(
                 </div>
               )}
 
-              {selectedTemplate === 'timeline' && (
+              {selectedTemplate === "timeline" && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">
@@ -3853,7 +3858,7 @@ const InteractiveComponent = forwardRef(
                         <div className="space-y-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Event Date{' '}
+                              Event Date{" "}
                               <span className="text-gray-500 text-sm">
                                 (Optional)
                               </span>
@@ -3861,12 +3866,12 @@ const InteractiveComponent = forwardRef(
                             <div className="flex gap-2">
                               <input
                                 type="date"
-                                value={item.date || ''}
-                                onChange={e =>
+                                value={item.date || ""}
+                                onChange={(e) =>
                                   updateTimelineItem(
                                     index,
-                                    'date',
-                                    e.target.value || null
+                                    "date",
+                                    e.target.value || null,
                                   )
                                 }
                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3876,7 +3881,7 @@ const InteractiveComponent = forwardRef(
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    updateTimelineItem(index, 'date', null)
+                                    updateTimelineItem(index, "date", null)
                                   }
                                   className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-md transition-colors duration-200 flex items-center gap-1"
                                   title="Remove date"
@@ -3894,11 +3899,11 @@ const InteractiveComponent = forwardRef(
                             <input
                               type="text"
                               value={item.title}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateTimelineItem(
                                   index,
-                                  'title',
-                                  e.target.value
+                                  "title",
+                                  e.target.value,
                                 )
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -3911,11 +3916,11 @@ const InteractiveComponent = forwardRef(
                             </label>
                             <textarea
                               value={item.description}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateTimelineItem(
                                   index,
-                                  'description',
-                                  e.target.value
+                                  "description",
+                                  e.target.value,
                                 )
                               }
                               rows={3}
@@ -3941,27 +3946,27 @@ const InteractiveComponent = forwardRef(
                                       onClick={() => {
                                         // Create a file object from the image src for editing
                                         fetch(item.image.src)
-                                          .then(res => res.blob())
-                                          .then(blob => {
+                                          .then((res) => res.blob())
+                                          .then((blob) => {
                                             const file = new File(
                                               [blob],
                                               item.image.name,
-                                              { type: blob.type }
+                                              { type: blob.type },
                                             );
                                             setImageToEdit(file);
                                             setImageEditContext({
-                                              type: 'timeline',
+                                              type: "timeline",
                                               index,
                                             });
                                             setShowImageEditor(true);
                                           })
-                                          .catch(err => {
+                                          .catch((err) => {
                                             devLogger.error(
-                                              'Error loading image for editing:',
-                                              err
+                                              "Error loading image for editing:",
+                                              err,
                                             );
                                             toast.error(
-                                              'Could not load image for editing'
+                                              "Could not load image for editing",
                                             );
                                           });
                                       }}
@@ -3973,7 +3978,7 @@ const InteractiveComponent = forwardRef(
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        updateTimelineItem(index, 'image', null)
+                                        updateTimelineItem(index, "image", null)
                                       }
                                       className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                       title="Remove image"
@@ -3992,7 +3997,7 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     handleTimelineImageUpload(index, e)
                                   }
                                   className="hidden"
@@ -4030,7 +4035,7 @@ const InteractiveComponent = forwardRef(
                                           {item.audio.name}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                          {Math.round(item.audio.size / 1024)}{' '}
+                                          {Math.round(item.audio.size / 1024)}{" "}
                                           KB
                                         </p>
                                       </div>
@@ -4038,7 +4043,7 @@ const InteractiveComponent = forwardRef(
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        updateTimelineItem(index, 'audio', null)
+                                        updateTimelineItem(index, "audio", null)
                                       }
                                       className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                     >
@@ -4064,7 +4069,7 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="audio/*"
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     handleTimelineAudioUpload(index, e)
                                   }
                                   className="hidden"
@@ -4092,7 +4097,7 @@ const InteractiveComponent = forwardRef(
                 </div>
               )}
 
-              {selectedTemplate === 'process' && (
+              {selectedTemplate === "process" && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">
@@ -4137,11 +4142,11 @@ const InteractiveComponent = forwardRef(
                             <input
                               type="text"
                               value={item.title}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateProcessItem(
                                   index,
-                                  'title',
-                                  e.target.value
+                                  "title",
+                                  e.target.value,
                                 )
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -4154,11 +4159,11 @@ const InteractiveComponent = forwardRef(
                             </label>
                             <textarea
                               value={item.description}
-                              onChange={e =>
+                              onChange={(e) =>
                                 updateProcessItem(
                                   index,
-                                  'description',
-                                  e.target.value
+                                  "description",
+                                  e.target.value,
                                 )
                               }
                               rows={3}
@@ -4184,26 +4189,26 @@ const InteractiveComponent = forwardRef(
                                       onClick={() => {
                                         // Create a file object from the image src for editing
                                         fetch(item.image.src)
-                                          .then(res => res.blob())
-                                          .then(blob => {
+                                          .then((res) => res.blob())
+                                          .then((blob) => {
                                             const file = new File(
                                               [blob],
                                               item.image.name,
-                                              { type: blob.type }
+                                              { type: blob.type },
                                             );
                                             setImageToEdit(file);
                                             setImageEditContext({
-                                              type: 'process',
+                                              type: "process",
                                               index,
                                             });
                                             setShowImageEditor(true);
                                           })
-                                          .catch(error => {
+                                          .catch((error) => {
                                             devLogger.error(
-                                              'Error creating file from image src:',
-                                              error
+                                              "Error creating file from image src:",
+                                              error,
                                             );
-                                            toast.error('Could not edit image');
+                                            toast.error("Could not edit image");
                                           });
                                       }}
                                       className="bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 transition-colors"
@@ -4214,7 +4219,7 @@ const InteractiveComponent = forwardRef(
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        updateProcessItem(index, 'image', null)
+                                        updateProcessItem(index, "image", null)
                                       }
                                       className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                     >
@@ -4228,7 +4233,7 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     handleProcessImageUpload(index, e)
                                   }
                                   className="hidden"
@@ -4266,7 +4271,7 @@ const InteractiveComponent = forwardRef(
                                           {item.audio.name}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                          {Math.round(item.audio.size / 1024)}{' '}
+                                          {Math.round(item.audio.size / 1024)}{" "}
                                           KB
                                         </p>
                                       </div>
@@ -4274,7 +4279,7 @@ const InteractiveComponent = forwardRef(
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        updateProcessItem(index, 'audio', null)
+                                        updateProcessItem(index, "audio", null)
                                       }
                                       className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                     >
@@ -4300,7 +4305,7 @@ const InteractiveComponent = forwardRef(
                                 <input
                                   type="file"
                                   accept="audio/*"
-                                  onChange={e =>
+                                  onChange={(e) =>
                                     handleProcessAudioUpload(index, e)
                                   }
                                   className="hidden"
@@ -4328,7 +4333,7 @@ const InteractiveComponent = forwardRef(
                 </div>
               )}
 
-              {selectedTemplate === 'quiz' && (
+              {selectedTemplate === "quiz" && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium">Quiz Content</h3>
@@ -4340,8 +4345,8 @@ const InteractiveComponent = forwardRef(
                       </label>
                       <input
                         type="text"
-                        value={quizData.title || ''}
-                        onChange={e =>
+                        value={quizData.title || ""}
+                        onChange={(e) =>
                           setQuizData({ ...quizData, title: e.target.value })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -4369,7 +4374,7 @@ const InteractiveComponent = forwardRef(
                                   Question {index + 1}:
                                 </span>
                                 <p className="mt-1 text-gray-800">
-                                  {q.question || q.text || 'No question text'}
+                                  {q.question || q.text || "No question text"}
                                 </p>
                               </div>
                               {q.options && Array.isArray(q.options) && (
@@ -4379,8 +4384,8 @@ const InteractiveComponent = forwardRef(
                                       key={optIndex}
                                       className={`flex items-center gap-2 p-2 rounded ${
                                         q.correctAnswer === optIndex
-                                          ? 'bg-green-50 border border-green-200'
-                                          : 'bg-gray-50'
+                                          ? "bg-green-50 border border-green-200"
+                                          : "bg-gray-50"
                                       }`}
                                     >
                                       <span className="text-sm font-medium text-gray-600">
@@ -4437,7 +4442,7 @@ const InteractiveComponent = forwardRef(
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={isImageProcessing}>
-                {editingInteractiveBlock ? 'Update' : 'Create'} Interactive
+                {editingInteractiveBlock ? "Update" : "Create"} Interactive
                 Content
               </Button>
             </DialogFooter>
@@ -4460,8 +4465,8 @@ const InteractiveComponent = forwardRef(
                   <input
                     type="text"
                     value={editingHotspot.label}
-                    onChange={e =>
-                      setEditingHotspot(prev => ({
+                    onChange={(e) =>
+                      setEditingHotspot((prev) => ({
                         ...prev,
                         label: e.target.value,
                       }))
@@ -4476,8 +4481,8 @@ const InteractiveComponent = forwardRef(
                   </label>
                   <textarea
                     value={editingHotspot.description}
-                    onChange={e =>
-                      setEditingHotspot(prev => ({
+                    onChange={(e) =>
+                      setEditingHotspot((prev) => ({
                         ...prev,
                         description: e.target.value,
                       }))
@@ -4504,7 +4509,7 @@ const InteractiveComponent = forwardRef(
                                 {editingHotspot.audio.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {Math.round(editingHotspot.audio.size / 1024)}{' '}
+                                {Math.round(editingHotspot.audio.size / 1024)}{" "}
                                 KB
                               </p>
                             </div>
@@ -4560,8 +4565,8 @@ const InteractiveComponent = forwardRef(
                       min="0"
                       max="100"
                       value={editingHotspot.x}
-                      onChange={e =>
-                        setEditingHotspot(prev => ({
+                      onChange={(e) =>
+                        setEditingHotspot((prev) => ({
                           ...prev,
                           x: parseInt(e.target.value) || 0,
                         }))
@@ -4578,8 +4583,8 @@ const InteractiveComponent = forwardRef(
                       min="0"
                       max="100"
                       value={editingHotspot.y}
-                      onChange={e =>
-                        setEditingHotspot(prev => ({
+                      onChange={(e) =>
+                        setEditingHotspot((prev) => ({
                           ...prev,
                           y: parseInt(e.target.value) || 0,
                         }))
@@ -4615,9 +4620,9 @@ const InteractiveComponent = forwardRef(
         />
       </>
     );
-  }
+  },
 );
 
-InteractiveComponent.displayName = 'InteractiveComponent';
+InteractiveComponent.displayName = "InteractiveComponent";
 
 export default InteractiveComponent;
