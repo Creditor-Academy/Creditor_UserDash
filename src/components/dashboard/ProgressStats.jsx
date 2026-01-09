@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Award,
   BookOpen,
@@ -193,7 +194,8 @@ function CircularProgress({ value = 0, size = 180, stroke = 12 }) {
   );
 }
 
-function SegmentedModuleBars({ modules = [] }) {
+function SegmentedModuleBars({ modules = [], courseId }) {
+  const navigate = useNavigate();
   // Sort modules according to requirements
   const sortedModules = [...modules].sort((a, b) => {
     // Priority 1: In-progress modules always first
@@ -253,6 +255,15 @@ function SegmentedModuleBars({ modules = [] }) {
             ? CircleDot
             : Lock;
 
+        const moduleId = m.module_id || m.id;
+        const handleModuleClick = () => {
+          if (courseId && moduleId) {
+            navigate(
+              `/dashboard/courses/${courseId}/modules/${moduleId}/lessons`
+            );
+          }
+        };
+
         return (
           <motion.div
             key={m.module_id}
@@ -267,7 +278,8 @@ function SegmentedModuleBars({ modules = [] }) {
             )}
 
             <div
-              className={`relative z-10 rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${getBgColor()}`}
+              onClick={handleModuleClick}
+              className={`relative z-10 rounded-2xl border p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer ${getBgColor()}`}
             >
               <div className="flex items-start gap-4">
                 {/* Icon container */}
@@ -541,6 +553,7 @@ function BadgesGallery({ badges = [] }) {
 export default function ProgressStats() {
   const { loading, error, data } = useProgressData();
   const [showModulesModal, setShowModulesModal] = useState(false);
+  const navigate = useNavigate();
 
   // Extract data from backend response structure
   const summary = data?.summary || {};
@@ -662,57 +675,110 @@ export default function ProgressStats() {
           <div className="flex justify-center mb-6">
             <CircularProgress value={overall.percentage || 0} />
           </div>
-          <div className="text-center mb-4 sm:mb-5">
-            <p className="text-sm text-gray-600 leading-relaxed">
-              <span className="font-semibold text-gray-900">
-                {summary.modules?.completed || overall.completed_modules || 0}
-              </span>{' '}
-              completed modules
-            </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              <span className="font-semibold text-gray-900">
-                {summary.modules?.total || 0}
-              </span>{' '}
-              total modules
-            </p>
+
+          {/* Module Progress Stats */}
+          <div className="text-center mb-6 w-full">
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between px-4 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-gray-200/50">
+                <span className="text-sm text-gray-600">Completed Modules</span>
+                <span className="text-base font-bold text-emerald-600">
+                  {summary.modules?.completed || overall.completed_modules || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-gray-200/50">
+                <span className="text-sm text-gray-600">Total Modules</span>
+                <span className="text-base font-bold text-gray-900">
+                  {summary.modules?.total || 0}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 w-full mt-auto">
-            <div className="rounded-xl bg-white/80 border border-gray-200 p-3 text-center shadow-sm">
-              <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">
-                Credits
-              </p>
-              <p className="text-sm font-bold text-gray-900">
+
+          {/* Credits Card - Full Width */}
+          <div className="w-full mt-auto">
+            <div className="rounded-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/50 p-4 text-center shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Award className="h-4 w-4 text-blue-600" />
+                <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">
+                  Credits Earned
+                </p>
+              </div>
+              <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1">
                 {achievements.credits_earned || 0}
               </p>
-              <p className="text-[10px] text-gray-500">Earned</p>
-            </div>
-            <div className="rounded-xl bg-white/80 border border-gray-200 p-3 text-center shadow-sm">
-              <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">
-                Badges
+              <p className="text-xs text-blue-600/80 font-medium">
+                Keep learning to earn more!
               </p>
-              <p className="text-sm font-bold text-gray-900">
-                {achievements.badges_collected || 0}
-              </p>
-              <p className="text-[10px] text-gray-500">Collected</p>
             </div>
           </div>
         </div>
         <div className="col-span-1 lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 space-y-6 shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-semibold">
-                Current course
-              </p>
-              <h4 className="text-lg sm:text-xl font-bold text-gray-900 truncate leading-tight">
-                {currentCourse?.course_title || 'No course in progress'}
-              </h4>
-            </div>
-            <div className="text-sm text-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-xl border border-blue-100 font-medium shadow-sm">
-              {currentCourse?.modules_summary?.completed || 0}/
-              {currentCourse?.modules_summary?.total || 0} modules
-            </div>
-          </div>
-          <SegmentedModuleBars modules={currentCourse?.modules || []} />
+          {/* Check if course is in-progress to make it clickable */}
+          {(() => {
+            const courseId = currentCourse?.course_id || currentCourse?.id;
+            const isInProgress =
+              currentCourse?.status === 'in-progress' ||
+              currentCourse?.modules_summary?.in_progress > 0 ||
+              currentCourse?.modules?.some(m => m.progress > 0 && !m.completed);
+            const handleCourseClick = () => {
+              if (isInProgress && courseId) {
+                navigate(`/dashboard/courses/${courseId}`);
+              }
+            };
+
+            // Calculate course completion percentage
+            const completedModules =
+              currentCourse?.modules_summary?.completed || 0;
+            const totalModules = currentCourse?.modules_summary?.total || 0;
+            const courseProgress =
+              totalModules > 0
+                ? Math.round((completedModules / totalModules) * 100)
+                : 0;
+
+            return (
+              <div
+                onClick={handleCourseClick}
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-300 ${
+                  isInProgress && courseId
+                    ? 'cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-2 rounded-xl'
+                    : ''
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-semibold">
+                    Current course
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-900 truncate leading-tight">
+                      {currentCourse?.course_title || 'No course in progress'}
+                    </h4>
+                    {isInProgress && courseId && (
+                      <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Course Progress Percentage */}
+                  <div className="flex flex-col items-end">
+                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      {courseProgress}%
+                    </div>
+                    <div className="text-xs text-gray-500 font-medium">
+                      Complete
+                    </div>
+                  </div>
+                  {/* Modules Count */}
+                  <div className="text-sm text-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-xl border border-blue-100 font-medium shadow-sm">
+                    {completedModules}/{totalModules} modules
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+          <SegmentedModuleBars
+            modules={currentCourse?.modules || []}
+            courseId={currentCourse?.course_id || currentCourse?.id}
+          />
           <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-6 shadow-sm">
             <div className="grid grid-cols-3 gap-6">
               <div className="text-center group">
