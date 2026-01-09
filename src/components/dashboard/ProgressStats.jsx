@@ -10,12 +10,62 @@ import {
   Lock,
   TrendingUp,
   Users,
+  ChevronRight,
 } from 'lucide-react';
 import { fetchUserProgressOverview } from '@/services/progressService';
 import { useUser } from '@/contexts/UserContext';
 import ModulesModal from './ModulesModal';
 
 const clamp = (num, min, max) => Math.max(min, Math.min(num, max));
+
+function SkeletonCard() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-gray-100 p-[2px]">
+      <div className="relative h-full bg-white rounded-2xl p-5 sm:p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="p-3 rounded-2xl bg-gray-200 animate-pulse"></div>
+          <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="space-y-2">
+          <div className="h-8 w-12 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SkeletonProgress() {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-44 h-44 mb-4">
+        <div className="absolute inset-0 rounded-full bg-gray-200 animate-pulse"></div>
+      </div>
+      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+    </div>
+  );
+}
+
+function SkeletonModule() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="rounded-2xl border border-gray-200 p-4">
+          <div className="flex items-start gap-4">
+            <div className="p-2 rounded-xl bg-gray-200 animate-pulse w-9 h-9"></div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+              <div className="h-3 w-full bg-gray-200 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function useProgressData() {
   const { userProfile } = useUser();
@@ -58,100 +108,211 @@ function useProgressData() {
   return { loading, error, data };
 }
 
-function CircularProgress({ value = 0, size = 140, stroke = 10 }) {
+function CircularProgress({ value = 0, size = 180, stroke = 12 }) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const clamped = clamp(value, 0, 100);
   const offset = circumference - (clamped / 100) * circumference;
 
+  const getMotivationalText = percentage => {
+    if (percentage >= 90) return 'Almost there! 🎯';
+    if (percentage >= 75) return 'Excellent progress! 🌟';
+    if (percentage >= 50) return 'Keep going! 💪';
+    if (percentage >= 25) return 'Great start! 🚀';
+    if (percentage > 0) return "You've got this! 🌈";
+    return "Let's begin! 📚";
+  };
+
   return (
-    <div
-      className="relative flex-shrink-0"
-      style={{ width: size, height: size }}
-    >
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#E5E7EB"
-          strokeWidth={stroke}
-          fill="transparent"
-        />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="url(#progressGradient)"
-          strokeWidth={stroke}
-          fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          strokeLinecap="round"
-        />
-        <defs>
-          <linearGradient
-            id="progressGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%"
+    <div className="relative flex flex-col items-center">
+      <div
+        className="relative flex-shrink-0"
+        style={{ width: size, height: size }}
+      >
+        <svg width={size} height={size} className="-rotate-90 drop-shadow-lg">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#F3F4F6"
+            strokeWidth={stroke}
+            fill="transparent"
+          />
+          <motion.circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="url(#progressGradient)"
+            strokeWidth={stroke}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 1.5, ease: 'easeOut' }}
+            strokeLinecap="round"
+          />
+          <defs>
+            <linearGradient
+              id="progressGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stopColor="#818CF8" />
+              <stop offset="50%" stopColor="#3B82F6" />
+              <stop offset="100%" stopColor="#10B981" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <stop offset="0%" stopColor="#0ea5e9" />
-            <stop offset="100%" stopColor="#22c55e" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-gray-900 leading-none mb-1">
-            {clamped}%
-          </div>
-          <div className="text-[10px] uppercase tracking-wide text-gray-500">
-            Overall completion
-          </div>
+            <div className="text-4xl font-bold text-gray-900 leading-none mb-2">
+              {clamped}%
+            </div>
+            <div className="text-xs uppercase tracking-wide text-gray-500 font-medium">
+              Overall completion
+            </div>
+          </motion.div>
         </div>
       </div>
+      <motion.p
+        className="mt-4 text-sm font-medium text-gray-700 text-center"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+      >
+        {getMotivationalText(clamped)}
+      </motion.p>
     </div>
   );
 }
 
 function SegmentedModuleBars({ modules = [] }) {
   return (
-    <div className="space-y-3">
-      {modules.map(m => {
-        const color = m.completed
-          ? 'bg-emerald-500'
-          : m.progress > 0
-            ? 'bg-amber-400'
-            : 'bg-rose-400';
-        const Icon = m.completed
+    <div className="space-y-4">
+      {modules.map((m, index) => {
+        const isCompleted = m.completed;
+        const isInProgress = m.progress > 0 && !m.completed;
+        const isPending = !isCompleted && m.progress === 0;
+
+        const getProgressColor = () => {
+          if (isCompleted) return 'from-emerald-400 to-emerald-600';
+          if (isInProgress) return 'from-amber-400 to-orange-500';
+          return 'from-gray-300 to-gray-400';
+        };
+
+        const getIconColor = () => {
+          if (isCompleted) return 'text-emerald-600';
+          if (isInProgress) return 'text-amber-600';
+          return 'text-gray-400';
+        };
+
+        const getBgColor = () => {
+          if (isCompleted) return 'bg-emerald-50 border-emerald-200';
+          if (isInProgress) return 'bg-amber-50 border-amber-200';
+          return 'bg-gray-50 border-gray-200';
+        };
+
+        const Icon = isCompleted
           ? CheckCircle2
-          : m.progress > 0
+          : isInProgress
             ? CircleDot
             : Lock;
+
         return (
-          <div key={m.module_id} className="space-y-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <Icon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-              <span className="text-sm text-gray-700 truncate flex-1">
-                {m.title}
-              </span>
-              <span className="text-xs font-medium text-gray-600 flex-shrink-0 bg-gray-50 px-2 py-0.5 rounded">
-                {clamp(m.progress || 0, 0, 100)}%
-              </span>
+          <motion.div
+            key={m.module_id}
+            className="relative"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+          >
+            {/* Connection line */}
+            {index < modules.length - 1 && (
+              <div className="absolute left-6 top-12 w-0.5 h-8 bg-gray-200 z-0"></div>
+            )}
+
+            <div
+              className={`relative z-10 rounded-2xl border p-4 transition-all duration-300 hover:shadow-md ${getBgColor()}`}
+            >
+              <div className="flex items-start gap-4">
+                {/* Icon container */}
+                <div
+                  className={`relative p-2 rounded-xl shadow-sm ${
+                    isCompleted
+                      ? 'bg-emerald-500'
+                      : isInProgress
+                        ? 'bg-amber-500'
+                        : 'bg-gray-300'
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 text-white`} />
+                  {isCompleted && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-600 rounded-full border-2 border-white"></div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-semibold text-gray-900 text-sm leading-tight">
+                      {m.title}
+                    </h5>
+                    <div className="flex items-center gap-2">
+                      {isCompleted && (
+                        <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                          Completed
+                        </span>
+                      )}
+                      {isInProgress && (
+                        <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                          In Progress
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="text-xs font-medium text-gray-600 bg-gray-200 px-2 py-1 rounded-full">
+                          Pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="relative">
+                    <div className="h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+                      <motion.div
+                        className={`h-full bg-gradient-to-r ${getProgressColor()} relative`}
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${clamp(m.progress || 0, 0, 100)}%`,
+                        }}
+                        transition={{
+                          duration: 0.8,
+                          ease: 'easeOut',
+                          delay: 0.2 + index * 0.1,
+                        }}
+                      >
+                        {/* Shimmer effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+                      </motion.div>
+                    </div>
+                    {/* Progress percentage inside bar */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white drop-shadow-sm">
+                        {clamp(m.progress || 0, 0, 100)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-              <motion.div
-                className={`h-full ${color}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${clamp(m.progress || 0, 0, 100)}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-              />
-            </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
@@ -159,24 +320,93 @@ function SegmentedModuleBars({ modules = [] }) {
 }
 
 function StatCard({ icon: Icon, label, value, subtext, onClick }) {
+  const getGradientColors = label => {
+    switch (label) {
+      case 'Courses':
+        return 'from-violet-500 to-purple-600';
+      case 'Modules':
+        return 'from-blue-500 to-cyan-600';
+      case 'Lessons':
+        return 'from-emerald-500 to-teal-600';
+      case 'Completion':
+        return 'from-amber-500 to-orange-600';
+      default:
+        return 'from-gray-500 to-gray-600';
+    }
+  };
+
+  const getIconBgGradient = label => {
+    switch (label) {
+      case 'Courses':
+        return 'from-violet-100 to-purple-100';
+      case 'Modules':
+        return 'from-blue-100 to-cyan-100';
+      case 'Lessons':
+        return 'from-emerald-100 to-teal-100';
+      case 'Completion':
+        return 'from-amber-100 to-orange-100';
+      default:
+        return 'from-gray-100 to-gray-100';
+    }
+  };
+
+  const getIconColor = label => {
+    switch (label) {
+      case 'Courses':
+        return 'text-violet-600';
+      case 'Modules':
+        return 'text-blue-600';
+      case 'Lessons':
+        return 'text-emerald-600';
+      case 'Completion':
+        return 'text-amber-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
   return (
     <motion.div
-      whileHover={onClick ? { scale: 1.02 } : {}}
-      whileTap={onClick ? { scale: 0.98 } : {}}
-      className={`bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200 ${
-        onClick ? 'cursor-pointer hover:border-blue-300' : ''
+      whileHover={{
+        scale: 1.03,
+        y: -4,
+        boxShadow:
+          '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+      }}
+      whileTap={onClick ? { scale: 0.97 } : {}}
+      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${getGradientColors(label)} p-[2px] ${
+        onClick ? 'cursor-pointer' : ''
       }`}
       onClick={onClick}
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100">
-          <Icon className="h-5 w-5 text-blue-600" />
+      <div className="relative h-full bg-white rounded-2xl p-5 sm:p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div
+            className={`relative p-3 rounded-2xl bg-gradient-to-br ${getIconBgGradient(label)} shadow-lg`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
+            <Icon className={`h-6 w-6 ${getIconColor(label)} relative z-10`} />
+          </div>
+          <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+            {label}
+          </span>
         </div>
-        <span className="text-sm font-medium text-gray-600">{label}</span>
-      </div>
-      <div className="space-y-1">
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500">{subtext}</p>
+        <div className="space-y-2">
+          <motion.p
+            className="text-3xl font-bold text-gray-900"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            {value}
+          </motion.p>
+          <p className="text-sm text-gray-600 font-medium">{subtext}</p>
+        </div>
+        {onClick && (
+          <div className="absolute top-4 right-4">
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -326,28 +556,64 @@ export default function ProgressStats() {
 
   if (loading) {
     return (
-      <div className="w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 md:p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-8 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="col-span-1 lg:col-span-1 rounded-3xl border border-gray-100 bg-gray-50 p-6 sm:p-8 flex flex-col items-center">
+            <SkeletonProgress />
+          </div>
+          <div className="col-span-1 lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-6 w-64 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <div className="h-8 w-32 bg-gray-200 rounded-xl animate-pulse"></div>
+            </div>
+            <SkeletonModule />
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
+              <div className="grid grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="text-center">
+                    <div className="h-8 w-12 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
+                    <div className="h-4 w-20 bg-gray-200 rounded mx-auto animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+    <div className="w-full bg-white rounded-3xl border border-gray-100 shadow-lg p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="space-y-1">
-          <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 leading-tight">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
             Your Progress Overview
           </h3>
           <p className="text-sm text-gray-500">
             Real-time snapshot of your learning journey
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-          <TrendingUp className="h-4 w-4 flex-shrink-0" />
-          <span className="whitespace-nowrap">Auto-refreshed</span>
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 rounded-xl border border-blue-100 shadow-sm">
+          <TrendingUp className="h-4 w-4 flex-shrink-0 text-blue-600" />
+          <span className="whitespace-nowrap font-medium">Auto-refreshed</span>
         </div>
       </div>
 
@@ -364,8 +630,8 @@ export default function ProgressStats() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div className="col-span-1 lg:col-span-1 rounded-3xl border border-gray-100 bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-4 sm:p-6 flex flex-col items-center">
-          <div className="flex justify-center mb-4">
+        <div className="col-span-1 lg:col-span-1 rounded-3xl border border-gray-100 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 p-6 sm:p-8 flex flex-col items-center shadow-lg">
+          <div className="flex justify-center mb-6">
             <CircularProgress value={overall.percentage || 0} />
           </div>
           <div className="text-center mb-4 sm:mb-5">
@@ -403,40 +669,55 @@ export default function ProgressStats() {
             </div>
           </div>
         </div>
-        <div className="col-span-1 lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 space-y-4 sm:space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="col-span-1 lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 space-y-6 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">
+              <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-semibold">
                 Current course
               </p>
-              <h4 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+              <h4 className="text-lg sm:text-xl font-bold text-gray-900 truncate leading-tight">
                 {currentCourse?.course_title || 'No course in progress'}
               </h4>
             </div>
-            <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 whitespace-nowrap">
+            <div className="text-sm text-gray-600 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-xl border border-blue-100 font-medium shadow-sm">
               {currentCourse?.modules_summary?.completed || 0}/
               {currentCourse?.modules_summary?.total || 0} modules
             </div>
           </div>
           <SegmentedModuleBars modules={currentCourse?.modules || []} />
-          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <p className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
-                {summary.modules?.total || 0}
-              </p>
-              <p className="text-xs text-gray-600">Total modules</p>
-            </div>
-            <div className="text-center border-l border-r border-gray-200">
-              <p className="text-lg sm:text-xl font-bold text-amber-600 mb-1">
-                {summary.modules?.in_progress || 0}
-              </p>
-              <p className="text-xs text-gray-600">In-progress</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg sm:text-xl font-bold text-rose-600 mb-1">
-                {pendingModules}
-              </p>
-              <p className="text-xs text-gray-600">Pending modules</p>
+          <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-6 shadow-sm">
+            <div className="grid grid-cols-3 gap-6">
+              <div className="text-center group">
+                <div className="relative inline-block">
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 group-hover:scale-105 transition-transform duration-200">
+                    {summary.modules?.total || 0}
+                  </p>
+                  <div className="absolute -top-1 -right-2 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                </div>
+                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                  Total modules
+                </p>
+              </div>
+
+              <div className="text-center group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl transform scale-0 group-hover:scale-100 transition-transform duration-300 -z-10"></div>
+                <p className="text-2xl sm:text-3xl font-bold text-amber-600 mb-2 group-hover:scale-105 transition-transform duration-200">
+                  {summary.modules?.in_progress || 0}
+                </p>
+                <p className="text-sm font-medium text-amber-700 uppercase tracking-wide">
+                  In-progress
+                </p>
+              </div>
+
+              <div className="text-center group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl transform scale-0 group-hover:scale-100 transition-transform duration-300 -z-10"></div>
+                <p className="text-2xl sm:text-3xl font-bold text-rose-600 mb-2 group-hover:scale-105 transition-transform duration-200">
+                  {pendingModules}
+                </p>
+                <p className="text-sm font-medium text-rose-700 uppercase tracking-wide">
+                  Pending modules
+                </p>
+              </div>
             </div>
           </div>
         </div>
