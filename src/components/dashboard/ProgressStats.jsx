@@ -290,6 +290,12 @@ export default function ProgressStats() {
   const achievements = data?.achievements || {};
   const currentCourse = data?.current_course;
 
+  // Calculate pending modules: modules that are not completed (includes in-progress)
+  // Pending = Total - Completed
+  const totalModules = summary.modules?.total || 0;
+  const completedModules = summary.modules?.completed || 0;
+  const pendingModules = Math.max(0, totalModules - completedModules);
+
   const highlightStats = [
     {
       icon: Users,
@@ -301,7 +307,7 @@ export default function ProgressStats() {
       icon: Briefcase,
       label: 'Modules',
       value: summary.modules?.total || 0,
-      subtext: `${summary.modules?.unlocked || 0} unlocked`,
+      subtext: `${summary.modules?.completed || 0} completed`,
       onClick: () => setShowModulesModal(true),
     },
     {
@@ -365,15 +371,15 @@ export default function ProgressStats() {
           <div className="text-center mb-4 sm:mb-5">
             <p className="text-sm text-gray-600 leading-relaxed">
               <span className="font-semibold text-gray-900">
-                {overall.unlocked_modules || 0}
+                {summary.modules?.completed || overall.completed_modules || 0}
               </span>{' '}
-              unlocked modules
+              completed modules
             </p>
             <p className="text-sm text-gray-600 leading-relaxed">
               <span className="font-semibold text-gray-900">
-                {overall.locked_modules || 0}
+                {summary.modules?.total || 0}
               </span>{' '}
-              locked
+              total modules
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 w-full mt-auto">
@@ -428,9 +434,9 @@ export default function ProgressStats() {
             </div>
             <div className="text-center">
               <p className="text-lg sm:text-xl font-bold text-rose-600 mb-1">
-                {summary.modules?.locked || 0}
+                {pendingModules}
               </p>
-              <p className="text-xs text-gray-600">Locked</p>
+              <p className="text-xs text-gray-600">Pending modules</p>
             </div>
           </div>
         </div>
