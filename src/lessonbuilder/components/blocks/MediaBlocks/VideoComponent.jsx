@@ -498,7 +498,7 @@ const VideoComponent = ({
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    MP4, WebM, OGG, AVI, MOV up to 500MB
+                    MP4, WebM, OGG, AVI, MOV up to 3GB
                   </p>
                 </div>
               </div>
