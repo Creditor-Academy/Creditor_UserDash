@@ -54,6 +54,9 @@ const LessonView = () => {
   const [currentLessonProgress, setCurrentLessonProgress] = useState(null);
   const [currentLessonId, setCurrentLessonId] = useState(null);
 
+  // Store progress for all lessons (from backend)
+  const [lessonsProgress, setLessonsProgress] = useState({}); // { lessonId: { progress, completed } }
+
   // Fetch module and lessons data
   useEffect(() => {
     console.log(
@@ -200,6 +203,9 @@ const LessonView = () => {
       publishedLessons.sort((a, b) => (a.order || 0) - (b.order || 0));
 
       setLessons(publishedLessons);
+
+      // Fetch progress for all lessons from backend
+      fetchLessonsProgress(publishedLessons);
     } catch (err) {
       console.error('Error fetching lessons:', err);
       setError('Failed to load lessons. Please try again later.');
@@ -210,6 +216,44 @@ const LessonView = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch progress for all lessons from backend
+  const fetchLessonsProgress = async lessonsList => {
+    if (!lessonsList || lessonsList.length === 0) return;
+
+    try {
+      // Fetch progress for all lessons in parallel
+      const progressPromises = lessonsList.map(async lesson => {
+        try {
+          const progress = await getLessonProgress(lesson.id);
+          return { lessonId: lesson.id, progress };
+        } catch (err) {
+          // If progress fetch fails, return default (0% progress)
+          console.warn(
+            `Failed to fetch progress for lesson ${lesson.id}:`,
+            err
+          );
+          return {
+            lessonId: lesson.id,
+            progress: { progress: 0, completed: false },
+          };
+        }
+      });
+
+      const progressResults = await Promise.all(progressPromises);
+
+      // Convert to object for easy lookup
+      const progressMap = {};
+      progressResults.forEach(({ lessonId, progress }) => {
+        progressMap[lessonId] = progress;
+      });
+
+      setLessonsProgress(progressMap);
+    } catch (err) {
+      console.error('Error fetching lessons progress:', err);
+      // Continue without progress - will show 0% for all
     }
   };
 
@@ -277,6 +321,9 @@ const LessonView = () => {
       publishedLessons.sort((a, b) => (a.order || 0) - (b.order || 0));
 
       setLessons(publishedLessons);
+
+      // Fetch progress for all lessons from backend
+      fetchLessonsProgress(publishedLessons);
     } catch (err) {
       console.error('Error fetching lessons:', err);
       setError('Failed to load lessons. Please try again later.');
@@ -769,37 +816,48 @@ const LessonView = () => {
                 )} */}
 
                 {/* Progress Bar - Backend Progress Only */}
-                {currentLessonId === lesson.id && currentLessonProgress && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Progress
-                      </span>
-                      <span className="text-sm font-bold text-blue-600">
-                        {Math.round(currentLessonProgress.progress)}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${currentLessonProgress.progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
-                      <span
-                        className={`font-medium ${
-                          currentLessonProgress?.progress >= 100
-                            ? 'text-green-600'
-                            : 'text-blue-600'
-                        }`}
-                      >
-                        {currentLessonProgress?.progress >= 100
-                          ? 'Completed'
-                          : 'In Progress'}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {(() => {
+                  // Get progress from backend data (lessonsProgress state)
+                  const lessonProgressData = lessonsProgress[lesson.id];
+                  const progressValue = lessonProgressData?.progress || 0;
+                  const isCompleted =
+                    lessonProgressData?.completed || progressValue >= 100;
+
+                  if (progressValue > 0 || isCompleted) {
+                    return (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Progress
+                          </span>
+                          <span className="text-sm font-bold text-blue-600">
+                            {Math.round(progressValue)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              isCompleted ? 'bg-green-600' : 'bg-blue-600'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, Math.max(0, progressValue))}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
+                          <span
+                            className={`font-medium ${
+                              isCompleted ? 'text-green-600' : 'text-blue-600'
+                            }`}
+                          >
+                            {isCompleted ? 'Completed' : 'In Progress'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </CardContent>
 
               <CardFooter className="pt-0 flex flex-col gap-2">

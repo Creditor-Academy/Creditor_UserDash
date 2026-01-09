@@ -90,9 +90,24 @@ function ModuleCard({ module, onModuleClick }) {
               <span className="text-xs font-medium text-gray-600">
                 Progress
               </span>
-              <span className="text-xs font-bold text-gray-900 bg-gray-50 px-2 py-0.5 rounded">
-                {clamp(module.progress || 0, 0, 100)}%
-              </span>
+              <div className="flex items-center gap-2">
+                {module.completed && (
+                  <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    Completed
+                  </span>
+                )}
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded ${
+                    module.completed
+                      ? 'text-emerald-700 bg-emerald-50'
+                      : module.progress > 0
+                        ? 'text-amber-700 bg-amber-50'
+                        : 'text-gray-900 bg-gray-50'
+                  }`}
+                >
+                  {clamp(module.progress || 0, 0, 100)}%
+                </span>
+              </div>
             </div>
             <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
               <motion.div
