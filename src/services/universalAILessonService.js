@@ -1338,157 +1338,91 @@ Answer: A`,
   }
 
   /**
-   * Generate interactive block with AI-generated tab content
+   * Generate interactive block with AI-generated content (tabs or accordion)
+   * Includes images per item; audio remains optional (not generated).
    */
-  async generateInteractiveBlock(lessonTitle, order) {
-    let tabsData = [];
+  async generateInteractiveBlock(lessonTitle, order, opts = {}) {
+    const template = opts.template === "accordion" ? "accordion" : "tabs";
+    const requested = Number(opts.requestedCount) || 0;
+    const itemCount = Math.min(Math.max(requested || 3, 2), 6);
 
-    try {
-      console.log(
-        `📑 Generating interactive block with AI tabs for "${lessonTitle}"...`,
-      );
-
-      // Generate AI content for each tab
-      const tabPrompts = {
-        "Key Idea": `Provide a crisp, one-paragraph definition and explanation of "${lessonTitle}". Include why this concept is important. Be concise (2-3 sentences max).`,
-        Example: `Provide a short, real-world example or scenario that demonstrates "${lessonTitle}" in practice. Keep it practical and relatable (2-3 sentences).`,
-        "Try It": `Create a brief, actionable prompt or simple exercise that a learner can do right now to understand "${lessonTitle}". Make it doable in under 2 minutes.`,
-      };
-
-      for (const [title, prompt] of Object.entries(tabPrompts)) {
-        try {
-          console.log(`   📝 Generating "${title}" tab via AI...`);
-          const content = await aiRequestQueue.enqueueRequest(
-            () =>
-              this.aiService.generateText(prompt, {
-                maxTokens: 150,
-                temperature: 0.7,
-              }),
-            () => `[${title} content could not be generated]`,
-            `interactive-tab-${title.replace(/\s+/g, "-")}-${Date.now()}`,
-          );
-
-          const tabContent =
-            typeof content === "string"
-              ? content.trim()
-              : `[${title} content unavailable]`;
-          console.log(
-            `   ✅ "${title}" tab generated (${tabContent.length} chars)`,
-          );
-
-          tabsData.push({
-            title,
-            content: tabContent,
-          });
-        } catch (error) {
-          console.error(
-            `[INTERACTIVE TAB ERROR] Failed to generate "${title}" tab for "${lessonTitle}":`,
-            error.message,
-          );
-          tabsData.push({
-            title,
-            content: `[${title} content could not be generated]`,
-          });
-        }
-      }
-
-      console.log(
-        `✨ Interactive block complete: ${tabsData.length} tabs generated`,
-      );
-    } catch (error) {
-      console.error(
-        `[INTERACTIVE BLOCK ERROR] Failed to generate interactive block for "${lessonTitle}":`,
-        error.message,
-      );
-      // Fallback to basic tabs if AI generation fails
-      tabsData = [
-        {
-          title: "Key Idea",
-          content: `Understanding "${lessonTitle}" is fundamental to this topic.`,
-        },
-        {
-          title: "Example",
-          content: `${lessonTitle} applies to real-world scenarios and practical situations.`,
-        },
-        {
-          title: "Try It",
-          content: `Reflect on how "${lessonTitle}" applies to your own experience.`,
-        },
-      ];
-    }
-
-    console.log(
-      `✨ Interactive block complete: ${tabsData.length} tabs generated`,
+    const items = [];
+    const baseTitles = Array.from({ length: itemCount }).map((_, i) =>
+      template === "tabs" ? `Concept ${i + 1}` : `Section ${i + 1}`,
     );
 
-    const html_css = `
-    <div class="interactive-tabs bg-white border border-slate-200 rounded-xl shadow-sm" data-template="tabs">
-      <div class="tab-header flex flex-wrap gap-2 p-3 border-b border-slate-200">
-        ${tabsData
-          .map(
-            (tab, idx) =>
-              `<button class="tab-button px-3 py-2 text-sm font-semibold rounded-lg ${
-                idx === 0
-                  ? "bg-indigo-600 text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }" data-tab="${idx}">${tab.title}</button>`,
-          )
-          .join("")}
-      </div>
-      <div class="tab-panels p-4 space-y-3 text-sm text-slate-800 leading-relaxed">
-        ${tabsData
-          .map(
-            (tab, idx) =>
-              `<div class="tab-panel ${idx === 0 ? "" : "hidden"}" data-tab-panel="${idx}">
-                <p>${tab.content}</p>
-              </div>`,
-          )
-          .join("")}
-      </div>
-      <style>
-        .tab-button { transition: all 0.2s ease; }
-        .tab-button.active { background: #4f46e5; color: #fff; }
-        .tab-panel.hidden { display: none; }
-      </style>
-      <script>
-        (function(){
-          const container = document.currentScript?.parentElement || document.querySelector('.interactive-tabs');
-          if(!container) return;
-          const buttons = container.querySelectorAll('.tab-button');
-          const panels = container.querySelectorAll('.tab-panel');
-          buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
-              const tab = btn.getAttribute('data-tab');
-              buttons.forEach(b => b.classList.remove('bg-indigo-600','text-white','shadow','active'));
-              panels.forEach(p => p.classList.add('hidden'));
-              btn.classList.add('bg-indigo-600','text-white','shadow','active');
-              const panel = container.querySelector(\`[data-tab-panel="\${tab}"]\`);
-              if(panel) panel.classList.remove('hidden');
-            });
-          });
-        })();
-      </script>
-    </div>
-    `;
+    for (const title of baseTitles) {
+      // Text generation
+      const textPrompt = `Write concise, practical content for "${title}" in the lesson "${lessonTitle}". 3-4 sentences.`;
+      const textResult = await aiRequestQueue.enqueueRequest(
+        () =>
+          this.aiService.generateText(textPrompt, {
+            maxTokens: 140,
+            temperature: 0.65,
+          }),
+        () => `[${title} content unavailable]`,
+        `interactive-${template}-${title.replace(/\s+/g, "-")}-${Date.now()}`,
+      );
+      const content =
+        typeof textResult === "string"
+          ? textResult.trim()
+          : textResult?.data?.text || textResult?.content || "";
+
+      // Image generation & upload
+      let image = null;
+      try {
+        const imageBlock = await this.generateConceptImage(
+          lessonTitle,
+          title,
+          order,
+        );
+        const imageUrl =
+          imageBlock?.content?.url ||
+          imageBlock?.details?.image_url ||
+          imageBlock?.details?.imageUrl ||
+          "";
+        if (imageUrl) {
+          image = { src: imageUrl, alt: title, name: title, size: 0 };
+        }
+      } catch (err) {
+        console.warn("Interactive image generation failed:", err?.message);
+      }
+
+      items.push({
+        title,
+        content,
+        image,
+        audio: null,
+      });
+    }
+
+    // Build HTML
+    const html_css =
+      template === "tabs"
+        ? this.generateTabsHTML(items)
+        : this.generateAccordionHTML(items);
+
+    const serializedContent =
+      template === "tabs"
+        ? { template: "tabs", tabsData: items }
+        : { template: "accordion", accordionData: items };
 
     return {
-      id: `interactive-tabs-${Date.now()}`,
+      id: `interactive-${template}-${Date.now()}`,
       type: "interactive",
-      subtype: "tabs",
-      template: "tabs",
-      content: JSON.stringify({
-        type: "tabs",
-        templateId: "tabs",
-        tabsData,
-      }),
-      tabsData,
+      subtype: template,
+      template,
+      content: JSON.stringify(serializedContent),
+      tabsData: template === "tabs" ? items : undefined,
+      accordionData: template === "accordion" ? items : undefined,
       html_css,
       order,
       isAIGenerated: true,
       metadata: {
         blockType: "interactive",
-        variant: "tabs",
+        variant: template,
         generatedAt: new Date().toISOString(),
+        itemCount,
       },
     };
   }
@@ -1582,9 +1516,9 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
       );
 
       // Create focused prompt for realistic concept image
-      let imagePrompt = `Realistic, professional photograph-style image showing a real-world scene or object that represents ${conceptName} of "${lessonTitle}". 
-Describe an actual scene, situation, or object. NO infographics, NO diagrams, NO small text labels. 
-Just a clean, realistic, professional photograph-style image with minimal or no text.`;
+      let imagePrompt = `Realistic, professional photograph-style image showing a real-world scene or object that represents "${conceptName}" from "${lessonTitle}". 
+Describe a real scene/situation/object. Absolutely NO text, NO words, NO typography, NO labels, NO logos, NO badges, NO icons, NO overlays. 
+No infographics or diagrams. Clean, photorealistic, natural lighting.`;
 
       // Enhance with 7-layer premium quality system
       // Special handling for human/portrait images - use HD quality and professional portrait guidelines
@@ -1601,7 +1535,7 @@ Just a clean, realistic, professional photograph-style image with minimal or no 
 
       // Generate image using OpenAI DALL-E
       // Use HD quality for portrait images to ensure better facial features
-      const imageQuality = isPortrait ? "hd" : "standard";
+      const imageQuality = "hd";
 
       const imageResult = await openAIService.generateImage(imagePrompt, {
         size: "1024x1024",

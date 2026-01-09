@@ -1,5 +1,5 @@
-import secureAIService from '../../services/secureAIService';
-import devLogger from '@lessonbuilder/utils/devLogger';
+import secureAIService from "../../services/secureAIService";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 /**
  * AI Service for generating content blocks with proper template formatting
@@ -10,7 +10,7 @@ class ContentBlockAIService {
   constructor() {
     this.aiService = secureAIService;
     devLogger.debug(
-      'ContentBlockAIService initialized (using secure backend APIs)'
+      "ContentBlockAIService initialized (using secure backend APIs)",
     );
   }
 
@@ -21,7 +21,7 @@ class ContentBlockAIService {
     blockType,
     templateId,
     userPrompt,
-    instructions = '',
+    instructions = "",
     courseContext = {},
   }) {
     devLogger.debug(`Generating ${blockType} with template ${templateId}`);
@@ -29,68 +29,68 @@ class ContentBlockAIService {
     const context = this.buildContextPrompt(courseContext);
 
     switch (blockType) {
-      case 'text':
+      case "text":
         return await this.generateText(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'statement':
+      case "statement":
         return await this.generateStatement(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'quote':
+      case "quote":
         return await this.generateQuote(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'list':
+      case "list":
         return await this.generateList(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'tables':
+      case "tables":
         return await this.generateTable(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'interactive':
+      case "interactive":
         return await this.generateInteractive(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'divider':
+      case "divider":
         return await this.generateDivider(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
-      case 'image':
+      case "image":
         return await this.generateImageBlock(
           userPrompt,
           instructions,
           templateId,
-          context
+          context,
         );
 
       default:
@@ -104,10 +104,10 @@ class ContentBlockAIService {
   buildContextPrompt(courseContext) {
     return `
 COURSE CONTEXT:
-- Course: ${courseContext.courseName || 'Not specified'}
-- Module: ${courseContext.moduleName || 'Not specified'}
-- Lesson: ${courseContext.lessonTitle || 'Not specified'}
-- Description: ${courseContext.lessonDescription || 'Not specified'}
+- Course: ${courseContext.courseName || "Not specified"}
+- Module: ${courseContext.moduleName || "Not specified"}
+- Lesson: ${courseContext.lessonTitle || "Not specified"}
+- Description: ${courseContext.lessonDescription || "Not specified"}
 `;
   }
 
@@ -118,31 +118,31 @@ COURSE CONTEXT:
    * Remove common markdown artefacts from AI responses and return plain text
    */
   cleanMarkdown(text) {
-    if (!text || typeof text !== 'string') return text;
+    if (!text || typeof text !== "string") return text;
 
     // Remove markdown bold (**text** or __text__)
-    let cleaned = text.replace(/\*\*(.*?)\*\*/g, '$1');
-    cleaned = cleaned.replace(/__(.*?)__/g, '$1');
+    let cleaned = text.replace(/\*\*(.*?)\*\*/g, "$1");
+    cleaned = cleaned.replace(/__(.*?)__/g, "$1");
 
     // Remove markdown headers (##, ###, etc.)
-    cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
+    cleaned = cleaned.replace(/^#{1,6}\s+/gm, "");
 
     // Remove markdown italic (*text* or _text_)
-    cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');
-    cleaned = cleaned.replace(/_(.*?)_/g, '$1');
+    cleaned = cleaned.replace(/\*(.*?)\*/g, "$1");
+    cleaned = cleaned.replace(/_(.*?)_/g, "$1");
 
     // Remove markdown code blocks
-    cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
-    cleaned = cleaned.replace(/`(.*?)`/g, '$1');
+    cleaned = cleaned.replace(/```[\s\S]*?```/g, "");
+    cleaned = cleaned.replace(/`(.*?)`/g, "$1");
 
     // Remove markdown links [text](url)
-    cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+    cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
 
     // Remove markdown images ![alt](url)
-    cleaned = cleaned.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '');
+    cleaned = cleaned.replace(/!\[([^\]]*)\]\([^\)]+\)/g, "");
 
     // Clean up extra whitespace
-    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
     cleaned = cleaned.trim();
 
     return cleaned;
@@ -152,14 +152,14 @@ COURSE CONTEXT:
    * Safely parse AI JSON responses that may contain markdown code fences
    */
   safeParseJSON(text) {
-    if (!text || typeof text !== 'string') {
-      throw new Error('Empty response');
+    if (!text || typeof text !== "string") {
+      throw new Error("Empty response");
     }
 
     // Remove common markdown fences like ```json ... ``` or ```
     let cleaned = text
-      .replace(/```json[\r\n]*/gi, '')
-      .replace(/```/g, '')
+      .replace(/```json[\r\n]*/gi, "")
+      .replace(/```/g, "")
       .trim();
 
     // Attempt direct parse first
@@ -167,14 +167,14 @@ COURSE CONTEXT:
       return JSON.parse(cleaned);
     } catch {
       // Extract first '{' and last '}' segment and try again
-      const first = cleaned.indexOf('{');
-      const last = cleaned.lastIndexOf('}');
+      const first = cleaned.indexOf("{");
+      const last = cleaned.lastIndexOf("}");
       if (first !== -1 && last !== -1 && last > first) {
         const candidate = cleaned.substring(first, last + 1);
         return JSON.parse(candidate);
       }
       // If still fails, throw original error
-      throw new SyntaxError('Unable to parse AI JSON response');
+      throw new SyntaxError("Unable to parse AI JSON response");
     }
   }
 
@@ -185,7 +185,7 @@ COURSE CONTEXT:
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Template Type: ${templateId}
 
@@ -203,7 +203,7 @@ IMPORTANT: Return ONLY plain text content. Do NOT use markdown formatting like *
     const cleanedContent = this.cleanMarkdown(response.trim());
 
     return {
-      type: 'text',
+      type: "text",
       textType: templateId,
       content: cleanedContent,
     };
@@ -216,7 +216,7 @@ IMPORTANT: Return ONLY plain text content. Do NOT use markdown formatting like *
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Template: ${templateId}
 
@@ -234,10 +234,10 @@ IMPORTANT: Return only plain text. Do NOT use markdown headers (##) or other mar
     const response = await this.callOpenAI(prompt, 300);
     // Only clean markdown headers, keep ** for statement-c highlights
     let cleaned = response.trim();
-    cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
+    cleaned = cleaned.replace(/^#{1,6}\s+/gm, "");
 
     return {
-      type: 'statement',
+      type: "statement",
       templateId: templateId,
       content: cleaned,
     };
@@ -250,7 +250,7 @@ IMPORTANT: Return only plain text. Do NOT use markdown headers (##) or other mar
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Template: ${templateId}
 
@@ -260,7 +260,7 @@ Generate a quote based on the request. Return JSON format:
   "author": "Author name or 'Anonymous'"
 }
 
-${templateId === 'quote_carousel' ? 'Generate 3 different related quotes in an array format.' : ''}
+${templateId === "quote_carousel" ? "Generate 3 different related quotes in an array format." : ""}
 
 Return ONLY valid JSON, no other text.`;
 
@@ -268,7 +268,7 @@ Return ONLY valid JSON, no other text.`;
     const quoteData = this.safeParseJSON(response);
 
     return {
-      type: 'quote',
+      type: "quote",
       templateId: templateId,
       content: JSON.stringify(quoteData),
     };
@@ -281,7 +281,7 @@ Return ONLY valid JSON, no other text.`;
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Generate a list with 5-10 items. Each item should be clear and concise (10-30 words per item).
 
@@ -301,18 +301,18 @@ Return ONLY valid JSON, no other text.`;
 
     // Ensure items are always plain strings to avoid [object Object] in UI
     const rawItems = Array.isArray(listData.items) ? listData.items : [];
-    const normalizedItems = rawItems.map(item => {
-      if (typeof item === 'string') return item;
-      if (item && typeof item === 'object') {
-        if (typeof item.text === 'string') return item.text;
+    const normalizedItems = rawItems.map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object") {
+        if (typeof item.text === "string") return item.text;
         if (
-          typeof item.title === 'string' &&
-          typeof item.description === 'string'
+          typeof item.title === "string" &&
+          typeof item.description === "string"
         ) {
           return `${item.title}: ${item.description}`;
         }
-        if (typeof item.title === 'string') return item.title;
-        if (typeof item.description === 'string') return item.description;
+        if (typeof item.title === "string") return item.title;
+        if (typeof item.description === "string") return item.description;
         // Fallback: stringify object
         try {
           return JSON.stringify(item);
@@ -320,21 +320,21 @@ Return ONLY valid JSON, no other text.`;
           return String(item);
         }
       }
-      return String(item ?? '');
+      return String(item ?? "");
     });
 
     return {
-      type: 'list',
+      type: "list",
       listType:
-        templateId === 'numbered'
-          ? 'numbered'
-          : templateId === 'checklist' || templateId === 'checkbox'
-            ? 'checkbox'
-            : 'bulleted',
+        templateId === "numbered"
+          ? "numbered"
+          : templateId === "checklist" || templateId === "checkbox"
+            ? "checkbox"
+            : "bulleted",
       content: JSON.stringify({
         items: normalizedItems,
-        numberingStyle: 'decimal',
-        bulletStyle: 'circle',
+        numberingStyle: "decimal",
+        bulletStyle: "circle",
       }),
     };
   }
@@ -344,12 +344,12 @@ Return ONLY valid JSON, no other text.`;
    */
   async generateTable(userPrompt, instructions, templateId, context) {
     const columnCount =
-      templateId === 'two_columns' ? 2 : templateId === 'three_columns' ? 3 : 4;
+      templateId === "two_columns" ? 2 : templateId === "three_columns" ? 3 : 4;
 
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Generate a table with ${columnCount} columns and 3-5 data rows.
 
@@ -370,7 +370,7 @@ Return ONLY valid JSON, no other text.`;
     const tableData = this.safeParseJSON(response);
 
     return {
-      type: 'table',
+      type: "table",
       templateId: templateId,
       content: JSON.stringify({
         ...tableData,
@@ -388,7 +388,7 @@ Return ONLY valid JSON, no other text.`;
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Template: ${templateId}
 
@@ -434,9 +434,12 @@ Return ONLY valid JSON, no other text.`;
     const interactiveData = this.safeParseJSON(response);
 
     return {
-      type: 'interactive',
+      type: "interactive",
       templateId: templateId,
-      content: JSON.stringify(interactiveData),
+      content: JSON.stringify({
+        template: templateId,
+        ...interactiveData,
+      }),
     };
   }
 
@@ -459,7 +462,7 @@ Return only the text, no JSON.`;
     const response = await this.callOpenAI(prompt, 50);
 
     return {
-      type: 'divider',
+      type: "divider",
       templateId: templateId,
       content: response.trim(),
     };
@@ -472,7 +475,7 @@ Return only the text, no JSON.`;
     const prompt = `${context}
 
 USER REQUEST: ${userPrompt}
-${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ''}
+${instructions ? `ADDITIONAL INSTRUCTIONS: ${instructions}` : ""}
 
 Generate descriptive text for an image block. Return JSON:
 {
@@ -487,7 +490,7 @@ Return ONLY valid JSON, no other text.`;
     const imageData = JSON.parse(response);
 
     return {
-      type: 'image',
+      type: "image",
       templateId: templateId,
       content: JSON.stringify(imageData),
     };
@@ -498,20 +501,20 @@ Return ONLY valid JSON, no other text.`;
    */
   async callOpenAI(prompt, maxTokens = 500) {
     try {
-      devLogger.debug('Generating content via secure backend API...');
+      devLogger.debug("Generating content via secure backend API...");
 
       const response = await this.aiService.generateText(prompt, {
         maxTokens: maxTokens,
         temperature: 0.7,
         systemPrompt:
-          'You are an expert educational content creator. Generate clear, concise, and engaging content for online courses. Always follow the exact format requested.',
+          "You are an expert educational content creator. Generate clear, concise, and engaging content for online courses. Always follow the exact format requested.",
         enhancePrompt: false, // No auto-enhancement for content blocks
       });
 
-      devLogger.debug('Content generated via backend API');
+      devLogger.debug("Content generated via backend API");
       return response.trim();
     } catch (error) {
-      devLogger.error('Backend AI API error:', error);
+      devLogger.error("Backend AI API error:", error);
       throw new Error(`AI generation failed: ${error.message}`);
     }
   }

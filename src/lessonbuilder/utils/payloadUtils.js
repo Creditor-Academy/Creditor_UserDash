@@ -381,84 +381,189 @@ export const convertBlocksToHtml = (blocks) => {
           `;
       }
     } else if (block.type === "interactive") {
+      const ensureArray = (value) =>
+        Array.isArray(value) ? value : value ? [value] : [];
+
       if (block.html_css && block.html_css.trim()) {
         html = block.html_css;
       } else {
         try {
-          const interactiveContent = JSON.parse(block.content || "{}");
-          const template = interactiveContent.template;
-          const data =
-            interactiveContent[
-              template === "tabs" ? "tabsData" : "accordionData"
-            ] || [];
+          const contentJson = JSON.parse(block.content || "{}");
+          const template =
+            block.template ||
+            block.subtype ||
+            contentJson.template ||
+            contentJson.type ||
+            "accordion";
+
+          // Normalize possible data shapes from AI/manual
+          let tabsData =
+            contentJson.tabsData ||
+            contentJson.sections ||
+            contentJson.items ||
+            [];
+          let accordionData =
+            contentJson.accordionData ||
+            contentJson.sections ||
+            contentJson.items ||
+            [];
+          let processData = contentJson.processData || contentJson.steps || [];
+          let timelineData =
+            contentJson.timelineData || contentJson.events || [];
+
+          const uid = Math.random().toString(36).slice(2);
+          const baseId =
+            block?.block_id || block?.id || `int-${Date.now()}-${uid}`;
 
           if (template === "tabs") {
-            const tabsId = `tabs-${Date.now()}`;
+            const tabsId = `tabs-${baseId}-${uid}`;
+            tabsData = ensureArray(tabsData);
             html = `
-                <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-blue-500 to-purple-600">
-                  <div class="interactive-tabs" data-template="tabs" id="${tabsId}">
-                    <div class="flex border-b border-gray-200 mb-4" role="tablist">
-                      ${data
-                        .map(
-                          (tab, index) => `
-                        <button class="tab-button px-4 py-2 text-sm font-medium transition-colors duration-200 ${index === 0 ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}" 
-                                role="tab" 
-                                data-tab="${index}"
-                                data-container="${tabsId}"
-                                onclick="window.switchTab('${tabsId}', ${index})">
-                          ${tab.title}
+              <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                <div class="interactive-tabs" data-template="tabs" id="${tabsId}">
+                  <div class="flex border-b border-gray-200 mb-4 gap-2" role="tablist">
+                    ${tabsData
+                      .map(
+                        (tab, index) => `
+                      <button class="tab-button px-4 py-2 text-sm font-medium transition-colors duration-200 ${
+                        index === 0
+                          ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                      }" 
+                              role="tab" 
+                              data-tab="${index}"
+                              data-container="${tabsId}"
+                              onclick="window.switchTab && window.switchTab('${tabsId}', ${index})">
+                        ${tab.title || `Tab ${index + 1}`}
+                      </button>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                  <div class="tab-content">
+                    ${tabsData
+                      .map(
+                        (tab, index) => `
+                      <div class="tab-panel ${
+                        index === 0 ? "" : "hidden"
+                      }" data-tab-panel="${index}">
+                        <div class="prose max-w-none text-gray-800 leading-relaxed">${tab.content || ""}</div>
+                      </div>`,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              </div>
+              <script>
+                window.switchTab = function(containerId, index) {
+                  const container = document.getElementById(containerId);
+                  if (!container) return;
+                  const buttons = container.querySelectorAll('.tab-button');
+                  const panels = container.querySelectorAll('.tab-panel');
+                  buttons.forEach(btn => {
+                    btn.classList.remove('border-b-2','border-blue-500','text-blue-600','bg-blue-50');
+                    btn.classList.add('text-gray-600');
+                  });
+                  panels.forEach(panel => panel.classList.add('hidden'));
+                  const activeButton = buttons[index];
+                  const activePanel = container.querySelector(\`[data-tab-panel="\${index}"]\`);
+                  if (activeButton && activePanel) {
+                    activeButton.classList.remove('text-gray-600');
+                    activeButton.classList.add('border-b-2','border-blue-500','text-blue-600','bg-blue-50');
+                    activePanel.classList.remove('hidden');
+                  }
+                };
+              </script>
+            `;
+          } else if (template === "timeline") {
+            timelineData = ensureArray(timelineData);
+            html = `
+              <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                <div class="space-y-4">
+                  ${timelineData
+                    .map(
+                      (ev, idx) => `
+                    <div class="border-l-4 border-blue-500 pl-4">
+                      <div class="text-xs text-gray-500 font-semibold">${ev.date || `Step ${idx + 1}`}</div>
+                      <div class="text-lg font-semibold text-gray-900">${ev.title || ""}</div>
+                      <div class="text-gray-700 leading-relaxed">${ev.description || ev.content || ""}</div>
+                    </div>`,
+                    )
+                    .join("")}
+                </div>
+              </div>
+            `;
+          } else if (template === "process") {
+            processData = ensureArray(processData);
+            html = `
+              <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                <div class="grid gap-4 sm:grid-cols-2">
+                  ${processData
+                    .map(
+                      (step, idx) => `
+                    <div class="border rounded-lg p-4 shadow-sm">
+                      <div class="text-xs text-indigo-600 font-semibold mb-1">Step ${
+                        step.step || idx + 1
+                      }</div>
+                      <div class="text-lg font-semibold text-gray-900">${step.title || ""}</div>
+                      <div class="text-gray-700 leading-relaxed">${step.description || step.content || ""}</div>
+                    </div>`,
+                    )
+                    .join("")}
+                </div>
+              </div>
+            `;
+          } else {
+            // Default accordion (also handles sections-only)
+            accordionData = ensureArray(accordionData);
+            const accordionId = `accordion-${baseId}-${uid}`;
+            html = `
+              <div class="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                <div class="interactive-accordion" data-template="accordion" id="${accordionId}">
+                  <div class="space-y-3">
+                    ${accordionData
+                      .map(
+                        (item, index) => `
+                      <div class="accordion-item border border-gray-200 rounded-lg">
+                        <button class="accordion-header w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between rounded-lg"
+                                data-accordion="${index}"
+                                data-container="${accordionId}"
+                                onclick="window.toggleAccordion && window.toggleAccordion('${accordionId}', ${index})">
+                          <span class="font-medium text-gray-800">${item.title || `Section ${index + 1}`}</span>
+                          <svg class="accordion-icon w-5 h-5 text-gray-500 transition-transform duration-200" 
+                               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                          </svg>
                         </button>
-                      `,
-                        )
-                        .join("")}
-                    </div>
-                    <div class="tab-content">
-                      ${data
-                        .map(
-                          (tab, index) => `
-                        <div class="tab-panel ${index === 0 ? "block" : "hidden"}" 
-                             role="tabpanel" 
-                             data-tab="${index}">
-                          <div class="text-gray-700 leading-relaxed">${tab.content}</div>
+                        <div class="accordion-content hidden px-4 py-3 text-gray-700 leading-relaxed border-t border-gray-200">
+                          ${item.content || ""}
                         </div>
-                      `,
-                        )
-                        .join("")}
-                    </div>
+                      </div>
+                    `,
+                      )
+                      .join("")}
                   </div>
                 </div>
-              `;
-          } else if (template === "accordion") {
-            const accordionId = `accordion-${Date.now()}`;
-            html = `
-                <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-green-500 to-blue-600">
-                  <div class="interactive-accordion" data-template="accordion" id="${accordionId}">
-                    <div class="space-y-3">
-                      ${data
-                        .map(
-                          (item, index) => `
-                        <div class="accordion-item border border-gray-200 rounded-lg">
-                          <button class="accordion-header w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between rounded-lg"
-                                  data-accordion="${index}"
-                                  data-container="${accordionId}"
-                                  onclick="window.toggleAccordion('${accordionId}', ${index})">
-                            <span class="font-medium text-gray-800">${item.title}</span>
-                            <svg class="accordion-icon w-5 h-5 text-gray-500 transition-transform duration-200" 
-                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                          </button>
-                          <div class="accordion-content hidden px-4 py-3 text-gray-700 leading-relaxed border-t border-gray-200">
-                            ${item.content}
-                          </div>
-                        </div>
-                      `,
-                        )
-                        .join("")}
-                    </div>
-                  </div>
-                </div>
-              `;
+              </div>
+              <script>
+                window.toggleAccordion = function(containerId, index) {
+                  const container = document.getElementById(containerId);
+                  if (!container) return;
+                  const headers = container.querySelectorAll('.accordion-header');
+                  const contents = container.querySelectorAll('.accordion-content');
+                  headers.forEach((h, i) => {
+                    const icon = h.querySelector('.accordion-icon');
+                    if (i === index) {
+                      contents[i].classList.toggle('hidden');
+                      icon && icon.classList.toggle('rotate-180');
+                    } else {
+                      contents[i].classList.add('hidden');
+                      icon && icon.classList.remove('rotate-180');
+                    }
+                  });
+                };
+              </script>
+            `;
           }
         } catch {
           html =
@@ -560,18 +665,18 @@ const removeDuplicateBlocks = (blocks) => {
 };
 
 const mergeBlocks = (contentBlocks, lessonContent) => {
-  if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-    const existingBlocks = lessonContent.data.content;
-    const existingBlockIds = new Set(
-      existingBlocks.map((b) => b.block_id || b.id),
-    );
-
-    const newBlocks = contentBlocks.filter((b) => !existingBlockIds.has(b.id));
-
-    return [...existingBlocks, ...newBlocks];
+  // If the editor has blocks, treat them as source of truth to avoid re-adding
+  // stale blocks from lessonContent (which can cause duplicates).
+  if (contentBlocks && contentBlocks.length > 0) {
+    return contentBlocks;
   }
 
-  return contentBlocks;
+  // Fallback: use existing lesson content when editor has no blocks
+  if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+    return lessonContent.data.content;
+  }
+
+  return contentBlocks || [];
 };
 
 const mapBlockToPayload = (block) => {
@@ -601,6 +706,18 @@ const mapBlockToPayload = (block) => {
       html_css: block.html_css,
       ...(block.details && { details: block.details }),
     };
+
+    // Preserve structured content (critical for interactive/tabs) instead of
+    // dropping it when html_css is present.
+    if (block.content !== undefined) {
+      blockData.content = block.content;
+    }
+
+    // Keep interactive template/subtype hints for loaders/editors
+    if (block.type === "interactive") {
+      blockData.template = block.template || block.subtype;
+      blockData.subtype = block.subtype || block.template || "accordion";
+    }
 
     if (block.type === "text" && block.textType) {
       blockData.textType = block.textType;
@@ -653,6 +770,24 @@ const mapBlockToPayload = (block) => {
         templateId: block.tableType || block.templateId || "two_columns",
         content: JSON.stringify(tableData),
       };
+    }
+
+    // Ensure interactive blocks always carry HTML so UI doesn't render JSON
+    if (
+      block.type === "interactive" &&
+      (!blockData.html_css || !blockData.html_css.trim())
+    ) {
+      try {
+        const generated = convertBlocksToHtml([
+          {
+            ...block,
+            html_css: "",
+          },
+        ]);
+        blockData.html_css = generated?.[0]?.html || "";
+      } catch {
+        // ignore; fallback to content
+      }
     }
 
     return blockData;
@@ -811,7 +946,9 @@ const mapBlockToPayload = (block) => {
         textType: block.textType,
         title: block.title || "",
         content: block.content || "",
-        html_css: block.html_css || block.content || "",
+        // Do not fall back to content for html_css; avoid injecting JSON/string
+        // into HTML for interactive or other structured blocks.
+        html_css: block.html_css || "",
         order: block.order || 0,
         ...(Object.keys(details).length > 0 && { details }),
       };
@@ -835,7 +972,19 @@ export const buildLessonUpdatePayload = ({
     const orderB = b.order !== undefined && b.order !== null ? b.order : 999999;
     return orderA - orderB;
   });
-  const content = sortedBlocks.map(mapBlockToPayload);
+  // Extra dedupe: drop blocks with identical type + content + html_css to avoid double renders
+  const seenContentKeys = new Set();
+  const dedupedSorted = [];
+  for (const block of sortedBlocks) {
+    const contentKey = `${block.type || ""}|${block.content || ""}|${
+      block.html_css || ""
+    }`;
+    if (seenContentKeys.has(contentKey)) continue;
+    seenContentKeys.add(contentKey);
+    dedupedSorted.push(block);
+  }
+
+  const content = dedupedSorted.map(mapBlockToPayload);
   const convertedBlocks = convertBlocksToHtml(sortedBlocks);
   const lessonDataToUpdate = {
     lesson_id: lessonId,

@@ -989,10 +989,20 @@ const InteractiveComponent = forwardRef(
               );
               const content = JSON.parse(editingInteractiveBlock.content);
               devLogger.debug("Parsed content:", content);
-              if (template === "tabs" && content.tabsData) {
-                setTabsData(content.tabsData);
-              } else if (template === "accordion" && content.accordionData) {
-                setAccordionData(content.accordionData);
+              if (template === "tabs") {
+                if (content.tabsData) {
+                  setTabsData(content.tabsData);
+                } else if (Array.isArray(content.sections)) {
+                  // Fallback for AI content that used "sections"
+                  setTabsData(content.sections);
+                }
+              } else if (template === "accordion") {
+                if (content.accordionData) {
+                  setAccordionData(content.accordionData);
+                } else if (Array.isArray(content.sections)) {
+                  // Fallback for AI content that used "sections"
+                  setAccordionData(content.sections);
+                }
               } else if (
                 template === "labeled-graphic" &&
                 content.labeledGraphicData

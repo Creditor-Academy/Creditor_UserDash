@@ -276,19 +276,36 @@ class ContentLibraryAIService {
   /**
    * Generate interactive TABS block with HTML/CSS rendering
    */
-  async generateInteractiveTabsBlock(lessonTitle, order, onProgress) {
-    const tabTitles = ["Concept 1", "Concept 2", "Concept 3"];
+  async generateInteractiveTabsBlock(
+    lessonTitle,
+    order,
+    onProgress,
+    opts = {},
+  ) {
+    // Determine desired count from prompt/context; default 2-3
+    const requested = Number(opts.requestedCount) || 0;
+    const tabCount = Math.min(Math.max(requested || 3, 2), 6);
+    const tabTitles = Array.from({ length: tabCount }).map((_, i) =>
+      opts.titlePrefix ? `${opts.titlePrefix} ${i + 1}` : `Concept ${i + 1}`,
+    );
 
     const tabsData = [];
     for (const title of tabTitles) {
       const content = await this.generateAIContent(
-        `Explain "${title}" in the context of ${lessonTitle} in 2-3 sentences.`,
+        `Explain "${title}" in the context of ${lessonTitle} in 2-3 sentences. Keep it concise.`,
         100,
       );
+
+      // Generate an image prompt for this tab (no text/labels)
+      const imagePrompt = `Realistic, professional photo for "${title}" in the context of ${lessonTitle}. 
+Real scene or object, clean background, natural lighting. Absolutely no text, no words, no typography, no labels, no logos, no badges, no overlays.`;
+      const imageResult = await this.generateAIImage(imagePrompt);
       tabsData.push({
         title,
         content,
-        image: null,
+        image: imageResult?.imageUrl
+          ? { src: imageResult.imageUrl, name: title, size: 0 }
+          : null,
         audio: null,
       });
     }
@@ -300,20 +317,22 @@ class ContentLibraryAIService {
       });
     }
 
-    // Generate HTML/CSS for tabs display
     const htmlCss = this.generateTabsHTML(tabsData);
 
     return {
       id: `tabs-${Date.now()}`,
       type: "interactive",
       interactiveType: "tabs",
-      content: JSON.stringify(tabsData),
+      content: JSON.stringify({
+        template: "tabs",
+        tabsData,
+      }),
       html_css: htmlCss,
       order,
       isAIGenerated: true,
       metadata: {
         variant: "tabs",
-        tabCount: 3,
+        tabCount,
       },
     };
   }
@@ -321,20 +340,37 @@ class ContentLibraryAIService {
   /**
    * Generate interactive ACCORDION block with HTML/CSS rendering
    */
-  async generateInteractiveAccordionBlock(lessonTitle, order, onProgress) {
-    const sectionTitles = ["Overview", "Deep Dive", "Best Practices"];
+  async generateInteractiveAccordionBlock(
+    lessonTitle,
+    order,
+    onProgress,
+    opts = {},
+  ) {
+    // Determine desired count from prompt/context; default 2-3
+    const requested = Number(opts.requestedCount) || 0;
+    const sectionCount = Math.min(Math.max(requested || 3, 2), 6);
+    const sectionTitles = Array.from({ length: sectionCount }).map((_, i) =>
+      opts.titlePrefix ? `${opts.titlePrefix} ${i + 1}` : `Section ${i + 1}`,
+    );
 
     const accordionData = [];
     for (const title of sectionTitles) {
       const content = await this.generateAIContent(
-        `Write detailed content for "${title}" section about ${lessonTitle}. 3-4 sentences with practical information.`,
-        120,
+        `Write concise, practical content for "${title}" about ${lessonTitle}. 3-4 sentences.`,
+        140,
       );
+      // Generate an image prompt for this section (no text/labels)
+      const imagePrompt = `Realistic, professional photo for "${title}" in the context of ${lessonTitle}. 
+Real scene or object, clean background, natural lighting. Absolutely no text, no words, no typography, no labels, no logos, no badges, no overlays.`;
+      const imageResult = await this.generateAIImage(imagePrompt);
+
       accordionData.push({
         title,
         content,
-        image: null,
-        audio: null,
+        image: imageResult?.imageUrl
+          ? { src: imageResult.imageUrl, name: title, size: 0 }
+          : null,
+        audio: null, // audio remains optional
       });
     }
 
@@ -345,20 +381,22 @@ class ContentLibraryAIService {
       });
     }
 
-    // Generate HTML/CSS for accordion display
     const htmlCss = this.generateAccordionHTML(accordionData);
 
     return {
       id: `accordion-${Date.now()}`,
       type: "interactive",
       interactiveType: "accordion",
-      content: JSON.stringify(accordionData),
+      content: JSON.stringify({
+        template: "accordion",
+        accordionData,
+      }),
       html_css: htmlCss,
       order,
       isAIGenerated: true,
       metadata: {
         variant: "accordion",
-        sectionCount: 3,
+        sectionCount,
       },
     };
   }
@@ -397,7 +435,10 @@ class ContentLibraryAIService {
       id: `process-${Date.now()}`,
       type: "interactive",
       interactiveType: "process",
-      content: JSON.stringify(processData),
+      content: JSON.stringify({
+        template: "process",
+        processData,
+      }),
       html_css: htmlCss,
       order,
       isAIGenerated: true,
@@ -443,7 +484,10 @@ class ContentLibraryAIService {
       id: `timeline-${Date.now()}`,
       type: "interactive",
       interactiveType: "timeline",
-      content: JSON.stringify(timelineData),
+      content: JSON.stringify({
+        template: "timeline",
+        timelineData,
+      }),
       html_css: htmlCss,
       order,
       isAIGenerated: true,
