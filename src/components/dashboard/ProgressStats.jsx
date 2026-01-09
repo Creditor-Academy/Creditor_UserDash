@@ -194,9 +194,37 @@ function CircularProgress({ value = 0, size = 180, stroke = 12 }) {
 }
 
 function SegmentedModuleBars({ modules = [] }) {
+  // Sort modules according to requirements
+  const sortedModules = [...modules].sort((a, b) => {
+    // Priority 1: In-progress modules always first
+    const aInProgress = a.progress > 0 && !a.completed;
+    const bInProgress = b.progress > 0 && !b.completed;
+
+    if (aInProgress && !bInProgress) return -1;
+    if (!aInProgress && bInProgress) return 1;
+
+    // Priority 2: Most recently updated (if timestamp exists)
+    if (a.updated_at && b.updated_at) {
+      return new Date(b.updated_at) - new Date(a.updated_at);
+    }
+
+    // Priority 3: Completed modules over pending (if no timestamp)
+    const aCompleted = a.completed;
+    const bCompleted = b.completed;
+
+    if (aCompleted && !bCompleted) return -1;
+    if (!aCompleted && bCompleted) return 1;
+
+    // Priority 4: Keep original order for same status
+    return 0;
+  });
+
+  // Display only maximum of 3 modules
+  const displayModules = sortedModules.slice(0, 3);
+
   return (
     <div className="space-y-4">
-      {modules.map((m, index) => {
+      {displayModules.map((m, index) => {
         const isCompleted = m.completed;
         const isInProgress = m.progress > 0 && !m.completed;
         const isPending = !isCompleted && m.progress === 0;
@@ -234,7 +262,7 @@ function SegmentedModuleBars({ modules = [] }) {
             transition={{ duration: 0.4, delay: index * 0.1 }}
           >
             {/* Connection line */}
-            {index < modules.length - 1 && (
+            {index < displayModules.length - 1 && (
               <div className="absolute left-6 top-12 w-0.5 h-8 bg-gray-200 z-0"></div>
             )}
 
