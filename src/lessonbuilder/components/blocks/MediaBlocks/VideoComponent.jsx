@@ -91,9 +91,9 @@ const VideoComponent = ({
         return;
       }
 
-      // Check file size (500MB limit)
-      if (file.size > 500 * 1024 * 1024) {
-        toast.error('Video file size should be less than 500MB');
+      // Check file size (3GB limit)
+      if (file.size > 3072 * 1024 * 1024) {
+        toast.error('Video file size should be less than 3GB');
         return;
       }
 

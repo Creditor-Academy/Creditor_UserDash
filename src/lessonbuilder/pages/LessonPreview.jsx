@@ -995,6 +995,9 @@ const LessonPreview = () => {
   const getReaderHtmlForBlock = block => {
     if (!block) return '';
 
+    // Don't return content for divider blocks
+    if (block.type === 'divider') return '';
+
     if (block.htmlCss && block.htmlCss.trim()) {
       return block.htmlCss;
     }
@@ -1007,7 +1010,6 @@ const LessonPreview = () => {
       case 'quote':
       case 'table':
       case 'embed':
-      case 'divider':
       case 'audio':
         return block.content || '';
       case 'image': {
@@ -2318,19 +2320,20 @@ const LessonPreview = () => {
                           </>
                         )}
                         {/* Read button for this block */}
-                        {getReaderHtmlForBlock(block)?.trim() && (
-                          <div className="mt-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReadBlock(block)}
-                              className="inline-flex items-center gap-1 text-xs"
-                            >
-                              <BookOpen className="h-3 w-3" />
-                              <span>Read</span>
-                            </Button>
-                          </div>
-                        )}
+                        {block.type !== 'divider' &&
+                          getReaderHtmlForBlock(block)?.trim() && (
+                            <div className="mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReadBlock(block)}
+                                className="inline-flex items-center gap-1 text-xs"
+                              >
+                                <BookOpen className="h-3 w-3" />
+                                <span>Read</span>
+                              </Button>
+                            </div>
+                          )}
                       </div>
                     );
                   })
