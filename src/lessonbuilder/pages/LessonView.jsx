@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   ChevronRight,
   FolderOpen,
+  MessageSquare,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,7 @@ import {
 } from '@/services/progressService';
 import { SidebarContext } from '@/layouts/DashboardLayout';
 import axios from 'axios';
+import LessonCompletionFeedback from '@/components/lesson/LessonCompletionFeedback';
 
 const LessonView = () => {
   const { courseId, moduleId } = useParams();
@@ -56,6 +58,9 @@ const LessonView = () => {
 
   // Store progress for all lessons (from backend)
   const [lessonsProgress, setLessonsProgress] = useState({}); // { lessonId: { progress, completed } }
+
+  // Feedback dialog state
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState({}); // { lessonId: boolean }
 
   // Fetch module and lessons data
   useEffect(() => {
@@ -764,27 +769,55 @@ const LessonView = () => {
               className="hover:shadow-lg transition-shadow duration-200 overflow-hidden"
             >
               {/* Lesson Thumbnail */}
-              <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
-                {lesson.thumbnail ? (
-                  <img
-                    src={lesson.thumbnail}
-                    alt={lesson.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <div className="text-4xl font-bold mb-2">
-                        LESSON {lesson.order}
-                      </div>
-                      <div className="text-sm opacity-80">
-                        {lesson.type?.toUpperCase() || 'LESSON'}
+              <div className="relative">
+                <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600">
+                  {lesson.thumbnail ? (
+                    <img
+                      src={lesson.thumbnail}
+                      alt={lesson.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="text-4xl font-bold mb-2">
+                          LESSON {lesson.order}
+                        </div>
+                        <div className="text-sm opacity-80">
+                          {lesson.type?.toUpperCase() || 'LESSON'}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {/* Status Badge */}
+                {/* Feedback Button - Show only for completed lessons */}
+                {(() => {
+                  const lessonProgressData = lessonsProgress[lesson.id];
+                  const progressValue = lessonProgressData?.progress || 0;
+                  const isCompleted =
+                    lessonProgressData?.completed || progressValue >= 100;
+
+                  if (isCompleted) {
+                    return (
+                      <div className="absolute bottom-2 right-2">
+                        <button
+                          onClick={() =>
+                            setFeedbackDialogOpen(prev => ({
+                              ...prev,
+                              [lesson.id]: true,
+                            }))
+                          }
+                          className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:shadow-xl transition-all duration-200 hover:scale-110"
+                          title="Provide Feedback"
+                        >
+                          <MessageSquare className="h-5 w-5 text-blue-600" />
+                        </button>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <CardHeader className="pb-3">
@@ -822,43 +855,66 @@ const LessonView = () => {
                   const progressValue = lessonProgressData?.progress || 0;
                   const isCompleted =
                     lessonProgressData?.completed || progressValue >= 100;
+                  const isNotStarted = progressValue === 0 && !isCompleted;
 
-                  if (progressValue > 0 || isCompleted) {
-                    return (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">
-                            Progress
-                          </span>
-                          <span className="text-sm font-bold text-blue-600">
-                            {Math.round(progressValue)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              isCompleted ? 'bg-green-600' : 'bg-blue-600'
-                            }`}
-                            style={{
-                              width: `${Math.min(100, Math.max(0, progressValue))}%`,
-                            }}
-                          ></div>
-                        </div>
-                        <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
-                          <span
-                            className={`font-medium ${
-                              isCompleted ? 'text-green-600' : 'text-blue-600'
-                            }`}
-                          >
-                            {isCompleted ? 'Completed' : 'In Progress'}
-                          </span>
-                        </div>
+                  // Always show progress bar, even for 0% progress
+                  return (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Progress
+                        </span>
+                        <span className="text-sm font-bold text-blue-600">
+                          {Math.round(progressValue)}%
+                        </span>
                       </div>
-                    );
-                  }
-                  return null;
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            isCompleted
+                              ? 'bg-green-600'
+                              : isNotStarted
+                                ? 'bg-gray-400'
+                                : 'bg-blue-600'
+                          }`}
+                          style={{
+                            width: `${Math.min(100, Math.max(0, progressValue))}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 text-xs text-gray-600">
+                        <span
+                          className={`font-medium ${
+                            isCompleted
+                              ? 'text-green-600'
+                              : isNotStarted
+                                ? 'text-gray-500'
+                                : 'text-blue-600'
+                          }`}
+                        >
+                          {isCompleted
+                            ? 'Completed'
+                            : isNotStarted
+                              ? 'Not Started'
+                              : 'In Progress'}
+                        </span>
+                      </div>
+                    </div>
+                  );
                 })()}
               </CardContent>
+
+              {/* Feedback Dialog */}
+              <LessonCompletionFeedback
+                lessonId={lesson.id}
+                open={feedbackDialogOpen[lesson.id] || false}
+                onOpenChange={open =>
+                  setFeedbackDialogOpen(prev => ({
+                    ...prev,
+                    [lesson.id]: open,
+                  }))
+                }
+              />
 
               <CardFooter className="pt-0 flex flex-col gap-2">
                 <Button
