@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import api from "../services/apiClient";
 import { tokenCache } from "../utils/tokenCache";
 
 /**
@@ -31,7 +31,7 @@ export const useTokenCache = (apiEndpoint = "/api/my-active-organization") => {
 
         // Use token cache to get data with intelligent caching
         const data = await tokenCache.getTokenData(async () => {
-          const response = await axios.get(apiEndpoint);
+          const response = await api.get(apiEndpoint);
           if (!response.data?.data) {
             throw new Error("No organization data in response");
           }

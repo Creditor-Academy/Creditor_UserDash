@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../../services/apiClient";
 import { Zap, AlertCircle } from "lucide-react";
 import "./CompactTokenDisplay.css";
 import { subscribeActiveOrgUsageRefresh } from "../../utils/activeOrgUsageEvents";
@@ -14,11 +14,8 @@ export const CompactTokenDisplay = () => {
 
   const fetchTokenStats = useCallback(async () => {
     try {
-      // const response = await axios.get('/api/my-active-organization');
-      const response = await axios.get(
-        `${API_BASE}/api/my-active-organization`,
-        { withCredentials: true },
-      );
+      // const response = await api.get('/api/my-active-organization');
+      const response = await api.get(`${API_BASE}/api/my-active-organization`);
       if (response.data?.data) {
         setOrg(response.data.data);
         setError(null);
