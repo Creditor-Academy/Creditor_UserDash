@@ -158,6 +158,34 @@ const LessonPreview = () => {
     lessonProgress // Pass backend progress as initial state
   );
 
+  // Sync lessonProgress state with hook's progress for UI updates
+  useEffect(() => {
+    if (lessonProgressTracker?.progress !== undefined) {
+      // Update local state when hook progress changes
+      // This ensures UI reflects real-time progress updates
+      const hookProgressValue = lessonProgressTracker.progress;
+      const hookCompletedValue = lessonProgressTracker.isCompleted;
+
+      // Only update if hook has meaningful progress (not just initial 0)
+      if (hookProgressValue > 0 || hookCompletedValue) {
+        setLessonProgress(prev => {
+          // Only update if hook progress is different or more recent
+          if (
+            !prev ||
+            hookProgressValue !== prev.progress ||
+            hookCompletedValue !== prev.completed
+          ) {
+            return {
+              progress: hookProgressValue,
+              completed: hookCompletedValue,
+            };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [lessonProgressTracker?.progress, lessonProgressTracker?.isCompleted]);
+
   useEffect(() => {
     let styleEl = document.getElementById('lesson-preview-image-list-style');
     if (!styleEl) {
@@ -1642,20 +1670,28 @@ const LessonPreview = () => {
     lessonData.headingSections.find(s => s.id === currentSection) ||
     lessonData.headingSections[0];
 
-  // Progress from backend (source of truth)
+  // Progress from hook (real-time updates) - use hook progress as primary source
+  // The hook's progress updates immediately when heading index changes
+  const hookProgress = lessonProgressTracker?.progress ?? 0;
+  const hookCompleted = lessonProgressTracker?.isCompleted ?? false;
+
+  // Use hook progress if available and > 0, otherwise use initial backend progress
+  // This ensures UI updates in real-time as user navigates
+  const displayProgress =
+    hookProgress > 0 ? hookProgress : (lessonProgress?.progress ?? 0);
+  const displayCompleted =
+    hookCompleted || (lessonProgress?.completed ?? false);
+
   const totalSections = lessonData.headingSections?.length || 0;
-  const backendProgress = lessonProgress?.progress || 0;
-  const isBackendCompleted =
-    lessonProgress?.completed || backendProgress >= 100;
+  const isBackendCompleted = displayCompleted || displayProgress >= 100;
 
-  // Calculate completed sections based on backend progress for UI display
+  // Calculate completed sections based on current progress for UI display
   const calculateCompletedSections = () => {
-    if (!lessonProgress || !lessonData.headingSections) return new Set();
+    if (!lessonData.headingSections || totalSections === 0) return new Set();
 
-    const progressPercentage = lessonProgress.progress;
-    const totalSections = lessonData.headingSections.length;
+    const progressPercentage = displayProgress;
 
-    // Calculate how many sections are completed based on backend progress
+    // Calculate how many sections are completed based on current progress
     // Formula: completedCount = Math.floor((progress / 100) * totalSections)
     const completedCount = Math.floor(
       (progressPercentage / 100) * totalSections
@@ -1734,11 +1770,11 @@ const LessonPreview = () => {
                 <div className="bg-blue-700 rounded-full h-2 mb-2">
                   <div
                     className="bg-white rounded-full h-2 transition-all duration-300"
-                    style={{ width: `${Math.round(backendProgress)}%` }}
+                    style={{ width: `${Math.round(displayProgress)}%` }}
                   ></div>
                 </div>
                 <div className="text-sm opacity-75">
-                  {Math.round(backendProgress)}% COMPLETE
+                  {Math.round(displayProgress)}% COMPLETE
                 </div>
               </div>
 
@@ -1888,7 +1924,7 @@ const LessonPreview = () => {
                   ) : (
                     <>
                       <Clock className="h-3 w-3 mr-1" />
-                      {backendProgress}%
+                      {Math.round(displayProgress)}%
                     </>
                   )}
                 </Badge>

@@ -58,9 +58,20 @@ export const useLessonProgressTracker = (
     if (!headingSections || headingSections.length === 0) return 0;
 
     // Progress = ((currentHeadingIndex + 1) / totalHeadings) * 100
+    // This represents progress up to and including the current heading
     const progressPercentage =
       ((headingIndex + 1) / headingSections.length) * 100;
-    return Math.min(100, Math.max(0, Math.round(progressPercentage)));
+    const rounded = Math.min(100, Math.max(0, Math.round(progressPercentage)));
+
+    console.log('Calculating progress:', {
+      headingIndex,
+      totalHeadings: headingSections.length,
+      formula: `((${headingIndex} + 1) / ${headingSections.length}) * 100`,
+      calculated: progressPercentage,
+      rounded,
+    });
+
+    return rounded;
   };
 
   /**
@@ -111,15 +122,20 @@ export const useLessonProgressTracker = (
       lastSentProgress.current = newProgress;
       lastSentCompleted.current = completed;
 
-      // Update backend progress ref
+      // Update backend progress ref FIRST
       backendProgressRef.current = newProgress;
       backendCompletedRef.current = completed;
 
-      // Update local state
+      // Update local state IMMEDIATELY to trigger UI re-render
       setProgress(newProgress);
       setIsCompleted(completed);
 
-      console.log('Lesson progress updated successfully:', result);
+      console.log('Lesson progress updated successfully:', {
+        result,
+        newProgress,
+        completed,
+        stateUpdated: true,
+      });
 
       // Show completion toast when lesson is completed
       if (completed && !lastSentCompleted.current) {
