@@ -87,38 +87,49 @@ const StorageTokens = () => {
     userProfile?.organization?.id ||
     localStorage.getItem("orgId");
 
-  useEffect(() => {
-    const fetchOrg = async () => {
-      if (!orgId) {
-        setError("Organization not found. Please log in again.");
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await api.get(`/api/org/SingleOrg/${orgId}`);
-        const data = response?.data?.data || response?.data;
-        if (!data) {
-          setError("Organization data not found.");
-          setOrgData(null);
-        } else {
-          setOrgData(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch organization usage", err);
-        setError(
-          err?.response?.data?.message ||
-            "Unable to load storage and token usage right now.",
-        );
+  const fetchOrg = React.useCallback(async () => {
+    if (!orgId) {
+      setError("Organization not found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get(`/api/org/SingleOrg/${orgId}`);
+      const data = response?.data?.data || response?.data;
+      if (!data) {
+        setError("Organization data not found.");
         setOrgData(null);
-      } finally {
-        setLoading(false);
+      } else {
+        setOrgData(data);
       }
-    };
-
-    fetchOrg();
+    } catch (err) {
+      console.error("Failed to fetch organization usage", err);
+      setError(
+        err?.response?.data?.message ||
+          "Unable to load storage and token usage right now.",
+      );
+      setOrgData(null);
+    } finally {
+      setLoading(false);
+    }
   }, [orgId]);
+
+  useEffect(() => {
+    fetchOrg();
+  }, [fetchOrg]);
+
+  // Refresh org data whenever uploads complete anywhere in LMS
+  useEffect(() => {
+    const handleOrgRefresh = () => {
+      fetchOrg();
+    };
+    window.addEventListener("org:refreshSingleOrg", handleOrgRefresh);
+    return () => {
+      window.removeEventListener("org:refreshSingleOrg", handleOrgRefresh);
+    };
+  }, [fetchOrg]);
 
   const storage = useMemo(() => {
     // API returns storage and storage_limit already in GB

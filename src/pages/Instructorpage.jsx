@@ -98,35 +98,51 @@ const InstructorPage = () => {
     }
   }, [location.pathname, navigate]);
 
-  // Fetch storage usage for compact display in header
-  useEffect(() => {
-    const orgId =
+  // Resolve orgId from profile/localStorage
+  const getOrgId = React.useCallback(() => {
+    return (
       userProfile?.organization_id ||
       userProfile?.org_id ||
       userProfile?.organizationId ||
       userProfile?.organization?.id ||
-      localStorage.getItem("orgId");
+      localStorage.getItem("orgId")
+    );
+  }, [userProfile]);
 
+  // Fetch storage usage for compact display in header
+  const fetchStorage = React.useCallback(async () => {
+    const orgId = getOrgId();
     if (!orgId) return;
 
-    const fetchStorage = async () => {
-      try {
-        setIsStorageLoading(true);
-        const resp = await api.get(`/api/org/SingleOrg/${orgId}`);
-        const data = resp?.data?.data || resp?.data;
-        if (!data) return;
-        const used = Number(data.storage) || 0;
-        const total = Number(data.storage_limit) || 0;
-        setStorageUsage({ used, total });
-      } catch (error) {
-        console.error("Failed to fetch storage usage for header", error);
-      } finally {
-        setIsStorageLoading(false);
-      }
-    };
+    try {
+      setIsStorageLoading(true);
+      const resp = await api.get(`/api/org/SingleOrg/${orgId}`);
+      const data = resp?.data?.data || resp?.data;
+      if (!data) return;
+      const used = Number(data.storage) || 0;
+      const total = Number(data.storage_limit) || 0;
+      setStorageUsage({ used, total });
+    } catch (error) {
+      console.error("Failed to fetch storage usage for header", error);
+    } finally {
+      setIsStorageLoading(false);
+    }
+  }, [getOrgId]);
 
+  useEffect(() => {
     fetchStorage();
-  }, [userProfile]);
+  }, [fetchStorage]);
+
+  // Refresh org data when uploads complete anywhere in LMS
+  useEffect(() => {
+    const handleOrgRefresh = () => {
+      fetchStorage();
+    };
+    window.addEventListener("org:refreshSingleOrg", handleOrgRefresh);
+    return () => {
+      window.removeEventListener("org:refreshSingleOrg", handleOrgRefresh);
+    };
+  }, [fetchStorage]);
 
   const formatStorageDisplay = (usedBytes, totalRaw) => {
     if (
