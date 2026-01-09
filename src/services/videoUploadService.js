@@ -29,9 +29,9 @@ export async function uploadVideo(file, options = {}) {
         'Please upload a valid video (MP4, WEBM, OGG, MOV, MKV, AVI)'
       );
     }
-    // Video size limit (1000MB)
-    if (file.size > 1000 * 1024 * 1024) {
-      throw new Error('Video size should be less than 1000MB');
+    // Video size limit (3GB)
+    if (file.size > 3072 * 1024 * 1024) {
+      throw new Error('Video size should be less than 3GB');
     }
 
     const fieldName = options.fieldName || 'resource';
