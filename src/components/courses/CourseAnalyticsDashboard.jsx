@@ -4,8 +4,8 @@
  * Shows top/bottom performing content blocks
  */
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import api from "@/services/apiClient";
 import {
   BarChart,
   Bar,
@@ -20,13 +20,13 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from "recharts";
 import {
   TrendingUp,
   TrendingDown,
   AlertCircle,
   CheckCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
 const CourseAnalyticsDashboard = ({ courseId }) => {
   const [feedbackSummary, setFeedbackSummary] = useState(null);
@@ -42,27 +42,18 @@ const CourseAnalyticsDashboard = ({ courseId }) => {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
 
       // Fetch course feedback summary
-      const summaryResponse = await axios.get(
+      const summaryResponse = await api.get(
         `/api/feedback/course/${courseId}/summary`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
       );
 
       // Fetch top performing blocks
-      const topResponse = await axios.get(`/api/feedback/top-blocks?limit=5`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const topResponse = await api.get(`/api/feedback/top-blocks?limit=5`);
 
       // Fetch bottom performing blocks
-      const bottomResponse = await axios.get(
+      const bottomResponse = await api.get(
         `/api/feedback/bottom-blocks?limit=5`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
       );
 
       setFeedbackSummary(summaryResponse.data.data);
@@ -70,8 +61,8 @@ const CourseAnalyticsDashboard = ({ courseId }) => {
       setBottomBlocks(bottomResponse.data.data);
       setError(null);
     } catch (err) {
-      console.error('Error fetching analytics:', err);
-      setError(err.response?.data?.error || 'Failed to load analytics');
+      console.error("Error fetching analytics:", err);
+      setError(err.response?.data?.error || "Failed to load analytics");
     } finally {
       setLoading(false);
     }
@@ -111,16 +102,16 @@ const CourseAnalyticsDashboard = ({ courseId }) => {
   }
 
   const ratingData = Object.entries(
-    feedbackSummary.feedback_by_rating || {}
+    feedbackSummary.feedback_by_rating || {},
   ).map(([rating, count]) => ({
     rating: `${rating} ⭐`,
     count,
   }));
 
   const categoryData = Object.entries(
-    feedbackSummary.feedback_categories || {}
+    feedbackSummary.feedback_categories || {},
   ).map(([category, count]) => ({
-    category: category.replace(/_/g, ' '),
+    category: category.replace(/_/g, " "),
     count,
   }));
 
@@ -204,7 +195,7 @@ const CourseAnalyticsDashboard = ({ courseId }) => {
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][
+                      ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"][
                         index % 5
                       ]
                     }
@@ -341,10 +332,10 @@ const CourseAnalyticsDashboard = ({ courseId }) => {
  */
 const MetricCard = ({ title, value, subtitle, icon, color }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-600',
-    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-600',
-    green: 'bg-green-50 border-green-200 text-green-600',
-    purple: 'bg-purple-50 border-purple-200 text-purple-600',
+    blue: "bg-blue-50 border-blue-200 text-blue-600",
+    yellow: "bg-yellow-50 border-yellow-200 text-yellow-600",
+    green: "bg-green-50 border-green-200 text-green-600",
+    purple: "bg-purple-50 border-purple-200 text-purple-600",
   };
 
   return (
