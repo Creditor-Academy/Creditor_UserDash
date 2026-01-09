@@ -8,3 +8,4 @@ const defaultValue = {
 export const SeasonalThemeContext = createContext(defaultValue);
 
 export default SeasonalThemeContext;
+

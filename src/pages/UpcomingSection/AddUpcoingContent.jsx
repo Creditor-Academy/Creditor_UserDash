@@ -12,6 +12,7 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
+  XCircleIcon,
 } from 'lucide-react';
 
 const AddUpcoingContent = () => {
@@ -356,5 +357,5 @@ const AddUpcoingContent = () => {
     </div>
   );
 };
-
 export default AddUpcoingContent;
+

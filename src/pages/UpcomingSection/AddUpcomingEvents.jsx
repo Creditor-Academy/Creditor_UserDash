@@ -306,3 +306,4 @@ const AddUpcomingEvents = () => {
 };
 
 export default AddUpcomingEvents;
+
