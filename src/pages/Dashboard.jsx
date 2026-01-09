@@ -1523,12 +1523,12 @@ export function Dashboard() {
             </div>
           </div>
           {/* Catalog Banner Section */}
-          <div
+          {/* <div
             className={`w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 `}
           >
             <div className="text-center mb-4"></div>
             <DashboardCarousel />
-          </div>
+          </div> */}
 
           <div className="mb-6">
             <div
