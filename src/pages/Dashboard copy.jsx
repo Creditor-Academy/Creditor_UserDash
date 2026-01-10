@@ -1022,7 +1022,7 @@ export function Dashboard() {
   const courseSectionTitle = 'My Courses';
 
   return (
-    <div className={`relative flex rounded-3xl flex-col min-h-screen ${isWinter ? 'bg-gradient-to-br from-cyan-50 via-blue-50 to-slate-50' : 'bg-gradient-to-br from-gray-50 to-white'}`}>
+    <div className={`relative flex flex-col min-h-screen ${isWinter ? 'bg-gradient-to-br from-cyan-50 via-blue-50 to-slate-50' : 'bg-gradient-to-br from-gray-50 to-white'}`}>
       {/* Winter snowflakes effect */}
       {isWinter && (
         <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -1032,9 +1032,8 @@ export function Dashboard() {
           <div className="absolute top-1/3 right-1/3 text-3xl opacity-12 animate-pulse delay-500">❄️</div>
         </div>
       )}
-      <main className="flex-1 relative z-10  ">
-        <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto"
-        >
+      <main className="flex-1 relative z-10">
+        <div className="w-full max-w-7xl mx-auto">
 
         <AthenaHeroBanner
           isThemeActive={isThemeActive}
@@ -1043,6 +1042,9 @@ export function Dashboard() {
         />
 
         <DashboardTopSection isWinter={isWinter} />
+
+
+
 
           {/* Catalog Banner Section */}
           <div

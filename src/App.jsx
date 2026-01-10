@@ -121,6 +121,7 @@ import { UserProvider } from './contexts/UserContext';
 import { CreditsProvider } from './contexts/CreditsContext';
 import { SponsorAdsProvider } from '@/contexts/SponsorAdsContext';
 import { UserSponsorProvider } from '@/contexts/UserSponsorContext';
+import { SeasonalThemeProvider } from '@/contexts/SeasonalThemeProvider';
 // import  ModuleView  from "@/pages/ModuleView";
 import LessonView from '@lessonbuilder/pages/LessonView';
 import LessonResourcesPage from '@/pages/LessonResourcesPage';
@@ -147,12 +148,13 @@ import Sitemap from './pages/Sitemap';
 function App() {
   return (
     <ThemeProvider>
-      <ScrollToTop />
-      <AuthProvider>
-        <UserProvider>
-          <CreditsProvider>
-            <SponsorAdsProvider>
-              <UserSponsorProvider>
+      <SeasonalThemeProvider>
+        <ScrollToTop />
+        <AuthProvider>
+          <UserProvider>
+            <CreditsProvider>
+              <SponsorAdsProvider>
+                <UserSponsorProvider>
                 <Routes>
                   {/* Public routes */}
                   <Route path="/login" element={<Login />} />
@@ -722,11 +724,12 @@ function App() {
                 </Routes>
                 <PageTransitionOverlay />
                 <Toaster />
-              </UserSponsorProvider>
-            </SponsorAdsProvider>
-          </CreditsProvider>
-        </UserProvider>
-      </AuthProvider>
+                </UserSponsorProvider>
+              </SponsorAdsProvider>
+            </CreditsProvider>
+          </UserProvider>
+        </AuthProvider>
+      </SeasonalThemeProvider>
     </ThemeProvider>
   );
 }

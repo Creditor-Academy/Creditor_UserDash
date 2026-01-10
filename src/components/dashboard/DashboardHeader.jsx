@@ -33,10 +33,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchNotifications } from '@/services/notificationService';
 import { useCredits } from '@/contexts/CreditsContext';
+import { SeasonalThemeToggle } from './SeasonalThemeToggle';
+import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import { useContext } from 'react';
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const { isInstructorOrAdmin, hasRole } = useAuth();
   const { balance, addCredits } = useCredits();
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const isThemeActive = activeTheme === 'active';
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -575,12 +580,12 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   return (
     <>
-      <header className="app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm">
+      <header className={`app-header sticky top-0 z-30 w-full border-b shadow-sm ${isThemeActive ? 'bg-gradient-to-r from-cyan-50 via-blue-50 to-cyan-50 border-cyan-200' : 'bg-white border-gray-200'}`}>
         <div className="h-16 flex items-center justify-between px-4 sm:px-6">
           {/* Left: Mobile menu + Logo */}
           <div className="flex items-center gap-3">
             <button
-              className="lg:hidden p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+              className={`lg:hidden p-2 rounded-lg border ${isThemeActive ? 'border-cyan-200 hover:bg-cyan-50' : 'border-gray-200 hover:bg-gray-50'}`}
               aria-label="Open menu"
               onClick={() => onMobileMenuClick && onMobileMenuClick()}
             >
@@ -596,7 +601,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className={`text-base sm:text-lg font-bold bg-clip-text text-transparent ${isThemeActive ? 'bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-700' : 'bg-gradient-to-r from-blue-600 to-purple-600'}`}>
+                {isThemeActive && <span className="mr-1">🎨</span>}
                 LMS Athena
               </h1>
             </button>
@@ -805,6 +811,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
           {/* Right - Enhanced Icons and Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Seasonal Theme Toggle - Only shows when theme is enabled */}
+            <SeasonalThemeToggle />
+            
             {/* Mobile Search Button */}
             <button
               onClick={() => setShowMobileSearch(!showMobileSearch)}
@@ -1137,3 +1146,4 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 }
 
 export default DashboardHeader;
+
