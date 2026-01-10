@@ -21,7 +21,7 @@
       "@/*": ["./src/*"],
       "@lessonbuilder/*": ["./src/lessonbuilder/*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "node", "react"]
   },
   "include": ["src"],
   "exclude": ["src/**/*.test-d.ts"]

@@ -68,7 +68,6 @@ import CertificatePage from "../src/pages/CertificatePage";
 import SurveyInstructionPage from "@/pages/SurveyInstructionPage";
 import DebateInstructionPage from "@/pages/DebateInstructionPage";
 import DebateTakePage from "@/pages/DebateTakePage";
-import Chatbot from "@/pages/Chatbot";
 import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
@@ -659,7 +658,6 @@ function App() {
                     <Route path="calendar" element={<CalendarPage />} />
                     <Route path="attendance" element={<Attendance />} />
                     <Route path="todo" element={<TodoPage />} />
-                    <Route path="chatbot" element={<Chatbot />} />
                     <Route path="faqs" element={<FAQs />} />
                     <Route path="privacy" element={<Privacy />} />
                     <Route path="guides" element={<Guides />} />

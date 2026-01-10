@@ -16,7 +16,6 @@ import {
   Gamepad2,
   GraduationCap,
   Library,
-  Bot,
   CreditCard,
   CalendarDays,
   Handshake,
@@ -595,14 +594,6 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               className="mt-1"
             >
               <div className="space-y-2">
-                <SidebarItem
-                  icon={Bot}
-                  label="Credit chatbot"
-                  href="/dashboard/chatbot"
-                  active={isActive("/dashboard/chatbot")}
-                  collapsed={collapsed}
-                  onNavigate={handleNavigate}
-                />
                 <SidebarItem
                   icon={Gamepad2}
                   label="Games"
