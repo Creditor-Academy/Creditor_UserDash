@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Maximize2, Mic, MessageSquare, Volume2, X } from 'lucide-react';
-import PaulImage from '../../assets/Paul.jpeg';
+import PaulImage from 'C:\\Users\\y\\Chatbot\\Creditor_UserDash\\src\\assets\\Paulmichael.png';
 
 // FAQ data organized by categories
 const faqCategories = [
