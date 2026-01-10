@@ -1,6 +1,6 @@
 // Enhanced AI Service - Secure Backend Implementation
 // All AI operations now go through secure backend (no direct OpenAI calls)
-import secureAIService from './secureAIService';
+import secureAIService from "./secureAIService";
 
 /**
  * Enhanced AI Service - OpenAI Only
@@ -9,7 +9,7 @@ import secureAIService from './secureAIService';
 class EnhancedAIService {
   constructor() {
     this.openai = secureAIService;
-    console.log('✅ Enhanced AI Service initialized (Secure Backend)');
+    console.log("✅ Enhanced AI Service initialized (Secure Backend)");
   }
 
   /**
@@ -20,12 +20,12 @@ class EnhancedAIService {
    */
   async generateText(prompt, options = {}) {
     try {
-      console.log('🤖 Generating text with OpenAI...');
+      console.log("🤖 Generating text with AI...");
       const text = await this.openai.generateText(prompt, options);
       console.log(`✅ Text generated successfully`);
       return text;
     } catch (error) {
-      console.error('❌ Text generation failed:', error);
+      console.error("❌ Text generation failed:", error);
       throw new Error(`Text generation failed: ${error.message}`);
     }
   }
@@ -39,16 +39,16 @@ class EnhancedAIService {
    */
   async generateStructured(systemPrompt, userPrompt, options = {}) {
     try {
-      console.log('🤖 Generating structured response with OpenAI...');
+      console.log("🤖 Generating structured response with AI...");
       const data = await this.openai.generateStructured(
         systemPrompt,
         userPrompt,
-        options
+        options,
       );
       console.log(`✅ Structured data generated successfully`);
       return data;
     } catch (error) {
-      console.error('❌ Structured generation failed:', error);
+      console.error("❌ Structured generation failed:", error);
       throw new Error(`Structured generation failed: ${error.message}`);
     }
   }
@@ -60,17 +60,17 @@ class EnhancedAIService {
    */
   async generateCourseOutline(courseData) {
     try {
-      console.log('📋 Generating course outline with OpenAI...');
+      console.log("📋 Generating course outline with AI...");
       const result = await this.openai.generateCourseOutline(courseData);
 
       if (result.success) {
         console.log(`✅ Course outline generated successfully`);
         return result;
       } else {
-        throw new Error(result.error || 'Failed to generate course outline');
+        throw new Error(result.error || "Failed to generate course outline");
       }
     } catch (error) {
-      console.error('❌ Course outline generation failed:', error);
+      console.error("❌ Course outline generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -87,17 +87,17 @@ class EnhancedAIService {
    */
   async generateCourseImage(prompt, options = {}) {
     try {
-      console.log('🎨 Generating image with OpenAI DALL-E...');
+      console.log("🎨 Generating image with AI...");
       const result = await this.openai.generateCourseImage(prompt, options);
 
       if (result.success) {
         console.log(`✅ Image generated successfully`);
         return result;
       } else {
-        throw new Error(result.error || 'Failed to generate image');
+        throw new Error(result.error || "Failed to generate image");
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error);
+      console.error("❌ Image generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -118,20 +118,20 @@ class EnhancedAIService {
     lessonData,
     moduleData,
     courseData,
-    options = {}
+    options = {},
   ) {
     try {
-      console.log('📝 Generating lesson content with OpenAI...');
+      console.log("📝 Generating lesson content with AI...");
       const content = await this.openai.generateLessonContent(
         lessonData,
         moduleData,
         courseData,
-        options
+        options,
       );
       console.log(`✅ Lesson content generated successfully`);
       return content;
     } catch (error) {
-      console.error('❌ Lesson content generation failed:', error);
+      console.error("❌ Lesson content generation failed:", error);
       throw error;
     }
   }

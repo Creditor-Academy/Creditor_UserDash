@@ -11,26 +11,13 @@ const API_CONFIG = {
   backend: {
     baseURL:
       import.meta.env.VITE_API_BASE_URL ||
-      'https://testbackend-hcoy.onrender.com',
+      "https://testbackend-hcoy.onrender.com",
     endpoints: {
-      generateText: '/api/ai/generate-text',
-      generateStructured: '/api/ai/generate-structured',
-      generateImage: '/api/ai/generate-image',
-      generateCourseOutline: '/api/ai/generate-course-outline',
-      usageDashboard: '/api/usage/dashboard',
-    },
-  },
-
-  // Legacy OpenAI Configuration (deprecated - use backend instead)
-  openai: {
-    deprecated: true,
-    message: 'OpenAI now accessed via backend API for security',
-    baseURL: 'https://api.openai.com/v1',
-    apiKey: '', // Not used - backend handles this
-    models: {
-      text: 'gpt-4o-mini',
-      textAdvanced: 'gpt-4',
-      image: 'dall-e-3',
+      generateText: "/api/ai/generate-text",
+      generateStructured: "/api/ai/generate-structured",
+      generateImage: "/api/ai/generate-image",
+      generateCourseOutline: "/api/ai/generate-course-outline",
+      usageDashboard: "/api/usage/dashboard",
     },
   },
 };
@@ -43,21 +30,6 @@ export const getBackendConfig = () => {
   return {
     baseURL: API_CONFIG.backend.baseURL,
     endpoints: API_CONFIG.backend.endpoints,
-  };
-};
-
-/**
- * Get OpenAI configuration (deprecated)
- * @deprecated Use getBackendConfig() instead - all AI operations go through backend
- * @returns {Object} OpenAI config (models only, no API key)
- */
-export const getOpenAIConfig = () => {
-  console.warn('⚠️ getOpenAIConfig() is deprecated. Use backend API instead.');
-  return {
-    apiKey: '', // Not used - backend handles authentication
-    baseURL: API_CONFIG.openai.baseURL,
-    models: API_CONFIG.openai.models,
-    deprecated: true,
   };
 };
 
@@ -75,9 +47,9 @@ export const hasValidBackend = () => {
  * @param {string} service - Service name
  * @returns {boolean} Always returns false for client-side services
  */
-export const hasValidApiKey = service => {
+export const hasValidApiKey = (service) => {
   console.warn(
-    `⚠️ hasValidApiKey('${service}') is deprecated. All AI operations go through backend.`
+    `⚠️ hasValidApiKey('${service}') is deprecated. All AI operations go through backend.`,
   );
   return false; // No client-side API keys used anymore
 };
@@ -92,13 +64,7 @@ export const getServiceStatus = () => {
       available: hasValidBackend(),
       baseURL: API_CONFIG.backend.baseURL,
       endpoints: API_CONFIG.backend.endpoints,
-      message: 'All AI operations proxied through backend for security',
-    },
-    openai: {
-      deprecated: true,
-      available: false,
-      message: 'Use backend API instead - no client-side OpenAI key needed',
-      models: API_CONFIG.openai.models,
+      message: "All AI operations proxied through backend for security",
     },
   };
 };
@@ -112,7 +78,7 @@ export const getServiceStatus = () => {
  */
 export const validateApiKey = (key, service) => {
   console.warn(
-    '⚠️ validateApiKey() is deprecated. No client-side API keys needed.'
+    "⚠️ validateApiKey() is deprecated. No client-side API keys needed.",
   );
   return false;
 };
@@ -125,9 +91,9 @@ export const validateApiKey = (key, service) => {
  */
 export const setApiKey = (service, key) => {
   throw new Error(
-    'Client-side API keys are no longer supported. ' +
-      'All AI operations go through backend API. ' +
-      'Configure API keys on your backend server instead.'
+    "Client-side API keys are no longer supported. " +
+      "All AI operations go through backend API. " +
+      "Configure API keys on your backend server instead.",
   );
 };
 

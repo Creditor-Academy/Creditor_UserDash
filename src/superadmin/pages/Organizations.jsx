@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -10,17 +10,18 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-} from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
-import { darkTheme, lightTheme } from '../theme/colors';
-import apiConfig from '../../config/apiConfig';
-import AddOrganizationModal from '../components/AddOrganizationModal';
+  Plus,
+} from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
+import { darkTheme, lightTheme } from "../theme/colors";
+import apiConfig from "../../config/apiConfig";
+import AddOrganizationModal from "../components/AddOrganizationModal";
 
 export default function Organizations() {
   const { theme } = useTheme();
-  const colors = theme === 'dark' ? darkTheme : lightTheme;
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
+  const colors = theme === "dark" ? darkTheme : lightTheme;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState("all");
   const [organizations, setOrganizations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,6 +35,12 @@ export default function Organizations() {
   const [isLoadingOrgDetails, setIsLoadingOrgDetails] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingOrg, setEditingOrg] = useState(null);
+  const [addOnModalOpen, setAddOnModalOpen] = useState(false);
+  const [selectedAddOnOrg, setSelectedAddOnOrg] = useState(null);
+  const [addOnType, setAddOnType] = useState("tokens");
+  const [addOnQuantity, setAddOnQuantity] = useState("");
+  const [isAllocating, setIsAllocating] = useState(false);
+  const [addOnStatus, setAddOnStatus] = useState(null);
 
   // Fetch organizations from API
   useEffect(() => {
@@ -41,10 +48,10 @@ export default function Organizations() {
       try {
         const baseURL = apiConfig.backend.baseURL;
         const response = await fetch(`${baseURL}/api/org/allOrg`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
 
@@ -55,8 +62,8 @@ export default function Organizations() {
         const data = await response.json();
         setOrganizations(data.data || []);
       } catch (err) {
-        console.error('Error fetching organizations:', err);
-        setError('Failed to load organizations. Please try again later.');
+        console.error("Error fetching organizations:", err);
+        setError("Failed to load organizations. Please try again later.");
         setOrganizations([]);
       } finally {
         setIsLoading(false);
@@ -66,24 +73,123 @@ export default function Organizations() {
     fetchOrganizations();
   }, []);
 
-  const filteredOrganizations = organizations.filter(org => {
+  const handleAddOnClick = (org, e) => {
+    if (e) e.stopPropagation();
+    setSelectedAddOnOrg(org);
+    setAddOnType("tokens");
+    setAddOnQuantity("");
+    setAddOnStatus(null);
+    setAddOnModalOpen(true);
+  };
+
+  const handleAllocateAddOn = async () => {
+    const numericQty = Number(addOnQuantity);
+    if (!numericQty || Number.isNaN(numericQty) || numericQty <= 0) {
+      setAddOnStatus({
+        type: "error",
+        message: "Please enter a valid quantity.",
+      });
+      return;
+    }
+    const baseURL = apiConfig.backend.baseURL;
+    const accessToken =
+      localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (!accessToken) {
+      setAddOnStatus({
+        type: "error",
+        message: "Not authenticated. Please login again.",
+      });
+      return;
+    }
+
+    const orgId = selectedAddOnOrg?.id;
+    if (!orgId) {
+      setAddOnStatus({
+        type: "error",
+        message: "No organization selected for allocation.",
+      });
+      return;
+    }
+
+    let endpoint = "";
+    let payload = {};
+    if (addOnType === "tokens") {
+      endpoint = `${baseURL}/api/org/updateToken/${orgId}`;
+      // Backend expects integer tokens (no million scaling)
+      payload = { ai_token_limit: Math.round(numericQty) };
+    } else if (addOnType === "storage") {
+      endpoint = `${baseURL}/api/org/updateStorage/${orgId}`;
+      // UI enters GB; send as integer GB (also include storage_limit for compatibility)
+      const gbValue = Math.round(numericQty);
+      payload = { storage: gbValue, storage_limit: gbValue };
+    } else if (addOnType === "users") {
+      endpoint = `${baseURL}/api/org/updateUser/${orgId}`;
+      payload = { seats: Math.max(1, Math.round(numericQty)) };
+    } else {
+      setAddOnStatus({
+        type: "error",
+        message: "Unknown add-on type selected.",
+      });
+      return;
+    }
+
+    const httpMethod = "PATCH";
+    setAddOnStatus(null);
+    try {
+      const response = await fetch(endpoint, {
+        method: httpMethod,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `Failed to allocate add-on (${response.status})`,
+        );
+      }
+
+      setAddOnStatus({
+        type: "success",
+        message: "Add-on allocated successfully.",
+      });
+      setTimeout(() => {
+        setAddOnModalOpen(false);
+        setSelectedAddOnOrg(null);
+        setAddOnQuantity("");
+      }, 600);
+    } catch (err) {
+      console.error("Error allocating add-on:", err);
+      setAddOnStatus({
+        type: "error",
+        message: err.message || "Failed to allocate add-on. Please try again.",
+      });
+    } finally {
+      setIsAllocating(false);
+    }
+  };
+
+  const filteredOrganizations = organizations.filter((org) => {
     if (!org) return false;
 
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       org.name?.toLowerCase().includes(searchLower) ||
-      (org.admin?.email?.toLowerCase() || '').includes(searchLower) ||
-      (org.admin?.name?.toLowerCase() || '').includes(searchLower) ||
+      (org.admin?.email?.toLowerCase() || "").includes(searchLower) ||
+      (org.admin?.name?.toLowerCase() || "").includes(searchLower) ||
       org.description?.toLowerCase().includes(searchLower);
 
     const statusMap = {
-      ACTIVE: 'active',
+      ACTIVE: "active",
       // PENDING: 'pending',
-      SUSPENDED: 'suspended',
+      SUSPENDED: "suspended",
     };
 
-    const orgStatus = statusMap[org.status] || (org.status || '').toLowerCase();
-    const matchesFilter = filter === 'all' || orgStatus === filter;
+    const orgStatus = statusMap[org.status] || (org.status || "").toLowerCase();
+    const matchesFilter = filter === "all" || orgStatus === filter;
 
     return matchesSearch && matchesFilter;
   });
@@ -93,7 +199,7 @@ export default function Organizations() {
   const indexOfFirstOrg = indexOfLastOrg - itemsPerPage;
   const currentOrgs = filteredOrganizations.slice(
     indexOfFirstOrg,
-    indexOfLastOrg
+    indexOfLastOrg,
   );
   const totalPages = Math.ceil(filteredOrganizations.length / itemsPerPage);
 
@@ -105,10 +211,10 @@ export default function Organizations() {
     try {
       const baseURL = apiConfig.backend.baseURL;
       const response = await fetch(`${baseURL}/api/org/org/${org.id}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -119,7 +225,7 @@ export default function Organizations() {
       const data = await response.json();
       setSelectedOrg(data.data);
     } catch (err) {
-      console.error('Error fetching organization details:', err);
+      console.error("Error fetching organization details:", err);
       setSelectedOrg(org);
     } finally {
       setIsLoadingOrgDetails(false);
@@ -132,10 +238,10 @@ export default function Organizations() {
     try {
       const baseURL = apiConfig.backend.baseURL;
       const response = await fetch(`${baseURL}/api/org/org/${org.id}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -146,7 +252,7 @@ export default function Organizations() {
       const data = await response.json();
       setEditingOrg(data.data);
     } catch (err) {
-      console.error('Error fetching organization details:', err);
+      console.error("Error fetching organization details:", err);
       setEditingOrg(org);
     }
     setAddModalOpen(true);
@@ -168,31 +274,33 @@ export default function Organizations() {
       const response = await fetch(
         `${baseURL}/api/org/delete/${orgToDelete.id}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setOrganizations(orgs => orgs.filter(org => org.id !== orgToDelete.id));
+      setOrganizations((orgs) =>
+        orgs.filter((org) => org.id !== orgToDelete.id),
+      );
       setDeleteConfirmOpen(false);
       setOrgToDelete(null);
     } catch (error) {
-      console.error('Error deleting organization:', error);
-      alert('Failed to delete organization. Please try again.');
+      console.error("Error deleting organization:", error);
+      alert("Failed to delete organization. Please try again.");
     } finally {
       setIsDeleting(false);
     }
   };
 
   // Change page
-  const paginate = pageNumber => setCurrentPage(pageNumber);
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   // Handle next/previous page
   const nextPage = () => {
@@ -207,17 +315,17 @@ export default function Organizations() {
     }
   };
 
-  const getStatusBadge = status => {
+  const getStatusBadge = (status) => {
     const statusMap = {
       active: {
-        text: 'Active',
+        text: "Active",
         icon: <CheckCircle className="w-3 h-3 mr-1" />,
-        bg: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        bg: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       },
       ACTIVE: {
-        text: 'Active',
+        text: "Active",
         icon: <CheckCircle className="w-3 h-3 mr-1" />,
-        bg: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        bg: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
       },
       // pending: {
       //   text: 'Pending',
@@ -230,23 +338,23 @@ export default function Organizations() {
       //   bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
       // },
       suspended: {
-        text: 'Suspended',
+        text: "Suspended",
         icon: <XCircle className="w-3 h-3 mr-1" />,
-        bg: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        bg: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       },
       SUSPENDED: {
-        text: 'Suspended',
+        text: "Suspended",
         icon: <XCircle className="w-3 h-3 mr-1" />,
-        bg: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        bg: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       },
       default: {
-        text: status || 'Unknown',
+        text: status || "Unknown",
         icon: <AlertCircle className="w-3 h-3 mr-1" />,
-        bg: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+        bg: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
       },
     };
 
-    const statusConfig = statusMap[status] || statusMap['default'];
+    const statusConfig = statusMap[status] || statusMap["default"];
 
     return (
       <span
@@ -260,10 +368,10 @@ export default function Organizations() {
 
   // Convert byte values to a readable unit using decimal (1000-based) conversion
   // This matches common usage where 1 MB = 1,000,000 bytes
-  const formatBytes = value => {
-    if (value === null || value === undefined) return 'N/A';
+  const formatBytes = (value) => {
+    if (value === null || value === undefined) return "N/A";
     let bytes = Number(value);
-    if (Number.isNaN(bytes) || bytes < 0) return 'N/A';
+    if (Number.isNaN(bytes) || bytes < 0) return "N/A";
 
     // Handle case where backend might store value with extra zero (10x error)
     // Example: 170000000 bytes should be 17 MB, not 170 MB
@@ -290,10 +398,10 @@ export default function Organizations() {
   };
 
   // Format storage used - handles both GB values (small numbers) and byte values (large numbers)
-  const formatStorage = value => {
-    if (value === null || value === undefined) return 'N/A';
+  const formatStorage = (value) => {
+    if (value === null || value === undefined) return "N/A";
     const numValue = Number(value);
-    if (Number.isNaN(numValue) || numValue < 0) return 'N/A';
+    if (Number.isNaN(numValue) || numValue < 0) return "N/A";
 
     // If value is small (< 10000), assume it's already in GB
     // This handles cases where API returns "0.09" meaning 0.09 GB
@@ -307,10 +415,10 @@ export default function Organizations() {
   };
 
   // Format storage limit - handles both GB values (small numbers) and byte values (large numbers)
-  const formatStorageLimit = value => {
-    if (value === null || value === undefined) return 'N/A';
+  const formatStorageLimit = (value) => {
+    if (value === null || value === undefined) return "N/A";
     const numValue = Number(value);
-    if (Number.isNaN(numValue) || numValue < 0) return 'N/A';
+    if (Number.isNaN(numValue) || numValue < 0) return "N/A";
 
     // If value is small (< 10000), assume it's already in GB
     // This handles cases where API returns "10" meaning 10 GB
@@ -357,13 +465,13 @@ export default function Organizations() {
               }}
               className="px-6 py-2.5 rounded-lg text-white font-semibold transition-all hover:shadow-lg uppercase tracking-wider"
               style={{
-                background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                background: "linear-gradient(135deg, #3B82F6, #2563EB)",
               }}
-              onMouseEnter={e =>
-                (e.currentTarget.style.transform = 'translateY(-2px)')
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "translateY(-2px)")
               }
-              onMouseLeave={e =>
-                (e.currentTarget.style.transform = 'translateY(0)')
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "translateY(0)")
               }
             >
               + Add Organization
@@ -376,9 +484,9 @@ export default function Organizations() {
           className="rounded-2xl shadow-lg overflow-hidden"
           style={{
             borderColor: colors.border,
-            borderWidth: '1px',
+            borderWidth: "1px",
             backgroundColor: colors.bg.secondary,
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
           }}
         >
           {/* Filters Section */}
@@ -393,8 +501,8 @@ export default function Organizations() {
               <span
                 className="text-sm px-3 py-1 rounded-full"
                 style={{
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  color: '#3B82F6',
+                  backgroundColor: "rgba(59, 130, 246, 0.1)",
+                  color: "#3B82F6",
                 }}
               >
                 {filteredOrganizations.length} organizations
@@ -412,10 +520,10 @@ export default function Organizations() {
                     backgroundColor: colors.bg.secondary,
                     borderColor: colors.border,
                     color: colors.text.primary,
-                    borderWidth: '1px',
+                    borderWidth: "1px",
                   }}
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div className="relative">
@@ -425,10 +533,10 @@ export default function Organizations() {
                     backgroundColor: colors.bg.secondary,
                     borderColor: colors.border,
                     color: colors.text.primary,
-                    borderWidth: '1px',
+                    borderWidth: "1px",
                   }}
                   value={filter}
-                  onChange={e => setFilter(e.target.value)}
+                  onChange={(e) => setFilter(e.target.value)}
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -485,7 +593,7 @@ export default function Organizations() {
                         <div
                           className="h-4 w-8 rounded animate-pulse"
                           style={{
-                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            backgroundColor: "rgba(200, 200, 200, 0.3)",
                           }}
                         ></div>
                       </td>
@@ -494,14 +602,14 @@ export default function Organizations() {
                           <div
                             className="h-10 w-10 rounded-full animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                           <div className="ml-4 flex-1">
                             <div
                               className="h-4 w-24 rounded animate-pulse"
                               style={{
-                                backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                                backgroundColor: "rgba(200, 200, 200, 0.3)",
                               }}
                             ></div>
                           </div>
@@ -512,13 +620,13 @@ export default function Organizations() {
                           <div
                             className="h-4 w-20 rounded animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                           <div
                             className="h-3 w-28 rounded animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.2)',
+                              backgroundColor: "rgba(200, 200, 200, 0.2)",
                             }}
                           ></div>
                         </div>
@@ -527,7 +635,7 @@ export default function Organizations() {
                         <div
                           className="h-6 w-16 rounded-full animate-pulse"
                           style={{
-                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            backgroundColor: "rgba(200, 200, 200, 0.3)",
                           }}
                         ></div>
                       </td>
@@ -535,7 +643,7 @@ export default function Organizations() {
                         <div
                           className="h-6 w-20 rounded-full animate-pulse"
                           style={{
-                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            backgroundColor: "rgba(200, 200, 200, 0.3)",
                           }}
                         ></div>
                       </td>
@@ -543,7 +651,7 @@ export default function Organizations() {
                         <div
                           className="h-4 w-20 rounded animate-pulse"
                           style={{
-                            backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                            backgroundColor: "rgba(200, 200, 200, 0.3)",
                           }}
                         ></div>
                       </td>
@@ -552,19 +660,19 @@ export default function Organizations() {
                           <div
                             className="h-8 w-8 rounded-lg animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                           <div
                             className="h-8 w-8 rounded-lg animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                           <div
                             className="h-8 w-8 rounded-lg animate-pulse"
                             style={{
-                              backgroundColor: 'rgba(200, 200, 200, 0.3)',
+                              backgroundColor: "rgba(200, 200, 200, 0.3)",
                             }}
                           ></div>
                         </div>
@@ -583,8 +691,8 @@ export default function Organizations() {
                 ) : (
                   <p className="text-gray-500 dark:text-gray-400">
                     {searchTerm
-                      ? 'No organizations found matching your search.'
-                      : 'No organizations available.'}
+                      ? "No organizations found matching your search."
+                      : "No organizations available."}
                   </p>
                 )}
               </div>
@@ -624,15 +732,15 @@ export default function Organizations() {
                       key={org.id}
                       style={{ backgroundColor: colors.bg.secondary }}
                       className="transition-colors duration-150 border-b"
-                      onMouseEnter={e => {
+                      onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = colors.bg.hover;
                         e.currentTarget.style.boxShadow =
-                          '0 2px 8px rgba(0, 0, 0, 0.05)';
+                          "0 2px 8px rgba(0, 0, 0, 0.05)";
                       }}
-                      onMouseLeave={e => {
+                      onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor =
                           colors.bg.secondary;
-                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -646,14 +754,14 @@ export default function Organizations() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                            {org.name?.charAt(0)?.toUpperCase() || '?'}
+                            {org.name?.charAt(0)?.toUpperCase() || "?"}
                           </div>
                           <div className="ml-4">
                             <div
                               className="text-sm font-medium"
                               style={{ color: colors.text.primary }}
                             >
-                              {org.name || 'Unnamed Organization'}
+                              {org.name || "Unnamed Organization"}
                             </div>
                           </div>
                         </div>
@@ -663,7 +771,7 @@ export default function Organizations() {
                           className="text-sm"
                           style={{ color: colors.text.primary }}
                         >
-                          {org.admin?.name || 'No Admin'}
+                          {org.admin?.name || "No Admin"}
                           {org.admin?.email && (
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               {org.admin.email}
@@ -685,12 +793,12 @@ export default function Organizations() {
                       >
                         {org.created_at
                           ? new Date(org.created_at).toLocaleDateString()
-                          : 'N/A'}
+                          : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center items-center space-x-2">
                           <button
-                            onClick={e => handleViewClick(org, e)}
+                            onClick={(e) => handleViewClick(org, e)}
                             className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150"
                             title="View"
                           >
@@ -700,7 +808,7 @@ export default function Organizations() {
                             />
                           </button>
                           <button
-                            onClick={e => handleEditClick(org, e)}
+                            onClick={(e) => handleEditClick(org, e)}
                             className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150"
                             title="Edit"
                           >
@@ -710,14 +818,24 @@ export default function Organizations() {
                             />
                           </button>
                           <button
-                            onClick={e => handleDeleteClick(org, e)}
+                            onClick={(e) => handleAddOnClick(org, e)}
+                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150"
+                            title="Allocate add-on"
+                          >
+                            <Plus
+                              className="h-5 w-5"
+                              style={{ color: "#10B981" }}
+                            />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteClick(org, e)}
                             className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition-colors duration-150"
                             title="Delete"
                             disabled={isDeleting}
                           >
                             <Trash2
                               className="h-5 w-5"
-                              style={{ color: '#EF4444' }}
+                              style={{ color: "#EF4444" }}
                             />
                           </button>
                         </div>
@@ -739,8 +857,8 @@ export default function Organizations() {
                 disabled={currentPage === 1}
                 className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
                   currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 Previous
@@ -755,8 +873,8 @@ export default function Organizations() {
                 disabled={currentPage === totalPages}
                 className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
                   currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 Next
@@ -765,15 +883,15 @@ export default function Organizations() {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm" style={{ color: colors.text.secondary }}>
-                  Showing{' '}
-                  <span className="font-medium">{indexOfFirstOrg + 1}</span> to{' '}
+                  Showing{" "}
+                  <span className="font-medium">{indexOfFirstOrg + 1}</span> to{" "}
                   <span className="font-medium">
                     {Math.min(indexOfLastOrg, filteredOrganizations.length)}
-                  </span>{' '}
-                  of{' '}
+                  </span>{" "}
+                  of{" "}
                   <span className="font-medium">
                     {filteredOrganizations.length}
-                  </span>{' '}
+                  </span>{" "}
                   results
                 </p>
               </div>
@@ -787,8 +905,8 @@ export default function Organizations() {
                     disabled={currentPage === 1}
                     className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
                       currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-300'
+                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
                     }`}
                   >
                     <span className="sr-only">Previous</span>
@@ -808,19 +926,19 @@ export default function Organizations() {
                   </button>
 
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    number => (
+                    (number) => (
                       <button
                         key={number}
                         onClick={() => paginate(number)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                           currentPage === number
-                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                         }`}
                       >
                         {number}
                       </button>
-                    )
+                    ),
                   )}
 
                   <button
@@ -828,8 +946,8 @@ export default function Organizations() {
                     disabled={currentPage === totalPages}
                     className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
                       currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-300'
+                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                        : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
                     }`}
                   >
                     <span className="sr-only">Next</span>
@@ -889,7 +1007,7 @@ export default function Organizations() {
                       ) : (
                         <div
                           className="h-20 w-20 rounded-xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0 shadow-md"
-                          style={{ backgroundColor: '#3B82F6' }}
+                          style={{ backgroundColor: "#3B82F6" }}
                         >
                           {selectedOrg.name?.charAt(0)?.toUpperCase()}
                         </div>
@@ -906,7 +1024,7 @@ export default function Organizations() {
                           className="text-sm mt-2 leading-relaxed"
                         >
                           {selectedOrg.description ||
-                            'No description available'}
+                            "No description available"}
                         </p>
                         <div className="mt-3">
                           {getStatusBadge(selectedOrg.status)}
@@ -930,8 +1048,8 @@ export default function Organizations() {
                     <div
                       className="p-4 rounded-xl border"
                       style={{
-                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                        borderColor: 'rgba(59, 130, 246, 0.2)',
+                        backgroundColor: "rgba(59, 130, 246, 0.05)",
+                        borderColor: "rgba(59, 130, 246, 0.2)",
                       }}
                     >
                       <p
@@ -942,9 +1060,9 @@ export default function Organizations() {
                       </p>
                       <p
                         className="text-2xl font-bold mt-2"
-                        style={{ color: '#3B82F6' }}
+                        style={{ color: "#3B82F6" }}
                       >
-                        {selectedOrg.user_limit || 'N/A'}
+                        {selectedOrg.user_limit || "N/A"}
                       </p>
                       <p
                         className="text-xs mt-1"
@@ -958,8 +1076,8 @@ export default function Organizations() {
                     <div
                       className="p-4 rounded-xl border"
                       style={{
-                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
-                        borderColor: 'rgba(16, 185, 129, 0.2)',
+                        backgroundColor: "rgba(16, 185, 129, 0.05)",
+                        borderColor: "rgba(16, 185, 129, 0.2)",
                       }}
                     >
                       <p
@@ -970,9 +1088,9 @@ export default function Organizations() {
                       </p>
                       <p
                         className="text-2xl font-bold mt-2"
-                        style={{ color: '#10B981' }}
+                        style={{ color: "#10B981" }}
                       >
-                        {formatStorage(selectedOrg.storage)} /{' '}
+                        {formatStorage(selectedOrg.storage)} /{" "}
                         {formatStorageLimit(selectedOrg.storage_limit)}
                       </p>
                       <p
@@ -983,31 +1101,32 @@ export default function Organizations() {
                       </p>
                     </div>
 
-                    {/* Credits */}
+                    {/* AI Tokens */}
                     <div
                       className="p-4 rounded-xl border"
                       style={{
-                        backgroundColor: 'rgba(245, 158, 11, 0.05)',
-                        borderColor: 'rgba(245, 158, 11, 0.2)',
+                        backgroundColor: "rgba(245, 158, 11, 0.05)",
+                        borderColor: "rgba(245, 158, 11, 0.2)",
                       }}
                     >
                       <p
                         className="text-xs font-semibold uppercase"
                         style={{ color: colors.text.secondary }}
                       >
-                        Available Credits
+                        AI Token Usage
                       </p>
                       <p
                         className="text-2xl font-bold mt-2"
-                        style={{ color: '#F59E0B' }}
+                        style={{ color: "#F59E0B" }}
                       >
-                        {selectedOrg.credit || 0}
+                        {selectedOrg.ai_tokens_used ?? 0} /{" "}
+                        {selectedOrg.ai_token_limit ?? "N/A"}
                       </p>
                       <p
                         className="text-xs mt-1"
                         style={{ color: colors.text.secondary }}
                       >
-                        credits
+                        tokens used / limit
                       </p>
                     </div>
                   </div>
@@ -1066,7 +1185,7 @@ export default function Organizations() {
                           className="text-sm font-medium mt-2"
                           style={{ color: colors.text.primary }}
                         >
-                          {selectedOrg.plan || 'N/A'}
+                          {selectedOrg.plan || "N/A"}
                         </p>
                       </div>
 
@@ -1084,13 +1203,13 @@ export default function Organizations() {
                         >
                           {selectedOrg.created_at
                             ? new Date(
-                                selectedOrg.created_at
-                              ).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
+                                selectedOrg.created_at,
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
                               })
-                            : 'N/A'}
+                            : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -1111,17 +1230,75 @@ export default function Organizations() {
                         >
                           {selectedOrg.updated_at
                             ? new Date(
-                                selectedOrg.updated_at
-                              ).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
+                                selectedOrg.updated_at,
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
                               })
-                            : 'N/A'}
+                            : "N/A"}
                         </p>
                       </div>
 
-                      {/* Placeholder for balance */}
+                      {/* AI Billing */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          AI Billing Mode
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.ai_billing_mode || "N/A"}
+                        </p>
+                      </div>
+
+                      {/* AI Cost */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          AI Cost (used / limit)
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {(selectedOrg.ai_cost_used ?? "0") +
+                            " / " +
+                            (selectedOrg.ai_cost_limit ?? "N/A")}
+                        </p>
+                      </div>
+
+                      {/* AI Tokens Reset */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          AI Tokens Reset Date
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.ai_tokens_reset_date
+                            ? new Date(
+                                selectedOrg.ai_tokens_reset_date,
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })
+                            : "N/A"}
+                        </p>
+                      </div>
+
+                      {/* Account Status */}
                       <div>
                         <label
                           className="text-xs font-semibold uppercase tracking-wider"
@@ -1133,14 +1310,45 @@ export default function Organizations() {
                           className="text-sm font-medium mt-2"
                           style={{ color: colors.text.primary }}
                         >
-                          {selectedOrg.status === 'ACTIVE'
-                            ? 'Active & Verified'
+                          {selectedOrg.status === "ACTIVE"
+                            ? "Active & Verified"
                             : selectedOrg.status}
                         </p>
                       </div>
 
-                      {/* Placeholder */}
-                      <div></div>
+                      {/* Subscription */}
+                      <div>
+                        <label
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          Subscription
+                        </label>
+                        <p
+                          className="text-sm font-medium mt-2"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {selectedOrg.subscription_start
+                            ? new Date(
+                                selectedOrg.subscription_start,
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })
+                            : "N/A"}{" "}
+                          –{" "}
+                          {selectedOrg.subscription_end
+                            ? new Date(
+                                selectedOrg.subscription_end,
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })
+                            : "Ongoing"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1154,17 +1362,17 @@ export default function Organizations() {
                     onClick={() => setViewModalOpen(false)}
                     className="px-8 py-2.5 rounded-lg font-medium transition-all duration-200"
                     style={{
-                      backgroundColor: '#3B82F6',
-                      color: 'white',
+                      backgroundColor: "#3B82F6",
+                      color: "white",
                     }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.backgroundColor = '#2563EB';
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#2563EB";
                       e.currentTarget.style.boxShadow =
-                        '0 4px 12px rgba(59, 130, 246, 0.3)';
+                        "0 4px 12px rgba(59, 130, 246, 0.3)";
                     }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.backgroundColor = '#3B82F6';
-                      e.currentTarget.style.boxShadow = 'none';
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#3B82F6";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     Close
@@ -1182,6 +1390,171 @@ export default function Organizations() {
         </div>
       )}
 
+      {/* Add-on Allocation Modal */}
+      {addOnModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div
+            className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+            style={{
+              backgroundColor: colors.bg.secondary,
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <div
+              className="flex items-start justify-between px-6 py-5 border-b"
+              style={{ borderColor: colors.border }}
+            >
+              <div>
+                <p
+                  className="text-sm font-semibold uppercase tracking-wider"
+                  style={{ color: colors.text.secondary }}
+                >
+                  Allocate add-on
+                </p>
+                <h3
+                  className="text-2xl font-bold mt-1"
+                  style={{ color: colors.text.primary }}
+                >
+                  {selectedAddOnOrg?.name || "Organization"}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setAddOnModalOpen(false);
+                  setSelectedAddOnOrg(null);
+                  setAddOnQuantity("");
+                  setAddOnStatus(null);
+                }}
+                className="text-gray-400 hover:text-gray-200 text-xl leading-none"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: colors.text.secondary }}
+                >
+                  Type
+                </label>
+                <div className="relative">
+                  <select
+                    value={addOnType}
+                    onChange={(e) => setAddOnType(e.target.value)}
+                    className="w-full appearance-none pl-4 pr-12 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all duration-200"
+                    style={{
+                      backgroundColor: colors.bg.primary,
+                      borderColor: colors.border,
+                      color: colors.text.primary,
+                    }}
+                  >
+                    <option value="tokens">Tokens (M)</option>
+                    <option value="storage">Storage (GB)</option>
+                    <option value="users">Users</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: colors.text.secondary }}
+                >
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={addOnQuantity}
+                  onChange={(e) => setAddOnQuantity(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full px-4 py-3 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all duration-200"
+                  style={{
+                    backgroundColor: colors.bg.primary,
+                    borderColor: colors.border,
+                    color: colors.text.primary,
+                  }}
+                />
+              </div>
+
+              {addOnStatus && (
+                <div
+                  className={`px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2`}
+                  style={{
+                    backgroundColor:
+                      addOnStatus.type === "success"
+                        ? "rgba(16, 185, 129, 0.12)"
+                        : "rgba(239, 68, 68, 0.12)",
+                    color:
+                      addOnStatus.type === "success" ? "#10B981" : "#EF4444",
+                    border: `1px solid ${
+                      addOnStatus.type === "success"
+                        ? "rgba(16, 185, 129, 0.35)"
+                        : "rgba(239, 68, 68, 0.35)"
+                    }`,
+                  }}
+                >
+                  <span
+                    className="inline-block w-2 h-2 rounded-full"
+                    style={{ backgroundColor: "currentColor" }}
+                  ></span>
+                  {addOnStatus.message}
+                </div>
+              )}
+            </div>
+
+            <div
+              className="px-6 py-4 border-t flex justify-end gap-3"
+              style={{ borderColor: colors.border }}
+            >
+              <button
+                onClick={() => {
+                  setAddOnModalOpen(false);
+                  setSelectedAddOnOrg(null);
+                  setAddOnQuantity("");
+                  setAddOnStatus(null);
+                }}
+                className="px-5 py-2.5 rounded-lg font-semibold border text-sm transition-all duration-200"
+                style={{
+                  backgroundColor: colors.bg.primary,
+                  borderColor: colors.border,
+                  color: colors.text.primary,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAllocateAddOn}
+                disabled={isAllocating}
+                className="px-6 py-2.5 rounded-lg font-semibold text-sm text-white transition-all duration-200 disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(135deg, #2563EB, #1D4ED8)",
+                  boxShadow: "0 6px 16px rgba(37, 99, 235, 0.35)",
+                }}
+              >
+                {isAllocating ? "Allocating..." : "Allocate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Dialog - Always Light Mode */}
       {deleteConfirmOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1190,7 +1563,7 @@ export default function Organizations() {
               Delete Organization
             </h3>
             <p className="mb-6 text-gray-600">
-              Are you sure you want to delete{' '}
+              Are you sure you want to delete{" "}
               <strong className="text-gray-900">{orgToDelete?.name}</strong>?
               This action cannot be undone.
             </p>
@@ -1210,7 +1583,7 @@ export default function Organizations() {
                 className="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
                 disabled={isDeleting}
               >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
@@ -1231,10 +1604,10 @@ export default function Organizations() {
             try {
               const baseURL = apiConfig.backend.baseURL;
               const response = await fetch(`${baseURL}/api/org/allOrg`, {
-                method: 'GET',
+                method: "GET",
                 headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${localStorage.getItem('token')}`,
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
               });
 
@@ -1245,7 +1618,7 @@ export default function Organizations() {
               const data = await response.json();
               setOrganizations(Array.isArray(data.data) ? data.data : []);
             } catch (err) {
-              console.error('Error fetching organizations:', err);
+              console.error("Error fetching organizations:", err);
             }
           };
           fetchOrganizations();

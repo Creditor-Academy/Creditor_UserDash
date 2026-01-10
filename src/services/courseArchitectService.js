@@ -1,6 +1,6 @@
 // Course Architect Service - Comprehensive Course Generation
 // Expert course architect, instructional designer, and visual storyteller
-import openAIService from './openAIService';
+import openAIService from "./openAIService";
 
 /**
  * Course Architect Service
@@ -27,7 +27,7 @@ class CourseArchitectService {
       learningObjectives,
     } = courseData;
 
-    console.log('🎯 Generating comprehensive course:', courseTitle);
+    console.log("🎯 Generating comprehensive course:", courseTitle);
 
     const systemPrompt = `You are an expert course architect, instructional designer, and visual storyteller.
 Your goal is to create a **comprehensive, advanced-level course** that blends deep theoretical understanding with practical, project-based learning.
@@ -114,31 +114,31 @@ Generate comprehensive content that feels like a professional-level learning pat
         systemPrompt,
         userPrompt,
         {
-          model: 'gpt-4',
+          modelProfile: "blueprint",
           maxTokens: 4000,
           temperature: 0.7,
-        }
+        },
       );
 
       // Validate and enhance the generated structure
       const validatedCourse = this.validateAndEnhanceCourse(
         courseStructure,
-        courseData
+        courseData,
       );
 
-      console.log('✅ Comprehensive course generated successfully');
+      console.log("✅ Comprehensive course generated successfully");
       console.log(`📚 Modules: ${validatedCourse.modules.length}`);
       console.log(
-        `📝 Total Lessons: ${this.countTotalLessons(validatedCourse)}`
+        `📝 Total Lessons: ${this.countTotalLessons(validatedCourse)}`,
       );
 
       return {
         success: true,
         data: validatedCourse,
-        provider: 'openai-architect',
+        provider: "ai",
       };
     } catch (error) {
-      console.error('❌ Comprehensive course generation failed:', error);
+      console.error("❌ Comprehensive course generation failed:", error);
 
       // Fallback to structured generation
       const fallbackCourse =
@@ -147,7 +147,7 @@ Generate comprehensive content that feels like a professional-level learning pat
       return {
         success: true,
         data: fallbackCourse,
-        provider: 'fallback-architect',
+        provider: "fallback",
         warning: `Used fallback generation: ${error.message}`,
       };
     }
@@ -167,19 +167,19 @@ Generate comprehensive content that feels like a professional-level learning pat
 
     // Validate modules (5-8 modules)
     if (courseStructure.modules.length < 5) {
-      console.warn('⚠️ Less than 5 modules generated, adding fallback modules');
+      console.warn("⚠️ Less than 5 modules generated, adding fallback modules");
       while (courseStructure.modules.length < 5) {
         courseStructure.modules.push(
           this.generateFallbackModule(
             courseStructure.modules.length + 1,
-            originalData
-          )
+            originalData,
+          ),
         );
       }
     }
 
     if (courseStructure.modules.length > 8) {
-      console.warn('⚠️ More than 8 modules generated, trimming to 8');
+      console.warn("⚠️ More than 8 modules generated, trimming to 8");
       courseStructure.modules = courseStructure.modules.slice(0, 8);
     }
 
@@ -223,22 +223,22 @@ Generate comprehensive content that feels like a professional-level learning pat
     // Validate lessons (3-5 per module)
     if (module.lessons.length < 3) {
       console.warn(
-        `⚠️ Module ${moduleIndex} has less than 3 lessons, adding fallback lessons`
+        `⚠️ Module ${moduleIndex} has less than 3 lessons, adding fallback lessons`,
       );
       while (module.lessons.length < 3) {
         module.lessons.push(
           this.generateFallbackLesson(
             module.lessons.length + 1,
             module.moduleTitle,
-            courseData
-          )
+            courseData,
+          ),
         );
       }
     }
 
     if (module.lessons.length > 5) {
       console.warn(
-        `⚠️ Module ${moduleIndex} has more than 5 lessons, trimming to 5`
+        `⚠️ Module ${moduleIndex} has more than 5 lessons, trimming to 5`,
       );
       module.lessons = module.lessons.slice(0, 5);
     }
@@ -249,7 +249,7 @@ Generate comprehensive content that feels like a professional-level learning pat
         lesson,
         index + 1,
         module.moduleTitle,
-        courseData
+        courseData,
       );
     });
 
@@ -298,14 +298,14 @@ Generate comprehensive content that feels like a professional-level learning pat
       lesson.quiz = [];
     }
 
-    lesson.quiz = lesson.quiz.map(q => ({
+    lesson.quiz = lesson.quiz.map((q) => ({
       question:
         q.question || `What is the main concept of ${lesson.lessonTitle}?`,
       options:
         Array.isArray(q.options) && q.options.length === 4
           ? q.options
-          : ['Option A', 'Option B', 'Option C', 'Option D'],
-      answer: q.answer || q.options?.[0] || 'Option A',
+          : ["Option A", "Option B", "Option C", "Option D"],
+      answer: q.answer || q.options?.[0] || "Option A",
     }));
 
     // Ensure 3-5 quiz questions
@@ -313,8 +313,8 @@ Generate comprehensive content that feels like a professional-level learning pat
       lesson.quiz.push(
         this.generateFallbackQuizQuestion(
           lesson.lessonTitle,
-          lesson.quiz.length + 1
-        )
+          lesson.quiz.length + 1,
+        ),
       );
     }
 
@@ -332,8 +332,8 @@ Generate comprehensive content that feels like a professional-level learning pat
         this.generateFallbackImagePrompt(
           lesson.lessonTitle,
           courseData,
-          lesson.imagePrompts.length + 1
-        )
+          lesson.imagePrompts.length + 1,
+        ),
       );
     }
 
@@ -352,16 +352,16 @@ Generate comprehensive content that feels like a professional-level learning pat
   generateFallbackComprehensiveCourse(courseData) {
     const { courseTitle, subjectDomain, difficulty, duration } = courseData;
 
-    console.log('📚 Generating fallback comprehensive course structure');
+    console.log("📚 Generating fallback comprehensive course structure");
 
     const modules = [];
     const moduleTemplates = [
-      { title: `Introduction to ${subjectDomain}`, focus: 'fundamentals' },
-      { title: `${subjectDomain} Core Concepts`, focus: 'concepts' },
-      { title: `Practical ${subjectDomain}`, focus: 'practical' },
-      { title: `Advanced ${subjectDomain}`, focus: 'advanced' },
-      { title: `${subjectDomain} Best Practices`, focus: 'best-practices' },
-      { title: `Real-world ${subjectDomain}`, focus: 'real-world' },
+      { title: `Introduction to ${subjectDomain}`, focus: "fundamentals" },
+      { title: `${subjectDomain} Core Concepts`, focus: "concepts" },
+      { title: `Practical ${subjectDomain}`, focus: "practical" },
+      { title: `Advanced ${subjectDomain}`, focus: "advanced" },
+      { title: `${subjectDomain} Best Practices`, focus: "best-practices" },
+      { title: `Real-world ${subjectDomain}`, focus: "real-world" },
     ];
 
     for (let i = 0; i < 6; i++) {
@@ -388,12 +388,12 @@ Generate comprehensive content that feels like a professional-level learning pat
     const { subjectDomain } = courseData;
     const moduleTitle =
       template?.title || `Module ${moduleIndex}: ${subjectDomain} Essentials`;
-    const focus = template?.focus || 'general';
+    const focus = template?.focus || "general";
 
     const lessons = [];
     for (let i = 0; i < 4; i++) {
       lessons.push(
-        this.generateFallbackLesson(i + 1, moduleTitle, courseData, focus)
+        this.generateFallbackLesson(i + 1, moduleTitle, courseData, focus),
       );
     }
 
@@ -416,10 +416,10 @@ Generate comprehensive content that feels like a professional-level learning pat
     lessonIndex,
     moduleTitle,
     courseData,
-    focus = 'general'
+    focus = "general",
   ) {
     const { subjectDomain, courseTitle } = courseData;
-    const lessonTitle = `Lesson ${lessonIndex}: ${subjectDomain} ${focus === 'general' ? 'Fundamentals' : focus}`;
+    const lessonTitle = `Lesson ${lessonIndex}: ${subjectDomain} ${focus === "general" ? "Fundamentals" : focus}`;
 
     return {
       lessonTitle,
@@ -524,32 +524,32 @@ Consider a leading technology company implementing ${lessonTitle} principles in 
       {
         question: `What is the primary objective of ${lessonTitle}?`,
         options: [
-          'To establish foundational understanding',
-          'To replace existing methodologies',
-          'To complicate current processes',
-          'To reduce system functionality',
+          "To establish foundational understanding",
+          "To replace existing methodologies",
+          "To complicate current processes",
+          "To reduce system functionality",
         ],
-        answer: 'To establish foundational understanding',
+        answer: "To establish foundational understanding",
       },
       {
         question: `Which factor is most critical when implementing ${lessonTitle} principles?`,
         options: [
-          'Cost considerations only',
-          'Balancing theory with practical constraints',
-          'Following trends blindly',
-          'Avoiding stakeholder input',
+          "Cost considerations only",
+          "Balancing theory with practical constraints",
+          "Following trends blindly",
+          "Avoiding stakeholder input",
         ],
-        answer: 'Balancing theory with practical constraints',
+        answer: "Balancing theory with practical constraints",
       },
       {
         question: `How do industry best practices relate to ${lessonTitle}?`,
         options: [
-          'They are completely unrelated',
-          'They provide proven frameworks for implementation',
-          'They should be avoided in favor of innovation',
-          'They only apply to large organizations',
+          "They are completely unrelated",
+          "They provide proven frameworks for implementation",
+          "They should be avoided in favor of innovation",
+          "They only apply to large organizations",
         ],
-        answer: 'They provide proven frameworks for implementation',
+        answer: "They provide proven frameworks for implementation",
       },
     ];
 
@@ -609,20 +609,20 @@ Consider a leading technology company implementing ${lessonTitle} principles in 
     const generatedImages = [];
 
     console.log(
-      `🎨 Generating ${imagePrompts.length} images for lesson: ${lessonTitle}`
+      `🎨 Generating ${imagePrompts.length} images for lesson: ${lessonTitle}`,
     );
 
     for (let i = 0; i < imagePrompts.length; i++) {
       try {
-        const prompt = imagePrompts[i].replace(/^Image Prompt \d+:\s*/, '');
+        const prompt = imagePrompts[i].replace(/^Image Prompt \d+:\s*/, "");
         console.log(
-          `🎨 Generating image ${i + 1}/${imagePrompts.length}: ${prompt.substring(0, 50)}...`
+          `🎨 Generating image ${i + 1}/${imagePrompts.length}: ${prompt.substring(0, 50)}...`,
         );
 
         const result = await this.openAI.generateImage(prompt, {
-          size: '1024x1024',
-          quality: 'standard',
-          style: 'vivid',
+          size: "1024x1024",
+          quality: "standard",
+          style: "vivid",
         });
 
         if (result.success) {
@@ -644,7 +644,7 @@ Consider a leading technology company implementing ${lessonTitle} principles in 
 
         // Add delay to avoid rate limits
         if (i < imagePrompts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (error) {
         console.error(`❌ Error generating image ${i + 1}:`, error);
@@ -657,9 +657,9 @@ Consider a leading technology company implementing ${lessonTitle} principles in 
       }
     }
 
-    const successCount = generatedImages.filter(img => img.url).length;
+    const successCount = generatedImages.filter((img) => img.url).length;
     console.log(
-      `🎨 Image generation complete: ${successCount}/${imagePrompts.length} successful`
+      `🎨 Image generation complete: ${successCount}/${imagePrompts.length} successful`,
     );
 
     return generatedImages;

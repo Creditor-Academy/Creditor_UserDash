@@ -1,55 +1,57 @@
-import React, { useContext } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Bell, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import React, { useContext } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Bell, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 export function DashboardAnnouncements() {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
-  const titleText = isChristmasMode
-    ? '🎁 Festive Updates'
-    : 'Recent Announcements';
-  const microLabel = isChristmasMode ? '❄️ Holiday News' : 'Stay informed';
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const titleText =
+    activeTheme === "newYear"
+      ? "🎯 New Year Announcements"
+      : "Recent Announcements";
+  const microLabel =
+    activeTheme === "newYear" ? "✨ Latest Updates" : "Stay informed";
   // Sample announcements data with actual items
   const announcements = [
     {
       id: 1,
-      title: 'New Course Available',
-      content: 'Constitutional Law Advanced Topics is now available',
-      date: 'Today',
-      priority: 'high',
+      title: "New Course Available",
+      content: "Constitutional Law Advanced Topics is now available",
+      date: "Today",
+      priority: "high",
       isNew: true,
     },
     {
       id: 2,
-      title: 'System Maintenance',
-      content: 'Platform will be down for maintenance this weekend',
-      date: 'Yesterday',
-      priority: 'medium',
+      title: "System Maintenance",
+      content: "Platform will be down for maintenance this weekend",
+      date: "Yesterday",
+      priority: "medium",
       isNew: true,
     },
     {
       id: 3,
-      title: 'Holiday Schedule',
-      content: 'Check updated course schedule for the holidays',
-      date: '3 days ago',
-      priority: 'low',
+      title: "Holiday Schedule",
+      content: "Check updated course schedule for the holidays",
+      date: "3 days ago",
+      priority: "low",
       isNew: false,
     },
   ];
 
-  const getPriorityColor = priority => {
+  const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20';
-      case 'medium':
-        return 'border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20';
-      case 'low':
+      case "high":
+        return "border-l-4 border-red-500 bg-red-50 dark:bg-red-900/20";
+      case "medium":
+        return "border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/20";
+      case "low":
       default:
-        return 'border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20';
+        return "border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20";
     }
   };
 
@@ -69,7 +71,9 @@ export function DashboardAnnouncements() {
   };
 
   return (
-    <Card className="border shadow bg-card text-card-foreground h-full overflow-hidden">
+    <Card
+      className={`border shadow bg-card text-card-foreground h-full overflow-hidden ${activeTheme === "newYear" ? "dashboard-newyear-card" : ""}`}
+    >
       <CardHeader className="p-3 flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium flex flex-col gap-1">
           <span className="flex items-center gap-2">
@@ -99,13 +103,13 @@ export function DashboardAnnouncements() {
             initial="hidden"
             animate="show"
           >
-            {announcements.map(announcement => (
+            {announcements.map((announcement) => (
               <motion.div
                 key={announcement.id}
                 className={cn(
-                  'text-sm p-2 relative overflow-hidden rounded-md',
-                  'transition-all duration-300',
-                  getPriorityColor(announcement.priority)
+                  "text-sm p-2 relative overflow-hidden rounded-md",
+                  "transition-all duration-300",
+                  getPriorityColor(announcement.priority),
                 )}
                 variants={item}
               >

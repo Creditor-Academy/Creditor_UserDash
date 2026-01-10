@@ -12,19 +12,19 @@
  * 7. Quality - Accuracy, compliance, validation
  */
 
-import advancedLessonContentEngine from './advancedLessonContentEngine.js';
-import optimizedOpenAIService from './optimizedOpenAIService.js';
+import advancedLessonContentEngine from "./advancedLessonContentEngine.js";
+import optimizedOpenAIService from "./optimizedOpenAIService.js";
 
 class ADDIE7PhaseIntegration {
   constructor() {
     this.phaseSequence = [
-      'analysis',
-      'objectives',
-      'design',
-      'experience',
-      'development',
-      'implementation',
-      'quality',
+      "analysis",
+      "objectives",
+      "design",
+      "experience",
+      "development",
+      "implementation",
+      "quality",
     ];
   }
 
@@ -46,13 +46,13 @@ class ADDIE7PhaseIntegration {
         requiredResources: designPhases?.analysis?.requiredResources,
         moduleCount: designPhases?.analysis?.moduleCount || 4,
         lessonsPerModule: designPhases?.analysis?.lessonsPerModule || 3,
-        flowPreference: designPhases?.analysis?.flowPreference || 'linear',
+        flowPreference: designPhases?.analysis?.flowPreference || "linear",
       },
       objectives: {
         overallObjectives: designPhases?.objectives?.overallObjectives || [],
         optionalObjectives: designPhases?.objectives?.optionalObjectives || [],
         bloomTargets: designPhases?.objectives?.bloomTargets || {
-          course: 'apply',
+          course: "apply",
         },
         evidencePlan: designPhases?.objectives?.evidencePlan || [],
         autoGenerateLessonObjectives:
@@ -71,13 +71,13 @@ class ADDIE7PhaseIntegration {
         retentionPlan: designPhases?.design?.retentionPlan,
       },
       experience: {
-        deliveryMode: designPhases?.experience?.deliveryMode || 'self_paced',
+        deliveryMode: designPhases?.experience?.deliveryMode || "self_paced",
         visualApproach: designPhases?.experience?.visualApproach,
         auditoryApproach: designPhases?.experience?.auditoryApproach,
         kinestheticApproach: designPhases?.experience?.kinestheticApproach,
         storytellingPlan: designPhases?.experience?.storytellingPlan,
         practiceCadence:
-          designPhases?.experience?.practiceCadence || 'per_lesson',
+          designPhases?.experience?.practiceCadence || "per_lesson",
         feedbackChannels: designPhases?.experience?.feedbackChannels || [],
         adaptivePaths: designPhases?.experience?.adaptivePaths || false,
         brandStyle: designPhases?.experience?.brandStyle,
@@ -89,7 +89,7 @@ class ADDIE7PhaseIntegration {
         inputsProvided: designPhases?.development?.inputsProvided,
         moduleStructureNotes: designPhases?.development?.moduleStructureNotes,
         storyboardFormat:
-          designPhases?.development?.storyboardFormat || 'slide-by-slide',
+          designPhases?.development?.storyboardFormat || "slide-by-slide",
         reviewCycle: designPhases?.development?.reviewCycle,
         localizationNeeds: designPhases?.development?.localizationNeeds,
         interactiveElements: designPhases?.development?.interactiveElements,
@@ -102,17 +102,17 @@ class ADDIE7PhaseIntegration {
         evaluationCriteria:
           designPhases?.implementation?.evaluationCriteria || [],
         optimizationCadence:
-          designPhases?.implementation?.optimizationCadence || 'quarterly',
+          designPhases?.implementation?.optimizationCadence || "quarterly",
         learnerInsights: designPhases?.implementation?.learnerInsights,
         feedbackLoops: designPhases?.implementation?.feedbackLoops,
         assessmentDataNeeds:
           designPhases?.implementation?.assessmentDataNeeds || [],
       },
       quality: {
-        accuracyBenchmark: designPhases?.quality?.accuracyBenchmark || '99%',
+        accuracyBenchmark: designPhases?.quality?.accuracyBenchmark || "99%",
         referenceCheck: designPhases?.quality?.referenceCheck !== false,
         humanValidation: designPhases?.quality?.humanValidation !== false,
-        ambiguityHandling: designPhases?.quality?.ambiguityHandling || 'ask',
+        ambiguityHandling: designPhases?.quality?.ambiguityHandling || "ask",
         autoTagging: designPhases?.quality?.autoTagging !== false,
         qualityChecklist: designPhases?.quality?.qualityChecklist || [],
         complianceNotes: designPhases?.quality?.complianceNotes,
@@ -128,7 +128,7 @@ class ADDIE7PhaseIntegration {
 
     // Determine difficulty based on Bloom's level
     const difficulty = this.mapBloomToDifficulty(
-      phaseData.objectives.bloomTargets.course
+      phaseData.objectives.bloomTargets.course,
     );
 
     // Generate dynamic blocks aligned with ADDIE phases
@@ -141,17 +141,17 @@ class ADDIE7PhaseIntegration {
         description: lessonContext.description,
       },
       phaseData,
-      difficulty
+      difficulty,
     );
 
     // Generate content for each block with phase context
     const enrichedBlocks = await Promise.all(
-      blocks.map(async block => {
+      blocks.map(async (block) => {
         const content =
           await advancedLessonContentEngine.generateTopicSpecificContent(
             block,
             lessonContext,
-            courseData
+            courseData,
           );
 
         return {
@@ -161,7 +161,7 @@ class ADDIE7PhaseIntegration {
           phaseAlignment: this.calculatePhaseAlignment(block, phaseData),
           bloomLevel: this.getBloomLevelForPhase(block.phase, phaseData),
         };
-      })
+      }),
     );
 
     return {
@@ -173,7 +173,7 @@ class ADDIE7PhaseIntegration {
       blocks: enrichedBlocks,
       phaseAlignment: this.calculateOverallPhaseAlignment(
         enrichedBlocks,
-        phaseData
+        phaseData,
       ),
       metrics: {
         uniquePatterns: this.countUniquePatterns(enrichedBlocks),
@@ -188,14 +188,14 @@ class ADDIE7PhaseIntegration {
    */
   mapBloomToDifficulty(bloomLevel) {
     const mapping = {
-      remember: 'beginner',
-      understand: 'beginner',
-      apply: 'intermediate',
-      analyze: 'intermediate',
-      evaluate: 'advanced',
-      create: 'advanced',
+      remember: "beginner",
+      understand: "beginner",
+      apply: "intermediate",
+      analyze: "intermediate",
+      evaluate: "advanced",
+      create: "advanced",
     };
-    return mapping[bloomLevel] || 'intermediate';
+    return mapping[bloomLevel] || "intermediate";
   }
 
   /**
@@ -203,15 +203,15 @@ class ADDIE7PhaseIntegration {
    */
   getBloomLevelForPhase(phase, phaseData) {
     const phaseBloomMapping = {
-      analysis: 'remember',
-      objectives: 'understand',
-      design: 'apply',
-      experience: 'apply',
-      development: 'analyze',
-      implementation: 'evaluate',
-      quality: 'create',
+      analysis: "remember",
+      objectives: "understand",
+      design: "apply",
+      experience: "apply",
+      development: "analyze",
+      implementation: "evaluate",
+      quality: "create",
     };
-    return phaseBloomMapping[phase] || 'apply';
+    return phaseBloomMapping[phase] || "apply";
   }
 
   /**
@@ -225,10 +225,10 @@ class ADDIE7PhaseIntegration {
 
     // Score based on how well block aligns with phase data
     let score = 0;
-    const values = Object.values(phaseInfo).filter(v => v && v.length > 0);
+    const values = Object.values(phaseInfo).filter((v) => v && v.length > 0);
     score = Math.min(
       100,
-      (values.length / Object.keys(phaseInfo).length) * 100
+      (values.length / Object.keys(phaseInfo).length) * 100,
     );
 
     return Math.round(score);
@@ -238,8 +238,8 @@ class ADDIE7PhaseIntegration {
    * Calculate overall phase alignment for lesson
    */
   calculateOverallPhaseAlignment(blocks, phaseData) {
-    const alignments = blocks.map(b =>
-      this.calculatePhaseAlignment(b, phaseData)
+    const alignments = blocks.map((b) =>
+      this.calculatePhaseAlignment(b, phaseData),
     );
     const average = alignments.reduce((a, b) => a + b, 0) / alignments.length;
     return Math.round(average);
@@ -249,7 +249,7 @@ class ADDIE7PhaseIntegration {
    * Count unique patterns in blocks
    */
   countUniquePatterns(blocks) {
-    const patterns = new Set(blocks.map(b => `${b.type}:${b.variant.id}`));
+    const patterns = new Set(blocks.map((b) => `${b.type}:${b.variant.id}`));
     return patterns.size;
   }
 
@@ -258,8 +258,8 @@ class ADDIE7PhaseIntegration {
    */
   calculatePhaseDistribution(blocks) {
     const distribution = {};
-    this.phaseSequence.forEach(phase => {
-      distribution[phase] = blocks.filter(b => b.phase === phase).length;
+    this.phaseSequence.forEach((phase) => {
+      distribution[phase] = blocks.filter((b) => b.phase === phase).length;
     });
     return distribution;
   }
@@ -269,17 +269,17 @@ class ADDIE7PhaseIntegration {
    */
   calculateBloomCoverage(blocks, phaseData) {
     const bloomLevels = [
-      'remember',
-      'understand',
-      'apply',
-      'analyze',
-      'evaluate',
-      'create',
+      "remember",
+      "understand",
+      "apply",
+      "analyze",
+      "evaluate",
+      "create",
     ];
     const coverage = {};
 
-    bloomLevels.forEach(level => {
-      const blocksAtLevel = blocks.filter(b => {
+    bloomLevels.forEach((level) => {
+      const blocksAtLevel = blocks.filter((b) => {
         const bloomForPhase = this.getBloomLevelForPhase(b.phase, phaseData);
         return bloomForPhase === level;
       });
@@ -299,7 +299,7 @@ Format: "Students will be able to [verb] [content] [condition]"
 Use Bloom's verbs: remember, understand, apply, analyze, evaluate, create`;
 
     const userPrompt = `Lesson: ${lessonTitle}
-Course objectives: ${(phaseData.objectives.overallObjectives || []).join(', ')}
+Course objectives: ${(phaseData.objectives.overallObjectives || []).join(", ")}
 Bloom target: ${phaseData.objectives.bloomTargets.course}
 Auto-generate: ${phaseData.objectives.autoGenerateLessonObjectives}
 
@@ -307,7 +307,6 @@ Create specific, measurable objectives for this lesson.`;
 
     try {
       const response = await optimizedOpenAIService.generateText(userPrompt, {
-        model: 'gpt-4o-mini',
         maxTokens: 300,
         temperature: 0.6,
         systemPrompt: systemPrompt,
@@ -315,10 +314,10 @@ Create specific, measurable objectives for this lesson.`;
 
       return {
         success: true,
-        objectives: response.split('\n').filter(o => o.trim().length > 0),
+        objectives: response.split("\n").filter((o) => o.trim().length > 0),
       };
     } catch (error) {
-      console.error('Error generating lesson objectives:', error);
+      console.error("Error generating lesson objectives:", error);
       return {
         success: false,
         error: error.message,
@@ -341,7 +340,7 @@ Create specific, measurable objectives for this lesson.`;
     };
 
     return {
-      passed: Object.values(validationResults).every(v => v),
+      passed: Object.values(validationResults).every((v) => v),
       results: validationResults,
       recommendations: this.generateQualityRecommendations(validationResults),
     };
@@ -353,17 +352,17 @@ Create specific, measurable objectives for this lesson.`;
   validateBloomAlignment(lesson, phaseData) {
     const targetBloom = phaseData.objectives.bloomTargets.course;
     const bloomLevels = [
-      'remember',
-      'understand',
-      'apply',
-      'analyze',
-      'evaluate',
-      'create',
+      "remember",
+      "understand",
+      "apply",
+      "analyze",
+      "evaluate",
+      "create",
     ];
     const targetIndex = bloomLevels.indexOf(targetBloom);
 
     // Check if lesson covers target level and below
-    const covered = lesson.blocks.some(b => {
+    const covered = lesson.blocks.some((b) => {
       const blockBloom = this.getBloomLevelForPhase(b.phase, phaseData);
       return bloomLevels.indexOf(blockBloom) >= targetIndex;
     });
@@ -376,15 +375,15 @@ Create specific, measurable objectives for this lesson.`;
    */
   validatePhaseAlignment(lesson, phaseData) {
     // Check if all major phases are represented
-    const representedPhases = new Set(lesson.blocks.map(b => b.phase));
+    const representedPhases = new Set(lesson.blocks.map((b) => b.phase));
     const majorPhases = [
-      'analysis',
-      'objectives',
-      'design',
-      'experience',
-      'implementation',
+      "analysis",
+      "objectives",
+      "design",
+      "experience",
+      "implementation",
     ];
-    return majorPhases.every(phase => representedPhases.has(phase));
+    return majorPhases.every((phase) => representedPhases.has(phase));
   }
 
   /**
@@ -395,7 +394,7 @@ Create specific, measurable objectives for this lesson.`;
     const avgContentLength =
       lesson.blocks.reduce((sum, b) => sum + (b.content?.length || 0), 0) /
       lesson.blocks.length;
-    const uniqueBlockTypes = new Set(lesson.blocks.map(b => b.type)).size;
+    const uniqueBlockTypes = new Set(lesson.blocks.map((b) => b.type)).size;
 
     return avgContentLength > 100 && uniqueBlockTypes >= 3;
   }
@@ -407,19 +406,19 @@ Create specific, measurable objectives for this lesson.`;
     const recommendations = [];
 
     if (!validationResults.accuracyCheck) {
-      recommendations.push('Enable reference checking for content accuracy');
+      recommendations.push("Enable reference checking for content accuracy");
     }
     if (!validationResults.humanValidation) {
-      recommendations.push('Add human review step for quality assurance');
+      recommendations.push("Add human review step for quality assurance");
     }
     if (!validationResults.bloomAlignment) {
-      recommendations.push('Ensure lesson covers target Bloom level');
+      recommendations.push("Ensure lesson covers target Bloom level");
     }
     if (!validationResults.phaseAlignment) {
-      recommendations.push('Include content from all major ADDIE phases');
+      recommendations.push("Include content from all major ADDIE phases");
     }
     if (!validationResults.contentQuality) {
-      recommendations.push('Increase content depth and block type variety');
+      recommendations.push("Increase content depth and block type variety");
     }
 
     return recommendations;
@@ -454,25 +453,25 @@ Create specific, measurable objectives for this lesson.`;
       assessmentStrategy: {
         type: Array.isArray(phaseData.design.assessmentPlan)
           ? phaseData.design.assessmentPlan[0]
-          : 'mixed',
+          : "mixed",
         frequency: phaseData.experience.practiceCadence,
         autoGenerate: phaseData.development.autoAssessments,
       },
       interactivityLevel: {
         interactive: phaseData.development.interactiveElements
-          ? 'high'
-          : 'medium',
-        adaptive: phaseData.experience.adaptivePaths ? 'yes' : 'no',
+          ? "high"
+          : "medium",
+        adaptive: phaseData.experience.adaptivePaths ? "yes" : "no",
         branching: phaseData.experience.learningFormats?.includes(
-          'interactive_scenario'
+          "interactive_scenario",
         )
-          ? 'yes'
-          : 'no',
+          ? "yes"
+          : "no",
       },
       qualityStandards: {
         accuracy: phaseData.quality.accuracyBenchmark,
         compliance: phaseData.quality.complianceNotes,
-        validation: phaseData.quality.humanValidation ? 'required' : 'optional',
+        validation: phaseData.quality.humanValidation ? "required" : "optional",
       },
     };
   }

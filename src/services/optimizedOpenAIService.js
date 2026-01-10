@@ -1,5 +1,5 @@
 /**
- * Optimized OpenAI Service
+ * Optimized AI Service
  * Wraps openAIService with request optimization (deduplication + concurrency limiting)
  *
  * Usage:
@@ -12,8 +12,8 @@
  * const metrics = optimizedOpenAIService.getMetrics();
  */
 
-import openAIService from './openAIService.js';
-import requestOptimizationService from './requestOptimizationService.js';
+import openAIService from "./openAIService.js";
+import requestOptimizationService from "./requestOptimizationService.js";
 
 class OptimizedOpenAIService {
   constructor() {
@@ -25,10 +25,10 @@ class OptimizedOpenAIService {
    */
   async generateText(prompt, options = {}) {
     return this.requestOptimization.executeRequest(
-      'openai-text',
+      "ai-text",
       { prompt, options },
       () => openAIService.generateText(prompt, options),
-      { timeout: options.timeout || 60000 }
+      { timeout: options.timeout || 60000 },
     );
   }
 
@@ -37,10 +37,10 @@ class OptimizedOpenAIService {
    */
   async generateCourseOutline(courseData, options = {}) {
     return this.requestOptimization.executeRequest(
-      'openai-course-outline',
+      "ai-course-outline",
       { courseData, options },
       () => openAIService.generateCourseOutline(courseData, options),
-      { timeout: options.timeout || 120000 }
+      { timeout: options.timeout || 120000 },
     );
   }
 
@@ -49,10 +49,10 @@ class OptimizedOpenAIService {
    */
   async generateImage(prompt, options = {}) {
     return this.requestOptimization.executeRequest(
-      'openai-image',
+      "ai-image",
       { prompt, options },
       () => openAIService.generateImage(prompt, options),
-      { timeout: options.timeout || 90000 }
+      { timeout: options.timeout || 90000 },
     );
   }
 
@@ -61,7 +61,7 @@ class OptimizedOpenAIService {
    */
   async generateMultipleTexts(prompts, options = {}) {
     const requests = prompts.map((prompt, index) => ({
-      namespace: 'openai-text-batch',
+      namespace: "ai-text-batch",
       params: { prompt, index, options },
       requestFn: () => openAIService.generateText(prompt, options),
     }));
@@ -78,7 +78,7 @@ class OptimizedOpenAIService {
    */
   async generateMultipleImages(prompts, options = {}) {
     const requests = prompts.map((prompt, index) => ({
-      namespace: 'openai-image-batch',
+      namespace: "ai-image-batch",
       params: { prompt, index, options },
       requestFn: () => openAIService.generateImage(prompt, options),
     }));
@@ -132,10 +132,10 @@ class OptimizedOpenAIService {
     const metrics = this.getMetrics();
     const cacheStats = this.getCacheStats();
 
-    console.log('\n📊 === PERFORMANCE REPORT ===');
-    console.log('Metrics:', metrics);
-    console.log('Cache Stats:', cacheStats);
-    console.log('✅ === END REPORT ===\n');
+    console.log("\n📊 === PERFORMANCE REPORT ===");
+    console.log("Metrics:", metrics);
+    console.log("Cache Stats:", cacheStats);
+    console.log("✅ === END REPORT ===\n");
   }
 }
 

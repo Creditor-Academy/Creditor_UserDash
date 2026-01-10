@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useContext } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useMemo, useContext } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardFooter,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
   Clock,
@@ -19,14 +19,15 @@ import {
   RefreshCw,
   ArrowLeft,
   ChevronRight,
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { fetchCourseById, fetchCourseModules } from '@/services/courseService';
-import { getAuthHeader } from '@/services/authHeader';
-import { SidebarContext } from '@/layouts/DashboardLayout';
-import axios from 'axios';
-import devLogger from '@lessonbuilder/utils/devLogger';
+  FolderOpen,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { fetchCourseById, fetchCourseModules } from "@/services/courseService";
+import { getAuthHeader } from "@/services/authHeader";
+import { SidebarContext } from "@/layouts/DashboardLayout";
+import axios from "axios";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 const LessonView = () => {
   const { courseId, moduleId } = useParams();
@@ -35,29 +36,29 @@ const LessonView = () => {
   const { toast } = useToast();
   const { setSidebarCollapsed } = useContext(SidebarContext);
 
-  devLogger.debug('LessonView rendered with params:', { courseId, moduleId });
+  devLogger.debug("LessonView rendered with params:", { courseId, moduleId });
 
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [moduleDetails, setModuleDetails] = useState(null);
   const [courseDetails, setCourseDetails] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loadingLesson, setLoadingLesson] = useState(null); // Track which lesson is being loaded
 
   // Fetch module and lessons data
   useEffect(() => {
     devLogger.debug(
-      'LessonView component mounted with courseId:',
+      "LessonView component mounted with courseId:",
       courseId,
-      'moduleId:',
-      moduleId
+      "moduleId:",
+      moduleId,
     );
 
     // Check if we have data from navigation state (OPTIMIZATION)
     const navigationState = location.state;
     if (navigationState?.moduleData && navigationState?.courseData) {
-      devLogger.debug('Using navigation state data - avoiding 2 API calls!');
+      devLogger.debug("Using navigation state data - avoiding 2 API calls!");
 
       // Use passed data instead of API calls
       setCourseDetails(navigationState.courseData);
@@ -69,7 +70,7 @@ const LessonView = () => {
       }
     } else {
       devLogger.debug(
-        'No navigation state data - falling back to full API calls'
+        "No navigation state data - falling back to full API calls",
       );
       // Fallback to current approach if no state data
       if (courseId && moduleId) {
@@ -82,10 +83,10 @@ const LessonView = () => {
     try {
       setLoading(true);
       devLogger.debug(
-        'Fetching lessons for courseId:',
+        "Fetching lessons for courseId:",
         courseId,
-        'moduleId:',
-        moduleId
+        "moduleId:",
+        moduleId,
       );
 
       // Use the same API pattern as CourseView.jsx
@@ -94,8 +95,8 @@ const LessonView = () => {
         fetchCourseModules(courseId),
       ]);
 
-      devLogger.debug('Course data:', courseData);
-      devLogger.debug('Modules data:', modulesData);
+      devLogger.debug("Course data:", courseData);
+      devLogger.debug("Modules data:", modulesData);
 
       // Set course details
       setCourseDetails({
@@ -103,19 +104,19 @@ const LessonView = () => {
           courseData.title ||
           courseData.course_title ||
           courseData.name ||
-          'Course',
+          "Course",
         description:
-          courseData.description || courseData.course_description || '',
+          courseData.description || courseData.course_description || "",
       });
 
       // Find the specific module from the modules data
       const currentModule = modulesData.find(
-        module =>
+        (module) =>
           module.id?.toString() === moduleId?.toString() ||
-          module.module_id?.toString() === moduleId?.toString()
+          module.module_id?.toString() === moduleId?.toString(),
       );
 
-      devLogger.debug('Current module:', currentModule);
+      devLogger.debug("Current module:", currentModule);
 
       if (currentModule) {
         setModuleDetails({
@@ -123,17 +124,17 @@ const LessonView = () => {
             currentModule.title ||
             currentModule.module_title ||
             currentModule.name ||
-            'Module',
+            "Module",
           description:
-            currentModule.description || currentModule.module_description || '',
+            currentModule.description || currentModule.module_description || "",
           totalModules: modulesData.length || 0,
           duration:
             currentModule.estimated_duration || currentModule.duration || 0,
         });
       } else {
         setModuleDetails({
-          title: 'Module',
-          description: '',
+          title: "Module",
+          description: "",
           totalModules: 0,
           duration: 0,
         });
@@ -145,10 +146,10 @@ const LessonView = () => {
         {
           headers: getAuthHeader(),
           withCredentials: true,
-        }
+        },
       );
 
-      devLogger.debug('Lessons response:', lessonsResponse.data);
+      devLogger.debug("Lessons response:", lessonsResponse.data);
 
       // Handle lessons response
       let lessonsData = [];
@@ -165,28 +166,29 @@ const LessonView = () => {
       }
 
       // Normalize lesson data to ensure consistent field names
-      const normalizedLessons = lessonsData.map(lesson => ({
+      const normalizedLessons = lessonsData.map((lesson) => ({
         id: lesson.id || lesson.lesson_id,
-        title: lesson.title || lesson.lesson_title || 'Untitled Lesson',
+        title: lesson.title || lesson.lesson_title || "Untitled Lesson",
         description:
           lesson.description ||
           lesson.lesson_description ||
-          'No description available.',
+          "No description available.",
         order: lesson.order || lesson.lesson_order || 0,
-        status: lesson.status || lesson.lesson_status || 'DRAFT',
-        duration: lesson.duration || lesson.lesson_duration || '0 min',
+        status: lesson.status || lesson.lesson_status || "DRAFT",
+        duration: lesson.duration || lesson.lesson_duration || "0 min",
         thumbnail: lesson.thumbnail || lesson.lesson_thumbnail || null,
         updatedAt:
           lesson.updatedAt ||
           lesson.updated_at ||
           lesson.createdAt ||
           lesson.created_at,
-        type: lesson.type || lesson.lesson_type || 'text',
+        type: lesson.type || lesson.lesson_type || "text",
       }));
 
       // Filter to only show published lessons
       const publishedLessons = normalizedLessons.filter(
-        lesson => lesson.status && lesson.status.toUpperCase() === 'PUBLISHED'
+        (lesson) =>
+          lesson.status && lesson.status.toUpperCase() === "PUBLISHED",
       );
 
       // Sort lessons by order
@@ -194,12 +196,12 @@ const LessonView = () => {
 
       setLessons(publishedLessons);
     } catch (err) {
-      devLogger.error('Error fetching module lessons:', err);
-      setError('Failed to load module lessons. Please try again later.');
+      devLogger.error("Error fetching module lessons:", err);
+      setError("Failed to load module lessons. Please try again later.");
       toast({
-        title: 'Error',
-        description: 'Failed to load lessons. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load lessons. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -211,10 +213,10 @@ const LessonView = () => {
     try {
       setLoading(true);
       devLogger.debug(
-        'Fetching lessons only for courseId:',
+        "Fetching lessons only for courseId:",
         courseId,
-        'moduleId:',
-        moduleId
+        "moduleId:",
+        moduleId,
       );
 
       // Only fetch lessons (1 API call)
@@ -223,10 +225,10 @@ const LessonView = () => {
         {
           headers: getAuthHeader(),
           withCredentials: true,
-        }
+        },
       );
 
-      devLogger.debug('Lessons response:', lessonsResponse.data);
+      devLogger.debug("Lessons response:", lessonsResponse.data);
 
       // Handle lessons response (same logic as fetchModuleLessons)
       let lessonsData = [];
@@ -243,28 +245,29 @@ const LessonView = () => {
       }
 
       // Normalize lesson data to ensure consistent field names
-      const normalizedLessons = lessonsData.map(lesson => ({
+      const normalizedLessons = lessonsData.map((lesson) => ({
         id: lesson.id || lesson.lesson_id,
-        title: lesson.title || lesson.lesson_title || 'Untitled Lesson',
+        title: lesson.title || lesson.lesson_title || "Untitled Lesson",
         description:
           lesson.description ||
           lesson.lesson_description ||
-          'No description available.',
+          "No description available.",
         order: lesson.order || lesson.lesson_order || 0,
-        status: lesson.status || lesson.lesson_status || 'DRAFT',
-        duration: lesson.duration || lesson.lesson_duration || '0 min',
+        status: lesson.status || lesson.lesson_status || "DRAFT",
+        duration: lesson.duration || lesson.lesson_duration || "0 min",
         thumbnail: lesson.thumbnail || lesson.lesson_thumbnail || null,
         updatedAt:
           lesson.updatedAt ||
           lesson.updated_at ||
           lesson.createdAt ||
           lesson.created_at,
-        type: lesson.type || lesson.lesson_type || 'text',
+        type: lesson.type || lesson.lesson_type || "text",
       }));
 
       // Filter to only show published lessons
       const publishedLessons = normalizedLessons.filter(
-        lesson => lesson.status && lesson.status.toUpperCase() === 'PUBLISHED'
+        (lesson) =>
+          lesson.status && lesson.status.toUpperCase() === "PUBLISHED",
       );
 
       // Sort lessons by order
@@ -272,12 +275,12 @@ const LessonView = () => {
 
       setLessons(publishedLessons);
     } catch (err) {
-      devLogger.error('Error fetching lessons:', err);
-      setError('Failed to load lessons. Please try again later.');
+      devLogger.error("Error fetching lessons:", err);
+      setError("Failed to load lessons. Please try again later.");
       toast({
-        title: 'Error',
-        description: 'Failed to load lessons. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load lessons. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -292,15 +295,15 @@ const LessonView = () => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return lessons;
 
-    return lessons.filter(lesson => {
+    return lessons.filter((lesson) => {
       if (!lesson) return false;
-      const title = (lesson.title || '').toLowerCase();
-      const description = (lesson.description || '').toLowerCase();
+      const title = (lesson.title || "").toLowerCase();
+      const description = (lesson.description || "").toLowerCase();
       return title.includes(query) || description.includes(query);
     });
   }, [lessons, searchQuery]);
 
-  const handleViewLesson = async lesson => {
+  const handleViewLesson = async (lesson) => {
     try {
       // Set loading state for this specific lesson
       setLoadingLesson(lesson.id);
@@ -312,16 +315,16 @@ const LessonView = () => {
 
       // Fetch lesson content to check for SCORM URL
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
       const response = await fetch(
         `${baseUrl}/api/lessoncontent/${lesson.id}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -329,7 +332,7 @@ const LessonView = () => {
       }
 
       const responseData = await response.json();
-      devLogger.debug('Lesson content response:', responseData);
+      devLogger.debug("Lesson content response:", responseData);
 
       // Extract the actual data from the API response
       const data = responseData.data || responseData;
@@ -340,26 +343,26 @@ const LessonView = () => {
 
       if (scormUrl && scormUrl.trim()) {
         // If SCORM URL exists, open it in a new tab
-        devLogger.debug('Opening SCORM URL in new tab:', scormUrl);
-        window.open(scormUrl, '_blank', 'noopener,noreferrer');
+        devLogger.debug("Opening SCORM URL in new tab:", scormUrl);
+        window.open(scormUrl, "_blank", "noopener,noreferrer");
 
         toast({
-          title: 'Opening SCORM Content',
-          description: 'The lesson will open in a new tab.',
+          title: "Opening SCORM Content",
+          description: "The lesson will open in a new tab.",
         });
       } else {
         // If no SCORM URL, navigate to lesson preview (regardless of content)
-        devLogger.debug('No SCORM URL found, navigating to preview page');
+        devLogger.debug("No SCORM URL found, navigating to preview page");
         navigate(
-          `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`
+          `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`,
         );
       }
     } catch (error) {
-      devLogger.error('Error fetching lesson content:', error);
+      devLogger.error("Error fetching lesson content:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load lesson content. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load lesson content. Please try again.",
+        variant: "destructive",
       });
     } finally {
       // Clear loading state
@@ -452,7 +455,7 @@ const LessonView = () => {
           </div>
 
           <div className="flex flex-wrap gap-4 mb-6">
-            {[1, 2].map(key => (
+            {[1, 2].map((key) => (
               <div
                 key={key}
                 className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg min-w-[180px]"
@@ -501,7 +504,7 @@ const LessonView = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/dashboard/courses')}
+          onClick={() => navigate("/dashboard/courses")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft size={16} />
@@ -514,18 +517,18 @@ const LessonView = () => {
           onClick={() => navigate(`/dashboard/courses/${courseId}`)}
           className="text-muted-foreground hover:text-foreground text-sm"
         >
-          {courseDetails?.title || 'Course'}
+          {courseDetails?.title || "Course"}
         </Button>
         <ChevronRight size={16} className="text-muted-foreground" />
         <span className="text-sm font-medium">
-          {moduleDetails?.title || 'Module Lessons'}
+          {moduleDetails?.title || "Module Lessons"}
         </span>
       </div>
 
       {/* Module Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {moduleDetails?.title || 'Module Lessons'}
+          {moduleDetails?.title || "Module Lessons"}
         </h1>
         {moduleDetails?.description && (
           <p className="text-gray-600 text-lg mb-4">
@@ -577,7 +580,7 @@ const LessonView = () => {
             placeholder="Search lessons..."
             className="pl-10 w-full"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
@@ -616,7 +619,7 @@ const LessonView = () => {
                         LESSON {lesson.order}
                       </div>
                       <div className="text-sm opacity-80">
-                        {lesson.type?.toUpperCase() || 'LESSON'}
+                        {lesson.type?.toUpperCase() || "LESSON"}
                       </div>
                     </div>
                   </div>
@@ -662,6 +665,17 @@ const LessonView = () => {
                   <Play className="h-4 w-4" /> Start Lesson
                 </Button>
                 <Button
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() =>
+                    navigate(
+                      `/dashboard/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/resources`,
+                    )
+                  }
+                >
+                  <FolderOpen className="h-4 w-4" /> View Resources
+                </Button>
+                <Button
                   className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200"
                   disabled
                 >
@@ -680,7 +694,7 @@ const LessonView = () => {
             </div>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-3">
-            {searchQuery ? 'No matching lessons found' : 'Lessons Coming Soon!'}
+            {searchQuery ? "No matching lessons found" : "Lessons Coming Soon!"}
           </h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {searchQuery
@@ -690,7 +704,7 @@ const LessonView = () => {
           {searchQuery ? (
             <Button
               variant="outline"
-              onClick={() => setSearchQuery('')}
+              onClick={() => setSearchQuery("")}
               className="bg-white hover:bg-gray-50"
             >
               Clear Search

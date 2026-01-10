@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,8 +12,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
   LogOut,
@@ -23,29 +23,27 @@ import {
   CreditCard,
   Calendar,
   XCircle,
-} from 'lucide-react';
-import { MembershipActionModal } from '@/components/membership/MembershipActionModal';
+} from "lucide-react";
+import { MembershipActionModal } from "@/components/membership/MembershipActionModal";
 import {
   getUserAvatarUrl,
   getUserAvatarUrlSync,
   refreshAvatarFromBackend,
   validateAvatarImage,
-} from '@/lib/avatar-utils';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+} from "@/lib/avatar-utils";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   fetchUserProfile,
   clearUserData,
   updateProfilePicture,
-} from '@/services/userService';
-import { useUser } from '@/contexts/UserContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+} from "@/services/userService";
+import { useUser } from "@/contexts/UserContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export function ProfileDropdown() {
   const [userAvatar, setUserAvatar] = useState(getUserAvatarUrlSync());
-  const [membershipModalOpen, setMembershipModalOpen] = useState(false);
-  const [membershipActionType, setMembershipActionType] = useState(null);
   const { userProfile, setUserProfile } = useUser();
   const { logout: logoutAuth } = useAuth();
   const navigate = useNavigate();
@@ -57,7 +55,7 @@ export function ProfileDropdown() {
         const avatarUrl = await refreshAvatarFromBackend();
         setUserAvatar(avatarUrl);
       } catch (error) {
-        console.warn('Failed to load avatar from backend:', error);
+        console.warn("Failed to load avatar from backend:", error);
         // Keep using localStorage fallback
       }
     };
@@ -69,15 +67,15 @@ export function ProfileDropdown() {
       setUserAvatar(getUserAvatarUrlSync());
     };
 
-    window.addEventListener('storage', handleAvatarChange);
-    window.addEventListener('user-avatar-updated', handleAvatarChange);
-    window.addEventListener('userProfileUpdated', handleAvatarChange);
+    window.addEventListener("storage", handleAvatarChange);
+    window.addEventListener("user-avatar-updated", handleAvatarChange);
+    window.addEventListener("userProfileUpdated", handleAvatarChange);
 
     // Clean up event listener
     return () => {
-      window.removeEventListener('storage', handleAvatarChange);
-      window.removeEventListener('user-avatar-updated', handleAvatarChange);
-      window.removeEventListener('userProfileUpdated', handleAvatarChange);
+      window.removeEventListener("storage", handleAvatarChange);
+      window.removeEventListener("user-avatar-updated", handleAvatarChange);
+      window.removeEventListener("userProfileUpdated", handleAvatarChange);
     };
   }, []);
 
@@ -86,13 +84,13 @@ export function ProfileDropdown() {
       // Use the logout function from AuthContext which handles everything
       await logoutAuth();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       // Even if there's an error, redirect to login page
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
   };
 
-  const handlePictureUpload = async event => {
+  const handlePictureUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -103,31 +101,26 @@ export function ProfileDropdown() {
     }
 
     const formData = new FormData();
-    formData.append('profilePicture', file);
+    formData.append("profilePicture", file);
 
     try {
       const result = await updateProfilePicture(formData);
       if (result.success) {
         const newImageUrl = result.data.imageUrl;
-        localStorage.setItem('userAvatar', newImageUrl);
-        window.dispatchEvent(new Event('user-avatar-updated'));
-        toast.success('Profile picture updated!');
+        localStorage.setItem("userAvatar", newImageUrl);
+        window.dispatchEvent(new Event("user-avatar-updated"));
+        toast.success("Profile picture updated!");
         if (setUserProfile) {
-          setUserProfile(prev => ({ ...prev, image: newImageUrl }));
+          setUserProfile((prev) => ({ ...prev, image: newImageUrl }));
         }
       } else {
-        console.error('Failed to upload profile picture:', result.message);
-        toast.error('Failed to upload profile picture.');
+        console.error("Failed to upload profile picture:", result.message);
+        toast.error("Failed to upload profile picture.");
       }
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
-      toast.error('Error uploading profile picture.');
+      console.error("Error uploading profile picture:", error);
+      toast.error("Error uploading profile picture.");
     }
-  };
-
-  const handleMembershipAction = actionType => {
-    setMembershipActionType(actionType);
-    setMembershipModalOpen(true);
   };
 
   return (
@@ -155,7 +148,7 @@ export function ProfileDropdown() {
                   transition={{
                     duration: 2,
                     repeat: Infinity,
-                    repeatType: 'reverse',
+                    repeatType: "reverse",
                   }}
                 >
                   AJ
@@ -167,12 +160,12 @@ export function ProfileDropdown() {
           <div className="hidden md:block text-left group/text profile-header-text">
             <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300 profile-name">
               {userProfile
-                ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() ||
-                  'User'
-                : 'User'}
+                ? `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim() ||
+                  "User"
+                : "User"}
             </p>
             <p className="text-xs text-muted-foreground group-hover/text:text-primary/70 transition-colors duration-300 profile-email">
-              {userProfile?.email || 'Loading...'}
+              {userProfile?.email || "Loading..."}
             </p>
           </div>
         </motion.button>
@@ -197,34 +190,7 @@ export function ProfileDropdown() {
             </Link>
           </DropdownMenuItem>
 
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md">
-              <CreditCard className="mr-2 h-4 w-4 transition-all duration-300 group-hover/menu:text-primary group-hover/menu:scale-110" />
-              <span className="transition-all duration-200">
-                Manage Membership
-              </span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="backdrop-blur-sm bg-background/95">
-                {/* Switch to Annual Membership - Commented out for future use */}
-                {/* <DropdownMenuItem 
-                  className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/submenu rounded-md"
-                  onClick={() => handleMembershipAction('annual')}
-                >
-                  <Calendar className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-primary group-hover/submenu:scale-110" />
-                  <span>Switch to Annual Membership</span>
-                </DropdownMenuItem> */}
-
-                <DropdownMenuItem
-                  className="cursor-pointer transition-colors duration-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 group/submenu rounded-md"
-                  onClick={() => handleMembershipAction('cancel')}
-                >
-                  <XCircle className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-red-600 group-hover/submenu:scale-110" />
-                  <span>Cancel Membership</span>
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
+          {/* Membership management submenu (including cancellation) has been intentionally removed */}
 
           {/* <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="w-full cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md"> */}
           {/* <label htmlFor="profile-picture-upload" className="w-full cursor-pointer flex items-center"> */}
@@ -244,11 +210,7 @@ export function ProfileDropdown() {
         </DropdownMenuItem>
       </DropdownMenuContent>
 
-      <MembershipActionModal
-        isOpen={membershipModalOpen}
-        onClose={() => setMembershipModalOpen(false)}
-        actionType={membershipActionType}
-      />
+      {/* MembershipActionModal has been removed as membership actions are no longer available from the profile dropdown */}
     </DropdownMenu>
   );
 }

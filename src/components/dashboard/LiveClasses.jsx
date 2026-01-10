@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useContext,
+} from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ExternalLink,
   Play,
@@ -9,20 +15,21 @@ import {
   Calendar,
   Users,
   FileVideo,
-} from 'lucide-react';
-import { AttendanceViewerModal } from './AttendanceViewerModal';
-import ClassRecording from './ClassRecording';
-import { getAuthHeader } from '../../services/authHeader'; // adjust path as needed
-import { markEventAttendance } from '../../services/attendanceService';
-import { toast } from 'sonner';
-import AttendanceAlreadyMarkedModal from './AttendanceAlreadyMarkedModal';
+} from "lucide-react";
+import { AttendanceViewerModal } from "./AttendanceViewerModal";
+import ClassRecording from "./ClassRecording";
+import { getAuthHeader } from "../../services/authHeader"; // adjust path as needed
+import { markEventAttendance } from "../../services/attendanceService";
+import { toast } from "sonner";
+import AttendanceAlreadyMarkedModal from "./AttendanceAlreadyMarkedModal";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
 const convertUTCToUserTimezone = (utcTime, userTimezone) => {
   if (!utcTime) return null;
   const date = new Date(utcTime);
-  return new Date(date.toLocaleString('en-US', { timeZone: userTimezone }));
+  return new Date(date.toLocaleString("en-US", { timeZone: userTimezone }));
 };
 
 // Helper function to check if a date is today in user's timezone
@@ -41,11 +48,11 @@ const isTodayInUserTimezone = (dateString, userTimezone) => {
 
 // Helper function to format time in user's timezone
 const formatTimeInUserTimezone = (utcTime, userTimezone) => {
-  if (!utcTime) return '';
+  if (!utcTime) return "";
   const date = new Date(utcTime);
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: true,
     timeZone: userTimezone,
   });
@@ -55,7 +62,7 @@ const formatTimeInUserTimezone = (utcTime, userTimezone) => {
 const processEvents = (events, userTimezone) => {
   const processedEvents = [];
 
-  events.forEach(event => {
+  events.forEach((event) => {
     if (event.isRecurring && Array.isArray(event.occurrences)) {
       // Handle recurring events - check each occurrence
       event.occurrences.forEach((occurrence, index) => {
@@ -89,6 +96,7 @@ const processEvents = (events, userTimezone) => {
 };
 
 export function LiveClasses() {
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [todayEvents, setTodayEvents] = useState([]);
@@ -98,14 +106,14 @@ export function LiveClasses() {
   const [joiningEventId, setJoiningEventId] = useState(null); // Track which event is being joined
   const [isAlreadyMarkedModalOpen, setIsAlreadyMarkedModalOpen] =
     useState(false);
-  const [alreadyMarkedMessage, setAlreadyMarkedMessage] = useState('');
-  const [joinLinkForModal, setJoinLinkForModal] = useState(''); // Store join link for the modal
+  const [alreadyMarkedMessage, setAlreadyMarkedMessage] = useState("");
+  const [joinLinkForModal, setJoinLinkForModal] = useState(""); // Store join link for the modal
   const processingEventsRef = useRef(new Set()); // Track events currently being processed to prevent duplicate calls
   const alreadyMarkedEventsRef = useRef(new Map()); // Track events that have already been marked: eventId -> errorMessage
   const eventJoinLinksRef = useRef(new Map()); // Track join links for each event: eventId -> joinLink
 
   const userTimezone =
-    localStorage.getItem('userTimezone') || 'America/Los_Angeles';
+    localStorage.getItem("userTimezone") || "America/Los_Angeles";
 
   // Fetch cancelled events
   const fetchCancelledEvents = async () => {
@@ -124,13 +132,13 @@ export function LiveClasses() {
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/calendar/events/cancelledevents?startTime=${startTime}&endTime=${endTime}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-          credentials: 'include',
-        }
+          credentials: "include",
+        },
       );
 
       if (!response.ok) {
@@ -142,7 +150,7 @@ export function LiveClasses() {
         setCancelledEvents(data.data);
       }
     } catch (err) {
-      console.error('Failed to fetch cancelled events', err);
+      console.error("Failed to fetch cancelled events", err);
     }
   };
 
@@ -153,20 +161,20 @@ export function LiveClasses() {
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/course/getAllCourses`,
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
               ...getAuthHeader(),
             },
-            credentials: 'include',
-          }
+            credentials: "include",
+          },
         );
         const data = await response.json();
         if (data && data.data) {
           setCourses(data.data);
         }
       } catch (err) {
-        console.error('Failed to fetch courses:', err);
+        console.error("Failed to fetch courses:", err);
       }
     };
     fetchCourses();
@@ -185,13 +193,13 @@ export function LiveClasses() {
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/calendar/events?${params}`,
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
               ...getAuthHeader(),
             },
-            credentials: 'include',
-          }
+            credentials: "include",
+          },
         );
         const data = await response.json();
 
@@ -199,16 +207,16 @@ export function LiveClasses() {
           // Process events to handle recurring events properly
           const processedEvents = processEvents(data.data, userTimezone);
 
-          console.log('Processed events:', processedEvents);
+          console.log("Processed events:", processedEvents);
           // Filter events for today in user's timezone
-          const todayEvents = data.data.filter(event => {
+          const todayEvents = data.data.filter((event) => {
             if (!event.startTime || !event.endTime) {
               return false;
             }
 
             const isToday = isTodayInUserTimezone(
               event.startTime,
-              userTimezone
+              userTimezone,
             );
 
             return isToday;
@@ -216,14 +224,14 @@ export function LiveClasses() {
 
           // Sort events by start time
           processedEvents.sort(
-            (a, b) => new Date(a.startTime) - new Date(b.startTime)
+            (a, b) => new Date(a.startTime) - new Date(b.startTime),
           );
           setTodayEvents(processedEvents);
         } else {
           setTodayEvents([]);
         }
       } catch (err) {
-        console.error('Error fetching events:', err);
+        console.error("Error fetching events:", err);
         setTodayEvents([]);
       } finally {
         setLoading(false);
@@ -246,11 +254,11 @@ export function LiveClasses() {
   useEffect(() => {
     const interval = setInterval(() => {
       // Update the live status of events and remove ended events every second for smoother countdown
-      setTodayEvents(prevEvents => {
+      setTodayEvents((prevEvents) => {
         const now = currentTime; // Use current time state
 
         return prevEvents
-          .filter(event => {
+          .filter((event) => {
             const endTime = new Date(event.endTime);
             const isEnded = now > endTime;
 
@@ -261,7 +269,7 @@ export function LiveClasses() {
 
             return true;
           })
-          .map(event => {
+          .map((event) => {
             const startTime = new Date(event.startTime);
             const endTime = new Date(event.endTime);
             const isLive = now >= startTime && now <= endTime;
@@ -277,39 +285,39 @@ export function LiveClasses() {
     return () => clearInterval(interval);
   }, [currentTime]);
 
-  const getEventStatus = event => {
+  const getEventStatus = (event) => {
     const now = new Date(); // Use current UTC time
     const start = new Date(event.startTime);
     const end = new Date(event.endTime);
 
     if (now >= start && now <= end) {
       return {
-        status: 'live',
-        text: 'LIVE NOW',
-        color: 'text-purple-600',
-        bgColor: 'bg-purple-50',
-        borderColor: 'border-purple-200',
+        status: "live",
+        text: "LIVE NOW",
+        color: "text-purple-600",
+        bgColor: "bg-purple-50",
+        borderColor: "border-purple-200",
       };
     } else if (now < start) {
       return {
-        status: 'upcoming',
-        text: 'UPCOMING',
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-blue-200',
+        status: "upcoming",
+        text: "UPCOMING",
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
       };
     } else {
       return {
-        status: 'ended',
-        text: 'ENDED',
-        color: 'text-gray-500',
-        bgColor: 'bg-gray-50',
-        borderColor: 'border-gray-200',
+        status: "ended",
+        text: "ENDED",
+        color: "text-gray-500",
+        bgColor: "bg-gray-50",
+        borderColor: "border-gray-200",
       };
     }
   };
 
-  const handleJoinClass = useCallback(async event => {
+  const handleJoinClass = useCallback(async (event) => {
     // For recurring events, use originalEventId instead of the synthetic id
     // The synthetic id format is like "123_occurrence_0" which the backend doesn't recognize
     const eventId =
@@ -324,12 +332,12 @@ export function LiveClasses() {
     if (alreadyMarkedEventsRef.current.has(eventId)) {
       const message =
         alreadyMarkedEventsRef.current.get(eventId) ||
-        'Attendance for this event Already marked';
+        "Attendance for this event Already marked";
       const link =
         eventJoinLinksRef.current.get(eventId) ||
         event.description ||
         event.zoomLink ||
-        '';
+        "";
       setAlreadyMarkedMessage(message);
       setJoinLinkForModal(link);
       setIsAlreadyMarkedModalOpen(true);
@@ -338,11 +346,11 @@ export function LiveClasses() {
 
     // Prevent multiple simultaneous calls for the same event using ref
     if (processingEventsRef.current.has(eventId)) {
-      console.log('Already processing attendance for event:', eventId);
+      console.log("Already processing attendance for event:", eventId);
       return;
     }
 
-    const joinLink = event.description || event.zoomLink || '';
+    const joinLink = event.description || event.zoomLink || "";
 
     // Store the join link for this event (use eventId for consistency)
     eventJoinLinksRef.current.set(eventId, joinLink);
@@ -361,7 +369,7 @@ export function LiveClasses() {
       }
 
       // Attendance marked successfully
-      toast.success('Attendance marked successfully!');
+      toast.success("Attendance marked successfully!");
 
       // Note: We don't add to alreadyMarkedEventsRef on success
       // because the user might click again, and we want to check with backend
@@ -369,10 +377,10 @@ export function LiveClasses() {
 
       // Then open the zoom link after attendance is marked
       if (joinLink) {
-        window.open(joinLink, '_blank');
+        window.open(joinLink, "_blank");
       }
     } catch (error) {
-      console.error('Error marking attendance:', error);
+      console.error("Error marking attendance:", error);
 
       // Check if attendance is already marked
       // Check multiple possible error response structures
@@ -382,21 +390,21 @@ export function LiveClasses() {
         error.responseData?.message ||
         error.response?.data?.message ||
         error.message ||
-        '';
+        "";
 
       const errorMessageLower = errorMessage.toLowerCase();
       const isAlreadyMarked =
         error.isAlreadyMarked ||
-        errorMessageLower.includes('already marked') ||
+        errorMessageLower.includes("already marked") ||
         (error.response?.status === 500 &&
-          errorMessageLower.includes('attendance') &&
-          errorMessageLower.includes('already'));
+          errorMessageLower.includes("attendance") &&
+          errorMessageLower.includes("already"));
 
       if (isAlreadyMarked) {
         // Store the exact backend error message for future reference
         // Use eventId (originalEventId for recurring events) for tracking
         const message =
-          errorMessage || 'Attendance for this event Already marked';
+          errorMessage || "Attendance for this event Already marked";
         alreadyMarkedEventsRef.current.set(eventId, message);
 
         // Show modal with the exact backend message and join link
@@ -410,11 +418,11 @@ export function LiveClasses() {
 
       // For other errors, silently fail and still allow joining the meeting
       // No toast shown as per requirements
-      console.error('Failed to mark attendance:', error);
+      console.error("Failed to mark attendance:", error);
 
       // Open the zoom link even if attendance marking fails (for other errors)
       if (joinLink) {
-        window.open(joinLink, '_blank');
+        window.open(joinLink, "_blank");
       }
     } finally {
       // Clear joining state and remove from processing set
@@ -424,10 +432,10 @@ export function LiveClasses() {
   }, []); // Empty dependency array since we use ref for tracking
 
   const handleViewAllRecordings = () => {
-    window.open(import.meta.env.VITE_RECORDINGS_DRIVE_URL, '_blank');
+    window.open(import.meta.env.VITE_RECORDINGS_DRIVE_URL, "_blank");
   };
 
-  const liveEventsCount = todayEvents.filter(event => {
+  const liveEventsCount = todayEvents.filter((event) => {
     const now = new Date();
     const start = new Date(event.startTime);
     const end = new Date(event.endTime);
@@ -436,11 +444,13 @@ export function LiveClasses() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
+      <Card
+        className={`border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 ${activeTheme === "newYear" ? "dashboard-newyear-card" : ""}`}
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Video
-              className={`h-6 w-6 ${liveEventsCount > 0 ? 'text-purple-500 animate-pulse' : 'text-primary'}`}
+              className={`h-6 w-6 ${liveEventsCount > 0 ? "text-purple-500 animate-pulse" : "text-primary"}`}
             />
             Today's Live Classes
             {liveEventsCount > 0 && (
@@ -458,7 +468,7 @@ export function LiveClasses() {
                 Loading today's classes...
               </p>
             </div>
-          ) : todayEvents.filter(event => {
+          ) : todayEvents.filter((event) => {
               // Only show events that have not ended
               const now = new Date();
               const end = new Date(event.endTime);
@@ -483,7 +493,7 @@ export function LiveClasses() {
           ) : (
             <div className="space-y-4">
               {todayEvents
-                .filter(event => {
+                .filter((event) => {
                   // Only show events that have not ended
                   const now = new Date();
                   const end = new Date(event.endTime);
@@ -491,15 +501,15 @@ export function LiveClasses() {
                 })
                 .map((event, index) => {
                   const eventStatus = getEventStatus(event);
-                  const isLive = eventStatus.status === 'live';
-                  const isUpcoming = eventStatus.status === 'upcoming';
+                  const isLive = eventStatus.status === "live";
+                  const isUpcoming = eventStatus.status === "upcoming";
                   return (
                     <div
                       key={event.id || index}
                       className={`p-4 rounded-lg border transition-all duration-300 ${
                         isLive
-                          ? 'border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 shadow-sm'
-                          : 'border-blue-200 bg-blue-50 shadow-sm'
+                          ? "border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100 shadow-sm"
+                          : "border-blue-200 bg-blue-50 shadow-sm"
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
@@ -508,8 +518,8 @@ export function LiveClasses() {
                             <div
                               className={`w-3 h-3 rounded-full ${
                                 isLive
-                                  ? 'bg-purple-500 animate-pulse'
-                                  : 'bg-blue-500'
+                                  ? "bg-purple-500 animate-pulse"
+                                  : "bg-blue-500"
                               }`}
                             ></div>
                             <h4 className="font-semibold text-gray-800">
@@ -518,8 +528,8 @@ export function LiveClasses() {
                             <span
                               className={`px-2 py-1 text-xs font-medium rounded-full ${
                                 isLive
-                                  ? 'bg-purple-100 text-purple-600'
-                                  : 'bg-blue-100 text-blue-600'
+                                  ? "bg-purple-100 text-purple-600"
+                                  : "bg-blue-100 text-blue-600"
                               }`}
                             >
                               {eventStatus.text}
@@ -537,8 +547,9 @@ export function LiveClasses() {
                             <span className="inline-block mb-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                               {event.courseName ||
                                 courses.find(
-                                  c =>
-                                    c.id === (event.courseId || event.course_id)
+                                  (c) =>
+                                    c.id ===
+                                    (event.courseId || event.course_id),
                                 )?.title ||
                                 event.courseId ||
                                 event.course_id}
@@ -550,12 +561,12 @@ export function LiveClasses() {
                               <span>
                                 {formatTimeInUserTimezone(
                                   event.startTime,
-                                  userTimezone
-                                )}{' '}
-                                -{' '}
+                                  userTimezone,
+                                )}{" "}
+                                -{" "}
                                 {formatTimeInUserTimezone(
                                   event.endTime,
-                                  userTimezone
+                                  userTimezone,
                                 )}
                               </span>
                             </div>
@@ -578,8 +589,8 @@ export function LiveClasses() {
                             disabled={!isLive || joiningEventId === event.id}
                             className={`${
                               isLive
-                                ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 animate-pulse'
-                                : 'bg-blue-600 hover:bg-blue-700'
+                                ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 animate-pulse"
+                                : "bg-blue-600 hover:bg-blue-700"
                             } text-white transition-all duration-300 w-full sm:w-auto`}
                             size="sm"
                           >
@@ -591,7 +602,7 @@ export function LiveClasses() {
                             ) : (
                               <>
                                 <Video className="w-4 h-4 mr-2" />
-                                {isLive ? 'Join Now' : 'Class Not Started'}
+                                {isLive ? "Join Now" : "Class Not Started"}
                                 {isLive && (
                                   <ExternalLink className="w-3 h-3 ml-1" />
                                 )}
@@ -600,19 +611,19 @@ export function LiveClasses() {
                           </Button>
                           {isUpcoming && (
                             <div className="text-xs text-blue-600 text-center">
-                              Starts in{' '}
+                              Starts in{" "}
                               {(() => {
                                 const timeDiff =
                                   new Date(event.startTime).getTime() -
                                   currentTime.getTime();
                                 const hours = Math.floor(
-                                  timeDiff / (1000 * 60 * 60)
+                                  timeDiff / (1000 * 60 * 60),
                                 );
                                 const minutes = Math.floor(
-                                  (timeDiff % (1000 * 60 * 60)) / (1000 * 60)
+                                  (timeDiff % (1000 * 60 * 60)) / (1000 * 60),
                                 );
                                 const seconds = Math.floor(
-                                  (timeDiff % (1000 * 60)) / 1000
+                                  (timeDiff % (1000 * 60)) / 1000,
                                 );
 
                                 if (hours > 0) {
@@ -637,7 +648,9 @@ export function LiveClasses() {
 
       {/* Cancelled Events Section - Only show if there are cancelled events */}
       {cancelledEvents && cancelledEvents.length > 0 && (
-        <Card className="border border-red-100 bg-white hover:shadow-md transition-all duration-300">
+        <Card
+          className={`border border-red-100 bg-white hover:shadow-md transition-all duration-300 ${activeTheme === "newYear" ? "dashboard-newyear-card" : ""}`}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               <div className="p-2 bg-red-50 rounded-lg text-red-600">
@@ -668,7 +681,7 @@ export function LiveClasses() {
                 </span>
                 <div className="text-sm text-gray-500 font-medium">
                   {cancelledEvents.length} cancelled session
-                  {cancelledEvents.length !== 1 ? 's' : ''}
+                  {cancelledEvents.length !== 1 ? "s" : ""}
                 </div>
               </div>
             </CardTitle>
@@ -684,7 +697,7 @@ export function LiveClasses() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h4 className="font-medium text-gray-800">
-                          {cancelledEvent.event?.title || 'Untitled Event'}
+                          {cancelledEvent.event?.title || "Untitled Event"}
                         </h4>
                         <span className="px-2 py-0.5 bg-red-50 text-red-700 text-xs font-medium rounded-md">
                           Cancelled
@@ -729,11 +742,11 @@ export function LiveClasses() {
                           </svg>
                           <span>
                             {new Date(
-                              cancelledEvent.occurrence_date
-                            ).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
+                              cancelledEvent.occurrence_date,
+                            ).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
                               timeZone: userTimezone,
                             })}
                           </span>
@@ -756,10 +769,10 @@ export function LiveClasses() {
                           </svg>
                           <span>
                             {new Date(
-                              cancelledEvent.occurrence_date
-                            ).toLocaleTimeString('en-US', {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              cancelledEvent.occurrence_date,
+                            ).toLocaleTimeString("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
                               timeZone: userTimezone,
                             })}
                           </span>
@@ -789,8 +802,8 @@ export function LiveClasses() {
         isOpen={isAlreadyMarkedModalOpen}
         onClose={() => {
           setIsAlreadyMarkedModalOpen(false);
-          setAlreadyMarkedMessage('');
-          setJoinLinkForModal('');
+          setAlreadyMarkedMessage("");
+          setJoinLinkForModal("");
         }}
         errorMessage={alreadyMarkedMessage}
         joinLink={joinLinkForModal}

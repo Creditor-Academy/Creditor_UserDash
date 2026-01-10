@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React, { useState, useRef, useEffect, useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Search,
-  Calendar,
-  Mail,
   BellDot,
   BookOpen,
   Loader2,
@@ -13,39 +11,38 @@ import {
   AlertCircle,
   Users,
   User,
-  Menu,
   Menu as MenuIcon,
-} from 'lucide-react';
-import ProfileDropdown from './ProfileDropdown';
-import NotificationModal from './NotificationModal';
-import InboxModal from './InboxModal';
-import CalendarModal from './CalendarModal';
-import UserDetailsModal from '@/components/UserDetailsModal';
-import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
-import { search } from '@/services/searchService';
-import { fetchUserCourses } from '@/services/courseService';
+} from "lucide-react";
+
+import ProfileDropdown from "./ProfileDropdown";
+import NotificationModal from "./NotificationModal";
+import InboxModal from "./InboxModal";
+import CalendarModal from "./CalendarModal";
+import UserDetailsModal from "@/components/UserDetailsModal";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
+
+import { search } from "@/services/searchService";
+import { fetchUserCourses } from "@/services/courseService";
 import {
   fetchDetailedUserProfile,
   fetchUserCoursesByUserId,
   fetchAllUsersAdmin,
   fetchUserProfile,
   fetchPublicUserProfile,
-} from '@/services/userService';
-import { useAuth } from '@/contexts/AuthContext';
-import { fetchNotifications } from '@/services/notificationService';
-import { useCredits } from '@/contexts/CreditsContext';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+} from "@/services/userService";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchNotifications } from "@/services/notificationService";
+import { useCredits } from "@/contexts/CreditsContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
-  const { isChristmasMode, toggleChristmasMode } =
-    useContext(SeasonalThemeContext);
   const { isInstructorOrAdmin, hasRole } = useAuth();
   const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -68,10 +65,10 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   // Display helper: format credit points using USD-style units (K, M, B, T)
   // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
-  const formatCreditPoints = value => {
+  const formatCreditPoints = (value) => {
     const num = Number(value) || 0;
     const abs = Math.abs(num);
-    const sign = num < 0 ? '-' : '';
+    const sign = num < 0 ? "-" : "";
 
     const formatWithClamp = (val, suffix) => {
       let display = val;
@@ -83,15 +80,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       // Keep at most one decimal place; strip trailing .0
       const rounded = Math.round(display * 10) / 10;
       const text = rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
-      return `${sign}${text}${suffix}${clamped ? '+' : ''}`;
+      return `${sign}${text}${suffix}${clamped ? "+" : ""}`;
     };
 
     // Units in descending order for easy promotion (e.g., 100M -> 1B)
     const units = [
-      { value: 1_000_000_000_000, suffix: 'T' },
-      { value: 1_000_000_000, suffix: 'B' },
-      { value: 1_000_000, suffix: 'M' },
-      { value: 1_000, suffix: 'K' },
+      { value: 1_000_000_000_000, suffix: "T" },
+      { value: 1_000_000_000, suffix: "B" },
+      { value: 1_000_000, suffix: "M" },
+      { value: 1_000, suffix: "K" },
     ];
 
     for (let i = 0; i < units.length; i++) {
@@ -102,7 +99,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         if (val >= 100 && i > 0) {
           const higher = units[i - 1];
           const hasPlus = abs > 100 * u.value; // strictly greater than the threshold
-          return `${sign}1${higher.suffix}${hasPlus ? '+' : ''}`;
+          return `${sign}1${higher.suffix}${hasPlus ? "+" : ""}`;
         }
         return formatWithClamp(val, u.suffix);
       }
@@ -125,13 +122,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   // Listen for a global request to open the credits modal
   useEffect(() => {
     const handler = () => setCreditsModalOpen(true);
-    window.addEventListener('open-credits-modal', handler);
-    return () => window.removeEventListener('open-credits-modal', handler);
+    window.addEventListener("open-credits-modal", handler);
+    return () => window.removeEventListener("open-credits-modal", handler);
   }, []);
 
   // Local notifications persistence helpers
-  const LOCAL_NOTIFS_KEY = 'local_notifications';
-  const READ_ALL_AT_KEY = 'notifications_read_all_at';
+  const LOCAL_NOTIFS_KEY = "local_notifications";
+  const READ_ALL_AT_KEY = "notifications_read_all_at";
   const readLocalNotifications = () => {
     try {
       const raw = localStorage.getItem(LOCAL_NOTIFS_KEY);
@@ -141,7 +138,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       return [];
     }
   };
-  const writeLocalNotifications = items => {
+  const writeLocalNotifications = (items) => {
     try {
       localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(items || []));
     } catch {}
@@ -153,9 +150,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       return null;
     }
   };
-  const writeReadAllAt = isoString => {
+  const writeReadAllAt = (isoString) => {
     try {
-      localStorage.setItem(READ_ALL_AT_KEY, isoString || '');
+      localStorage.setItem(READ_ALL_AT_KEY, isoString || "");
     } catch {}
   };
 
@@ -164,29 +161,29 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     const fetchEnrolledCourses = async () => {
       try {
         // Check if we have cached enrolled courses (valid for 5 minutes)
-        const cached = localStorage.getItem('enrolledCourses');
-        const cacheTime = localStorage.getItem('enrolledCoursesTime');
+        const cached = localStorage.getItem("enrolledCourses");
+        const cacheTime = localStorage.getItem("enrolledCoursesTime");
         const now = Date.now();
         const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
         if (cached && cacheTime && now - parseInt(cacheTime) < CACHE_DURATION) {
           console.log(
-            '✅ Using cached enrolled courses - avoiding getCourses API call!'
+            "✅ Using cached enrolled courses - avoiding getCourses API call!",
           );
           setEnrolledCourses(JSON.parse(cached));
           setIsLoadingEnrolled(false);
           return;
         }
 
-        console.log('🔄 Fetching enrolled courses from API...');
+        console.log("🔄 Fetching enrolled courses from API...");
         const courses = await fetchUserCourses();
         setEnrolledCourses(courses);
 
         // Cache the results
-        localStorage.setItem('enrolledCourses', JSON.stringify(courses));
-        localStorage.setItem('enrolledCoursesTime', now.toString());
+        localStorage.setItem("enrolledCourses", JSON.stringify(courses));
+        localStorage.setItem("enrolledCoursesTime", now.toString());
       } catch (error) {
-        console.error('Failed to fetch enrolled courses:', error);
+        console.error("Failed to fetch enrolled courses:", error);
         setEnrolledCourses([]);
       } finally {
         setIsLoadingEnrolled(false);
@@ -215,8 +212,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const refreshNotifications = async () => {
     try {
       const response = await fetchNotifications();
-      console.log('Full notification response:', response);
-      console.log('Response data:', response.data);
+      console.log("Full notification response:", response);
+      console.log("Response data:", response.data);
 
       // Backend returns: { success: true, notifications: [...] }
       // Handle different possible response structures
@@ -226,17 +223,18 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         response.data?.data ||
         (Array.isArray(response.data) ? response.data : []);
 
-      console.log('Parsed notifications raw:', notificationsRaw);
+      console.log("Parsed notifications raw:", notificationsRaw);
       // Do not show ticket-reply notifications to admins
-      if (hasRole && hasRole('admin')) {
+      if (hasRole && hasRole("admin")) {
         notificationsRaw = notificationsRaw.filter(
-          n => (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+          (n) =>
+            (n.type || n.related_type)?.toString().toUpperCase() !== "TICKET",
         );
       }
       const readAllAt = readReadAllAt();
       const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
       // Apply client-side read cutoff so items before readAllAt are treated as read
-      const notifications = notificationsRaw.map(n => {
+      const notifications = notificationsRaw.map((n) => {
         if (!readAllAtTime) return n;
         const createdTime = n.created_at
           ? new Date(n.created_at).getTime()
@@ -248,17 +246,17 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       });
 
       // Merge with local notifications currently in state by id
-      setApiNotifications(prev => {
+      setApiNotifications((prev) => {
         const localItems = readLocalNotifications();
         const byId = new Map();
-        [...localItems, ...notifications, ...prev].forEach(n =>
-          byId.set(String(n.id ?? n._id), n)
+        [...localItems, ...notifications, ...prev].forEach((n) =>
+          byId.set(String(n.id ?? n._id), n),
         );
         const merged = Array.from(byId.values());
         return merged;
       });
 
-      let localItems = readLocalNotifications().map(n => {
+      let localItems = readLocalNotifications().map((n) => {
         if (!readAllAtTime) return n;
         const createdTime = n.created_at
           ? new Date(n.created_at).getTime()
@@ -268,27 +266,28 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         }
         return n;
       });
-      if (hasRole && hasRole('admin')) {
+      if (hasRole && hasRole("admin")) {
         localItems = localItems.filter(
-          n => (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+          (n) =>
+            (n.type || n.related_type)?.toString().toUpperCase() !== "TICKET",
         );
       }
       const unread = [...notifications, ...localItems].filter(
-        n => !n.read
+        (n) => !n.read,
       ).length;
       setUnreadNotifications(unread);
     } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+      console.error("Failed to fetch notifications:", err);
       // On failure, at least reflect local unread count
       const localItems = readLocalNotifications();
-      setApiNotifications(prev => {
+      setApiNotifications((prev) => {
         const byId = new Map();
-        [...localItems, ...prev].forEach(n =>
-          byId.set(String(n.id ?? n._id), n)
+        [...localItems, ...prev].forEach((n) =>
+          byId.set(String(n.id ?? n._id), n),
         );
         return Array.from(byId.values());
       });
-      setUnreadNotifications(localItems.filter(n => !n.read).length);
+      setUnreadNotifications(localItems.filter((n) => !n.read).length);
     }
   };
 
@@ -307,13 +306,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
     if (locals.length) {
       const normalizedLocals = readAllAtTime
-        ? locals.map(n => {
+        ? locals.map((n) => {
             const t = n.created_at ? new Date(n.created_at).getTime() : null;
             return t && t <= readAllAtTime ? { ...n, read: true } : n;
           })
         : locals;
-      setApiNotifications(prev => [...normalizedLocals, ...prev]);
-      setUnreadNotifications(normalizedLocals.filter(n => !n.read).length);
+      setApiNotifications((prev) => [...normalizedLocals, ...prev]);
+      setUnreadNotifications(normalizedLocals.filter((n) => !n.read).length);
     }
     refreshNotificationsWithRetry();
   }, []);
@@ -327,28 +326,28 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   // Listen for global refresh events (e.g., after creating a course)
   useEffect(() => {
     const handler = () => refreshNotificationsWithRetry();
-    window.addEventListener('refresh-notifications', handler);
-    return () => window.removeEventListener('refresh-notifications', handler);
+    window.addEventListener("refresh-notifications", handler);
+    return () => window.removeEventListener("refresh-notifications", handler);
   }, []);
 
   // Listen for adding a local notification (frontend fallback)
   useEffect(() => {
-    const handler = e => {
+    const handler = (e) => {
       const incoming = e?.detail;
       if (!incoming) return;
-      setApiNotifications(prev => [incoming, ...prev]);
-      if (!incoming.read) setUnreadNotifications(prev => prev + 1);
+      setApiNotifications((prev) => [incoming, ...prev]);
+      if (!incoming.read) setUnreadNotifications((prev) => prev + 1);
       // Persist
       const locals = readLocalNotifications();
       writeLocalNotifications([incoming, ...locals]);
     };
-    window.addEventListener('add-local-notification', handler);
-    return () => window.removeEventListener('add-local-notification', handler);
+    window.addEventListener("add-local-notification", handler);
+    return () => window.removeEventListener("add-local-notification", handler);
   }, []);
 
   // Debounced search effect
   useEffect(() => {
-    if (searchQuery.trim() === '') {
+    if (searchQuery.trim() === "") {
       setSearchResults(null);
       setShowDropdown(false);
       return;
@@ -373,7 +372,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           }
           setShowDropdown(true);
         } catch (error) {
-          console.error('Search failed:', error);
+          console.error("Search failed:", error);
           setSearchResults({
             results: {
               courses: [],
@@ -402,17 +401,17 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       }
     }
     if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showDropdown]);
 
   // Handle keyboard navigation
-  const handleKeyDown = e => {
+  const handleKeyDown = (e) => {
     if (!showDropdown || !searchResults) return;
 
     const totalResults =
@@ -420,19 +419,19 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       (searchResults.results?.users?.length || 0);
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedResultIndex(prev =>
-          prev < totalResults - 1 ? prev + 1 : 0
+        setSelectedResultIndex((prev) =>
+          prev < totalResults - 1 ? prev + 1 : 0,
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedResultIndex(prev =>
-          prev > 0 ? prev - 1 : totalResults - 1
+        setSelectedResultIndex((prev) =>
+          prev > 0 ? prev - 1 : totalResults - 1,
         );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectedResultIndex >= 0) {
           // Navigate to the selected result
@@ -449,7 +448,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           }
         }
         break;
-      case 'Escape':
+      case "Escape":
         setShowDropdown(false);
         setSelectedResultIndex(-1);
         setShowMobileSearch(false);
@@ -462,13 +461,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     setSelectedResultIndex(-1);
   }, [searchResults]);
 
-  const handleCourseClick = courseId => {
+  const handleCourseClick = (courseId) => {
     // Check if user is enrolled in this course
-    const isEnrolled = enrolledCourses.some(course => course.id === courseId);
+    const isEnrolled = enrolledCourses.some((course) => course.id === courseId);
 
     if (isEnrolled) {
       setShowDropdown(false);
-      setSearchQuery('');
+      setSearchQuery("");
       setShowMobileSearch(false);
       navigate(`/dashboard/courses/${courseId}/modules`);
     } else {
@@ -480,9 +479,9 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     }
   };
 
-  const handleUserClick = async userId => {
+  const handleUserClick = async (userId) => {
     setShowDropdown(false);
-    setSearchQuery('');
+    setSearchQuery("");
     setShowMobileSearch(false);
     setUserDetailsError(null);
     setUserDetailsLoading(true);
@@ -497,7 +496,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         if (!userData?.activity_log || userData.activity_log.length === 0) {
           try {
             const allUsers = await fetchAllUsersAdmin();
-            const match = (allUsers || []).find(u => u.id === userId);
+            const match = (allUsers || []).find((u) => u.id === userId);
             if (match?.activity_log && match.activity_log.length > 0) {
               userData = { ...userData, activity_log: match.activity_log };
             }
@@ -515,34 +514,34 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             const coursesData = await fetchUserCoursesByUserId(userId);
             setSelectedUser({ ...publicProfile, courses: coursesData || [] });
           } catch (coursesError) {
-            console.warn('Could not fetch courses for user:', coursesError);
+            console.warn("Could not fetch courses for user:", coursesError);
             setSelectedUser(publicProfile);
           }
         } catch (publicErr) {
           console.warn(
-            'Could not fetch public user profile, fallback to search result user:',
-            publicErr
+            "Could not fetch public user profile, fallback to search result user:",
+            publicErr,
           );
           const users = searchResults.results?.users || [];
-          const fallback = users.find(user => user.id === userId);
+          const fallback = users.find((user) => user.id === userId);
           if (fallback) {
             setSelectedUser(fallback);
           } else {
-            setUserDetailsError('User data not found');
+            setUserDetailsError("User data not found");
           }
         }
       }
     } catch (error) {
-      console.error('Failed to fetch user details:', error);
-      setUserDetailsError(error?.message || 'Failed to fetch user details');
+      console.error("Failed to fetch user details:", error);
+      setUserDetailsError(error?.message || "Failed to fetch user details");
     } finally {
       setUserDetailsLoading(false);
     }
   };
 
-  const handleSearchSubmit = e => {
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim() !== '' && searchResults) {
+    if (searchQuery.trim() !== "" && searchResults) {
       setShowDropdown(true);
     }
   };
@@ -553,7 +552,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   };
 
   // Handle notification updates
-  const handleNotificationUpdate = newCount => {
+  const handleNotificationUpdate = (newCount) => {
     setUnreadNotifications(newCount);
   };
 
@@ -565,10 +564,10 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     const nowIso = new Date().toISOString();
     writeReadAllAt(nowIso);
     const locals = readLocalNotifications();
-    const updatedLocals = locals.map(n => ({ ...n, read: true }));
+    const updatedLocals = locals.map((n) => ({ ...n, read: true }));
     writeLocalNotifications(updatedLocals);
 
-    setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setApiNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadNotifications(0);
 
     // Optionally re-fetch for UI sync
@@ -579,11 +578,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
   return (
     <>
-      <header
-        className={`app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95 ${
-          isChristmasMode ? 'christmas-app-header' : ''
-        }`}
-      >
+      <header className="app-header sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm">
         <div className="h-16 flex items-center justify-between px-4 sm:px-6">
           {/* Left: Mobile menu + Logo */}
           <div className="flex items-center gap-3">
@@ -597,20 +592,14 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             <button
               className="flex items-center focus:outline-none"
               onClick={() => {
-                if (window.location.pathname === '/dashboard') {
+                if (window.location.pathname === "/dashboard") {
                   window.location.reload();
                 } else {
-                  window.location.href = '/dashboard';
+                  window.location.href = "/dashboard";
                 }
               }}
             >
-              <h1
-                className={`text-base sm:text-lg font-bold ${
-                  isChristmasMode
-                    ? 'text-white drop-shadow-sm'
-                    : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
-                }`}
-              >
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 LMS Athena
               </h1>
             </button>
@@ -631,10 +620,10 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 type="text"
                 placeholder="Search courses and users..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="pl-12 pr-4 py-3 w-full bg-gray-50 border-0 rounded-2xl text-gray-800 text-sm h-12 shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-offset-0 transition-all duration-200"
-                style={{ outline: 'none' }}
+                style={{ outline: "none" }}
               />
             </form>
 
@@ -642,7 +631,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             {showDropdown && searchResults && (
               <div
                 ref={dropdownRef}
-                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
+                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50 search-results-dropdown"
               >
                 {/* Total Results Header */}
                 {(searchResults.results?.courses?.length > 0 ||
@@ -651,13 +640,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="text-sm font-medium text-gray-700">
                       Found {searchResults.results?.courses?.length || 0} course
                       {(searchResults.results?.courses?.length || 0) !== 1
-                        ? 's'
-                        : ''}
+                        ? "s"
+                        : ""}
                       {searchResults.results?.users?.length > 0 && (
-                        <span>
-                          {' '}
+                        <span className="text-gray-700">
+                          {" "}
                           and {searchResults.results.users.length} user
-                          {searchResults.results.users.length !== 1 ? 's' : ''}
+                          {searchResults.results.users.length !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
@@ -674,7 +663,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="space-y-2">
                       {searchResults.results.courses.map((course, index) => {
                         const isEnrolled = enrolledCourses.some(
-                          ec => ec.id === course.id
+                          (ec) => ec.id === course.id,
                         );
                         const isSelected = selectedResultIndex === index;
                         return (
@@ -684,7 +673,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                             onMouseEnter={() => setSelectedResultIndex(index)}
                             onMouseLeave={() => setSelectedResultIndex(-1)}
                             className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
-                              isSelected ? 'bg-blue-50' : ''
+                              isSelected ? "bg-blue-50" : ""
                             }`}
                           >
                             <BookOpen className="h-4 w-4 text-blue-600" />
@@ -722,13 +711,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.results.users.map((user, index) => {
-                        const userRole = user.user_roles?.[0]?.role || 'user';
+                        const userRole = user.user_roles?.[0]?.role || "user";
                         const roleColor =
-                          userRole === 'admin'
-                            ? 'bg-red-100 text-red-800'
-                            : userRole === 'instructor'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-600';
+                          userRole === "admin"
+                            ? "bg-red-100 text-red-800"
+                            : userRole === "instructor"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-600";
                         const isSelected =
                           selectedResultIndex ===
                           searchResults.results.courses.length + index;
@@ -739,12 +728,12 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                             onClick={() => handleUserClick(user.id)}
                             onMouseEnter={() =>
                               setSelectedResultIndex(
-                                searchResults.results.courses.length + index
+                                searchResults.results.courses.length + index,
                               )
                             }
                             onMouseLeave={() => setSelectedResultIndex(-1)}
                             className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
-                              isSelected ? 'bg-blue-50' : ''
+                              isSelected ? "bg-blue-50" : ""
                             }`}
                           >
                             {user.image ? (
@@ -827,22 +816,6 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
-
-            <button
-              type="button"
-              onClick={toggleChristmasMode}
-              aria-pressed={isChristmasMode}
-              className={`hidden sm:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors christmas-toggle-btn ${
-                isChristmasMode
-                  ? 'text-white border-white/60 bg-white/20 hover:bg-white/30'
-                  : 'text-gray-700 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {isChristmasMode
-                ? 'Disable Christmas Mode'
-                : '🎄 Enable Christmas Mode'}
-            </button>
-            {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
               className="group relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-1.5 sm:gap-2 shadow-sm hover:shadow transition-all"
@@ -864,13 +837,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              aria-label={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
-              title={isChristmasMode ? 'Jingle Alerts' : 'Notifications'}
+              aria-label="Notifications"
+              title="Notifications"
             >
               <BellDot className="h-5 w-5" />
               {unreadNotifications > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                  {unreadNotifications > 99 ? "99+" : unreadNotifications}
                 </span>
               )}
             </button>
@@ -898,10 +871,10 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 type="text"
                 placeholder="Search courses and users..."
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="pl-12 pr-4 py-3 w-full bg-gray-50 border-0 rounded-2xl text-gray-800 text-sm h-12 shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-offset-0 transition-all duration-200"
-                style={{ outline: 'none' }}
+                style={{ outline: "none" }}
                 autoFocus
               />
               <button
@@ -909,7 +882,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 onClick={() => {
                   setShowMobileSearch(false);
                   setShowDropdown(false);
-                  setSearchQuery('');
+                  setSearchQuery("");
                 }}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
@@ -930,13 +903,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="text-sm font-medium text-gray-700">
                       Found {searchResults.results?.courses?.length || 0} course
                       {(searchResults.results?.courses?.length || 0) !== 1
-                        ? 's'
-                        : ''}
+                        ? "s"
+                        : ""}
                       {searchResults.results?.users?.length > 0 && (
                         <span>
-                          {' '}
+                          {" "}
                           and {searchResults.results.users.length} user
-                          {searchResults.results.users.length !== 1 ? 's' : ''}
+                          {searchResults.results.users.length !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
@@ -953,7 +926,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="space-y-2">
                       {searchResults.results.courses.map((course, index) => {
                         const isEnrolled = enrolledCourses.some(
-                          ec => ec.id === course.id
+                          (ec) => ec.id === course.id,
                         );
                         const isSelected = selectedResultIndex === index;
                         return (
@@ -963,7 +936,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                             onMouseEnter={() => setSelectedResultIndex(index)}
                             onMouseLeave={() => setSelectedResultIndex(-1)}
                             className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
-                              isSelected ? 'bg-blue-50' : ''
+                              isSelected ? "bg-blue-50" : ""
                             }`}
                           >
                             <BookOpen className="h-4 w-4 text-blue-600" />
@@ -1001,13 +974,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.results.users.map((user, index) => {
-                        const userRole = user.user_roles?.[0]?.role || 'user';
+                        const userRole = user.user_roles?.[0]?.role || "user";
                         const roleColor =
-                          userRole === 'admin'
-                            ? 'bg-red-100 text-red-800'
-                            : userRole === 'instructor'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-600';
+                          userRole === "admin"
+                            ? "bg-red-100 text-red-800"
+                            : userRole === "instructor"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-600";
                         const isSelected =
                           selectedResultIndex ===
                           searchResults.results.courses.length + index;
@@ -1018,12 +991,12 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                             onClick={() => handleUserClick(user.id)}
                             onMouseEnter={() =>
                               setSelectedResultIndex(
-                                searchResults.results.courses.length + index
+                                searchResults.results.courses.length + index,
                               )
                             }
                             onMouseLeave={() => setSelectedResultIndex(-1)}
                             className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
-                              isSelected ? 'bg-blue-50' : ''
+                              isSelected ? "bg-blue-50" : ""
                             }`}
                           >
                             {user.image ? (
@@ -1146,7 +1119,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
 
             <div className="flex gap-3">
               <Button
-                onClick={() => navigate('/dashboard/catalog')}
+                onClick={() => navigate("/dashboard/catalog")}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 Browse Catalog

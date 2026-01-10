@@ -1,23 +1,23 @@
-import optimizedOpenAIService from './optimizedOpenAIService.js';
-import { updateLessonContent } from './courseService.js';
+import optimizedOpenAIService from "./optimizedOpenAIService.js";
+import { updateLessonContent } from "./courseService.js";
 
 /**
  * Structured Lesson Generator
  * Generates lessons with fixed 8-block structure using single user prompt
  */
 const DEFAULT_IMAGE_OPTIONS = {
-  size: '1024x1024',
-  quality: 'standard',
+  size: "1024x1024",
+  quality: "standard",
   uploadToS3: true,
 };
 
 const IMAGE_FOLDERS = {
-  left: 'ai-lesson-images/blocks/left',
-  right: 'ai-lesson-images/blocks/right',
+  left: "ai-lesson-images/blocks/left",
+  right: "ai-lesson-images/blocks/right",
 };
 
 const IMAGE_PLACEHOLDER =
-  'https://via.placeholder.com/600x400?text=Image+Placeholder';
+  "https://via.placeholder.com/600x400?text=Image+Placeholder";
 
 function resolveImageResponse(result) {
   if (!result) {
@@ -40,12 +40,12 @@ function resolveImageResponse(result) {
 class StructuredLessonGenerator {
   constructor() {
     this.gradients = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-      'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-      'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-      'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-      'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)",
+      "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
+      "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+      "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+      "linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)",
     ];
   }
 
@@ -53,17 +53,17 @@ class StructuredLessonGenerator {
    * Extract context from user's single prompt
    */
   extractContext(courseData) {
-    const topic = courseData.title || courseData.courseTitle || 'Course Topic';
-    const description = courseData.description || '';
+    const topic = courseData.title || courseData.courseTitle || "Course Topic";
+    const description = courseData.description || "";
     const difficulty =
-      courseData.difficulty || courseData.difficultyLevel || 'intermediate';
+      courseData.difficulty || courseData.difficultyLevel || "intermediate";
 
     return {
       topic,
       description,
       difficulty,
       subject: courseData.subject || topic,
-      targetAudience: courseData.targetAudience || 'learners',
+      targetAudience: courseData.targetAudience || "learners",
       // Extract keywords from title and description
       keywords: this.extractKeywords(`${topic} ${description}`),
     };
@@ -74,25 +74,25 @@ class StructuredLessonGenerator {
    */
   extractKeywords(text) {
     const commonWords = [
-      'the',
-      'a',
-      'an',
-      'and',
-      'or',
-      'but',
-      'in',
-      'on',
-      'at',
-      'to',
-      'for',
-      'of',
-      'with',
-      'by',
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by",
     ];
     const words = text
       .toLowerCase()
       .split(/\s+/)
-      .filter(word => word.length > 3 && !commonWords.includes(word));
+      .filter((word) => word.length > 3 && !commonWords.includes(word));
     return [...new Set(words)].slice(0, 5);
   }
 
@@ -100,7 +100,7 @@ class StructuredLessonGenerator {
     try {
       return JSON.parse(text);
     } catch (e) {
-      console.warn('JSON parse failed, using fallback bundle', e.message);
+      console.warn("JSON parse failed, using fallback bundle", e.message);
       return fallback;
     }
   }
@@ -113,18 +113,18 @@ class StructuredLessonGenerator {
       carousel_quotes: [
         {
           quote: `${context.topic} is reshaping modern practice.`,
-          author: 'Expert Instructor',
-          title: 'Learning Strategist',
+          author: "Expert Instructor",
+          title: "Learning Strategist",
         },
         {
           quote: `Understanding ${context.topic} unlocks new opportunities.`,
-          author: 'Industry Leader',
-          title: 'Practitioner',
+          author: "Industry Leader",
+          title: "Practitioner",
         },
         {
           quote: `Practical mastery of ${context.topic} is a career advantage.`,
-          author: 'Coach',
-          title: 'Mentor',
+          author: "Coach",
+          title: "Mentor",
         },
       ],
       numbered_list: [
@@ -133,15 +133,15 @@ class StructuredLessonGenerator {
         `Common pitfall to avoid`,
       ],
       table: {
-        headers: ['Concept', 'Why it matters', 'Example'],
+        headers: ["Concept", "Why it matters", "Example"],
         rows: [
           [
             `${context.topic} Basics`,
-            'Foundation for growth',
-            'Real-world scenario',
+            "Foundation for growth",
+            "Real-world scenario",
           ],
-          ['Application', 'Turns theory into action', 'Project walkthrough'],
-          ['Next Steps', 'Plan continued learning', 'Practice checklist'],
+          ["Application", "Turns theory into action", "Project walkthrough"],
+          ["Next Steps", "Plan continued learning", "Practice checklist"],
         ],
       },
     };
@@ -149,7 +149,7 @@ class StructuredLessonGenerator {
 
   async generateTextBundle(context) {
     const systemPrompt =
-      'You are a concise instructional writer. Return compact Premium-quality lesson blocks as JSON only.';
+      "You are a concise instructional writer. Return compact Premium-quality lesson blocks as JSON only.";
     const userPrompt = `Produce JSON with keys:
 - master_heading: 5-10 word title
 - paragraph: 3-4 sentence intro
@@ -174,8 +174,8 @@ Keep outputs short and direct.`;
       return parsed || fallback;
     } catch (error) {
       console.warn(
-        'Text bundle generation failed, using defaults:',
-        error.message
+        "Text bundle generation failed, using defaults:",
+        error.message,
       );
       return fallback;
     }
@@ -186,14 +186,14 @@ Keep outputs short and direct.`;
 
     blocks.push({
       id: `master-heading-${Date.now()}`,
-      type: 'text',
-      textType: 'master_heading',
+      type: "text",
+      textType: "master_heading",
       content: bundle.master_heading,
       gradient: `gradient${Math.floor(Math.random() * 6) + 1}`,
       order: 0,
       isAIGenerated: true,
       metadata: {
-        variant: 'master_heading',
+        variant: "master_heading",
         aiGenerated: true,
         generatedAt: new Date().toISOString(),
       },
@@ -201,48 +201,48 @@ Keep outputs short and direct.`;
 
     blocks.push({
       id: `paragraph-${Date.now()}`,
-      type: 'text',
-      textType: 'paragraph',
+      type: "text",
+      textType: "paragraph",
       content: bundle.paragraph,
       order: 1,
       isAIGenerated: true,
-      metadata: { variant: 'paragraph', aiGenerated: true },
+      metadata: { variant: "paragraph", aiGenerated: true },
     });
 
     blocks.push({
       id: `statement-${Date.now()}`,
-      type: 'statement',
-      variant: 'statement-b',
+      type: "statement",
+      variant: "statement-b",
       content: bundle.elegant_quote,
       order: 2,
       isAIGenerated: true,
       metadata: {
-        variant: 'statement-b',
-        style: 'elegant-quote',
+        variant: "statement-b",
+        style: "elegant-quote",
         aiGenerated: true,
       },
     });
 
     blocks.push({
       id: `quote-carousel-${Date.now()}`,
-      type: 'quote',
-      variant: 'quote_carousel',
+      type: "quote",
+      variant: "quote_carousel",
       quotes: bundle.carousel_quotes,
       order: 3,
       isAIGenerated: true,
-      metadata: { variant: 'quote_carousel', aiGenerated: true },
+      metadata: { variant: "quote_carousel", aiGenerated: true },
     });
 
     blocks.push({
       id: `numbered-list-${Date.now()}`,
-      type: 'list',
-      listType: 'numbered',
-      numberingStyle: 'decimal',
+      type: "list",
+      listType: "numbered",
+      numberingStyle: "decimal",
       items: bundle.numbered_list,
       order: 6, // will be re-ordered when assembled
       isAIGenerated: true,
       metadata: {
-        variant: 'numbered',
+        variant: "numbered",
         aiGenerated: true,
         itemCount: bundle.numbered_list?.length || 0,
       },
@@ -251,14 +251,14 @@ Keep outputs short and direct.`;
     const tableData = bundle.table || { headers: [], rows: [] };
     blocks.push({
       id: `table-${Date.now()}`,
-      type: 'table',
-      variant: 'styled',
+      type: "table",
+      variant: "styled",
       headers: tableData.headers,
       rows: tableData.rows,
       order: 7, // will be re-ordered when assembled
       isAIGenerated: true,
       metadata: {
-        variant: 'styled-with-headers',
+        variant: "styled-with-headers",
         rowCount: tableData.rows?.length || 0,
         aiGenerated: true,
       },
@@ -271,22 +271,22 @@ Keep outputs short and direct.`;
    */
   async generateLesson(lessonId, courseData, onProgress = null, config = {}) {
     console.log(
-      '🎯 Starting structured lesson generation for lesson:',
-      lessonId
+      "🎯 Starting structured lesson generation for lesson:",
+      lessonId,
     );
 
     // Extract context from single user prompt
     const context = this.extractContext(courseData);
-    console.log('📋 Extracted context:', context);
+    console.log("📋 Extracted context:", context);
 
     const maxImages = config.maxImages ?? 2;
     const skipImages =
       config.skipImages ||
       config.includeImages === false ||
-      courseData.generationMode === 'QUICK' ||
+      courseData.generationMode === "QUICK" ||
       maxImages === 0;
     if (skipImages) {
-      console.log('⚡ Image generation skipped for speed');
+      console.log("⚡ Image generation skipped for speed");
     }
 
     const blocks = [];
@@ -296,7 +296,7 @@ Keep outputs short and direct.`;
       onProgress?.({
         current: 1,
         total: totalBlocks,
-        message: 'Generating lesson content bundle...',
+        message: "Generating lesson content bundle...",
       });
 
       // Single-call text bundle to reduce round-trips
@@ -309,21 +309,26 @@ Keep outputs short and direct.`;
       // Generate images (optional) in parallel
       if (!skipImages) {
         const imagePromises = [];
+        const generationType = courseData.generationMode || "STANDARD";
         if (maxImages >= 1) {
           imagePromises.push(
-            this.generateWithRetry(() => this.generateImageLeft(context))
+            this.generateWithRetry(() =>
+              this.generateImageLeft(context, generationType),
+            ),
           );
         }
         if (maxImages >= 2) {
           imagePromises.push(
-            this.generateWithRetry(() => this.generateImageRight(context))
+            this.generateWithRetry(() =>
+              this.generateImageRight(context, generationType),
+            ),
           );
         }
 
         onProgress?.({
           current: blocks.length,
           total: totalBlocks,
-          message: 'Generating lesson visuals...',
+          message: "Generating lesson visuals...",
         });
 
         const generatedImages = await Promise.all(imagePromises);
@@ -337,7 +342,7 @@ Keep outputs short and direct.`;
       });
 
       // Convert blocks to HTML
-      const processedBlocks = blocks.map(block => ({
+      const processedBlocks = blocks.map((block) => ({
         ...block,
         html_css: block.html_css || this.convertBlockToHTML(block),
       }));
@@ -346,18 +351,18 @@ Keep outputs short and direct.`;
       onProgress?.({
         current: totalBlocks,
         total: totalBlocks,
-        message: 'Saving lesson content...',
+        message: "Saving lesson content...",
       });
       await this.saveAllBlocks(lessonId, processedBlocks);
 
       console.log(
-        '✅ Lesson generated successfully with',
+        "✅ Lesson generated successfully with",
         blocks.length,
-        'blocks'
+        "blocks",
       );
       return { success: true, blocks: processedBlocks };
     } catch (error) {
-      console.error('❌ Lesson generation failed:', error);
+      console.error("❌ Lesson generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -382,7 +387,7 @@ Keep outputs short and direct.`;
   }
 
   delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -404,21 +409,21 @@ Requirements:
 
     // Remove surrounding quotes if present
     let cleanedContent = content.trim();
-    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, "$1");
 
     const randomGradient =
       this.gradients[Math.floor(Math.random() * this.gradients.length)];
 
     return {
       id: `master-heading-${Date.now()}`,
-      type: 'text',
-      textType: 'master_heading',
+      type: "text",
+      textType: "master_heading",
       content: cleanedContent,
       gradient: `gradient${Math.floor(Math.random() * 6) + 1}`,
       order: 0,
       isAIGenerated: true,
       metadata: {
-        variant: 'master_heading',
+        variant: "master_heading",
         aiGenerated: true,
         generatedAt: new Date().toISOString(),
       },
@@ -446,17 +451,17 @@ Requirements:
 
     // Remove surrounding quotes if present
     let cleanedContent = content.trim();
-    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, "$1");
 
     return {
       id: `paragraph-${Date.now()}`,
-      type: 'text',
-      textType: 'paragraph',
+      type: "text",
+      textType: "paragraph",
       content: cleanedContent,
       order: 1,
       isAIGenerated: true,
       metadata: {
-        variant: 'paragraph',
+        variant: "paragraph",
         aiGenerated: true,
       },
     };
@@ -482,18 +487,18 @@ Requirements:
 
     // Remove surrounding quotes if present
     let cleanedContent = content.trim();
-    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, '$1');
+    cleanedContent = cleanedContent.replace(/^["'](.+)["']$/, "$1");
 
     return {
       id: `statement-${Date.now()}`,
-      type: 'statement',
-      variant: 'statement-b',
+      type: "statement",
+      variant: "statement-b",
       content: cleanedContent,
       order: 2,
       isAIGenerated: true,
       metadata: {
-        variant: 'statement-b',
-        style: 'elegant-quote',
+        variant: "statement-b",
+        style: "elegant-quote",
         aiGenerated: true,
       },
     };
@@ -525,31 +530,31 @@ Requirements:
       quotes = [
         {
           quote: `${context.topic} is transforming the way we work and learn.`,
-          author: 'Expert 1',
-          title: 'Industry Leader',
+          author: "Expert 1",
+          title: "Industry Leader",
         },
         {
           quote: `Understanding ${context.topic} is essential for modern professionals.`,
-          author: 'Expert 2',
-          title: 'Specialist',
+          author: "Expert 2",
+          title: "Specialist",
         },
         {
           quote: `The future belongs to those who master ${context.topic}.`,
-          author: 'Expert 3',
-          title: 'Thought Leader',
+          author: "Expert 3",
+          title: "Thought Leader",
         },
       ];
     }
 
     return {
       id: `carousel-quotes-${Date.now()}`,
-      type: 'quote',
-      variant: 'quote_carousel',
+      type: "quote",
+      variant: "quote_carousel",
       quotes: quotes,
       order: 3,
       isAIGenerated: true,
       metadata: {
-        variant: 'carousel',
+        variant: "carousel",
         quoteCount: quotes.length,
         aiGenerated: true,
       },
@@ -559,35 +564,18 @@ Requirements:
   /**
    * Block 5: Content Right + Image Left
    */
-  async generateImageLeft(context) {
-    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing key concepts of "${context.topic}".
-    
-Requirements:
-- Design a structured, organized visual with clear hierarchy
-- Show key concepts with flowchart or diagram elements
-- Use professional colors, icons, and typography
-- Include detailed information with proper spacing and layout
-- Display labels, annotations, and key points clearly visible
-- Modern, clean, professional style suitable for educational content
-- Ensure all text is readable and well-organized
-- Create a visually rich, information-dense design
-- Return ONLY the image description`;
+  async generateImageLeft(context, generationType = "STANDARD") {
+    const imagePromptText = `Create infographic/flowchart for "${context.topic}". Requirements: organized visual with clear hierarchy, key concepts with flowchart elements, professional colors/icons/typography, detailed info with proper spacing, LARGE BOLD READABLE TEXT (NOT small/distorted), professional educational style, visually rich design. Return image description only.`;
 
-    const contentPrompt = `Write 2-3 sentences explaining a key concept about "${context.topic}".
-
-Requirements:
-- Clear and informative
-- Complements a visual diagram or illustration
-- Professional tone
-- Return ONLY the text`;
+    const contentPrompt = `Write 2-3 sentences explaining a key concept about "${context.topic}".`;
 
     // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
     const [imagePrompt, contentText] = await Promise.all([
       optimizedOpenAIService.generateText(imagePromptText, {
-        maxTokens: 200,
+        maxTokens: 250,
         temperature: 0.8,
         systemPrompt:
-          'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
+          "Expert infographic designer. Create professional prompts emphasizing: BOLD readable text, clear hierarchy, LARGE FONTS, flowcharts, icons, strong typography, excellent information density. Text must be visible and crisp at any size.",
       }),
       optimizedOpenAIService.generateText(contentPrompt, {
         maxTokens: 150,
@@ -602,29 +590,29 @@ Requirements:
 
     try {
       // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
-      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
+      const enhancedPrompt = `Professional educational infographic: ${imagePrompt.trim()}. CRITICAL: LARGE BOLD CRISP READABLE TEXT throughout, sharp and clear (never distorted), excellent contrast, clear visual hierarchy with prominent labels, organized sections with logical flow, professional icons, color-coded sections, 8K quality crisp details, sharp legible text as primary focus, professional design with premium color palette, clean white/light background for text contrast, vivid colors, professional quality. TEXT VISIBILITY IS PRIMARY GOAL.`;
 
       console.log(
-        '🎨 Generating AI image (left) with premium 7-layer enhancement:',
-        enhancedPrompt.substring(0, 100) + '...'
+        "🎨 Generating AI image (left) with premium 7-layer enhancement:",
+        enhancedPrompt.substring(0, 100) + "...",
       );
       const imageResult = await optimizedOpenAIService.generateImage(
         enhancedPrompt,
         {
           ...DEFAULT_IMAGE_OPTIONS,
           folder: IMAGE_FOLDERS.left,
-        }
+        },
       );
 
       // Validate response
       if (!imageResult) {
-        throw new Error('Image generation returned null response');
+        throw new Error("Image generation returned null response");
       }
 
       const resolved = resolveImageResponse(imageResult);
 
       if (!resolved.url) {
-        throw new Error('Image generation returned no URL');
+        throw new Error("Image generation returned no URL");
       }
 
       imageUrl = resolved.url;
@@ -632,53 +620,65 @@ Requirements:
 
       // Validate URL is accessible
       try {
-        const headResponse = await fetch(imageUrl, { method: 'HEAD' });
+        const headResponse = await fetch(imageUrl, { method: "HEAD" });
         if (!headResponse.ok) {
           console.warn(`⚠️ Image URL returned status ${headResponse.status}`);
           imageError = `Image URL not accessible (${headResponse.status})`;
           imageUrl = IMAGE_PLACEHOLDER;
         }
       } catch (urlError) {
-        console.warn('⚠️ Could not validate image URL:', urlError.message);
-        imageError = 'Image URL validation failed';
+        console.warn("⚠️ Could not validate image URL:", urlError.message);
+        imageError = "Image URL validation failed";
         imageUrl = IMAGE_PLACEHOLDER;
       }
 
       if (!uploadedToS3) {
-        console.warn('⚠️ Left image not stored in S3, using OpenAI URL');
-        imageError = 'Image not uploaded to S3';
+        console.warn("⚠️ Left image not stored in S3, using source URL");
+        imageError = "Image not uploaded to S3";
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error.message);
+      console.error("❌ Image generation failed:", error.message);
       imageError = error.message;
       imageUrl = IMAGE_PLACEHOLDER;
     }
 
     return {
       id: `image-left-${Date.now()}`,
-      type: 'image',
-      template: 'image-text',
-      layout: 'side-by-side',
+      block_id: `image-left-${Date.now()}`,
+      type: "image",
+      template: "image-text",
+      layout: "side-by-side",
       title: `Visual guide for ${context.topic}`, // For editor header
-      alignment: 'left', // Image on left, text on right
+      alignment: "left", // Image on left, text on right
       imageUrl: imageUrl, // Root level for editor compatibility
-      text: contentText.trim(),
       imageTitle: `Visual guide for ${context.topic}`,
       imageDescription: contentText.trim(),
+      text: contentText.trim(),
       content: {
         imageUrl: imageUrl,
         text: contentText.trim(),
         caption: `Real-world example illustrating key concepts of ${context.topic}. ${contentText.trim().substring(0, 100)}...`,
-        imagePosition: 'left',
+        imagePosition: "left",
+      },
+      details: {
+        image_url: imageUrl,
+        caption: contentText.trim(),
+        caption_html: `<p>${contentText.trim()}</p>`,
+        alt_text: `Visual guide for ${context.topic}`,
+        layout: "side-by-side",
+        alignment: "left",
+        generationType: generationType,
       },
       order: 4,
       isAIGenerated: true,
+      timestamp: new Date().toISOString(),
       metadata: {
-        variant: 'image-text-left',
+        variant: "image-text-left",
         aiGenerated: true,
         imagePrompt: imagePrompt.trim(),
         uploadedToS3: uploadedToS3,
         imageError: imageError, // Track errors
+        generationType: generationType,
       },
     };
   }
@@ -686,35 +686,18 @@ Requirements:
   /**
    * Block 6: Content Left + Image Right
    */
-  async generateImageRight(context) {
-    const imagePromptText = `Create a professional, detailed infographic/flowchart image prompt showing practical application of "${context.topic}".
-    
-Requirements:
-- Design a structured, organized visual with clear hierarchy
-- Show practical applications with flowchart or process diagram elements
-- Use professional colors, icons, and typography
-- Include detailed information with proper spacing and layout
-- Display labels, annotations, and key points clearly visible
-- Modern, clean, professional style suitable for educational content
-- Ensure all text is readable and well-organized
-- Create a visually rich, information-dense design
-- Return ONLY the image description`;
+  async generateImageRight(context, generationType = "STANDARD") {
+    const imagePromptText = `Create infographic/flowchart showing practical application of "${context.topic}". Requirements: organized visual with clear hierarchy, practical applications with flowchart/process elements, professional colors/icons/typography, detailed info with proper spacing, LARGE BOLD READABLE TEXT (NOT small/distorted), professional educational style, visually rich design. Return image description only.`;
 
-    const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".
-
-Requirements:
-- Focus on real-world usage
-- Clear examples
-- Professional tone
-- Return ONLY the text`;
+    const contentPrompt = `Write 2-3 sentences about practical applications of "${context.topic}".`;
 
     // OPTIMIZED: Generate image prompt and content text in parallel (Phase 1)
     const [imagePrompt, contentText] = await Promise.all([
       optimizedOpenAIService.generateText(imagePromptText, {
-        maxTokens: 200,
+        maxTokens: 250,
         temperature: 0.8,
         systemPrompt:
-          'You are an expert infographic designer. Create detailed, professional infographic prompts that emphasize structured layouts, clear hierarchies, readable text, flowcharts, diagrams, icons, and professional design principles. Make prompts specific about visual organization and information density.',
+          "Expert infographic designer. Create professional prompts emphasizing: BOLD readable text, clear hierarchy, LARGE FONTS, flowcharts, icons, strong typography, excellent information density. Text must be visible and crisp at any size.",
       }),
       optimizedOpenAIService.generateText(contentPrompt, {
         maxTokens: 150,
@@ -728,29 +711,29 @@ Requirements:
 
     try {
       // Enhance prompt with infographic-specific quality system (OPTIMIZED: Simplified for speed)
-      const enhancedPrompt = `Professional infographic/flowchart design: ${imagePrompt.trim()}, with clear, readable text labels, professional typography, clear visual hierarchy, organized sections, logical flow, professional icons, visual elements, color-coded sections, ultra-high resolution, 8K quality, crisp details, sharp text, modern professional design, premium color palette, clean spacing, information-rich, well-organized, detailed content. Clean white or light background, no watermarks, vivid colors, professional quality.`;
+      const enhancedPrompt = `Professional educational infographic: ${imagePrompt.trim()}. CRITICAL: LARGE BOLD CRISP READABLE TEXT throughout, sharp and clear (never distorted), excellent contrast, clear visual hierarchy with prominent labels, organized sections with logical flow, professional icons, color-coded sections, 8K quality crisp details, sharp legible text as primary focus, professional design with premium color palette, clean white/light background for text contrast, vivid colors, professional quality. TEXT VISIBILITY IS PRIMARY GOAL.`;
 
       console.log(
-        '🎨 Generating AI image (right) with infographic enhancement:',
-        enhancedPrompt.substring(0, 100) + '...'
+        "🎨 Generating AI image (right) with infographic enhancement:",
+        enhancedPrompt.substring(0, 100) + "...",
       );
       const imageResult = await optimizedOpenAIService.generateImage(
         enhancedPrompt,
         {
           ...DEFAULT_IMAGE_OPTIONS,
           folder: IMAGE_FOLDERS.right,
-        }
+        },
       );
 
       // Validate response
       if (!imageResult) {
-        throw new Error('Image generation returned null response');
+        throw new Error("Image generation returned null response");
       }
 
       const resolved = resolveImageResponse(imageResult);
 
       if (!resolved.url) {
-        throw new Error('Image generation returned no URL');
+        throw new Error("Image generation returned no URL");
       }
 
       imageUrl = resolved.url;
@@ -758,53 +741,65 @@ Requirements:
 
       // Validate URL is accessible
       try {
-        const headResponse = await fetch(imageUrl, { method: 'HEAD' });
+        const headResponse = await fetch(imageUrl, { method: "HEAD" });
         if (!headResponse.ok) {
           console.warn(`⚠️ Image URL returned status ${headResponse.status}`);
           imageError = `Image URL not accessible (${headResponse.status})`;
           imageUrl = IMAGE_PLACEHOLDER;
         }
       } catch (urlError) {
-        console.warn('⚠️ Could not validate image URL:', urlError.message);
-        imageError = 'Image URL validation failed';
+        console.warn("⚠️ Could not validate image URL:", urlError.message);
+        imageError = "Image URL validation failed";
         imageUrl = IMAGE_PLACEHOLDER;
       }
 
       if (!uploadedToS3) {
-        console.warn('⚠️ Right image not stored in S3, using OpenAI URL');
-        imageError = 'Image not uploaded to S3';
+        console.warn("⚠️ Right image not stored in S3, using source URL");
+        imageError = "Image not uploaded to S3";
       }
     } catch (error) {
-      console.error('❌ Image generation failed:', error.message);
+      console.error("❌ Image generation failed:", error.message);
       imageError = error.message;
       imageUrl = IMAGE_PLACEHOLDER;
     }
 
     return {
       id: `image-right-${Date.now()}`,
-      type: 'image',
-      template: 'image-text',
-      layout: 'side-by-side',
+      block_id: `image-right-${Date.now()}`,
+      type: "image",
+      template: "image-text",
+      layout: "side-by-side",
       title: `Practical application of ${context.topic}`, // For editor header
-      alignment: 'right', // Text on left, image on right
+      alignment: "right", // Text on left, image on right
       imageUrl: imageUrl, // Root level for editor compatibility
-      text: contentText.trim(),
       imageTitle: `Practical application of ${context.topic}`,
       imageDescription: contentText.trim(),
+      text: contentText.trim(),
       content: {
         imageUrl: imageUrl,
         text: contentText.trim(),
         caption: `Real-world application demonstrating practical usage of ${context.topic}. ${contentText.trim().substring(0, 100)}...`,
-        imagePosition: 'right',
+        imagePosition: "right",
+      },
+      details: {
+        image_url: imageUrl,
+        caption: contentText.trim(),
+        caption_html: `<p>${contentText.trim()}</p>`,
+        alt_text: `Practical application of ${context.topic}`,
+        layout: "side-by-side",
+        alignment: "right",
+        generationType: generationType,
       },
       order: 5,
       isAIGenerated: true,
+      timestamp: new Date().toISOString(),
       metadata: {
-        variant: 'image-text-right',
+        variant: "image-text-right",
         aiGenerated: true,
         imagePrompt: imagePrompt.trim(),
         uploadedToS3: uploadedToS3,
         imageError: imageError, // Track errors
+        generationType: generationType,
       },
     };
   }
@@ -843,14 +838,14 @@ Requirements:
 
     return {
       id: `list-${Date.now()}`,
-      type: 'list',
-      listType: 'numbered',
-      numberingStyle: 'decimal',
+      type: "list",
+      listType: "numbered",
+      numberingStyle: "decimal",
       items: items,
       order: 6,
       isAIGenerated: true,
       metadata: {
-        variant: 'numbered-decimal',
+        variant: "numbered-decimal",
         itemCount: items.length,
         aiGenerated: true,
       },
@@ -880,22 +875,22 @@ Requirements:
     } catch {
       // Fallback if JSON parsing fails
       tableData = {
-        headers: ['Concept', 'Description', 'Use Case'],
+        headers: ["Concept", "Description", "Use Case"],
         rows: [
           [
-            'Fundamentals',
+            "Fundamentals",
             `Core principles of ${context.topic}`,
-            'Foundation building',
+            "Foundation building",
           ],
           [
-            'Applications',
+            "Applications",
             `Practical uses of ${context.topic}`,
-            'Real-world projects',
+            "Real-world projects",
           ],
           [
-            'Best Practices',
+            "Best Practices",
             `Recommended approaches for ${context.topic}`,
-            'Professional work',
+            "Professional work",
           ],
         ],
       };
@@ -903,14 +898,14 @@ Requirements:
 
     return {
       id: `table-${Date.now()}`,
-      type: 'table',
-      variant: 'styled',
+      type: "table",
+      variant: "styled",
       headers: tableData.headers,
       rows: tableData.rows,
       order: 7,
       isAIGenerated: true,
       metadata: {
-        variant: 'styled-with-headers',
+        variant: "styled-with-headers",
         rowCount: tableData.rows.length,
         aiGenerated: true,
       },
@@ -923,11 +918,11 @@ Requirements:
   generateDivider() {
     return {
       id: `divider-${Date.now()}`,
-      type: 'divider',
-      variant: 'simple',
+      type: "divider",
+      variant: "simple",
       order: 8,
       metadata: {
-        variant: 'simple',
+        variant: "simple",
       },
     };
   }
@@ -937,22 +932,22 @@ Requirements:
    */
   convertBlockToHTML(block) {
     switch (block.type) {
-      case 'text':
+      case "text":
         return this.convertTextBlockToHTML(block);
-      case 'statement':
+      case "statement":
         return this.convertStatementBlockToHTML(block);
-      case 'quote':
+      case "quote":
         return this.convertQuoteBlockToHTML(block);
-      case 'image':
+      case "image":
         return this.convertImageBlockToHTML(block);
-      case 'list':
+      case "list":
         return this.convertListBlockToHTML(block);
-      case 'table':
+      case "table":
         return this.convertTableBlockToHTML(block);
-      case 'divider':
+      case "divider":
         return this.convertDividerBlockToHTML(block);
       default:
-        return `<div class="mb-4">${block.content || ''}</div>`;
+        return `<div class="mb-4">${block.content || ""}</div>`;
     }
   }
 
@@ -960,21 +955,21 @@ Requirements:
     const { textType, content, gradient } = block;
 
     const gradientMap = {
-      gradient1: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      gradient1: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       gradient2:
-        'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-      gradient3: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-      gradient4: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-      gradient5: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-      gradient6: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+        "linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)",
+      gradient3: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
+      gradient4: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
+      gradient5: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+      gradient6: "linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)",
     };
 
-    if (textType === 'master_heading') {
-      const bgGradient = gradientMap[gradient] || gradientMap['gradient1'];
+    if (textType === "master_heading") {
+      const bgGradient = gradientMap[gradient] || gradientMap["gradient1"];
       return `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 24px 0; color: white; background: ${bgGradient}; padding: 20px; border-radius: 8px; text-align: center;">${content}</h1>`;
     }
 
-    if (textType === 'paragraph') {
+    if (textType === "paragraph") {
       return `<div style="margin: 16px 0; line-height: 1.6; color: #4b5563; font-size: 16px;"><p>${content}</p></div>`;
     }
 
@@ -984,7 +979,7 @@ Requirements:
   convertStatementBlockToHTML(block) {
     const { content, variant } = block;
 
-    if (variant === 'statement-b') {
+    if (variant === "statement-b") {
       return `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 18px; font-weight: 500; line-height: 1.6;">${content}</div>`;
     }
 
@@ -994,56 +989,77 @@ Requirements:
   convertQuoteBlockToHTML(block) {
     const { quotes, variant } = block;
 
-    if (variant === 'quote_carousel' && quotes) {
+    if (variant === "quote_carousel" && quotes) {
       const quotesHTML = quotes
         .map(
-          q => `
+          (q) => `
         <div style="padding: 20px; border-left: 4px solid #3b82f6; background: #f3f4f6; margin: 16px 0; border-radius: 4px;">
           <p style="font-size: 18px; font-style: italic; color: #1f2937; margin-bottom: 12px;">"${q.quote}"</p>
           <p style="font-size: 14px; color: #6b7280; font-weight: 600;">— ${q.author}, ${q.title}</p>
         </div>
-      `
+      `,
         )
-        .join('');
+        .join("");
       return `<div class="quote-carousel">${quotesHTML}</div>`;
     }
 
-    return `<div class="quote mb-4">${block.content || ''}</div>`;
+    return `<div class="quote mb-4">${block.content || ""}</div>`;
   }
 
   convertImageBlockToHTML(block) {
     const { content, layout } = block;
+    const imageUrl = content?.imageUrl || "";
+    const text = content?.text || "";
+    const imageTitle = content?.title || "Image";
 
-    if (layout === 'side-by-side' && content) {
-      const { imageUrl, text, imagePosition } = content;
+    if (!imageUrl) return "";
 
-      if (imagePosition === 'left') {
-        return `<div style="display: flex; gap: 20px; align-items: center; margin: 24px 0;">
-          <img src="${imageUrl}" style="width: 50%; border-radius: 8px; object-fit: cover;" alt="Lesson visual" />
-          <div style="width: 50%; font-size: 16px; line-height: 1.6; color: #4b5563;">${text}</div>
-        </div>`;
-      } else {
-        return `<div style="display: flex; gap: 20px; align-items: center; margin: 24px 0;">
-          <div style="width: 50%; font-size: 16px; line-height: 1.6; color: #4b5563;">${text}</div>
-          <img src="${imageUrl}" style="width: 50%; border-radius: 8px; object-fit: cover;" alt="Lesson visual" />
-        </div>`;
-      }
+    if (layout === "side-by-side" && content) {
+      const { imagePosition } = content;
+      const imageFirst = imagePosition === "left";
+      const imageOrder = imageFirst ? "order-1" : "order-2";
+      const textOrder = imageFirst ? "order-2" : "order-1";
+
+      return `<div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+        <div class="${imageOrder}">
+          <img src="${imageUrl}" alt="${imageTitle}" class="w-full h-auto object-contain rounded-lg shadow-lg" style="max-height: min(60vh, 400px);" />
+        </div>
+        <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+          ${text ? `<div>${text}</div>` : ""}
+        </div>
+      </div>`;
+    } else if (layout === "overlay") {
+      return `<div class="relative rounded-xl overflow-hidden">
+        <img src="${imageUrl}" alt="${imageTitle}" class="w-full h-96 object-cover" />
+        ${text ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${text}</div></div></div>` : ""}
+      </div>`;
+    } else if (layout === "full-width") {
+      return `<div class="space-y-3">
+        <img src="${imageUrl}" alt="${imageTitle}" class="w-full h-auto object-contain rounded" style="max-height: min(60vh, 400px);" />
+        ${text ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${text}</div>` : ""}
+      </div>`;
+    } else {
+      // centered or default layout
+      return `<div class="text-center flex justify-center">
+        <div class="max-w-lg">
+          <img src="${imageUrl}" alt="${imageTitle}" class="max-w-full h-auto object-contain rounded-xl shadow-lg" style="max-height: min(60vh, 400px); width: auto;" />
+          ${text ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${text}</div>` : ""}
+        </div>
+      </div>`;
     }
-
-    return `<img src="${content?.imageUrl || ''}" alt="Image" style="width: 100%; border-radius: 8px;" />`;
   }
 
   convertListBlockToHTML(block) {
     const { items, listType, numberingStyle } = block;
 
-    if (!items || items.length === 0) return '';
+    if (!items || items.length === 0) return "";
 
     const listItems = items
-      .map(item => `<li style="margin: 8px 0;">${item}</li>`)
-      .join('');
+      .map((item) => `<li style="margin: 8px 0;">${item}</li>`)
+      .join("");
 
-    if (listType === 'numbered') {
-      return `<ol style="list-style-type: ${numberingStyle || 'decimal'}; padding-left: 30px; margin: 20px 0; line-height: 1.8; color: #374151;">${listItems}</ol>`;
+    if (listType === "numbered") {
+      return `<ol style="list-style-type: ${numberingStyle || "decimal"}; padding-left: 30px; margin: 20px 0; line-height: 1.8; color: #374151;">${listItems}</ol>`;
     }
 
     return `<ul style="list-style-type: disc; padding-left: 30px; margin: 20px 0;">${listItems}</ul>`;
@@ -1052,24 +1068,24 @@ Requirements:
   convertTableBlockToHTML(block) {
     const { headers, rows } = block;
 
-    if (!headers || !rows) return '';
+    if (!headers || !rows) return "";
 
     const headerHTML = headers
       .map(
-        h =>
-          `<th style="background: #3b82f6; color: white; padding: 12px; text-align: left; font-weight: 600;">${h}</th>`
+        (h) =>
+          `<th style="background: #3b82f6; color: white; padding: 12px; text-align: left; font-weight: 600;">${h}</th>`,
       )
-      .join('');
+      .join("");
 
     const rowsHTML = rows
       .map(
         (row, i) => `
-      <tr style="background: ${i % 2 === 0 ? '#f9fafb' : 'white'};">
-        ${row.map(cell => `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${cell}</td>`).join('')}
+      <tr style="background: ${i % 2 === 0 ? "#f9fafb" : "white"};">
+        ${row.map((cell) => `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${cell}</td>`).join("")}
       </tr>
-    `
+    `,
       )
-      .join('');
+      .join("");
 
     return `<table style="width: 100%; border-collapse: collapse; margin: 20px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <thead><tr>${headerHTML}</tr></thead>
@@ -1098,14 +1114,14 @@ Requirements:
         };
 
         // For image blocks, create details object
-        if (block.type === 'image') {
+        if (block.type === "image") {
           baseBlock.details = {
-            image_url: block.imageUrl || block.content?.imageUrl || '',
-            caption: block.text || block.imageDescription || '',
-            alt_text: block.imageTitle || block.title || 'Image',
-            layout: block.layout || 'side-by-side',
-            alignment: block.alignment || 'left',
-            template: block.template || 'image-text',
+            image_url: block.imageUrl || block.content?.imageUrl || "",
+            caption: block.text || block.imageDescription || "",
+            alt_text: block.imageTitle || block.title || "Image",
+            layout: block.layout || "side-by-side",
+            alignment: block.alignment || "left",
+            template: block.template || "image-text",
           };
           console.log(`📸 Formatting image block ${block.id}:`, {
             imageUrl: baseBlock.details.image_url,
@@ -1116,7 +1132,7 @@ Requirements:
         // For other block types, preserve content
         else if (block.content) {
           baseBlock.content =
-            typeof block.content === 'string'
+            typeof block.content === "string"
               ? block.content
               : JSON.stringify(block.content);
         }
@@ -1134,19 +1150,19 @@ Requirements:
         },
       };
 
-      console.log('📤 Sending formatted blocks to backend:', {
+      console.log("📤 Sending formatted blocks to backend:", {
         totalBlocks: formattedBlocks.length,
-        imageBlocks: formattedBlocks.filter(b => b.type === 'image').length,
+        imageBlocks: formattedBlocks.filter((b) => b.type === "image").length,
         imageUrls: formattedBlocks
-          .filter(b => b.type === 'image')
-          .map(b => ({ id: b.block_id, url: b.details?.image_url })),
+          .filter((b) => b.type === "image")
+          .map((b) => ({ id: b.block_id, url: b.details?.image_url })),
       });
 
       const result = await updateLessonContent(lessonId, lessonContent);
-      console.log('✅ Content saved successfully');
+      console.log("✅ Content saved successfully");
       return result;
     } catch (error) {
-      console.error('❌ Failed to save content to lesson:', error);
+      console.error("❌ Failed to save content to lesson:", error);
       throw error;
     }
   }

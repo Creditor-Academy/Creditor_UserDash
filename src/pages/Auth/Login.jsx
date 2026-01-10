@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Gavel,
   Mail,
@@ -27,7 +27,7 @@ import {
   CheckCircle,
   UserPlus,
   Phone,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,19 +35,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import axios from 'axios';
+} from "@/components/ui/dialog";
+import axios from "axios";
 import {
   fetchUserProfile,
   setUserRole,
   setUserRoles,
-} from '@/services/userService';
-import { useAuth } from '@/contexts/AuthContext';
-import { SignUp } from '@/pages/Auth/SignUp';
-import { storeAccessToken } from '@/services/tokenService';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
-import christmasImage from '@/assets/Chri.png';
-import christmasMusic from '@/assets/christmas-musicR.mp3';
+} from "@/services/userService";
+import { useAuth } from "@/contexts/AuthContext";
+import { SignUp } from "@/pages/Auth/SignUp";
+import { storeAccessToken } from "@/services/tokenService";
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -55,10 +52,10 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
   const [isEmailSent, setIsEmailSent] = useState(false);
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.trim()) {
-      toast.error('Please enter your email address');
+      toast.error("Please enter your email address");
       return;
     }
 
@@ -67,17 +64,17 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
       const normalizedEmail = email.trim().toLowerCase();
       const response = await axios.post(
         `${API_BASE}/api/auth/forgot-password`,
-        { email: normalizedEmail }
+        { email: normalizedEmail },
       );
       setIsEmailSent(true);
       toast.success(
-        response.data?.message || 'Password reset email sent successfully!'
+        response.data?.message || "Password reset email sent successfully!",
       );
     } catch (error) {
-      console.error('Forgot password error:', error);
+      console.error("Forgot password error:", error);
       toast.error(
         error.response?.data?.message ||
-          'Failed to send reset email. Please try again.'
+          "Failed to send reset email. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -95,7 +92,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
             Check Your Email
           </h3>
           <p className="text-slate-600">
-            We've sent a password reset link to{' '}
+            We've sent a password reset link to{" "}
             <span className="font-medium text-slate-800">{email}</span>
           </p>
         </div>
@@ -142,7 +139,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
               type="email"
               placeholder="Enter your email address"
               value={email}
-              onChange={e => onEmailChange(e.target.value)}
+              onChange={(e) => onEmailChange(e.target.value)}
               disabled={isLoading}
               required
               className="h-11 pl-10 pr-4 border-slate-200 focus:border-blue-500"
@@ -161,7 +158,7 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
               Sending...
             </div>
           ) : (
-            'Send Reset Link'
+            "Send Reset Link"
           )}
         </Button>
       </form>
@@ -182,57 +179,16 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
 export function Login() {
   const { setAuth } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [animateCard, setAnimateCard] = useState(false);
   const [animateImage, setAnimateImage] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
-  const [isChristmasMode, setIsChristmasMode] = useState(true);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
-  const audioRef = useRef(null); // Ref for Christmas music audio element
-
-  useEffect(() => {
-    // Check for Christmas mode from localStorage, default to true
-    const checkChristmasMode = () => {
-      try {
-        const saved = localStorage.getItem('dashboardChristmasMode');
-        // Default to true if not set
-        setIsChristmasMode(saved === null ? true : saved === 'true');
-      } catch {
-        setIsChristmasMode(true);
-      }
-    };
-    checkChristmasMode();
-    // Listen for changes (storage event works for cross-tab, custom event for same-tab)
-    const handleStorageChange = () => checkChristmasMode();
-    const handleCustomStorageChange = () => checkChristmasMode();
-
-    window.addEventListener('storage', handleStorageChange);
-    // Listen for custom event fired when localStorage changes in same window
-    window.addEventListener('localStorageChange', handleCustomStorageChange);
-
-    // Also poll localStorage periodically to catch changes (fallback)
-    const pollInterval = setInterval(() => {
-      const current = localStorage.getItem('dashboardChristmasMode');
-      const currentMode = current === null ? true : current === 'true';
-      if (currentMode !== isChristmasMode) {
-        checkChristmasMode();
-      }
-    }, 500); // Check every 500ms
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener(
-        'localStorageChange',
-        handleCustomStorageChange
-      );
-      clearInterval(pollInterval);
-    };
-  }, [isChristmasMode]);
 
   useEffect(() => {
     // Trigger card animation on mount
@@ -242,123 +198,24 @@ export function Login() {
     return () => clearTimeout(t);
   }, []);
 
-  // Christmas music effect - plays only on login page
   useEffect(() => {
-    // If Christmas mode is disabled, ensure no music plays
-    if (!isChristmasMode) {
-      // Stop music if Christmas mode is disabled
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-      return;
-    }
+    // Trigger card animation on mount
+    setAnimateCard(true);
+    // Staggered image entrance
+    const t = setTimeout(() => setAnimateImage(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
-    // Create and configure audio element
-    const audio = new Audio(christmasMusic);
-    audio.loop = false; // Play only once, no loop
-    audio.volume = 0.3; // Set volume to 30% (adjust as needed)
-
-    // Handle first user interaction for autoplay-restricted browsers
-    // IMPORTANT: Check Christmas mode before playing
-    const handleFirstInteraction = () => {
-      // Double-check Christmas mode is still enabled before playing
-      const currentMode = localStorage.getItem('dashboardChristmasMode');
-      const isModeEnabled =
-        currentMode === null ? true : currentMode === 'true';
-
-      if (!isModeEnabled) {
-        // Christmas mode was disabled, don't play and clean up
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-          audioRef.current = null;
-        }
-        // Remove listeners
-        document.removeEventListener('click', handleFirstInteraction);
-        document.removeEventListener('keydown', handleFirstInteraction);
-        document.removeEventListener('touchstart', handleFirstInteraction);
-        return;
-      }
-
-      // Only play if Christmas mode is still enabled
-      if (audio && audio.paused && isModeEnabled) {
-        audio.play().catch(err => console.log('Could not play music:', err));
-      }
-      // Remove listeners after first play attempt
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-      document.removeEventListener('touchstart', handleFirstInteraction);
-    };
-
-    // Try to play the music
-    const playPromise = audio.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          // Verify Christmas mode is still enabled before logging success
-          const currentMode = localStorage.getItem('dashboardChristmasMode');
-          const isModeEnabled =
-            currentMode === null ? true : currentMode === 'true';
-          if (isModeEnabled && isChristmasMode) {
-            console.log('🎵 Christmas music started playing');
-          } else {
-            // Mode was disabled, stop immediately
-            audio.pause();
-            audio.currentTime = 0;
-          }
-        })
-        .catch(error => {
-          // Auto-play was prevented - browser requires user interaction
-          console.log(
-            'Music autoplay prevented. Will start on user interaction:',
-            error
-          );
-
-          // Only add listeners if Christmas mode is still enabled
-          if (isChristmasMode) {
-            document.addEventListener('click', handleFirstInteraction);
-            document.addEventListener('keydown', handleFirstInteraction);
-            document.addEventListener('touchstart', handleFirstInteraction);
-          }
-        });
-    }
-
-    audioRef.current = audio;
-
-    // Cleanup: Stop and remove audio when component unmounts or Christmas mode changes
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-      // Cleanup interaction listeners
-      document.removeEventListener('click', handleFirstInteraction);
-      document.removeEventListener('keydown', handleFirstInteraction);
-      document.removeEventListener('touchstart', handleFirstInteraction);
-    };
-  }, [isChristmasMode]);
-
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Stop Christmas music before login
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      console.log('🎵 Christmas music stopped (user logging in)');
-    }
 
     try {
       const trimmedEmail = email.trim();
       const normalizedEmail = trimmedEmail.toLowerCase();
       const normalizedPassword = password.trim();
 
-      const loginWithEmail = async emailToUse => {
+      const loginWithEmail = async (emailToUse) => {
         return axios.post(
           `${API_BASE}/api/auth/login`,
           {
@@ -367,7 +224,7 @@ export function Login() {
           },
           {
             withCredentials: true,
-          }
+          },
         );
       };
 
@@ -388,27 +245,27 @@ export function Login() {
       if (response.data.success && response.data.accessToken) {
         // Store tokens using tokenService for consistent token storage
         storeAccessToken(response.data.accessToken);
-        console.log('[Auth] Login success. Token stored.');
+        console.log("[Auth] Login success. Token stored.");
 
         // Set authentication state
         setAuth(response.data.accessToken);
 
         // Dispatch userLoggedIn event to trigger UserContext profile loading
-        window.dispatchEvent(new Event('userLoggedIn'));
+        window.dispatchEvent(new Event("userLoggedIn"));
 
         // Fetch user profile to check roles
         try {
           const profile = await fetchUserProfile();
-          console.log('[Auth] User profile fetched:', profile);
+          console.log("[Auth] User profile fetched:", profile);
 
           // Check if user is superadmin
-          const userRoles = profile.user_roles?.map(r => r.role) || [];
-          const isSuperAdmin = userRoles.includes('super_admin');
+          const userRoles = profile.user_roles?.map((r) => r.role) || [];
+          const isSuperAdmin = userRoles.includes("super_admin");
           console.log(
-            '[Auth] User roles:',
+            "[Auth] User roles:",
             userRoles,
-            'Is superadmin:',
-            isSuperAdmin
+            "Is superadmin:",
+            isSuperAdmin,
           );
 
           // Store roles
@@ -416,37 +273,37 @@ export function Login() {
             setUserRoles(userRoles);
           }
 
-          toast.success('Login successful!');
+          toast.success("Login successful!");
 
           // Redirect based on role
           if (isSuperAdmin) {
-            console.log('[Auth] Redirecting to superadmin dashboard');
-            navigate('/superadmin/dashboard');
+            console.log("[Auth] Redirecting to superadmin dashboard");
+            navigate("/superadmin/dashboard");
           } else {
-            console.log('[Auth] Redirecting to regular dashboard');
-            navigate('/dashboard');
+            console.log("[Auth] Redirecting to regular dashboard");
+            navigate("/dashboard");
           }
         } catch (profileError) {
-          console.error('[Auth] Error fetching profile:', profileError);
+          console.error("[Auth] Error fetching profile:", profileError);
           // Still redirect to dashboard even if profile fetch fails
-          toast.success('Login successful!');
-          navigate('/dashboard');
+          toast.success("Login successful!");
+          navigate("/dashboard");
         }
       } else {
-        toast.error(response.data.message || 'Login failed');
+        toast.error(response.data.message || "Login failed");
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
       // Clear any partial auth state on error
       setAuth(null);
 
       if (err.response) {
-        const errorMessage = err.response.data?.message || 'Login failed';
+        const errorMessage = err.response.data?.message || "Login failed";
         toast.error(errorMessage);
       } else if (err.request) {
-        toast.error('Network error. Please check your connection.');
+        toast.error("Network error. Please check your connection.");
       } else {
-        toast.error('An unexpected error occurred.');
+        toast.error("An unexpected error occurred.");
       }
     } finally {
       setIsLoading(false);
@@ -454,74 +311,19 @@ export function Login() {
   };
 
   const handleBackClick = () => {
-    navigate('/'); // Navigate directly to homepage
+    navigate("/"); // Navigate directly to homepage
   };
 
-  // Generate snowflakes for animation - same as Dashboard
-  const snowflakes = useMemo(() => {
-    if (!isChristmasMode) return [];
-
-    // Create 100 snowflakes with varied properties
-    return Array.from({ length: 100 }, (_, i) => {
-      const size = 3 + Math.random() * 6; // Size between 3-9px
-      const left = Math.random() * 100; // Random horizontal position
-      const delay = Math.random() * 2; // Start delay 0-2s for staggered effect
-      const duration = 8 + Math.random() * 7; // Fall duration 8-15s (varied speeds)
-      const drift = (Math.random() - 0.5) * 60; // Horizontal drift -30px to +30px
-      const opacity = 0.5 + Math.random() * 0.5; // Opacity 0.5-1.0
-
-      return {
-        id: i,
-        left: `${left}%`,
-        size: `${size}px`,
-        delay: `${delay}s`,
-        duration: `${duration}s`,
-        drift: `${drift}px`,
-        opacity,
-      };
-    });
-  }, [isChristmasMode]);
-
   return (
-    <div
-      className={`min-h-screen relative overflow-hidden ${
-        isChristmasMode ? 'login-christmas-theme' : 'bg-white'
-      }`}
-    >
-      {isChristmasMode && (
-        <>
-          <div className="login-snowfall-layer" aria-hidden="true" />
-          {/* Snowflake Animation - same as Dashboard */}
-          <div
-            className="snowflakes-container pointer-events-none"
-            aria-hidden="true"
-          >
-            {snowflakes.map(flake => (
-              <div
-                key={flake.id}
-                className="snowflake"
-                style={{
-                  left: flake.left,
-                  width: flake.size,
-                  height: flake.size,
-                  animationDelay: flake.delay,
-                  animationDuration: flake.duration,
-                  opacity: flake.opacity,
-                  '--snowflake-drift': flake.drift,
-                }}
-              />
-            ))}
-          </div>
-        </>
-      )}
+    <div className="min-h-screen relative overflow-hidden bg-white">
       <div className="relative flex min-h-screen">
         {/* Left Illustration */}
-        <div className="hidden lg:flex w-1/2 items-center justify-center p-10 relative">
+        <div className="hidden lg:flex w-1/2 items-center justify-center p-10">
           <img
-            src={christmasImage}
-            alt="Christmas login illustration"
+            src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/login.PNG"
+            alt="Login illustration"
             className={`max-w-[420px] w-[80%] h-auto object-contain transition-all duration-700 ease-out will-change-transform 
-              ${animateImage ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
+              ${animateImage ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-2"}`}
             loading="eager"
           />
         </div>
@@ -529,11 +331,7 @@ export function Login() {
         {/* Right Wave + Card */}
         <div className="flex-1 relative flex items-center justify-center p-0">
           {/* Blue wave background */}
-          <div
-            className={`absolute inset-y-0 right-0 w-screen -z-0 pointer-events-none ${
-              isChristmasMode ? 'text-red-500' : 'text-blue-500'
-            }`}
-          >
+          <div className="absolute inset-y-0 right-0 w-screen text-blue-500 -z-0 pointer-events-none">
             <svg
               viewBox="0 0 800 800"
               xmlns="http://www.w3.org/2000/svg"
@@ -564,49 +362,19 @@ export function Login() {
           {/* Card */}
           <div className="w-full max-w-md relative z-10 p-6">
             <Card
-              className={`${
-                isChristmasMode
-                  ? 'login-christmas-card border-red-200 shadow-2xl'
-                  : 'border-slate-200 shadow-xl'
-              } transition-all duration-700 ${animateCard ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+              className={`border-slate-200 shadow-xl transition-all duration-700 ${animateCard ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}
             >
               <CardHeader className="space-y-1 pb-4">
-                <div className="flex justify-center mb-2 relative">
-                  {isChristmasMode && (
-                    <span
-                      className="absolute -top-2 -right-2 text-2xl animate-bounce"
-                      aria-hidden="true"
-                    >
-                      🎄
-                    </span>
-                  )}
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      isChristmasMode ? 'bg-red-100' : 'bg-blue-100'
-                    }`}
-                  >
-                    <Shield
-                      className={`h-6 w-6 ${
-                        isChristmasMode ? 'text-red-600' : 'text-blue-600'
-                      }`}
-                    />
+                <div className="flex justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-blue-600" />
                   </div>
                 </div>
-                <CardTitle
-                  className={`text-xl font-medium text-center ${
-                    isChristmasMode ? 'text-red-700' : 'text-slate-800'
-                  }`}
-                >
-                  {isChristmasMode ? '🎅 Welcome back!' : 'Welcome back'}
+                <CardTitle className="text-xl font-medium text-center text-slate-800">
+                  Welcome back
                 </CardTitle>
-                <CardDescription
-                  className={`text-center ${
-                    isChristmasMode ? 'text-red-600' : 'text-slate-500'
-                  }`}
-                >
-                  {isChristmasMode
-                    ? 'Enter your credentials to access your festive account ❄️'
-                    : 'Enter your credentials to access your account'}
+                <CardDescription className="text-center text-slate-500">
+                  Enter your credentials to access your account
                 </CardDescription>
               </CardHeader>
 
@@ -633,7 +401,7 @@ export function Login() {
                           type="email"
                           placeholder="Enter your email address"
                           value={email}
-                          onChange={e => setEmail(e.target.value)}
+                          onChange={(e) => setEmail(e.target.value)}
                           disabled={isLoading}
                           required
                           className="pl-10 h-11 border-slate-200 focus:border-blue-500"
@@ -660,10 +428,10 @@ export function Login() {
                         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                           id="password"
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
                           value={password}
-                          onChange={e => setPassword(e.target.value)}
+                          onChange={(e) => setPassword(e.target.value)}
                           disabled={isLoading}
                           required
                           className="pl-10 pr-10 h-11 border-slate-200 focus:border-blue-500"
@@ -672,7 +440,7 @@ export function Login() {
                           type="button"
                           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
                           tabIndex={-1}
-                          onClick={() => setShowPassword(v => !v)}
+                          onClick={() => setShowPassword((v) => !v)}
                         >
                           {showPassword ? (
                             <EyeOff className="h-4 w-4" />
@@ -686,11 +454,7 @@ export function Login() {
                     {/* Submit Button */}
                     <Button
                       type="submit"
-                      className={`w-full h-11 text-white font-medium ${
-                        isChristmasMode
-                          ? 'bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-xl'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -699,18 +463,14 @@ export function Login() {
                           Signing in...
                         </div>
                       ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          {isChristmasMode && <span>🎄</span>}
-                          Sign In
-                          {isChristmasMode && <span>❄️</span>}
-                        </span>
+                        "Sign In"
                       )}
                     </Button>
                   </form>
                 )}
               </CardContent>
 
-              {/* {!showSignUp && !showForgotPassword && (
+              {!showSignUp && !showForgotPassword && (
                 <CardFooter className="flex flex-col space-y-4 pt-2">
                   <div className="text-center text-sm text-slate-500">
                     Don't have an account?{" "}
@@ -724,7 +484,7 @@ export function Login() {
                     </button>
                   </div>
                 </CardFooter>
-              )} */}
+              )}
             </Card>
           </div>
         </div>

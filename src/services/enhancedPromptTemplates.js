@@ -1,7 +1,7 @@
 /**
  * Enhanced Prompt Templates
  * Model-agnostic prompt engineering system with best practices
- * Optimized for gpt-4o-mini, ready for future models
+ * Optimized for production-grade AI output, ready for future models
  */
 
 /**
@@ -226,16 +226,16 @@ PROMPT REQUIREMENTS:
  * User Prompt Templates
  */
 export const USER_PROMPT_TEMPLATES = {
-  courseOutline: data => `Create a comprehensive course outline for:
+  courseOutline: (data) => `Create a comprehensive course outline for:
 
 **Course Information:**
 - Title: ${data.courseTitle}
-- Subject Domain: ${data.subjectDomain || data.subject || 'General'}
-- Description: ${data.courseDescription || data.description || ''}
-- Target Audience: ${data.targetAudience || 'General learners'}
-- Difficulty Level: ${data.difficulty || 'intermediate'}
-- Duration: ${data.duration || '4 weeks'}
-- Learning Objectives: ${data.learningObjectives || data.objectives || 'Master the subject'}
+- Subject Domain: ${data.subjectDomain || data.subject || "General"}
+- Description: ${data.courseDescription || data.description || ""}
+- Target Audience: ${data.targetAudience || "General learners"}
+- Difficulty Level: ${data.difficulty || "intermediate"}
+- Duration: ${data.duration || "4 weeks"}
+- Learning Objectives: ${data.learningObjectives || data.objectives || "Master the subject"}
 
 **Requirements:**
 1. Create ${data.moduleCount || 5}-${data.maxModules || 8} modules with ${data.lessonsPerModule || 3}-${data.maxLessonsPerModule || 5} lessons each
@@ -248,8 +248,8 @@ export const USER_PROMPT_TEMPLATES = {
 {
   "courseTitle": "${data.courseTitle}",
   "courseDescription": "...",
-  "difficulty": "${data.difficulty || 'intermediate'}",
-  "duration": "${data.duration || '4 weeks'}",
+  "difficulty": "${data.difficulty || "intermediate"}",
+  "duration": "${data.duration || "4 weeks"}",
   "modules": [
     {
       "moduleTitle": "Module Title",
@@ -269,16 +269,16 @@ export const USER_PROMPT_TEMPLATES = {
 
 Return ONLY valid JSON.`,
 
-  lessonContent: data => `Create comprehensive lesson content for:
+  lessonContent: (data) => `Create comprehensive lesson content for:
 
 **Lesson Information:**
 - Lesson: ${data.lessonTitle}
 - Module: ${data.moduleTitle}
 - Course: ${data.courseTitle}
-- Difficulty: ${data.difficulty || 'intermediate'}
+- Difficulty: ${data.difficulty || "intermediate"}
 - Learning Objectives: ${data.objectives || data.learningObjectives || []}
 
-${data.context ? `**Context:**\n${data.context}\n` : ''}
+${data.context ? `**Context:**\n${data.context}\n` : ""}
 
 **Instructional Design Frameworks (Apply All):**
 
@@ -290,7 +290,7 @@ ${data.context ? `**Context:**\n${data.context}\n` : ''}
 - Evaluation: Include assessment opportunities
 
 **Bloom's Taxonomy:**
-- Align with cognitive level: ${data.bloomLevel || 'Understand/Apply'}
+- Align with cognitive level: ${data.bloomLevel || "Understand/Apply"}
 - Use appropriate action verbs for the cognitive level
 - Progress from lower to higher-order thinking
 
@@ -316,10 +316,10 @@ ${data.context ? `**Context:**\n${data.context}\n` : ''}
 **Requirements:**
 - Write ${data.wordCount || 500}-${data.maxWords || 800} words of detailed, engaging content
 - Include ${data.exampleCount || 2}-${data.maxExamples || 3} real-world examples
-- Add ${data.exerciseCount || 1} practice exercise${data.exerciseCount !== 1 ? 's' : ''}
-- Use ${data.tone || 'professional'} tone appropriate for ${data.audience || 'adult learners'}
-- Align with Bloom's Taxonomy level: ${data.bloomLevel || 'Understand/Apply'}
-${data.previousContent ? `- Build upon previous content: ${data.previousContent.substring(0, 200)}...\n` : ''}
+- Add ${data.exerciseCount || 1} practice exercise${data.exerciseCount !== 1 ? "s" : ""}
+- Use ${data.tone || "professional"} tone appropriate for ${data.audience || "adult learners"}
+- Align with Bloom's Taxonomy level: ${data.bloomLevel || "Understand/Apply"}
+${data.previousContent ? `- Build upon previous content: ${data.previousContent.substring(0, 200)}...\n` : ""}
 
 **Content Structure (Following Gagné's 9 Events):**
 1. Introduction (hook and overview - Gain Attention)
@@ -333,25 +333,27 @@ ${data.previousContent ? `- Build upon previous content: ${data.previousContent.
 
 **Output:** Return well-structured markdown content with clear sections incorporating all instructional design frameworks.`,
 
-  learningObjectives:
-    data => `Create ${data.count || 4}-${data.maxCount || 6} clear, specific learning objectives for:
+  learningObjectives: (
+    data,
+  ) => `Create ${data.count || 4}-${data.maxCount || 6} clear, specific learning objectives for:
 
 **Lesson:** ${data.lessonTitle}
 **Module:** ${data.moduleTitle}
 **Course:** ${data.courseTitle}
-**Difficulty:** ${data.difficulty || 'intermediate'}
+**Difficulty:** ${data.difficulty || "intermediate"}
 
 **Requirements:**
 - Each objective should start with an action verb (understand, apply, analyze, create, evaluate)
 - Objectives should be measurable and specific (SMART criteria)
-- Align with Bloom's Taxonomy level: ${data.bloomLevel || 'Apply'}
-- Appropriate for ${data.difficulty || 'intermediate'} level learners
+- Align with Bloom's Taxonomy level: ${data.bloomLevel || "Apply"}
+- Appropriate for ${data.difficulty || "intermediate"} level learners
 - Focus on actionable outcomes
 
 **Format:** Return a bulleted list, one objective per line, using markdown format.`,
 
-  keyTerms:
-    data => `Create ${data.count || 5}-${data.maxCount || 10} essential key terms with definitions for:
+  keyTerms: (
+    data,
+  ) => `Create ${data.count || 5}-${data.maxCount || 10} essential key terms with definitions for:
 
 **Lesson:** ${data.lessonTitle}
 **Module:** ${data.moduleTitle}
@@ -369,12 +371,12 @@ Term 1 - Clear, concise definition
 Term 2 - Clear, concise definition
 ...`,
 
-  example: data => `Create a detailed real-world example or case study for:
+  example: (data) => `Create a detailed real-world example or case study for:
 
 **Lesson:** ${data.lessonTitle}
 **Module:** ${data.moduleTitle}
 **Course:** ${data.courseTitle}
-**Concept:** ${data.concept || 'the main concept'}
+**Concept:** ${data.concept || "the main concept"}
 
 **Requirements:**
 - Use a realistic, relatable scenario
@@ -382,28 +384,29 @@ Term 2 - Clear, concise definition
 - Include specific details (names, numbers, situations)
 - Explain how the concept applies
 - Make it engaging and memorable
-- ${data.length ? `Keep to approximately ${data.length} words` : 'Be comprehensive but concise'}
+- ${data.length ? `Keep to approximately ${data.length} words` : "Be comprehensive but concise"}
 
 **Output:** Return a well-structured example with:
 1. Scenario/Context
 2. Application of concept
 3. Key insights or takeaways`,
 
-  quizQuestion:
-    data => `Create ${data.count || 3}-${data.maxCount || 5} high-quality quiz questions for:
+  quizQuestion: (
+    data,
+  ) => `Create ${data.count || 3}-${data.maxCount || 5} high-quality quiz questions for:
 
 **Lesson:** ${data.lessonTitle}
 **Topic:** ${data.topic || data.lessonTitle}
-**Difficulty:** ${data.difficulty || 'intermediate'}
-**Question Type:** ${data.questionType || 'multiple-choice'}
+**Difficulty:** ${data.difficulty || "intermediate"}
+**Question Type:** ${data.questionType || "multiple-choice"}
 
 **Requirements:**
 - Questions should test understanding of key concepts
-- Align with learning objectives: ${data.objectives || 'Understanding core concepts'}
+- Align with learning objectives: ${data.objectives || "Understanding core concepts"}
 - Use clear, unambiguous language
 - Create plausible distractors (for multiple-choice)
 - Include brief explanations for correct answers
-- Appropriate difficulty level: ${data.difficulty || 'intermediate'}
+- Appropriate difficulty level: ${data.difficulty || "intermediate"}
 
 **Output Format (JSON array):**
 [
@@ -417,10 +420,10 @@ Term 2 - Clear, concise definition
 
 Return ONLY valid JSON.`,
 
-  summary: data => `Create a comprehensive summary for:
+  summary: (data) => `Create a comprehensive summary for:
 
 **Lesson:** ${data.lessonTitle}
-**Main Content:** ${data.content ? data.content.substring(0, 500) + '...' : 'Lesson content'}
+**Main Content:** ${data.content ? data.content.substring(0, 500) + "..." : "Lesson content"}
 
 **Requirements:**
 - Summarize key points and main concepts
@@ -434,20 +437,20 @@ Return ONLY valid JSON.`,
 2. Key takeaways (bulleted list)
 3. Important points to remember`,
 
-  imagePrompt: data => `Create a detailed image generation prompt for:
+  imagePrompt: (data) => `Create a detailed image generation prompt for:
 
 **Context:**
 - Title: ${data.title}
-- Description: ${data.description || ''}
-- Type: ${data.imageType || 'thumbnail'}
-- Purpose: ${data.purpose || 'educational content'}
+- Description: ${data.description || ""}
+- Type: ${data.imageType || "thumbnail"}
+- Purpose: ${data.purpose || "educational content"}
 
 **Requirements:**
 - Emphasize "realistic, professional photograph-style image"
 - Specify NO infographics, NO diagrams, NO small text labels
 - Describe the scene, objects, or situation clearly
 - Include style guidance (professional, clean, minimalist)
-- ${data.aspectRatio ? `Aspect ratio: ${data.aspectRatio}` : 'Standard aspect ratio'}
+- ${data.aspectRatio ? `Aspect ratio: ${data.aspectRatio}` : "Standard aspect ratio"}
 - Keep prompt under 1000 characters
 
 **Output:** Return only the image prompt text, no additional commentary.`,
@@ -460,21 +463,21 @@ export const FEW_SHOT_EXAMPLES = {
   courseOutline: [
     {
       input: {
-        courseTitle: 'React Advanced Patterns',
-        difficulty: 'advanced',
-        subjectDomain: 'Web Development',
+        courseTitle: "React Advanced Patterns",
+        difficulty: "advanced",
+        subjectDomain: "Web Development",
       },
       output: {
-        courseTitle: 'React Advanced Patterns',
+        courseTitle: "React Advanced Patterns",
         modules: [
           {
-            moduleTitle: 'Advanced Component Patterns',
+            moduleTitle: "Advanced Component Patterns",
             lessons: [
               {
-                lessonTitle: 'Higher-Order Components',
-                lessonDescription: '...',
+                lessonTitle: "Higher-Order Components",
+                lessonDescription: "...",
               },
-              { lessonTitle: 'Render Props Pattern', lessonDescription: '...' },
+              { lessonTitle: "Render Props Pattern", lessonDescription: "..." },
             ],
           },
         ],
@@ -485,14 +488,14 @@ export const FEW_SHOT_EXAMPLES = {
   learningObjectives: [
     {
       input: {
-        lessonTitle: 'Understanding React Hooks',
-        difficulty: 'intermediate',
+        lessonTitle: "Understanding React Hooks",
+        difficulty: "intermediate",
       },
       output: [
-        'Understand the purpose and benefits of React Hooks',
-        'Apply useState and useEffect hooks in functional components',
-        'Analyze when to use custom hooks vs. built-in hooks',
-        'Create custom hooks for reusable logic',
+        "Understand the purpose and benefits of React Hooks",
+        "Apply useState and useEffect hooks in functional components",
+        "Analyze when to use custom hooks vs. built-in hooks",
+        "Create custom hooks for reusable logic",
       ],
     },
   ],
@@ -502,7 +505,7 @@ export const FEW_SHOT_EXAMPLES = {
  * Prompt Builder - Combines system and user prompts with enhancements
  */
 export class PromptBuilder {
-  constructor(systemPromptType = 'lessonContentCreator') {
+  constructor(systemPromptType = "lessonContentCreator") {
     this.systemPrompt =
       SYSTEM_PROMPTS[systemPromptType] || SYSTEM_PROMPTS.lessonContentCreator;
   }

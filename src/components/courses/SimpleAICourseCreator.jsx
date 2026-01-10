@@ -1,62 +1,62 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Sparkles,
   CheckCircle,
   ExternalLink,
   BookOpen,
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { createSimpleAICourse } from '@/services/aiCourseService';
-import { useNavigate } from 'react-router-dom';
+} from "lucide-react";
+import { toast } from "react-hot-toast";
+import { createSimpleAICourse } from "@/services/aiCourseService";
+import { useNavigate } from "react-router-dom";
 
 const SimpleAICourseCreator = () => {
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const [courseData, setCourseData] = useState({
-    title: 'Introduction to React',
-    description: 'Learn React fundamentals with hands-on examples',
-    subject: 'react',
-    targetAudience: 'Beginners',
-    difficulty: 'beginner',
-    duration: '1 week',
+    title: "Introduction to React",
+    description: "Learn React fundamentals with hands-on examples",
+    subject: "react",
+    targetAudience: "Beginners",
+    difficulty: "beginner",
+    duration: "1 week",
   });
   const [createdCourse, setCreatedCourse] = useState(null);
 
   const handleInputChange = (field, value) => {
-    setCourseData(prev => ({ ...prev, [field]: value }));
+    setCourseData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCreateCourse = async () => {
     if (!courseData.title.trim()) {
-      toast.error('Please enter a course title');
+      toast.error("Please enter a course title");
       return;
     }
 
     setIsCreating(true);
     try {
-      console.log('🚀 Creating simple AI course with data:', courseData);
+      console.log("🚀 Creating simple AI course with data:", courseData);
 
       const result = await createSimpleAICourse(courseData);
 
       if (result.success) {
         setCreatedCourse(result.data);
         toast.success(
-          `AI course created successfully with ${result.data.contentBlocks} content blocks!`
+          `AI course created successfully with ${result.data.contentBlocks} content blocks!`,
         );
-        console.log('✅ Course created:', result.data);
+        console.log("✅ Course created:", result.data);
       } else {
-        toast.error(result.error || 'Failed to create AI course');
-        console.error('❌ Course creation failed:', result.error);
+        toast.error(result.error || "Failed to create AI course");
+        console.error("❌ Course creation failed:", result.error);
       }
     } catch (error) {
-      console.error('❌ Error creating AI course:', error);
-      toast.error('An error occurred while creating the AI course');
+      console.error("❌ Error creating AI course:", error);
+      toast.error("An error occurred while creating the AI course");
     } finally {
       setIsCreating(false);
     }
@@ -107,31 +107,31 @@ const SimpleAICourseCreator = () => {
               </h3>
               <div className="space-y-2 text-sm">
                 <div>
-                  <strong>Lesson:</strong>{' '}
+                  <strong>Lesson:</strong>{" "}
                   {createdCourse.lessonStructure.lesson_title}
                 </div>
                 <div>
-                  <strong>Description:</strong>{' '}
+                  <strong>Description:</strong>{" "}
                   {createdCourse.lessonStructure.lesson_description}
                 </div>
                 <div>
-                  <strong>Learning Objectives:</strong>{' '}
+                  <strong>Learning Objectives:</strong>{" "}
                   {createdCourse.lessonStructure.learning_objectives?.length ||
-                    0}{' '}
+                    0}{" "}
                   objectives
                 </div>
                 <div>
-                  <strong>Content Sections:</strong>{' '}
-                  {createdCourse.lessonStructure.content_sections?.length || 0}{' '}
+                  <strong>Content Sections:</strong>{" "}
+                  {createdCourse.lessonStructure.content_sections?.length || 0}{" "}
                   sections
                 </div>
                 <div>
-                  <strong>Examples:</strong>{' '}
+                  <strong>Examples:</strong>{" "}
                   {createdCourse.lessonStructure.examples?.length || 0} examples
                 </div>
                 <div>
-                  <strong>Key Takeaways:</strong>{' '}
-                  {createdCourse.lessonStructure.key_takeaways?.length || 0}{' '}
+                  <strong>Key Takeaways:</strong>{" "}
+                  {createdCourse.lessonStructure.key_takeaways?.length || 0}{" "}
                   takeaways
                 </div>
               </div>
@@ -191,7 +191,7 @@ const SimpleAICourseCreator = () => {
                 animations, gradient designs
               </li>
               <li>
-                • <strong>Total: {createdCourse.contentBlocks} blocks</strong>{' '}
+                • <strong>Total: {createdCourse.contentBlocks} blocks</strong>{" "}
                 using all 13 content library types
               </li>
               <li>
@@ -223,7 +223,7 @@ const SimpleAICourseCreator = () => {
             <Input
               id="title"
               value={courseData.title}
-              onChange={e => handleInputChange('title', e.target.value)}
+              onChange={(e) => handleInputChange("title", e.target.value)}
               placeholder="e.g., Introduction to React"
               className="mt-1"
             />
@@ -234,7 +234,7 @@ const SimpleAICourseCreator = () => {
             <Textarea
               id="description"
               value={courseData.description}
-              onChange={e => handleInputChange('description', e.target.value)}
+              onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="Brief description of what students will learn"
               className="mt-1"
               rows={3}
@@ -247,7 +247,7 @@ const SimpleAICourseCreator = () => {
               <select
                 id="subject"
                 value={courseData.subject}
-                onChange={e => handleInputChange('subject', e.target.value)}
+                onChange={(e) => handleInputChange("subject", e.target.value)}
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="react">React</option>
@@ -266,7 +266,9 @@ const SimpleAICourseCreator = () => {
               <select
                 id="difficulty"
                 value={courseData.difficulty}
-                onChange={e => handleInputChange('difficulty', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("difficulty", e.target.value)
+                }
                 className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="beginner">Beginner</option>
@@ -282,8 +284,8 @@ const SimpleAICourseCreator = () => {
               <Input
                 id="targetAudience"
                 value={courseData.targetAudience}
-                onChange={e =>
-                  handleInputChange('targetAudience', e.target.value)
+                onChange={(e) =>
+                  handleInputChange("targetAudience", e.target.value)
                 }
                 placeholder="e.g., Beginners, Developers"
                 className="mt-1"
@@ -295,7 +297,7 @@ const SimpleAICourseCreator = () => {
               <Input
                 id="duration"
                 value={courseData.duration}
-                onChange={e => handleInputChange('duration', e.target.value)}
+                onChange={(e) => handleInputChange("duration", e.target.value)}
                 placeholder="e.g., 1 week, 3 days"
                 className="mt-1"
               />
@@ -331,8 +333,8 @@ const SimpleAICourseCreator = () => {
               PDF
             </li>
             <li>
-              • <strong>AI Images:</strong> DALL-E 3 generates contextual
-              illustrations for each section
+              • <strong>AI Images:</strong> AI image generation creates
+              contextual illustrations for each section
             </li>
             <li>
               • <strong>Advanced Layouts:</strong> Side-by-side images, centered
@@ -359,9 +361,9 @@ const SimpleAICourseCreator = () => {
         </div>
 
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-          <strong>Note:</strong> This uses your existing AI services (OpenAI
-          GPT-4) with intelligent fallbacks. All generated content is compatible
-          with your LessonBuilder editor and can be further customized.
+          <strong>Note:</strong> This uses your existing AI services with
+          intelligent fallbacks. All generated content is compatible with your
+          LessonBuilder editor and can be further customized.
         </div>
       </CardContent>
     </Card>

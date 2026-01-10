@@ -1,26 +1,26 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Bell } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
-import { markAllNotificationsRead } from '@/services/notificationService';
-import getSocket from '@/services/socketClient';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Bell } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { markAllNotificationsRead } from "@/services/notificationService";
+import getSocket from "@/services/socketClient";
 import {
   getInvitationByToken,
   acceptPrivateGroupInvitation,
   rejectPrivateGroupInvitation,
   getPendingInvitations,
-} from '@/services/privateGroupService';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+} from "@/services/privateGroupService";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 export function NotificationModal({
   open,
@@ -29,7 +29,7 @@ export function NotificationModal({
   notificationsFromApi = [],
   onMarkedAllRead,
 }) {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
+  const { activeTheme } = useContext(SeasonalThemeContext);
   const [notifications, setNotifications] = useState([]);
   const [chatInvites, setChatInvites] = useState([]);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
@@ -49,21 +49,21 @@ export function NotificationModal({
   // Load API notifications when provided
   useEffect(() => {
     if (Array.isArray(notificationsFromApi)) {
-      const mapped = notificationsFromApi.map(n => {
+      const mapped = notificationsFromApi.map((n) => {
         // Handle different field name variations for event notifications
         const notificationType = (
           n.type ||
           n.related_type ||
           n.notification_type ||
-          'info'
+          "info"
         )
           .toString()
           .toLowerCase();
-        const notificationTitle = n.title || n.subject || 'Notification';
+        const notificationTitle = n.title || n.subject || "Notification";
         const notificationMessage =
-          n.message || n.description || n.body || n.content || '';
+          n.message || n.description || n.body || n.content || "";
         const notificationId = String(
-          n.id ?? n._id ?? `notif-${Date.now()}-${Math.random()}`
+          n.id ?? n._id ?? `notif-${Date.now()}-${Math.random()}`,
         );
         const createdAt =
           n.created_at ||
@@ -79,22 +79,22 @@ export function NotificationModal({
           title: notificationTitle,
           description: notificationMessage,
           time: new Date(createdAt).toLocaleString(),
-          color: isRead ? 'bg-gray-50' : 'bg-blue-50',
-          dotColor: isRead ? 'bg-gray-300' : 'bg-blue-500',
+          color: isRead ? "bg-gray-50" : "bg-blue-50",
+          dotColor: isRead ? "bg-gray-300" : "bg-blue-500",
           read: isRead,
           // Preserve original notification data for reference
           original: n,
         };
       });
-      console.log('All notifications from API:', notificationsFromApi);
-      console.log('Mapped notifications:', mapped);
+      console.log("All notifications from API:", notificationsFromApi);
+      console.log("Mapped notifications:", mapped);
       console.log(
-        'Read notifications count:',
-        mapped.filter(n => n.read).length
+        "Read notifications count:",
+        mapped.filter((n) => n.read).length,
       );
       console.log(
-        'Unread notifications count:',
-        mapped.filter(n => !n.read).length
+        "Unread notifications count:",
+        mapped.filter((n) => !n.read).length,
       );
       setNotifications(mapped);
     } else {
@@ -118,32 +118,32 @@ export function NotificationModal({
   // Load invitations on user login
   useEffect(() => {
     const handleUserLoggedIn = () => {
-      console.log('User logged in - loading pending invitations');
+      console.log("User logged in - loading pending invitations");
       setTimeout(() => {
         loadPendingInvitations();
       }, 500); // Small delay to ensure token is set
     };
 
-    window.addEventListener('userLoggedIn', handleUserLoggedIn);
-    return () => window.removeEventListener('userLoggedIn', handleUserLoggedIn);
+    window.addEventListener("userLoggedIn", handleUserLoggedIn);
+    return () => window.removeEventListener("userLoggedIn", handleUserLoggedIn);
   }, []);
 
   // Listen for invitation refresh requests
   useEffect(() => {
     const handleRefresh = () => {
-      console.log('Invitation refresh requested');
+      console.log("Invitation refresh requested");
       loadPendingInvitations();
     };
 
-    window.addEventListener('refresh-invitations', handleRefresh);
+    window.addEventListener("refresh-invitations", handleRefresh);
     return () =>
-      window.removeEventListener('refresh-invitations', handleRefresh);
+      window.removeEventListener("refresh-invitations", handleRefresh);
   }, []);
 
   const loadPendingInvitations = async () => {
     try {
       console.log(
-        '[Invitation API] Fetching pending invitations for current user...'
+        "[Invitation API] Fetching pending invitations for current user...",
       );
       const response = await getPendingInvitations();
 
@@ -156,36 +156,36 @@ export function NotificationModal({
         response?.data ||
         [];
 
-      console.log('[Invitation API] Full response:', response);
-      console.log('[Invitation API] Response.data:', response?.data);
-      console.log('[Invitation API] Parsed invitations:', invitations);
+      console.log("[Invitation API] Full response:", response);
+      console.log("[Invitation API] Response.data:", response?.data);
+      console.log("[Invitation API] Parsed invitations:", invitations);
       console.log(
-        '[Invitation API] Current user ID:',
-        localStorage.getItem('userId')
+        "[Invitation API] Current user ID:",
+        localStorage.getItem("userId"),
       );
 
       if (!Array.isArray(invitations) || invitations.length === 0) {
-        console.log('[Invitation API] No pending invitations found');
+        console.log("[Invitation API] No pending invitations found");
         return;
       }
 
       console.log(
-        '[Invitation API] Processing',
+        "[Invitation API] Processing",
         invitations.length,
-        'invitations'
+        "invitations",
       );
 
       // Map invitations to the format expected by the UI
-      const currentUserId = localStorage.getItem('userId');
+      const currentUserId = localStorage.getItem("userId");
       const mappedInvites = await Promise.all(
-        invitations.map(async inv => {
+        invitations.map(async (inv) => {
           try {
             // Double-check this invitation is for the current user
-            const inviteeId = String(inv.invitee_id || inv.inviteeId || '');
+            const inviteeId = String(inv.invitee_id || inv.inviteeId || "");
             if (inviteeId && inviteeId !== String(currentUserId)) {
               console.log(
-                '[Invitation API] Skipping invitation not for current user:',
-                inv
+                "[Invitation API] Skipping invitation not for current user:",
+                inv,
               );
               return null;
             }
@@ -200,11 +200,11 @@ export function NotificationModal({
 
             return {
               id: String(inv.token || inv.id),
-              type: 'chat-invitation',
-              title: group.name || inv.group_name || 'Private Group',
-              description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+              type: "chat-invitation",
+              title: group.name || inv.group_name || "Private Group",
+              description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(" ") || inviter.name || "an admin"}`,
               time: new Date(
-                inv.created_at || inv.createdAt || Date.now()
+                inv.created_at || inv.createdAt || Date.now(),
               ).toLocaleString(),
               token: inv.token,
               groupId: group.id || inv.group_id,
@@ -212,16 +212,16 @@ export function NotificationModal({
               inviterName:
                 [inviter.first_name, inviter.last_name]
                   .filter(Boolean)
-                  .join(' ') ||
+                  .join(" ") ||
                 inviter.name ||
-                'Admin',
+                "Admin",
               read: false,
             };
           } catch (err) {
-            console.warn('Failed to process invitation:', err);
+            console.warn("Failed to process invitation:", err);
             return null;
           }
-        })
+        }),
       );
 
       // Filter out any null values and update state
@@ -234,39 +234,39 @@ export function NotificationModal({
       // Sort by time (newest first) and keep only the first invitation per group
       validInvites
         .sort((a, b) => new Date(b.time) - new Date(a.time))
-        .forEach(inv => {
+        .forEach((inv) => {
           const groupKey = String(inv.groupId);
           if (!seenGroups.has(groupKey)) {
             seenGroups.add(groupKey);
             deduplicatedInvites.push(inv);
           } else {
             console.log(
-              '[Invitation API] Skipping duplicate invitation for group:',
-              groupKey
+              "[Invitation API] Skipping duplicate invitation for group:",
+              groupKey,
             );
           }
         });
 
-      setChatInvites(prev => {
+      setChatInvites((prev) => {
         // Merge with existing invites, avoiding duplicates by token
-        const existingTokens = new Set(prev.map(c => String(c.token)));
+        const existingTokens = new Set(prev.map((c) => String(c.token)));
         const newInvites = deduplicatedInvites.filter(
-          inv => !existingTokens.has(String(inv.token))
+          (inv) => !existingTokens.has(String(inv.token)),
         );
         const updatedInvites = [...prev, ...newInvites];
 
         // Update parent badge count immediately
         if (onNotificationUpdate && newInvites.length > 0) {
           const totalUnread =
-            notifications.filter(n => !n.read).length +
-            updatedInvites.filter(c => !c.read).length;
+            notifications.filter((n) => !n.read).length +
+            updatedInvites.filter((c) => !c.read).length;
           onNotificationUpdate(totalUnread);
         }
 
         return updatedInvites;
       });
     } catch (error) {
-      console.error('Failed to load pending invitations:', error);
+      console.error("Failed to load pending invitations:", error);
     }
   };
 
@@ -274,8 +274,8 @@ export function NotificationModal({
   useEffect(() => {
     if (open && onNotificationUpdate) {
       const unreadCount =
-        notifications.filter(n => !n.read).length +
-        chatInvites.filter(c => !c.read).length;
+        notifications.filter((n) => !n.read).length +
+        chatInvites.filter((c) => !c.read).length;
       onNotificationUpdate(unreadCount);
     }
   }, [open, notifications, chatInvites, onNotificationUpdate]);
@@ -283,29 +283,29 @@ export function NotificationModal({
   // Socket listener for private group invitations
   useEffect(() => {
     const socket = getSocket();
-    const currentUserId = String(localStorage.getItem('userId') || '');
+    const currentUserId = String(localStorage.getItem("userId") || "");
 
-    const onInvitationSent = async data => {
+    const onInvitationSent = async (data) => {
       try {
-        console.log('[Invitation] Received socket event:', data);
-        console.log('[Invitation] Current user ID:', currentUserId);
+        console.log("[Invitation] Received socket event:", data);
+        console.log("[Invitation] Current user ID:", currentUserId);
 
         const invites = Array.isArray(data?.invites) ? data.invites : [];
 
-        console.log('[Invitation] Processing invites:', invites);
-        console.log('[Invitation] Number of invites:', invites.length);
+        console.log("[Invitation] Processing invites:", invites);
+        console.log("[Invitation] Number of invites:", invites.length);
 
         // Check if current user is in the invitee list
-        const match = invites.find(i => {
-          const inviteeId = String(i.invitee_id || i.inviteeId || '');
+        const match = invites.find((i) => {
+          const inviteeId = String(i.invitee_id || i.inviteeId || "");
           const isMatch = inviteeId === currentUserId;
           console.log(
-            '[Invitation] Checking invitee:',
+            "[Invitation] Checking invitee:",
             inviteeId,
-            'against current:',
+            "against current:",
             currentUserId,
-            '-> Match:',
-            isMatch
+            "-> Match:",
+            isMatch,
           );
           return isMatch;
         });
@@ -313,14 +313,14 @@ export function NotificationModal({
         // Only process if current user is actually invited (in the invitee list)
         if (!match || !match.token) {
           console.log(
-            '[Invitation] Current user is NOT in invitee list - ignoring invitation'
+            "[Invitation] Current user is NOT in invitee list - ignoring invitation",
           );
           return;
         }
 
         console.log(
-          '[Invitation] Match found! Current user IS invited - Processing token:',
-          match.token
+          "[Invitation] Match found! Current user IS invited - Processing token:",
+          match.token,
         );
 
         // Fetch invite details for rich card
@@ -331,54 +331,54 @@ export function NotificationModal({
 
         const newInvite = {
           id: String(match.token),
-          type: 'chat-invitation',
-          title: group.name || 'Private Group',
-          description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+          type: "chat-invitation",
+          title: group.name || "Private Group",
+          description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(" ") || inviter.name || "an admin"}`,
           time: new Date().toLocaleString(),
           token: match.token,
           groupId: group.id,
           thumbnail: group.thumbnail || group.image || null,
           inviterName:
-            [inviter.first_name, inviter.last_name].filter(Boolean).join(' ') ||
+            [inviter.first_name, inviter.last_name].filter(Boolean).join(" ") ||
             inviter.name ||
-            'Admin',
+            "Admin",
           read: false,
         };
 
-        setChatInvites(prev => {
+        setChatInvites((prev) => {
           // Check if invitation with same token already exists
           const exists = prev.some(
-            c =>
+            (c) =>
               String(c.id) === String(newInvite.id) ||
-              String(c.token) === String(newInvite.token)
+              String(c.token) === String(newInvite.token),
           );
           if (exists) {
-            console.log('[Invitation] Invitation already exists - skipping');
+            console.log("[Invitation] Invitation already exists - skipping");
             return prev;
           }
 
           // Check if user already has an invitation for this group
           const hasInviteForGroup = prev.some(
-            c => String(c.groupId) === String(newInvite.groupId)
+            (c) => String(c.groupId) === String(newInvite.groupId),
           );
           if (hasInviteForGroup) {
             console.log(
-              '[Invitation] User already has invitation for this group - replacing with newer one'
+              "[Invitation] User already has invitation for this group - replacing with newer one",
             );
             // Remove old invitation for this group and add the new one
             const filtered = prev.filter(
-              c => String(c.groupId) !== String(newInvite.groupId)
+              (c) => String(c.groupId) !== String(newInvite.groupId),
             );
             return [newInvite, ...filtered];
           }
 
-          console.log('[Invitation] Adding new invitation to list');
+          console.log("[Invitation] Adding new invitation to list");
 
           // Update notification badge
           if (onNotificationUpdate) {
             setTimeout(() => {
               const totalUnread =
-                notifications.filter(n => !n.read).length + (prev.length + 1);
+                notifications.filter((n) => !n.read).length + (prev.length + 1);
               onNotificationUpdate(totalUnread);
             }, 100);
           }
@@ -386,27 +386,27 @@ export function NotificationModal({
           return [newInvite, ...prev];
         });
 
-        toast.info('New chat invitation received');
+        toast.info("New chat invitation received");
       } catch (e) {
         console.warn(
-          '[Invitation] Failed processing privateGroupInvitationSent',
-          e
+          "[Invitation] Failed processing privateGroupInvitationSent",
+          e,
         );
       }
     };
 
-    socket.on('privateGroupInvitationSent', onInvitationSent);
+    socket.on("privateGroupInvitationSent", onInvitationSent);
     return () => {
-      socket.off('privateGroupInvitationSent', onInvitationSent);
+      socket.off("privateGroupInvitationSent", onInvitationSent);
     };
   }, []);
 
-  const markAsRead = id => {
+  const markAsRead = (id) => {
     setNotifications(
-      notifications.map(n => (n.id === id ? { ...n, read: true } : n))
+      notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
     const newUnreadCount = notifications.filter(
-      n => !n.read && n.id !== id
+      (n) => !n.read && n.id !== id,
     ).length;
     if (onNotificationUpdate) onNotificationUpdate(newUnreadCount);
   };
@@ -417,35 +417,36 @@ export function NotificationModal({
     setIsMarkingAllRead(true);
 
     try {
-      console.log('Calling mark all as read API...');
+      console.log("Calling mark all as read API...");
       const response = await markAllNotificationsRead();
-      console.log('Mark all as read API response:', response);
+      console.log("Mark all as read API response:", response);
 
       // Update local state after successful API call
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setChatInvites(prev => prev.map(c => ({ ...c, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setChatInvites((prev) => prev.map((c) => ({ ...c, read: true })));
 
       if (onMarkedAllRead) onMarkedAllRead();
       if (onNotificationUpdate) onNotificationUpdate(0);
 
-      toast.success('All notifications marked as read');
+      toast.success("All notifications marked as read");
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+      console.error("Failed to mark all notifications as read:", error);
 
       // Check if it's a network error or backend unavailable
       if (error.response) {
         // Backend responded with an error
         toast.error(
-          error.response.data?.message || 'Failed to mark notifications as read'
+          error.response.data?.message ||
+            "Failed to mark notifications as read",
         );
       } else if (error.request) {
         // Request made but no response received
         toast.error(
-          'Unable to connect to server. Please check your connection.'
+          "Unable to connect to server. Please check your connection.",
         );
       } else {
         // Something else happened
-        toast.error('An unexpected error occurred');
+        toast.error("An unexpected error occurred");
       }
     } finally {
       setIsMarkingAllRead(false);
@@ -455,22 +456,24 @@ export function NotificationModal({
   const acceptInvite = async (token, idToRemove) => {
     try {
       // Get invitation details before removing from list
-      const invite = chatInvites.find(c => String(c.id) === String(idToRemove));
+      const invite = chatInvites.find(
+        (c) => String(c.id) === String(idToRemove),
+      );
 
       const response = await acceptPrivateGroupInvitation(token);
 
-      toast.success('You joined the group successfully.');
+      toast.success("You joined the group successfully.");
 
       // Remove ALL invitations for the same group (handles duplicate invitations)
-      setChatInvites(prev => {
-        const filtered = prev.filter(c => {
+      setChatInvites((prev) => {
+        const filtered = prev.filter((c) => {
           // Remove the accepted invitation by token
           if (String(c.id) === String(idToRemove)) return false;
           // Also remove any other invitations for the same group
           if (String(c.groupId) === String(invite?.groupId)) {
             console.log(
-              '[Invitation] Removing duplicate invitation for same group:',
-              c.id
+              "[Invitation] Removing duplicate invitation for same group:",
+              c.id,
             );
             return false;
           }
@@ -480,8 +483,8 @@ export function NotificationModal({
         // Update notification badge
         if (onNotificationUpdate) {
           const totalUnread =
-            notifications.filter(n => !n.read).length +
-            filtered.filter(c => !c.read).length;
+            notifications.filter((n) => !n.read).length +
+            filtered.filter((c) => !c.read).length;
           onNotificationUpdate(totalUnread);
         }
 
@@ -490,8 +493,8 @@ export function NotificationModal({
 
       // Emit socket event for real-time updates
       const socket = getSocket();
-      const currentUserId = localStorage.getItem('userId');
-      socket.emit('privateGroupInvitationAccepted', {
+      const currentUserId = localStorage.getItem("userId");
+      socket.emit("privateGroupInvitationAccepted", {
         groupId: invite?.groupId,
         userId: currentUserId,
         token: token,
@@ -506,7 +509,7 @@ export function NotificationModal({
 
       // Dispatch custom event for local UI update
       window.dispatchEvent(
-        new CustomEvent('privateGroupInvitationAccepted', {
+        new CustomEvent("privateGroupInvitationAccepted", {
           detail: {
             groupId: invite?.groupId,
             userId: currentUserId,
@@ -518,43 +521,43 @@ export function NotificationModal({
               description: response?.data?.description,
             },
           },
-        })
+        }),
       );
 
       // Optional navigation to messages view (adjust if you have a different route)
       // window.location.href = `/messages`;
     } catch (e) {
-      console.warn('Accept invitation failed', e);
-      const errorMessage = e?.response?.data?.message || '';
+      console.warn("Accept invitation failed", e);
+      const errorMessage = e?.response?.data?.message || "";
 
       // Check if user is already a member
       if (
-        errorMessage.toLowerCase().includes('already') ||
-        errorMessage.toLowerCase().includes('member')
+        errorMessage.toLowerCase().includes("already") ||
+        errorMessage.toLowerCase().includes("member")
       ) {
-        toast.info('You are already a member of this group');
+        toast.info("You are already a member of this group");
 
         // Remove this invitation since it's no longer valid
         const invite = chatInvites.find(
-          c => String(c.id) === String(idToRemove)
+          (c) => String(c.id) === String(idToRemove),
         );
-        setChatInvites(prev => {
+        setChatInvites((prev) => {
           const filtered = prev.filter(
-            c => String(c.groupId) !== String(invite?.groupId)
+            (c) => String(c.groupId) !== String(invite?.groupId),
           );
 
           // Update notification badge
           if (onNotificationUpdate) {
             const totalUnread =
-              notifications.filter(n => !n.read).length +
-              filtered.filter(c => !c.read).length;
+              notifications.filter((n) => !n.read).length +
+              filtered.filter((c) => !c.read).length;
             onNotificationUpdate(totalUnread);
           }
 
           return filtered;
         });
       } else {
-        toast.error(errorMessage || 'Failed to accept invitation');
+        toast.error(errorMessage || "Failed to accept invitation");
       }
     }
   };
@@ -562,25 +565,27 @@ export function NotificationModal({
   const rejectInvite = async (token, idToRemove) => {
     try {
       await rejectPrivateGroupInvitation(token);
-      toast.success('Invitation rejected.');
+      toast.success("Invitation rejected.");
 
       // Remove the rejected invitation and update badge
-      setChatInvites(prev => {
-        const filtered = prev.filter(c => String(c.id) !== String(idToRemove));
+      setChatInvites((prev) => {
+        const filtered = prev.filter(
+          (c) => String(c.id) !== String(idToRemove),
+        );
 
         // Update notification badge
         if (onNotificationUpdate) {
           const totalUnread =
-            notifications.filter(n => !n.read).length +
-            filtered.filter(c => !c.read).length;
+            notifications.filter((n) => !n.read).length +
+            filtered.filter((c) => !c.read).length;
           onNotificationUpdate(totalUnread);
         }
 
         return filtered;
       });
     } catch (e) {
-      console.warn('Reject invitation failed', e);
-      toast.error(e?.response?.data?.message || 'Failed to reject invitation');
+      console.warn("Reject invitation failed", e);
+      toast.error(e?.response?.data?.message || "Failed to reject invitation");
     }
   };
 
@@ -590,7 +595,7 @@ export function NotificationModal({
         <DialogHeader className="p-4 pb-0 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
             <Bell className="h-4 w-4 text-gray-700" />
-            {isChristmasMode ? '🔔 Jingle Alerts' : 'Notifications'}
+            Notifications
           </DialogTitle>
         </DialogHeader>
 
@@ -643,16 +648,16 @@ export function NotificationModal({
                 <>
                   {/* Debug info */}
                   <div className="text-xs text-gray-500 mb-2">
-                    Total: {notifications.length} | Unread:{' '}
-                    {notifications.filter(n => !n.read).length} | Read:{' '}
-                    {notifications.filter(n => n.read).length}
+                    Total: {notifications.length} | Unread:{" "}
+                    {notifications.filter((n) => !n.read).length} | Read:{" "}
+                    {notifications.filter((n) => n.read).length}
                   </div>
 
                   {/* Show all notifications - both read and unread */}
-                  {notifications.map(notification => (
+                  {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
+                      className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-start gap-2">
                         <div
@@ -696,10 +701,10 @@ export function NotificationModal({
             </TabsContent>
 
             <TabsContent value="unread" className="space-y-2 mt-0">
-              {notifications.filter(n => !n.read).length > 0 ? (
+              {notifications.filter((n) => !n.read).length > 0 ? (
                 notifications
-                  .filter(n => !n.read)
-                  .map(notification => (
+                  .filter((n) => !n.read)
+                  .map((notification) => (
                     <div
                       key={notification.id}
                       className={`p-3 rounded-lg ${notification.color} border border-gray-100`}
@@ -740,13 +745,13 @@ export function NotificationModal({
             </TabsContent>
 
             <TabsContent value="payment" className="space-y-2 mt-0">
-              {notifications.filter(n => n.type === 'payment').length > 0 ? (
+              {notifications.filter((n) => n.type === "payment").length > 0 ? (
                 notifications
-                  .filter(n => n.type === 'payment')
-                  .map(notification => (
+                  .filter((n) => n.type === "payment")
+                  .map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
+                      className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? "opacity-70" : ""}`}
                     >
                       <div className="flex items-start gap-2">
                         <div
@@ -788,10 +793,10 @@ export function NotificationModal({
             {/* Chats tab - private group invitations */}
             <TabsContent value="chats" className="space-y-2 mt-0">
               {chatInvites.length > 0 ? (
-                chatInvites.map(c => (
+                chatInvites.map((c) => (
                   <div
                     key={c.id}
-                    className={`p-3 rounded-lg ${c.read ? 'bg-gray-50' : 'bg-blue-50'} border border-gray-100`}
+                    className={`p-3 rounded-lg ${c.read ? "bg-gray-50" : "bg-blue-50"} border border-gray-100`}
                   >
                     <div className="flex items-start gap-3">
                       {c.thumbnail ? (
@@ -808,7 +813,7 @@ export function NotificationModal({
                           {c.title}
                         </h4>
                         <p className="text-gray-700 text-xs mt-1">
-                          You’ve been invited to join {c.title} by{' '}
+                          You’ve been invited to join {c.title} by{" "}
                           {c.inviterName}
                         </p>
                         <p className="text-blue-600 text-[10px] mt-1">
@@ -869,12 +874,12 @@ export function NotificationModal({
                   <Switch
                     id="email-notifications"
                     checked={notificationSettings.email}
-                    onCheckedChange={checked => {
+                    onCheckedChange={(checked) => {
                       setNotificationSettings({
                         ...notificationSettings,
                         email: checked,
                       });
-                      toast.success('Email notification settings updated');
+                      toast.success("Email notification settings updated");
                     }}
                     className="scale-75"
                   />
@@ -892,12 +897,12 @@ export function NotificationModal({
                   <Switch
                     id="push-notifications"
                     checked={notificationSettings.push}
-                    onCheckedChange={checked => {
+                    onCheckedChange={(checked) => {
                       setNotificationSettings({
                         ...notificationSettings,
                         push: checked,
                       });
-                      toast.success('Push notification settings updated');
+                      toast.success("Push notification settings updated");
                     }}
                     className="scale-75"
                   />
@@ -923,12 +928,12 @@ export function NotificationModal({
                   <Switch
                     id="course-updates"
                     checked={notificationSettings.courseUpdates}
-                    onCheckedChange={checked => {
+                    onCheckedChange={(checked) => {
                       setNotificationSettings({
                         ...notificationSettings,
                         courseUpdates: checked,
                       });
-                      toast.success('Course update settings updated');
+                      toast.success("Course update settings updated");
                     }}
                     className="scale-75"
                   />
@@ -949,12 +954,12 @@ export function NotificationModal({
                   <Switch
                     id="assignment-reminders"
                     checked={notificationSettings.assignmentReminders}
-                    onCheckedChange={checked => {
+                    onCheckedChange={(checked) => {
                       setNotificationSettings({
                         ...notificationSettings,
                         assignmentReminders: checked,
                       });
-                      toast.success('Assignment reminder settings updated');
+                      toast.success("Assignment reminder settings updated");
                     }}
                     className="scale-75"
                   />
@@ -975,12 +980,12 @@ export function NotificationModal({
                   <Switch
                     id="system-announcements"
                     checked={notificationSettings.systemAnnouncements}
-                    onCheckedChange={checked => {
+                    onCheckedChange={(checked) => {
                       setNotificationSettings({
                         ...notificationSettings,
                         systemAnnouncements: checked,
                       });
-                      toast.success('System announcement settings updated');
+                      toast.success("System announcement settings updated");
                     }}
                     className="scale-75"
                   />
@@ -998,12 +1003,12 @@ export function NotificationModal({
                   <Switch
                     id="group-activities"
                     checked={notificationSettings.groupActivities}
-                    onCheckedChange={checked => {
+                    onCheckedChange={(checked) => {
                       setNotificationSettings({
                         ...notificationSettings,
                         groupActivities: checked,
                       });
-                      toast.success('Group activity settings updated');
+                      toast.success("Group activity settings updated");
                     }}
                     className="scale-75"
                   />
@@ -1031,12 +1036,12 @@ export function NotificationModal({
                     <Switch
                       id="payment-notifications"
                       checked={notificationSettings.paymentNotifications}
-                      onCheckedChange={checked => {
+                      onCheckedChange={(checked) => {
                         setNotificationSettings({
                           ...notificationSettings,
                           paymentNotifications: checked,
                         });
-                        toast.success('Payment notification settings updated');
+                        toast.success("Payment notification settings updated");
                       }}
                       className="scale-75"
                     />
@@ -1057,12 +1062,12 @@ export function NotificationModal({
                     <Switch
                       id="payment-reminders"
                       checked={notificationSettings.paymentReminders}
-                      onCheckedChange={checked => {
+                      onCheckedChange={(checked) => {
                         setNotificationSettings({
                           ...notificationSettings,
                           paymentReminders: checked,
                         });
-                        toast.success('Payment reminder settings updated');
+                        toast.success("Payment reminder settings updated");
                       }}
                       className="scale-75"
                     />
@@ -1083,12 +1088,12 @@ export function NotificationModal({
                     <Switch
                       id="payment-due-alerts"
                       checked={notificationSettings.paymentDueAlerts}
-                      onCheckedChange={checked => {
+                      onCheckedChange={(checked) => {
                         setNotificationSettings({
                           ...notificationSettings,
                           paymentDueAlerts: checked,
                         });
-                        toast.success('Payment due alert settings updated');
+                        toast.success("Payment due alert settings updated");
                       }}
                       className="scale-75"
                     />
@@ -1106,7 +1111,7 @@ export function NotificationModal({
               onClick={handleMarkAllAsRead}
               disabled={isMarkingAllRead}
             >
-              {isMarkingAllRead ? 'Marking as read...' : 'Mark All as Read'}
+              {isMarkingAllRead ? "Marking as read..." : "Mark All as Read"}
             </Button>
           </div>
         </Tabs>

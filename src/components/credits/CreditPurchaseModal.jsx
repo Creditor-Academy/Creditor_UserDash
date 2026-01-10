@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useCredits } from '@/contexts/CreditsContext';
-import { useUser } from '@/contexts/UserContext';
-import api from '@/services/apiClient';
+import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useCredits } from "@/contexts/CreditsContext";
+import { useUser } from "@/contexts/UserContext";
+import api from "@/services/apiClient";
 
 // Design-only modal for managing credits
 // Props: open, onClose, balance (optional external), onBalanceChange(newBalance) (optional)
@@ -24,37 +24,37 @@ const CreditPurchaseModal = ({
   const [unlockHistory, setUnlockHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [balance, setBalance] = useState(
-    typeof externalBalance === 'number' ? externalBalance : contextBalance
+    typeof externalBalance === "number" ? externalBalance : contextBalance,
   );
   const [quantity, setQuantity] = useState(10);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [packType, setPackType] = useState('pack50'); // pack50 | pack100 | pack500 | pack2800
-  const [paymentMethod, setPaymentMethod] = useState('stripe'); // kept for compatibility, not used
-  const [customQty, setCustomQty] = useState(''); // retained for compatibility
-  const [checkoutStep, setCheckoutStep] = useState('packs'); // only 'packs'
+  const [packType, setPackType] = useState("pack50"); // pack50 | pack100 | pack500 | pack2800
+  const [paymentMethod, setPaymentMethod] = useState("stripe"); // kept for compatibility, not used
+  const [customQty, setCustomQty] = useState(""); // retained for compatibility
+  const [checkoutStep, setCheckoutStep] = useState("packs"); // only 'packs'
   const [membership, setMembership] = useState(contextMembership);
-  const [viewTab, setViewTab] = useState('overview'); // overview | history | usage
+  const [viewTab, setViewTab] = useState("overview"); // overview | history | usage
   const [confirmModal, setConfirmModal] = useState({
     open: false,
-    title: '',
-    message: '',
-    confirmText: 'Confirm',
-    cancelText: 'Cancel',
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
     onConfirm: null,
   });
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState("");
 
   // Sync internal balance if external changes
   useEffect(() => {
-    if (typeof externalBalance === 'number') {
+    if (typeof externalBalance === "number") {
       setBalance(externalBalance);
     }
   }, [externalBalance]);
 
   // Sync with context balance when it changes
   useEffect(() => {
-    if (typeof externalBalance !== 'number') {
+    if (typeof externalBalance !== "number") {
       setBalance(contextBalance);
     }
   }, [contextBalance, externalBalance]);
@@ -67,13 +67,13 @@ const CreditPurchaseModal = ({
   // Get real purchase history from transactions
   const history = useMemo(() => {
     return transactions
-      .filter(t => t.type === 'purchase')
-      .map(t => ({
+      .filter((t) => t.type === "purchase")
+      .map((t) => ({
         id: `ord_${t.id}`,
         date: new Date(t.timestamp).toISOString().slice(0, 10),
         credits: t.amount,
         amount: t.amount,
-        currency: 'CR',
+        currency: "CR",
       }))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [transactions]);
@@ -85,13 +85,13 @@ const CreditPurchaseModal = ({
     setLoadingHistory(true);
     try {
       console.log(
-        `[CreditModal] Fetching usage history for user ${userProfile.id}`
+        `[CreditModal] Fetching usage history for user ${userProfile.id}`,
       );
       const response = await api.get(
         `/payment-order/credits/usages/${userProfile.id}`,
         {
           withCredentials: true,
-        }
+        },
       );
 
       console.log(`[CreditModal] Usage history response:`, response?.data);
@@ -99,7 +99,7 @@ const CreditPurchaseModal = ({
       const historyData = response?.data?.data || response?.data || [];
       setUnlockHistory(historyData);
     } catch (error) {
-      console.error('[CreditModal] Failed to fetch usage history:', error);
+      console.error("[CreditModal] Failed to fetch usage history:", error);
       setUnlockHistory([]);
     } finally {
       setLoadingHistory(false);
@@ -109,15 +109,15 @@ const CreditPurchaseModal = ({
   // Get real usage data from backend unlock history
   const usages = useMemo(() => {
     return unlockHistory
-      .map(unlock => ({
+      .map((unlock) => ({
         date: new Date(unlock.used_at).toISOString().slice(0, 10),
         type:
-          unlock.unlock_type === 'CATALOG'
-            ? 'Catalog Purchase'
-            : unlock.unlock_type === 'LESSON'
-              ? 'Lesson Purchase'
-              : unlock.unlock_type || 'Unlock',
-        ref: unlock.unlock_id || 'Unknown',
+          unlock.unlock_type === "CATALOG"
+            ? "Catalog Purchase"
+            : unlock.unlock_type === "LESSON"
+              ? "Lesson Purchase"
+              : unlock.unlock_type || "Unlock",
+        ref: unlock.unlock_id || "Unknown",
         credits: unlock.credits_spent || 0,
       }))
       .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -125,41 +125,41 @@ const CreditPurchaseModal = ({
 
   const canPurchase = useMemo(
     () => quantity > 0 && !isPurchasing,
-    [quantity, isPurchasing]
+    [quantity, isPurchasing],
   );
   // New rate: 5 credits per $1 (no bonus credits)
   const CREDIT_RATE = 5;
   const derived = useMemo(() => {
-    if (packType === 'pack50') return { credits: 250, price: 50 };
-    if (packType === 'pack100') return { credits: 500, price: 100 };
-    if (packType === 'pack500')
+    if (packType === "pack50") return { credits: 250, price: 50 };
+    if (packType === "pack100") return { credits: 500, price: 100 };
+    if (packType === "pack500")
       return { credits: 500 * CREDIT_RATE, price: 500 };
-    if (packType === 'pack2800')
+    if (packType === "pack2800")
       return { credits: 2800 * CREDIT_RATE, price: 2800 };
     return { credits: 0, price: 0 };
   }, [packType]);
 
-  const formatNumber = val =>
-    typeof val === 'number' ? val.toLocaleString(undefined) : String(val);
+  const formatNumber = (val) =>
+    typeof val === "number" ? val.toLocaleString(undefined) : String(val);
 
-  const handlePurchase = e => {
+  const handlePurchase = (e) => {
     e.preventDefault();
     if (!membership.isActive) {
       setConfirmModal({
         open: true,
-        title: 'Membership required',
-        message: 'You need an active membership to buy credits.',
-        confirmText: 'Buy membership',
-        cancelText: 'Close',
-        onConfirm: () => setConfirmModal(m => ({ ...m, open: false })),
+        title: "Membership required",
+        message: "You need an active membership to buy credits.",
+        confirmText: "Buy membership",
+        cancelText: "Close",
+        onConfirm: () => setConfirmModal((m) => ({ ...m, open: false })),
       });
       return;
     }
     // reset checkout flow each time
-    setPackType('pack50');
-    setCustomQty('');
-    setPaymentMethod('stripe');
-    setCheckoutStep('packs');
+    setPackType("pack50");
+    setCustomQty("");
+    setPaymentMethod("stripe");
+    setCheckoutStep("packs");
     setCheckoutOpen(true);
   };
 
@@ -169,9 +169,9 @@ const CreditPurchaseModal = ({
     if (!creditsBought || creditsBought <= 0) return;
     setIsPurchasing(true);
     setTimeout(() => {
-      setBalance(b => {
+      setBalance((b) => {
         const updated = b + creditsBought;
-        if (typeof onBalanceChange === 'function') {
+        if (typeof onBalanceChange === "function") {
           try {
             onBalanceChange(updated, { added: creditsBought });
           } catch {}
@@ -181,40 +181,40 @@ const CreditPurchaseModal = ({
       // History is now automatically updated via transactions context
       setIsPurchasing(false);
       setCheckoutOpen(false);
-      setViewTab('overview');
+      setViewTab("overview");
       setNotice(`Added ${creditsBought} credits to your balance`);
-      setTimeout(() => setNotice(''), 3000);
+      setTimeout(() => setNotice(""), 3000);
     }, 600);
   };
 
   const handleClose = () => {
     setCheckoutOpen(false);
     setIsPurchasing(false);
-    setPackType('pack500');
-    setPaymentMethod('stripe');
+    setPackType("pack500");
+    setPaymentMethod("stripe");
     setCustomQty(10);
     onClose();
   };
 
   useEffect(() => {
     if (!open) return;
-    console.log('[CreditModal] Modal opened, refreshing data...');
+    console.log("[CreditModal] Modal opened, refreshing data...");
     try {
       refreshBalance && refreshBalance();
       refreshMembership && refreshMembership();
       fetchUnlockHistory();
     } catch {}
-    const onKey = e => {
-      if (e.key === 'Escape') handleClose();
+    const onKey = (e) => {
+      if (e.key === "Escape") handleClose();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, userProfile?.id]);
 
   if (!open) return null;
 
   // Ensure we're in the browser before using portal
-  if (typeof document === 'undefined') return null;
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -243,30 +243,30 @@ const CreditPurchaseModal = ({
           {/* Top navigation inside modal */}
           <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-fit">
             <button
-              onClick={() => setViewTab('overview')}
-              className={`px-3 py-1.5 text-sm rounded-md ${viewTab === 'overview' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-700 hover:text-gray-900'}`}
+              onClick={() => setViewTab("overview")}
+              className={`px-3 py-1.5 text-sm rounded-md ${viewTab === "overview" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}
             >
               Overview
             </button>
             <button
-              onClick={() => setViewTab('usage')}
-              className={`px-3 py-1.5 text-sm rounded-md ${viewTab === 'usage' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-700 hover:text-gray-900'}`}
+              onClick={() => setViewTab("usage")}
+              className={`px-3 py-1.5 text-sm rounded-md ${viewTab === "usage" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}
             >
               Usage
             </button>
           </div>
 
           {/* Overview */}
-          {viewTab === 'overview' && (
+          {viewTab === "overview" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="mt-1 text-xs flex items-center justify-between gap-2 flex-wrap">
                   <span
-                    className={`px-2 py-1 rounded ${membership.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                    className={`px-2 py-1 rounded ${membership.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
                   >
                     {membership.isActive
-                      ? 'Membership active'
-                      : 'Membership inactive'}
+                      ? "Membership active"
+                      : "Membership inactive"}
                   </span>
                   {/* Enhanced balance pill (right side of row) */}
                   <span className="relative inline-flex">
@@ -351,9 +351,9 @@ const CreditPurchaseModal = ({
                     <button
                       onClick={() => {
                         window.location.href =
-                          'https://quickclick.com/r/m7o5skh90z5o7s6x6bg9yeklf7ql3f';
+                          "https://quickclick.com/r/m7o5skh90z5o7s6x6bg9yeklf7ql3f";
                       }}
-                      className="px-5 py-2.5 rounded-md font-medium transition-colors bg-[#d10000] hover:bg-[#b00000] text-white"
+                      className="px-5 py-2.5 rounded-md font-medium transition-colors bg-[#6164ec] hover:bg-[#b00000] text-white"
                     >
                       Buy membership ($69)
                     </button>
@@ -370,7 +370,7 @@ const CreditPurchaseModal = ({
           )}
 
           {/* History */}
-          {viewTab === 'history' && (
+          {viewTab === "history" && (
             <div className="grid grid-cols-1 gap-4">
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -395,7 +395,7 @@ const CreditPurchaseModal = ({
                           </td>
                         </tr>
                       ) : (
-                        history.map(h => (
+                        history.map((h) => (
                           <tr key={h.id} className="border-t">
                             <td className="py-1 pr-2">{h.date}</td>
                             <td className="py-1 pr-2">{h.id}</td>
@@ -413,7 +413,7 @@ const CreditPurchaseModal = ({
           )}
 
           {/* Usage */}
-          {viewTab === 'usage' && (
+          {viewTab === "usage" && (
             <div className="grid grid-cols-1 gap-4">
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -459,11 +459,11 @@ const CreditPurchaseModal = ({
                             <td className="py-2 pr-2">
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  u.type === 'Catalog Purchase'
-                                    ? 'bg-purple-100 text-purple-800'
-                                    : u.type === 'Lesson Purchase'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-gray-100 text-gray-800'
+                                  u.type === "Catalog Purchase"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : u.type === "Lesson Purchase"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {u.type}
@@ -501,7 +501,7 @@ const CreditPurchaseModal = ({
               </button>
             </div>
             <div className="overflow-y-auto p-4 sm:p-4 space-y-3 sm:space-y-4 h-[calc(100%-56px)] sm:h-auto">
-              {checkoutStep === 'packs' && (
+              {checkoutStep === "packs" && (
                 <>
                   <div>
                     <div className="text-center mb-4">
@@ -516,23 +516,23 @@ const CreditPurchaseModal = ({
                       {/* $50 Pack */}
                       <label
                         className={`group relative cursor-pointer transition-all duration-200 ${
-                          packType === 'pack50'
-                            ? 'ring-2 ring-blue-500 ring-offset-2'
-                            : 'hover:shadow-lg'
+                          packType === "pack50"
+                            ? "ring-2 ring-blue-500 ring-offset-2"
+                            : "hover:shadow-lg"
                         }`}
                       >
                         <input
                           type="radio"
                           name="pack"
                           className="sr-only"
-                          checked={packType === 'pack50'}
-                          onChange={() => setPackType('pack50')}
+                          checked={packType === "pack50"}
+                          onChange={() => setPackType("pack50")}
                         />
                         <div
                           className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
-                            packType === 'pack50'
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                            packType === "pack50"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                           }`}
                         >
                           <div className="text-center flex-1 flex flex-col justify-center">
@@ -559,7 +559,7 @@ const CreditPurchaseModal = ({
                               </div>
                             </div>
                           </div>
-                          {packType === 'pack50' && (
+                          {packType === "pack50" && (
                             <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                               <svg
                                 className="w-3 h-3 text-white"
@@ -580,23 +580,23 @@ const CreditPurchaseModal = ({
                       {/* $100 Pack */}
                       <label
                         className={`group relative cursor-pointer transition-all duration-200 ${
-                          packType === 'pack100'
-                            ? 'ring-2 ring-blue-500 ring-offset-2'
-                            : 'hover:shadow-lg'
+                          packType === "pack100"
+                            ? "ring-2 ring-blue-500 ring-offset-2"
+                            : "hover:shadow-lg"
                         }`}
                       >
                         <input
                           type="radio"
                           name="pack"
                           className="sr-only"
-                          checked={packType === 'pack100'}
-                          onChange={() => setPackType('pack100')}
+                          checked={packType === "pack100"}
+                          onChange={() => setPackType("pack100")}
                         />
                         <div
                           className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
-                            packType === 'pack100'
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                            packType === "pack100"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                           }`}
                         >
                           <div className="text-center flex-1 flex flex-col justify-center">
@@ -623,7 +623,7 @@ const CreditPurchaseModal = ({
                               </div>
                             </div>
                           </div>
-                          {packType === 'pack100' && (
+                          {packType === "pack100" && (
                             <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                               <svg
                                 className="w-3 h-3 text-white"
@@ -644,23 +644,23 @@ const CreditPurchaseModal = ({
                       {/* $500 Pack */}
                       <label
                         className={`group relative cursor-pointer transition-all duration-200 ${
-                          packType === 'pack500'
-                            ? 'ring-2 ring-blue-500 ring-offset-2'
-                            : 'hover:shadow-lg'
+                          packType === "pack500"
+                            ? "ring-2 ring-blue-500 ring-offset-2"
+                            : "hover:shadow-lg"
                         }`}
                       >
                         <input
                           type="radio"
                           name="pack"
                           className="sr-only"
-                          checked={packType === 'pack500'}
-                          onChange={() => setPackType('pack500')}
+                          checked={packType === "pack500"}
+                          onChange={() => setPackType("pack500")}
                         />
                         <div
                           className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
-                            packType === 'pack500'
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                            packType === "pack500"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                           }`}
                         >
                           <div className="text-center flex-1 flex flex-col justify-center">
@@ -687,7 +687,7 @@ const CreditPurchaseModal = ({
                               </div>
                             </div>
                           </div>
-                          {packType === 'pack500' && (
+                          {packType === "pack500" && (
                             <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                               <svg
                                 className="w-3 h-3 text-white"
@@ -708,23 +708,23 @@ const CreditPurchaseModal = ({
                       {/* $2,800 Pack */}
                       <label
                         className={`group relative cursor-pointer transition-all duration-200 ${
-                          packType === 'pack2800'
-                            ? 'ring-2 ring-blue-500 ring-offset-2'
-                            : 'hover:shadow-lg'
+                          packType === "pack2800"
+                            ? "ring-2 ring-blue-500 ring-offset-2"
+                            : "hover:shadow-lg"
                         }`}
                       >
                         <input
                           type="radio"
                           name="pack"
                           className="sr-only"
-                          checked={packType === 'pack2800'}
-                          onChange={() => setPackType('pack2800')}
+                          checked={packType === "pack2800"}
+                          onChange={() => setPackType("pack2800")}
                         />
                         <div
                           className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
-                            packType === 'pack2800'
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                            packType === "pack2800"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                           }`}
                         >
                           <div className="text-center flex-1 flex flex-col justify-center">
@@ -751,7 +751,7 @@ const CreditPurchaseModal = ({
                               </div>
                             </div>
                           </div>
-                          {packType === 'pack2800' && (
+                          {packType === "pack2800" && (
                             <div className="absolute top-2 left-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                               <svg
                                 className="w-3 h-3 text-white"
@@ -797,19 +797,19 @@ const CreditPurchaseModal = ({
                       <button
                         onClick={() => {
                           const link50 =
-                            'https://quickclick.com/r/fi2mzpe8cnq0k90yz6ljw1d12x7pw6';
+                            "https://quickclick.com/r/fi2mzpe8cnq0k90yz6ljw1d12x7pw6";
                           const link100 =
-                            'https://quickclick.com/r/ysml6zlwfwmfluvaep3mxkq7xj8ste';
+                            "https://quickclick.com/r/ysml6zlwfwmfluvaep3mxkq7xj8ste";
                           const link500 =
-                            'https://quickclick.com/r/o0h2bwvcumvpwgot6qxsm6moukluyn';
+                            "https://quickclick.com/r/o0h2bwvcumvpwgot6qxsm6moukluyn";
                           const link2800 =
-                            'https://quickclick.com/r/06k6zonz2prrxt1pqknxgwgi2jsbtr';
+                            "https://quickclick.com/r/06k6zonz2prrxt1pqknxgwgi2jsbtr";
 
                           let target;
-                          if (packType === 'pack50') target = link50;
-                          else if (packType === 'pack100') target = link100;
-                          else if (packType === 'pack500') target = link500;
-                          else if (packType === 'pack2800') target = link2800;
+                          if (packType === "pack50") target = link50;
+                          else if (packType === "pack100") target = link100;
+                          else if (packType === "pack500") target = link500;
+                          else if (packType === "pack2800") target = link2800;
                           else target = link50; // fallback
 
                           window.location.href = target;
@@ -841,27 +841,27 @@ const CreditPurchaseModal = ({
             </div>
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setConfirmModal(m => ({ ...m, open: false }))}
+                onClick={() => setConfirmModal((m) => ({ ...m, open: false }))}
                 className="px-4 py-2 rounded-md border hover:bg-gray-50"
               >
-                {confirmModal.cancelText || 'Cancel'}
+                {confirmModal.cancelText || "Cancel"}
               </button>
               <button
                 onClick={() => {
-                  if (typeof confirmModal.onConfirm === 'function')
+                  if (typeof confirmModal.onConfirm === "function")
                     confirmModal.onConfirm();
-                  else setConfirmModal(m => ({ ...m, open: false }));
+                  else setConfirmModal((m) => ({ ...m, open: false }));
                 }}
                 className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {confirmModal.confirmText || 'Confirm'}
+                {confirmModal.confirmText || "Confirm"}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>,
-    document.body
+    document.body,
   );
 };
 

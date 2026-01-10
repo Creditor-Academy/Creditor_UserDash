@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
   Wand2,
@@ -14,18 +14,18 @@ import {
   Sparkles,
   X,
   File,
-} from 'lucide-react';
-import LoadingBuffer from '../LoadingBuffer';
-import aiProxyService from '../../services/aiProxyService';
-import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
+} from "lucide-react";
+import LoadingBuffer from "../LoadingBuffer";
+import secureAIService from "../../services/secureAIService";
+import { useAIFeatureAccess, withAIFeatureAccess } from "./AIFeatureAccess";
 
 const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
-  const [inputMethod, setInputMethod] = useState('text');
-  const [textInput, setTextInput] = useState('');
-  const [urlInput, setUrlInput] = useState('');
+  const [inputMethod, setInputMethod] = useState("text");
+  const [textInput, setTextInput] = useState("");
+  const [urlInput, setUrlInput] = useState("");
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [summaryLength, setSummaryLength] = useState('medium');
-  const [summaryType, setSummaryType] = useState('bullet');
+  const [summaryLength, setSummaryLength] = useState("medium");
+  const [summaryType, setSummaryType] = useState("bullet");
   const [isGenerating, setIsGenerating] = useState(false);
   const [summaries, setSummaries] = useState([]);
   const { hasAccess, trackUsage } = useAIFeatureAccess();
@@ -42,45 +42,45 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
   }
 
   const inputMethods = [
-    { id: 'text', name: 'Text Input', icon: FileText },
-    { id: 'url', name: 'URL/Link', icon: Link },
-    { id: 'file', name: 'File Upload', icon: Upload },
+    { id: "text", name: "Text Input", icon: FileText },
+    { id: "url", name: "URL/Link", icon: Link },
+    { id: "file", name: "File Upload", icon: Upload },
   ];
 
   const lengthOptions = [
     {
-      id: 'short',
-      name: 'Short (50-100 words)',
-      description: 'Quick overview',
-      tokens: '50-100',
+      id: "short",
+      name: "Short (50-100 words)",
+      description: "Quick overview",
+      tokens: "50-100",
     },
     {
-      id: 'medium',
-      name: 'Medium (100-200 words)',
-      description: 'Balanced summary',
-      tokens: '100-200',
+      id: "medium",
+      name: "Medium (100-200 words)",
+      description: "Balanced summary",
+      tokens: "100-200",
     },
     {
-      id: 'long',
-      name: 'Long (150-300 words)',
-      description: 'Detailed summary',
-      tokens: '150-300',
+      id: "long",
+      name: "Long (150-300 words)",
+      description: "Detailed summary",
+      tokens: "150-300",
     },
     {
-      id: 'detailed',
-      name: 'Detailed (200-400 words)',
-      description: 'Comprehensive analysis',
-      tokens: '200-400',
+      id: "detailed",
+      name: "Detailed (200-400 words)",
+      description: "Comprehensive analysis",
+      tokens: "200-400",
     },
   ];
 
   const typeOptions = [
-    { id: 'bullet', name: 'Bullet Points', description: 'Easy to scan' },
-    { id: 'paragraph', name: 'Paragraph', description: 'Flowing text' },
-    { id: 'outline', name: 'Outline', description: 'Structured format' },
+    { id: "bullet", name: "Bullet Points", description: "Easy to scan" },
+    { id: "paragraph", name: "Paragraph", description: "Flowing text" },
+    { id: "outline", name: "Outline", description: "Structured format" },
   ];
 
-  const handleFileUpload = event => {
+  const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       setUploadedFile(file);
@@ -89,13 +89,13 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
 
   const generateSummary = async () => {
     try {
-      let content = '';
+      let content = "";
 
-      if (inputMethod === 'text' && textInput.trim()) {
+      if (inputMethod === "text" && textInput.trim()) {
         content = textInput;
-      } else if (inputMethod === 'url' && urlInput.trim()) {
+      } else if (inputMethod === "url" && urlInput.trim()) {
         content = `Content from: ${urlInput}`;
-      } else if (inputMethod === 'file' && uploadedFile) {
+      } else if (inputMethod === "file" && uploadedFile) {
         content = `Content from file: ${uploadedFile.name}`;
       }
 
@@ -105,16 +105,16 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
 
       // Track feature usage
       if (trackUsage) {
-        trackUsage('CONTENT_SUMMARIZATION');
+        trackUsage("CONTENT_SUMMARIZATION");
       }
 
-      console.log('🚀 Starting advanced summarization with:', {
+      console.log("🚀 Starting advanced summarization with:", {
         length: summaryLength,
         type: summaryType,
         contentLength: content.length,
       });
 
-      const result = await aiProxyService.summarizeContent(content, {
+      const result = await secureAIService.summarizeContent(content, {
         length: summaryLength,
         type: summaryType,
       });
@@ -124,9 +124,9 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
         content:
           result.summary ||
           result.generated_text ||
-          'Summary generated successfully',
+          "Summary generated successfully",
         originalContent:
-          content.substring(0, 200) + (content.length > 200 ? '...' : ''),
+          content.substring(0, 200) + (content.length > 200 ? "..." : ""),
         length: summaryLength,
         type: summaryType,
         model: result.model,
@@ -142,25 +142,25 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
       setSummaries([newSummary, ...summaries]);
 
       // Clear inputs
-      setTextInput('');
-      setUrlInput('');
+      setTextInput("");
+      setUrlInput("");
       setUploadedFile(null);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
 
       if (onFeatureUse) {
-        onFeatureUse('CONTENT_SUMMARIZATION', newSummary);
+        onFeatureUse("CONTENT_SUMMARIZATION", newSummary);
       }
     } catch (error) {
-      console.error('Summarization failed:', error);
+      console.error("Summarization failed:", error);
       const errorSummary = {
         id: Date.now(),
         content: `Error: ${error.message}`,
-        originalContent: 'Failed to generate summary',
+        originalContent: "Failed to generate summary",
         length: summaryLength,
-        type: 'error',
-        model: 'error',
+        type: "error",
+        model: "error",
         chunked: false,
         success: false,
         createdAt: new Date().toISOString(),
@@ -172,27 +172,27 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
     }
   };
 
-  const deleteSummary = id => {
-    setSummaries(summaries.filter(summary => summary.id !== id));
+  const deleteSummary = (id) => {
+    setSummaries(summaries.filter((summary) => summary.id !== id));
   };
 
-  const copySummary = content => {
+  const copySummary = (content) => {
     navigator.clipboard.writeText(content);
   };
 
   const downloadSummary = (content, source) => {
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `summary-${source.slice(0, 20).replace(/\s+/g, '-')}.txt`;
+    link.download = `summary-${source.slice(0, 20).replace(/\s+/g, "-")}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  const insertIntoCourse = summary => {
+  const insertIntoCourse = (summary) => {
     // This would integrate with the course content editor
-    console.log('Inserting summary into course:', summary);
+    console.log("Inserting summary into course:", summary);
     // Implementation would depend on the course editor structure
   };
 
@@ -206,7 +206,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
         </h3>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
-          {inputMethods.map(method => {
+          {inputMethods.map((method) => {
             const Icon = method.icon;
             return (
               <button
@@ -214,8 +214,8 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
                 onClick={() => setInputMethod(method.id)}
                 className={`p-4 text-center border rounded-lg transition-colors ${
                   inputMethod === method.id
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? "border-green-500 bg-green-50 text-green-700"
+                    : "border-gray-300 hover:border-gray-400"
                 }`}
               >
                 <Icon className="w-6 h-6 mx-auto mb-2" />
@@ -227,14 +227,14 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
 
         {/* Input Content */}
         <div className="space-y-4">
-          {inputMethod === 'text' && (
+          {inputMethod === "text" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Paste your content here
               </label>
               <textarea
                 value={textInput}
-                onChange={e => setTextInput(e.target.value)}
+                onChange={(e) => setTextInput(e.target.value)}
                 placeholder="Paste the text content you want to summarize..."
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 rows="6"
@@ -242,7 +242,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
             </div>
           )}
 
-          {inputMethod === 'url' && (
+          {inputMethod === "url" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Enter URL or link
@@ -250,14 +250,14 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
               <input
                 type="url"
                 value={urlInput}
-                onChange={e => setUrlInput(e.target.value)}
+                onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="https://example.com/article"
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
           )}
 
-          {inputMethod === 'file' && (
+          {inputMethod === "file" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Upload file (PDF, DOC, TXT)
@@ -309,10 +309,10 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
               </label>
               <select
                 value={summaryLength}
-                onChange={e => setSummaryLength(e.target.value)}
+                onChange={(e) => setSummaryLength(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
               >
-                {lengthOptions.map(option => (
+                {lengthOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name} - {option.description}
                   </option>
@@ -326,10 +326,10 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
               </label>
               <select
                 value={summaryType}
-                onChange={e => setSummaryType(e.target.value)}
+                onChange={(e) => setSummaryType(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
               >
-                {typeOptions.map(option => (
+                {typeOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name} - {option.description}
                   </option>
@@ -342,9 +342,9 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
             onClick={generateSummary}
             disabled={
               isGenerating ||
-              (inputMethod === 'text'
+              (inputMethod === "text"
                 ? !textInput.trim()
-                : inputMethod === 'url'
+                : inputMethod === "url"
                   ? !urlInput.trim()
                   : !uploadedFile)
             }
@@ -368,7 +368,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
       {/* Generated Summaries */}
       {summaries.length > 0 && (
         <div className="space-y-4">
-          {summaries.map(summary => (
+          {summaries.map((summary) => (
             <div
               key={summary.id}
               className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
@@ -377,11 +377,11 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
                 <div className="flex items-center space-x-2">
                   <div
                     className={`w-2 h-2 rounded-full ${
-                      summary.isError ? 'bg-red-500' : 'bg-green-500'
+                      summary.isError ? "bg-red-500" : "bg-green-500"
                     }`}
                   ></div>
                   <span className="text-sm text-gray-500">
-                    {summary.length} • {summary.type} •{' '}
+                    {summary.length} • {summary.type} •{" "}
                     {new Date(summary.createdAt).toLocaleString()}
                   </span>
                   {summary.chunked && (
@@ -401,7 +401,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
               <div className="mb-3">
                 <p
                   className={`text-sm leading-relaxed ${
-                    summary.isError ? 'text-red-600' : 'text-gray-800'
+                    summary.isError ? "text-red-600" : "text-gray-800"
                   }`}
                 >
                   {summary.content}
@@ -412,7 +412,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
                 <div className="mb-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
                   <div className="flex justify-between items-center">
                     <span>
-                      Model:{' '}
+                      Model:{" "}
                       <code className="bg-white px-1 rounded">
                         {summary.model}
                       </code>
@@ -423,11 +423,11 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
                   </div>
                   {summary.originalLength && (
                     <div className="mt-1">
-                      Original: {summary.originalLength} chars → Summary:{' '}
+                      Original: {summary.originalLength} chars → Summary:{" "}
                       {summary.content.length} chars (
                       {Math.round(
                         (1 - summary.content.length / summary.originalLength) *
-                          100
+                          100,
                       )}
                       % reduction)
                     </div>
@@ -478,5 +478,5 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
 // Export with AI Feature Access protection
 export default withAIFeatureAccess(
   AISummarizationTool,
-  'CONTENT_SUMMARIZATION'
+  "CONTENT_SUMMARIZATION",
 );

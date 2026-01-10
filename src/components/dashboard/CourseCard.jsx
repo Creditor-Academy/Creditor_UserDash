@@ -1,15 +1,14 @@
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, Calendar, Lock } from 'lucide-react';
-import { getCourseTrialStatus } from '../../utils/trialUtils';
-import TrialBadge from '../ui/TrialBadge';
-import { useState, useContext } from 'react';
-import TrialExpiredDialog from '../ui/TrialExpiredDialog';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
+import { BookOpen, Clock, Calendar, Lock } from "lucide-react";
+import { getCourseTrialStatus } from "../../utils/trialUtils";
+import TrialBadge from "../ui/TrialBadge";
+import { useState } from "react";
+import TrialExpiredDialog from "../ui/TrialExpiredDialog";
 
 function formatDuration(secs) {
-  if (!secs) return 'Duration not specified';
+  if (!secs) return "Duration not specified";
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
@@ -25,13 +24,11 @@ export function CourseCard({
   totalDurationSecs,
   category,
   isUpcoming = false,
-  course, // Full course object for trial data
+  course, // full course object (for trial)
 }) {
   const navigate = useNavigate();
   const [showTrialDialog, setShowTrialDialog] = useState(false);
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
 
-  // Get trial status if course object is provided
   const trialStatus = course
     ? getCourseTrialStatus(course)
     : { isInTrial: false, isExpired: false, canAccess: true };
@@ -44,47 +41,30 @@ export function CourseCard({
     navigate(`/dashboard/courses/${id}`);
   };
 
-  const handleCloseTrialDialog = () => {
-    setShowTrialDialog(false);
-  };
   return (
-    <div
-      className={`dashboard-course-card ${isChristmasMode ? 'christmas-course-card' : ''}`}
-    >
-      <div className="flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
-        {isChristmasMode && (
-          <div className="course-holiday-label">🎄 Holiday Special</div>
-        )}
-        <div
-          className="w-full relative overflow-hidden bg-muted"
-          style={{ height: '190px' }}
-        >
+    <div className="dashboard-course-card">
+      <div className="course-card-surface flex flex-col overflow-hidden rounded-lg border bg-card min-h-[400px] relative">
+        {/* Image */}
+        <div className="w-full relative overflow-hidden bg-muted h-[190px]">
           <img
             src={
               image ||
-              'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000'
+              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
             }
             alt={title}
             className="object-cover w-full h-full"
-            style={{ height: '190px' }}
           />
-          {isChristmasMode && (
-            <span className="course-snowflake" aria-hidden="true">
-              ❄️
-            </span>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0"></div>
 
-          {/* Trial Badge Overlay */}
+          {/* Trial badge */}
           {trialStatus.isInTrial && (
             <div className="absolute top-2 left-2">
               <TrialBadge timeRemaining={trialStatus.timeRemaining} />
             </div>
           )}
 
-          {/* Lock Overlay for Expired Trials */}
+          {/* Trial expired overlay */}
           {trialStatus.isInTrial && trialStatus.isExpired && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <div className="text-white text-center">
                 <Lock className="w-6 h-6 mx-auto mb-1" />
                 <p className="text-xs font-medium">Trial Expired</p>
@@ -92,7 +72,9 @@ export function CourseCard({
             </div>
           )}
         </div>
-        <div className="flex flex-col flex-1 p-3 relative">
+
+        {/* Content */}
+        <div className="flex flex-col flex-1 p-3">
           <h3 className="font-semibold text-base line-clamp-1">{title}</h3>
           <p className="text-muted-foreground line-clamp-4 text-sm mt-1 mb-2">
             {description}
@@ -111,41 +93,39 @@ export function CourseCard({
             </div>
           )}
 
+          {/* Upcoming */}
           {isUpcoming ? (
-            <div className="mt-auto pt-2">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Stay tuned for more details
-                </p>
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 px-4 py-2 rounded-lg border border-blue-200 text-sm font-medium">
-                  <Calendar size={14} />
-                  Coming Soon
-                </div>
+            <div className="mt-auto pt-2 text-center">
+              <p className="text-xs text-muted-foreground mb-2">
+                Stay tuned for more details
+              </p>
+              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg border border-blue-200 text-sm font-medium">
+                <Calendar size={14} />
+                Coming Soon
               </div>
             </div>
           ) : (
             <div className="mt-3 space-y-2">
               {trialStatus.isInTrial && trialStatus.isExpired ? (
                 <button
-                  className="w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2"
                   onClick={handleCourseClick}
                 >
                   <Lock size={14} />
-                  Trial Expired - Enroll Now
+                  Trial Expired – Enroll Now
                 </button>
               ) : (
                 <button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors duration-200"
                   onClick={handleCourseClick}
                 >
-                  {trialStatus.isInTrial ? 'Continue Trial' : 'View Course'}
+                  {trialStatus.isInTrial ? "Continue Trial" : "View Course"}
                 </button>
               )}
 
-              {/* Trial Status Info */}
               {trialStatus.isInTrial && !trialStatus.isExpired && (
                 <div className="text-xs text-center text-gray-600">
-                  Trial ends:{' '}
+                  Trial ends:{" "}
                   {new Date(trialStatus.subscriptionEnd).toLocaleDateString()}
                 </div>
               )}
@@ -157,7 +137,7 @@ export function CourseCard({
       {/* Trial Expired Dialog */}
       <TrialExpiredDialog
         isOpen={showTrialDialog}
-        onClose={handleCloseTrialDialog}
+        onClose={() => setShowTrialDialog(false)}
         course={course}
       />
     </div>

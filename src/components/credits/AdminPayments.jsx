@@ -4,22 +4,22 @@ import React, {
   useEffect,
   useCallback,
   useRef,
-} from 'react';
-import { FaCoins } from 'react-icons/fa';
-import { Trash2 } from 'lucide-react';
-import { useCredits } from '@/contexts/CreditsContext';
+} from "react";
+import { FaCoins } from "react-icons/fa";
+import { Trash2 } from "lucide-react";
+import { useCredits } from "@/contexts/CreditsContext";
 import {
   fetchAllConsultations,
   updateConsultationStatus,
   deleteConsultation,
-} from '@/services/consultationService';
+} from "@/services/consultationService";
 import {
   fetchAllWebsiteServices,
   updateWebsiteServiceStatus,
   deleteWebsiteService,
-} from '@/services/websiteService';
-import { fetchAllUsersAdmin } from '@/services/userService';
-import { api } from '@/services/apiClient';
+} from "@/services/websiteService";
+import { fetchAllUsersAdmin } from "@/services/userService";
+import { api } from "@/services/apiClient";
 
 const AdminPayments = () => {
   const {
@@ -51,17 +51,17 @@ const AdminPayments = () => {
       }
     };
   }, []);
-  const [paymentsView, setPaymentsView] = useState('credits');
+  const [paymentsView, setPaymentsView] = useState("credits");
   const [ordersPage, setOrdersPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [subsPage, setSubsPage] = useState(1);
   const [servicesPage, setServicesPage] = useState(1); // consultations page
   const [servicesWebPage, setServicesWebPage] = useState(1); // websites page
-  const [servicesTab, setServicesTab] = useState('consultations'); // "consultations" | "websites"
+  const [servicesTab, setServicesTab] = useState("consultations"); // "consultations" | "websites"
   const itemsPerPage = 5;
   const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
-  const [grantCreditsAmount, setGrantCreditsAmount] = useState('');
+  const [grantCreditsAmount, setGrantCreditsAmount] = useState("");
   const [userDetailModal, setUserDetailModal] = useState({
     open: false,
     user: null,
@@ -70,79 +70,79 @@ const AdminPayments = () => {
   const [deductModal, setDeductModal] = useState({ open: false });
   const [deductCreditsAmount, setDeductCreditsAmount] = useState(10);
   const [isDeducting, setIsDeducting] = useState(false);
-  const [deductMessage, setDeductMessage] = useState('');
+  const [deductMessage, setDeductMessage] = useState("");
 
   // Services search and filter states
-  const [consultationsSearch, setConsultationsSearch] = useState('');
-  const [websitesSearch, setWebsitesSearch] = useState('');
+  const [consultationsSearch, setConsultationsSearch] = useState("");
+  const [websitesSearch, setWebsitesSearch] = useState("");
   const [consultationsFilter, setConsultationsFilter] = useState({
-    status: 'all',
+    status: "all",
   });
   const [websitesFilter, setWebsitesFilter] = useState({
-    status: 'all',
-    websiteType: 'all',
+    status: "all",
+    websiteType: "all",
   });
 
   // Services data state
   const [consultationsData, setConsultationsData] = useState([]);
   const [websitesData, setWebsitesData] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(false);
-  const [servicesError, setServicesError] = useState('');
+  const [servicesError, setServicesError] = useState("");
   const [deleting, setDeleting] = useState({ type: null, id: null }); // ensure single-item delete
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     type: null,
     id: null,
-    message: '',
+    message: "",
   });
 
   // Mix dummy data with real transaction data
   const orders = useMemo(() => {
     const dummyOrders = [
       {
-        id: 'ord_1001',
-        user: 'alice@example.com',
+        id: "ord_1001",
+        user: "alice@example.com",
         items: 1,
         amount: 49,
-        currency: 'USD',
-        date: '2025-09-01',
-        status: 'paid',
+        currency: "USD",
+        date: "2025-09-01",
+        status: "paid",
       },
       {
-        id: 'ord_1002',
-        user: 'bob@example.com',
+        id: "ord_1002",
+        user: "bob@example.com",
         items: 2,
         amount: 98,
-        currency: 'USD',
-        date: '2025-09-03',
-        status: 'paid',
+        currency: "USD",
+        date: "2025-09-03",
+        status: "paid",
       },
       {
-        id: 'ord_1003',
-        user: 'chris@example.com',
+        id: "ord_1003",
+        user: "chris@example.com",
         items: 1,
         amount: 49,
-        currency: 'USD',
-        date: '2025-09-05',
-        status: 'refunded',
+        currency: "USD",
+        date: "2025-09-05",
+        status: "refunded",
       },
     ];
 
     // Add real credit purchases as orders
     const realOrders = transactions
-      .filter(t => t.type === 'purchase')
-      .map(t => ({
+      .filter((t) => t.type === "purchase")
+      .map((t) => ({
         id: `ord_${t.id}`,
-        user: 'current@user.com', // You could get this from auth context
+        user: "current@user.com", // You could get this from auth context
         items: 1,
         amount: t.amount,
-        currency: 'CR',
+        currency: "CR",
         date: new Date(t.timestamp).toISOString().slice(0, 10),
-        status: 'paid',
+        status: "paid",
       }));
 
     return [...realOrders, ...dummyOrders].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
+      (a, b) => new Date(b.date) - new Date(a.date),
     );
   }, [transactions]);
 
@@ -159,19 +159,19 @@ const AdminPayments = () => {
     if (consultationsSearch.trim()) {
       const searchTerm = consultationsSearch.toLowerCase();
       filtered = filtered.filter(
-        consultation =>
+        (consultation) =>
           consultation.user?.toLowerCase().includes(searchTerm) ||
           consultation.topic?.toLowerCase().includes(searchTerm) ||
-          consultation.id?.toLowerCase().includes(searchTerm)
+          consultation.id?.toLowerCase().includes(searchTerm),
       );
     }
 
     // Apply status filter
-    if (consultationsFilter.status !== 'all') {
+    if (consultationsFilter.status !== "all") {
       filtered = filtered.filter(
-        consultation =>
+        (consultation) =>
           (serviceStatus[consultation.id] || consultation.status) ===
-          consultationsFilter.status
+          consultationsFilter.status,
       );
     }
 
@@ -191,26 +191,26 @@ const AdminPayments = () => {
     if (websitesSearch.trim()) {
       const searchTerm = websitesSearch.toLowerCase();
       filtered = filtered.filter(
-        website =>
+        (website) =>
           website.user?.toLowerCase().includes(searchTerm) ||
           website.product?.toLowerCase().includes(searchTerm) ||
-          website.id?.toLowerCase().includes(searchTerm)
+          website.id?.toLowerCase().includes(searchTerm),
       );
     }
 
     // Apply status filter
-    if (websitesFilter.status !== 'all') {
+    if (websitesFilter.status !== "all") {
       filtered = filtered.filter(
-        website =>
+        (website) =>
           (serviceStatus[website.id] || website.status) ===
-          websitesFilter.status
+          websitesFilter.status,
       );
     }
 
     // Apply website type filter
-    if (websitesFilter.websiteType !== 'all') {
+    if (websitesFilter.websiteType !== "all") {
       filtered = filtered.filter(
-        website => website.type?.toLowerCase() === websitesFilter.websiteType
+        (website) => website.type?.toLowerCase() === websitesFilter.websiteType,
       );
     }
 
@@ -220,86 +220,86 @@ const AdminPayments = () => {
   const payments = useMemo(() => {
     const dummyPayments = [
       {
-        id: 'pay_2001',
-        orderId: 'ord_1001',
-        provider: 'stripe',
+        id: "pay_2001",
+        orderId: "ord_1001",
+        provider: "stripe",
         amount: 49,
-        currency: 'USD',
-        status: 'succeeded',
-        date: '2025-09-01',
+        currency: "USD",
+        status: "succeeded",
+        date: "2025-09-01",
       },
       {
-        id: 'pay_2002',
-        orderId: 'ord_1002',
-        provider: 'stripe',
+        id: "pay_2002",
+        orderId: "ord_1002",
+        provider: "stripe",
         amount: 98,
-        currency: 'USD',
-        status: 'succeeded',
-        date: '2025-09-03',
+        currency: "USD",
+        status: "succeeded",
+        date: "2025-09-03",
       },
       {
-        id: 'pay_2003',
-        orderId: 'ord_1003',
-        provider: 'stripe',
+        id: "pay_2003",
+        orderId: "ord_1003",
+        provider: "stripe",
         amount: 49,
-        currency: 'USD',
-        status: 'refunded',
-        date: '2025-09-05',
+        currency: "USD",
+        status: "refunded",
+        date: "2025-09-05",
       },
     ];
 
     // Add real credit purchases as payments
     const realPayments = transactions
-      .filter(t => t.type === 'purchase')
-      .map(t => ({
+      .filter((t) => t.type === "purchase")
+      .map((t) => ({
         id: `pay_${t.id}`,
         orderId: `ord_${t.id}`,
-        provider: 'credits',
+        provider: "credits",
         amount: t.amount,
-        currency: 'CR',
-        status: 'succeeded',
+        currency: "CR",
+        status: "succeeded",
         date: new Date(t.timestamp).toISOString().slice(0, 10),
       }));
 
     return [...realPayments, ...dummyPayments].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
+      (a, b) => new Date(b.date) - new Date(a.date),
     );
   }, [transactions]);
   const subscriptions = [
     {
-      id: 'sub_3001',
-      user: 'alice@example.com',
-      plan: 'Pro Monthly',
-      status: 'active',
-      currentPeriodEnd: '2025-10-01',
-      startedAt: '2025-06-01',
+      id: "sub_3001",
+      user: "alice@example.com",
+      plan: "Pro Monthly",
+      status: "active",
+      currentPeriodEnd: "2025-10-01",
+      startedAt: "2025-06-01",
     },
     {
-      id: 'sub_3002',
-      user: 'bob@example.com',
-      plan: 'Pro Monthly',
-      status: 'active',
-      currentPeriodEnd: '2025-10-03',
-      startedAt: '2025-07-03',
+      id: "sub_3002",
+      user: "bob@example.com",
+      plan: "Pro Monthly",
+      status: "active",
+      currentPeriodEnd: "2025-10-03",
+      startedAt: "2025-07-03",
     },
     {
-      id: 'sub_3003',
-      user: 'dana@example.com',
-      plan: 'Basic Annual',
-      status: 'past_due',
-      currentPeriodEnd: '2026-01-10',
-      startedAt: '2025-01-10',
+      id: "sub_3003",
+      user: "dana@example.com",
+      plan: "Basic Annual",
+      status: "past_due",
+      currentPeriodEnd: "2026-01-10",
+      startedAt: "2025-01-10",
     },
   ];
   const credits = useMemo(() => {
     const sold = transactions
-      .filter(t => t.type === 'purchase')
+      .filter((t) => t.type === "purchase")
       .reduce((sum, t) => sum + t.amount, 0);
 
     const used = Math.abs(
       transactions
-        .filter(t => t.type === 'spend')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .filter((t) => t.type === "spend")
+        .reduce((sum, t) => sum + t.amount, 0),
     );
 
     return {
@@ -309,20 +309,20 @@ const AdminPayments = () => {
   }, [transactions]);
   const [realUsers, setRealUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [usersError, setUsersError] = useState('');
+  const [usersError, setUsersError] = useState("");
   const [usersPage, setUsersPage] = useState(1);
-  const [usersSearch, setUsersSearch] = useState('');
+  const [usersSearch, setUsersSearch] = useState("");
   const [isGranting, setIsGranting] = useState(false);
-  const [grantMessage, setGrantMessage] = useState('');
+  const [grantMessage, setGrantMessage] = useState("");
   const [localMembership, setLocalMembership] = useState({});
 
-  const membershipColorClasses = status => {
-    const s = (status || 'active').toString().toLowerCase();
-    if (s === 'active') return 'bg-green-100 text-green-700 border-green-200';
-    if (s === 'expired')
-      return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-    if (s === 'cancelled') return 'bg-red-100 text-red-700 border-red-200';
-    return 'bg-gray-100 text-gray-700 border-gray-200';
+  const membershipColorClasses = (status) => {
+    const s = (status || "active").toString().toLowerCase();
+    if (s === "active") return "bg-green-100 text-green-700 border-green-200";
+    if (s === "expired")
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    if (s === "cancelled") return "bg-red-100 text-red-700 border-red-200";
+    return "bg-gray-100 text-gray-700 border-gray-200";
   };
 
   useEffect(() => {
@@ -330,11 +330,11 @@ const AdminPayments = () => {
     const load = async () => {
       try {
         setUsersLoading(true);
-        setUsersError('');
+        setUsersError("");
         const [fetched, creditsRes] = await Promise.all([
           fetchAllUsersAdmin(),
           api
-            .get('/payment-order/admin/credits', { withCredentials: true })
+            .get("/payment-order/admin/credits", { withCredentials: true })
             .catch(() => ({ data: { data: [] } })),
         ]);
         if (cancelled) return;
@@ -344,47 +344,47 @@ const AdminPayments = () => {
             ? creditsRes.data
             : [];
         const idToCredits = new Map(
-          (creditsArray || []).map(c => [
+          (creditsArray || []).map((c) => [
             String(c.id),
             Number(c.total_credits) || 0,
-          ])
+          ]),
         );
 
         // Fetch membership status for each user from backend
         const usersWithMembership = await Promise.all(
-          fetched.map(async u => {
+          fetched.map(async (u) => {
             const userId = u.id || u.user_id || u._id;
-            let membershipStatus = 'cancelled'; // Default to cancelled
+            let membershipStatus = "cancelled"; // Default to cancelled
 
             try {
               const membershipRes = await api.get(
                 `/payment-order/membership/status/${userId}`,
-                { withCredentials: true }
+                { withCredentials: true },
               );
               const membershipData = membershipRes?.data?.data;
               if (membershipData && membershipData !== null) {
                 membershipStatus =
-                  membershipData?.status?.toLowerCase() || 'cancelled';
+                  membershipData?.status?.toLowerCase() || "cancelled";
               }
             } catch (err) {
               console.warn(
                 `Failed to fetch membership for user ${userId}:`,
-                err
+                err,
               );
             }
 
             return {
               id: userId,
               name:
-                `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
+                `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() ||
                 u.name ||
                 u.username ||
                 u.email ||
-                'Unknown',
-              email: u.email || u.user_email || '',
+                "Unknown",
+              email: u.email || u.user_email || "",
               membership: membershipStatus,
               credits: (() => {
-                const idStr = String(userId || '');
+                const idStr = String(userId || "");
                 const fromAdmin = idToCredits.has(idStr)
                   ? idToCredits.get(idStr)
                   : undefined;
@@ -398,12 +398,12 @@ const AdminPayments = () => {
                 return Number.isFinite(num) ? num : 0;
               })(),
             };
-          })
+          }),
         );
 
         setRealUsers(usersWithMembership);
       } catch (e) {
-        if (!cancelled) setUsersError('Failed to load users');
+        if (!cancelled) setUsersError("Failed to load users");
       } finally {
         if (!cancelled) setUsersLoading(false);
       }
@@ -418,22 +418,22 @@ const AdminPayments = () => {
   useEffect(() => {
     if (!Array.isArray(realUsers) || realUsers.length === 0) return;
 
-    setLocalMembership(prev => {
+    setLocalMembership((prev) => {
       const next = { ...prev };
       let hasChanges = false;
 
       for (const u of realUsers) {
         const id = u?.id;
         if (id == null) continue;
-        const membership = (u.membership || 'active').toString().toLowerCase();
+        const membership = (u.membership || "active").toString().toLowerCase();
         if (next[id] !== membership) {
           next[id] = membership;
           hasChanges = true;
         }
       }
 
-      if (next['current_user'] == null) {
-        next['current_user'] = 'active';
+      if (next["current_user"] == null) {
+        next["current_user"] = "active";
         hasChanges = true;
       }
 
@@ -444,9 +444,9 @@ const AdminPayments = () => {
 
   const users = useMemo(() => {
     // Apply local membership overrides to real users
-    const withLocal = realUsers.map(u => ({
+    const withLocal = realUsers.map((u) => ({
       ...u,
-      membership: (localMembership[u.id] || u.membership || 'active')
+      membership: (localMembership[u.id] || u.membership || "active")
         .toString()
         .toLowerCase(),
     }));
@@ -458,16 +458,16 @@ const AdminPayments = () => {
     const term = usersSearch.trim().toLowerCase();
     if (!term) return users;
     return users.filter(
-      u =>
-        (u.name || '').toLowerCase().includes(term) ||
-        (u.email || '').toLowerCase().includes(term) ||
-        (u.id || '').toString().toLowerCase().includes(term)
+      (u) =>
+        (u.name || "").toLowerCase().includes(term) ||
+        (u.email || "").toLowerCase().includes(term) ||
+        (u.id || "").toString().toLowerCase().includes(term),
     );
   }, [users, usersSearch]);
 
   const totalUserPages = Math.max(
     Math.ceil(filteredUsers.length / itemsPerPage),
-    1
+    1,
   );
   const pagedUsers = useMemo(() => {
     const start = (usersPage - 1) * itemsPerPage;
@@ -487,7 +487,7 @@ const AdminPayments = () => {
   // Fetch services data when services tab is selected
   useEffect(() => {
     if (
-      paymentsView === 'services' &&
+      paymentsView === "services" &&
       consultationsData.length === 0 &&
       websitesData.length === 0
     ) {
@@ -499,72 +499,72 @@ const AdminPayments = () => {
   // Fetch services data
   const fetchServicesData = async () => {
     setServicesLoading(true);
-    setServicesError('');
+    setServicesError("");
 
     try {
-      console.log('[AdminPayments] Fetching services data');
+      console.log("[AdminPayments] Fetching services data");
 
       const [consultations, websites] = await Promise.all([
         fetchAllConsultations(),
         fetchAllWebsiteServices(),
       ]);
 
-      console.log('[AdminPayments] Consultations data:', consultations);
-      console.log('[AdminPayments] Websites data:', websites);
+      console.log("[AdminPayments] Consultations data:", consultations);
+      console.log("[AdminPayments] Websites data:", websites);
       console.log(
-        '[AdminPayments] Consultation data type:',
-        typeof consultations
+        "[AdminPayments] Consultation data type:",
+        typeof consultations,
       );
-      console.log('[AdminPayments] Website data type:', typeof websites);
+      console.log("[AdminPayments] Website data type:", typeof websites);
       console.log(
-        '[AdminPayments] Consultation is array:',
-        Array.isArray(consultations)
+        "[AdminPayments] Consultation is array:",
+        Array.isArray(consultations),
       );
-      console.log('[AdminPayments] Website is array:', Array.isArray(websites));
+      console.log("[AdminPayments] Website is array:", Array.isArray(websites));
 
       // Process consultations data
       const processedConsultations = Array.isArray(consultations)
-        ? consultations.map(consultation => ({
+        ? consultations.map((consultation) => ({
             id: consultation.id,
             user: consultation.user
-              ? `${consultation.user.first_name || ''} ${consultation.user.last_name || ''}`.trim() ||
+              ? `${consultation.user.first_name || ""} ${consultation.user.last_name || ""}`.trim() ||
                 consultation.user.email ||
-                'Unknown User'
-              : 'Unknown User',
-            topic: 'Consultation Session',
+                "Unknown User"
+              : "Unknown User",
+            topic: "Consultation Session",
             scheduledAt: new Date(consultation.created_at).toLocaleDateString(),
-            duration: '30 mins',
+            duration: "30 mins",
             payment: {
               amount: consultation.pricing?.credits || 1000,
-              currency: 'credits',
-              method: 'credits',
+              currency: "credits",
+              method: "credits",
             },
-            status: consultation.status?.toLowerCase() || 'pending',
+            status: consultation.status?.toLowerCase() || "pending",
           }))
         : [];
 
       // Process websites data
       const processedWebsites = Array.isArray(websites)
-        ? websites.map(website => {
+        ? websites.map((website) => {
             // Determine service type and cost from pricing data
             const cost = website.pricing?.credits || 750; // Default to basic if no pricing data
-            const serviceType = cost >= 5000 ? 'Premium' : 'Basic'; // Use cost to determine type
+            const serviceType = cost >= 5000 ? "Premium" : "Basic"; // Use cost to determine type
 
             return {
               id: website.id,
               user: website.user
-                ? `${website.user.first_name || ''} ${website.user.last_name || ''}`.trim() ||
+                ? `${website.user.first_name || ""} ${website.user.last_name || ""}`.trim() ||
                   website.user.email ||
-                  'Unknown User'
-                : 'Unknown User',
+                  "Unknown User"
+                : "Unknown User",
               product: `${serviceType} Website Service`,
               purchasedAt: new Date(website.created_at).toLocaleDateString(),
               payment: {
                 amount: cost,
-                currency: 'credits',
-                method: 'credits',
+                currency: "credits",
+                method: "credits",
               },
-              status: website.status?.toLowerCase() || 'pending',
+              status: website.status?.toLowerCase() || "pending",
               type: serviceType.toLowerCase(),
             };
           })
@@ -573,8 +573,8 @@ const AdminPayments = () => {
       setConsultationsData(processedConsultations);
       setWebsitesData(processedWebsites);
     } catch (error) {
-      console.error('[AdminPayments] Failed to fetch services data:', error);
-      setServicesError('Failed to load services data');
+      console.error("[AdminPayments] Failed to fetch services data:", error);
+      setServicesError("Failed to load services data");
     } finally {
       setServicesLoading(false);
     }
@@ -584,33 +584,33 @@ const AdminPayments = () => {
   const handleConsultationStatusUpdate = async (consultationId, newStatus) => {
     try {
       console.log(
-        '[AdminPayments] Updating consultation status:',
+        "[AdminPayments] Updating consultation status:",
         consultationId,
-        'to',
-        newStatus
+        "to",
+        newStatus,
       );
 
       await updateConsultationStatus(consultationId, newStatus.toUpperCase());
 
       // Update local state
-      setConsultationsData(prev =>
-        prev.map(consultation =>
+      setConsultationsData((prev) =>
+        prev.map((consultation) =>
           consultation.id === consultationId
             ? { ...consultation, status: newStatus.toLowerCase() }
-            : consultation
-        )
+            : consultation,
+        ),
       );
 
-      console.log('[AdminPayments] Consultation status updated successfully');
+      console.log("[AdminPayments] Consultation status updated successfully");
     } catch (error) {
       console.error(
-        '[AdminPayments] Failed to update consultation status:',
-        error
+        "[AdminPayments] Failed to update consultation status:",
+        error,
       );
-      console.error('[AdminPayments] Error details:', error?.response?.data);
-      console.error('[AdminPayments] Error status:', error?.response?.status);
+      console.error("[AdminPayments] Error details:", error?.response?.data);
+      console.error("[AdminPayments] Error status:", error?.response?.status);
       alert(
-        `Failed to update consultation status: ${error?.response?.data?.message || error?.message || 'Unknown error'}`
+        `Failed to update consultation status: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
       );
     }
   };
@@ -619,51 +619,53 @@ const AdminPayments = () => {
   const handleWebsiteStatusUpdate = async (serviceId, newStatus) => {
     try {
       console.log(
-        '[AdminPayments] Updating website service status:',
+        "[AdminPayments] Updating website service status:",
         serviceId,
-        'to',
-        newStatus
+        "to",
+        newStatus,
       );
 
       await updateWebsiteServiceStatus(serviceId, newStatus.toUpperCase());
 
       // Update local state
-      setWebsitesData(prev =>
-        prev.map(website =>
+      setWebsitesData((prev) =>
+        prev.map((website) =>
           website.id === serviceId
             ? { ...website, status: newStatus.toLowerCase() }
-            : website
-        )
+            : website,
+        ),
       );
 
       console.log(
-        '[AdminPayments] Website service status updated successfully'
+        "[AdminPayments] Website service status updated successfully",
       );
     } catch (error) {
       console.error(
-        '[AdminPayments] Failed to update website service status:',
-        error
+        "[AdminPayments] Failed to update website service status:",
+        error,
       );
-      console.error('[AdminPayments] Error details:', error?.response?.data);
-      console.error('[AdminPayments] Error status:', error?.response?.status);
+      console.error("[AdminPayments] Error details:", error?.response?.data);
+      console.error("[AdminPayments] Error status:", error?.response?.status);
       alert(
-        `Failed to update website service status: ${error?.response?.data?.message || error?.message || 'Unknown error'}`
+        `Failed to update website service status: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
       );
     }
   };
 
   // Delete a single consultation (admin)
-  const handleDeleteConsultation = async consultationId => {
+  const handleDeleteConsultation = async (consultationId) => {
     if (!consultationId || deleting.id) return;
     try {
-      setDeleting({ type: 'consultation', id: consultationId });
+      setDeleting({ type: "consultation", id: consultationId });
       await deleteConsultation(consultationId);
       // Update local state to remove the deleted item
-      setConsultationsData(prev => prev.filter(c => c.id !== consultationId));
+      setConsultationsData((prev) =>
+        prev.filter((c) => c.id !== consultationId),
+      );
     } catch (error) {
-      console.error('[AdminPayments] Failed to delete consultation:', error);
+      console.error("[AdminPayments] Failed to delete consultation:", error);
       alert(
-        `Failed to delete consultation: ${error?.response?.data?.message || error?.message || 'Unknown error'}`
+        `Failed to delete consultation: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
       );
     } finally {
       setDeleting({ type: null, id: null });
@@ -671,17 +673,17 @@ const AdminPayments = () => {
   };
 
   // Delete a single website service (admin)
-  const handleDeleteWebsite = async serviceId => {
+  const handleDeleteWebsite = async (serviceId) => {
     if (!serviceId || deleting.id) return;
     try {
-      setDeleting({ type: 'website', id: serviceId });
+      setDeleting({ type: "website", id: serviceId });
       await deleteWebsiteService(serviceId);
       // Update local state to remove the deleted item
-      setWebsitesData(prev => prev.filter(w => w.id !== serviceId));
+      setWebsitesData((prev) => prev.filter((w) => w.id !== serviceId));
     } catch (error) {
-      console.error('[AdminPayments] Failed to delete website service:', error);
+      console.error("[AdminPayments] Failed to delete website service:", error);
       alert(
-        `Failed to delete website service: ${error?.response?.data?.message || error?.message || 'Unknown error'}`
+        `Failed to delete website service: ${error?.response?.data?.message || error?.message || "Unknown error"}`,
       );
     } finally {
       setDeleting({ type: null, id: null });
@@ -692,19 +694,19 @@ const AdminPayments = () => {
   const requestDelete = (type, id) => {
     if (!id || deleting.id) return;
     const message =
-      type === 'consultation'
-        ? 'Delete this consultation record? This cannot be undone.'
-        : 'Delete this website service record? This cannot be undone.';
+      type === "consultation"
+        ? "Delete this consultation record? This cannot be undone."
+        : "Delete this website service record? This cannot be undone.";
     setConfirmDialog({ open: true, type, id, message });
   };
 
   // Confirm and perform deletion
   const confirmDeletion = async () => {
     const { type, id } = confirmDialog;
-    setConfirmDialog({ open: false, type: null, id: null, message: '' });
-    if (type === 'consultation') {
+    setConfirmDialog({ open: false, type: null, id: null, message: "" });
+    if (type === "consultation") {
       await handleDeleteConsultation(id);
-    } else if (type === 'website') {
+    } else if (type === "website") {
       await handleDeleteWebsite(id);
     }
   };
@@ -723,22 +725,22 @@ const AdminPayments = () => {
           </div>
           <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner">
             <button
-              onClick={() => setPaymentsView('credits')}
+              onClick={() => setPaymentsView("credits")}
               className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
-                paymentsView === 'credits'
-                  ? 'bg-white shadow-md text-blue-700 border border-blue-200'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                paymentsView === "credits"
+                  ? "bg-white shadow-md text-blue-700 border border-blue-200"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
               }`}
             >
               <FaCoins className="w-4 h-4" />
               Credits
             </button>
             <button
-              onClick={() => setPaymentsView('services')}
+              onClick={() => setPaymentsView("services")}
               className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
-                paymentsView === 'services'
-                  ? 'bg-white shadow-md text-green-700 border border-green-200'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                paymentsView === "services"
+                  ? "bg-white shadow-md text-green-700 border border-green-200"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
               }`}
             >
               <svg
@@ -833,7 +835,7 @@ const AdminPayments = () => {
         </div>
       )}
 
-      {paymentsView === 'services' && (
+      {paymentsView === "services" && (
         <div className="space-y-8">
           {/* Services Header with Tabs */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
@@ -863,21 +865,21 @@ const AdminPayments = () => {
               </div>
               <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
                 <button
-                  onClick={() => setServicesTab('consultations')}
+                  onClick={() => setServicesTab("consultations")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    servicesTab === 'consultations'
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    servicesTab === "consultations"
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                   }`}
                 >
                   Consultations
                 </button>
                 <button
-                  onClick={() => setServicesTab('websites')}
+                  onClick={() => setServicesTab("websites")}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    servicesTab === 'websites'
-                      ? 'bg-green-500 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    servicesTab === "websites"
+                      ? "bg-green-500 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
                   }`}
                 >
                   Websites
@@ -887,7 +889,7 @@ const AdminPayments = () => {
           </div>
 
           {/* Consultations Tab */}
-          {servicesTab === 'consultations' && (
+          {servicesTab === "consultations" && (
             <>
               {/* Enhanced Search and Filter Controls */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -900,7 +902,7 @@ const AdminPayments = () => {
                       <input
                         type="text"
                         value={consultationsSearch}
-                        onChange={e => setConsultationsSearch(e.target.value)}
+                        onChange={(e) => setConsultationsSearch(e.target.value)}
                         placeholder="Search by user, topic, or ID..."
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       />
@@ -925,8 +927,8 @@ const AdminPayments = () => {
                     </label>
                     <select
                       value={consultationsFilter.status}
-                      onChange={e =>
-                        setConsultationsFilter(prev => ({
+                      onChange={(e) =>
+                        setConsultationsFilter((prev) => ({
                           ...prev,
                           status: e.target.value,
                         }))
@@ -944,15 +946,15 @@ const AdminPayments = () => {
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                       {filteredConsultations.length} consultation
-                      {filteredConsultations.length !== 1 ? 's' : ''}
+                      {filteredConsultations.length !== 1 ? "s" : ""}
                     </span>
                   </div>
                   {(consultationsSearch ||
-                    consultationsFilter.status !== 'all') && (
+                    consultationsFilter.status !== "all") && (
                     <button
                       onClick={() => {
-                        setConsultationsSearch('');
-                        setConsultationsFilter({ status: 'all' });
+                        setConsultationsSearch("");
+                        setConsultationsFilter({ status: "all" });
                       }}
                       className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                     >
@@ -1040,26 +1042,26 @@ const AdminPayments = () => {
                           className="px-3 py-8 text-center text-gray-500"
                         >
                           {services.consultations.length === 0
-                            ? 'No consultations available'
-                            : 'No consultations match your search criteria'}
+                            ? "No consultations available"
+                            : "No consultations match your search criteria"}
                         </td>
                       </tr>
                     ) : (
                       filteredConsultations
                         .slice(
                           (servicesPage - 1) * itemsPerPage,
-                          servicesPage * itemsPerPage
+                          servicesPage * itemsPerPage,
                         )
-                        .map(c => {
+                        .map((c) => {
                           const status =
-                            serviceStatus[c.id] || c.status || 'pending';
+                            serviceStatus[c.id] || c.status || "pending";
                           const statusColors = {
                             pending:
-                              'bg-amber-100 text-amber-800 border-amber-200',
+                              "bg-amber-100 text-amber-800 border-amber-200",
                             in_progress:
-                              'bg-blue-100 text-blue-800 border-blue-200',
+                              "bg-blue-100 text-blue-800 border-blue-200",
                             completed:
-                              'bg-green-100 text-green-800 border-green-200',
+                              "bg-green-100 text-green-800 border-green-200",
                           };
                           return (
                             <tr
@@ -1099,11 +1101,11 @@ const AdminPayments = () => {
                               <td className="px-6 py-4">
                                 <select
                                   value={status}
-                                  onChange={e => {
+                                  onChange={(e) => {
                                     const v = e.target.value;
                                     handleConsultationStatusUpdate(c.id, v);
                                   }}
-                                  className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                                  className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200"}`}
                                 >
                                   <option value="pending">pending</option>
                                   <option value="in_progress">
@@ -1115,12 +1117,12 @@ const AdminPayments = () => {
                               <td className="px-6 py-4">
                                 <button
                                   onClick={() =>
-                                    requestDelete('consultation', c.id)
+                                    requestDelete("consultation", c.id)
                                   }
                                   disabled={deleting.id === c.id}
                                   aria-label="Delete consultation"
                                   title="Delete"
-                                  className={`p-2 rounded-full border transition-colors ${deleting.id === c.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                                  className={`p-2 rounded-full border transition-colors ${deleting.id === c.id ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" : "bg-white text-red-600 border-red-200 hover:bg-red-50"}`}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1135,21 +1137,21 @@ const AdminPayments = () => {
               <div className="mt-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">
-                    Page {servicesPage} of{' '}
+                    Page {servicesPage} of{" "}
                     {Math.max(
                       Math.ceil(filteredConsultations.length / itemsPerPage),
-                      1
+                      1,
                     )}
                   </span>
                 </div>
                 <div className="flex gap-2">
                   <button
                     disabled={servicesPage === 1}
-                    onClick={() => setServicesPage(p => Math.max(p - 1, 1))}
+                    onClick={() => setServicesPage((p) => Math.max(p - 1, 1))}
                     className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
                       servicesPage === 1
-                        ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                        : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
                     }`}
                   >
                     Previous
@@ -1160,18 +1162,20 @@ const AdminPayments = () => {
                       Math.ceil(filteredConsultations.length / itemsPerPage)
                     }
                     onClick={() =>
-                      setServicesPage(p =>
+                      setServicesPage((p) =>
                         Math.min(
                           p + 1,
-                          Math.ceil(filteredConsultations.length / itemsPerPage)
-                        )
+                          Math.ceil(
+                            filteredConsultations.length / itemsPerPage,
+                          ),
+                        ),
                       )
                     }
                     className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
                       servicesPage >=
                       Math.ceil(filteredConsultations.length / itemsPerPage)
-                        ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                        : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
                     }`}
                   >
                     Next
@@ -1182,7 +1186,7 @@ const AdminPayments = () => {
           )}
 
           {/* Websites Tab */}
-          {servicesTab === 'websites' && (
+          {servicesTab === "websites" && (
             <>
               {/* Enhanced Websites Search and Filter Controls */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -1195,7 +1199,7 @@ const AdminPayments = () => {
                       <input
                         type="text"
                         value={websitesSearch}
-                        onChange={e => setWebsitesSearch(e.target.value)}
+                        onChange={(e) => setWebsitesSearch(e.target.value)}
                         placeholder="Search by user, product, or ID..."
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                       />
@@ -1220,8 +1224,8 @@ const AdminPayments = () => {
                     </label>
                     <select
                       value={websitesFilter.status}
-                      onChange={e =>
-                        setWebsitesFilter(prev => ({
+                      onChange={(e) =>
+                        setWebsitesFilter((prev) => ({
                           ...prev,
                           status: e.target.value,
                         }))
@@ -1240,8 +1244,8 @@ const AdminPayments = () => {
                     </label>
                     <select
                       value={websitesFilter.websiteType}
-                      onChange={e =>
-                        setWebsitesFilter(prev => ({
+                      onChange={(e) =>
+                        setWebsitesFilter((prev) => ({
                           ...prev,
                           websiteType: e.target.value,
                         }))
@@ -1258,18 +1262,18 @@ const AdminPayments = () => {
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                       {filteredWebsites.length} website
-                      {filteredWebsites.length !== 1 ? 's' : ''}
+                      {filteredWebsites.length !== 1 ? "s" : ""}
                     </span>
                   </div>
                   {(websitesSearch ||
-                    websitesFilter.status !== 'all' ||
-                    websitesFilter.websiteType !== 'all') && (
+                    websitesFilter.status !== "all" ||
+                    websitesFilter.websiteType !== "all") && (
                     <button
                       onClick={() => {
-                        setWebsitesSearch('');
+                        setWebsitesSearch("");
                         setWebsitesFilter({
-                          status: 'all',
-                          websiteType: 'all',
+                          status: "all",
+                          websiteType: "all",
                         });
                       }}
                       className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
@@ -1355,30 +1359,30 @@ const AdminPayments = () => {
                           className="px-3 py-8 text-center text-gray-500"
                         >
                           {services.websites.length === 0
-                            ? 'No websites available'
-                            : 'No websites match your search criteria'}
+                            ? "No websites available"
+                            : "No websites match your search criteria"}
                         </td>
                       </tr>
                     ) : (
                       filteredWebsites
                         .slice(
                           (servicesWebPage - 1) * itemsPerPage,
-                          servicesWebPage * itemsPerPage
+                          servicesWebPage * itemsPerPage,
                         )
-                        .map(w => {
+                        .map((w) => {
                           const status =
-                            serviceStatus[w.id] || w.status || 'pending';
+                            serviceStatus[w.id] || w.status || "pending";
                           const statusColors = {
                             pending:
-                              'bg-amber-100 text-amber-800 border-amber-200',
+                              "bg-amber-100 text-amber-800 border-amber-200",
                             in_progress:
-                              'bg-blue-100 text-blue-800 border-blue-200',
+                              "bg-blue-100 text-blue-800 border-blue-200",
                             completed:
-                              'bg-green-100 text-green-800 border-green-200',
+                              "bg-green-100 text-green-800 border-green-200",
                           };
                           const websiteTypeColors = {
-                            basic: 'bg-blue-100 text-blue-800',
-                            premium: 'bg-purple-100 text-purple-800',
+                            basic: "bg-blue-100 text-blue-800",
+                            premium: "bg-purple-100 text-purple-800",
                           };
                           return (
                             <tr
@@ -1397,7 +1401,7 @@ const AdminPayments = () => {
                                     {w.product}
                                   </span>
                                   <span
-                                    className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${websiteTypeColors[w.type] || 'bg-gray-100 text-gray-800'}`}
+                                    className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${websiteTypeColors[w.type] || "bg-gray-100 text-gray-800"}`}
                                   >
                                     {w.type}
                                   </span>
@@ -1422,11 +1426,11 @@ const AdminPayments = () => {
                               <td className="px-6 py-4">
                                 <select
                                   value={status}
-                                  onChange={e => {
+                                  onChange={(e) => {
                                     const v = e.target.value;
                                     handleWebsiteStatusUpdate(w.id, v);
                                   }}
-                                  className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors ${statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                                  className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors ${statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200"}`}
                                 >
                                   <option value="pending">pending</option>
                                   <option value="in_progress">
@@ -1437,11 +1441,11 @@ const AdminPayments = () => {
                               </td>
                               <td className="px-6 py-4">
                                 <button
-                                  onClick={() => requestDelete('website', w.id)}
+                                  onClick={() => requestDelete("website", w.id)}
                                   disabled={deleting.id === w.id}
                                   aria-label="Delete website service"
                                   title="Delete"
-                                  className={`p-2 rounded-full border transition-colors ${deleting.id === w.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                                  className={`p-2 rounded-full border transition-colors ${deleting.id === w.id ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" : "bg-white text-red-600 border-red-200 hover:bg-red-50"}`}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1456,21 +1460,23 @@ const AdminPayments = () => {
               <div className="mt-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-600">
-                    Page {servicesWebPage} of{' '}
+                    Page {servicesWebPage} of{" "}
                     {Math.max(
                       Math.ceil(filteredWebsites.length / itemsPerPage),
-                      1
+                      1,
                     )}
                   </span>
                 </div>
                 <div className="flex gap-2">
                   <button
                     disabled={servicesWebPage === 1}
-                    onClick={() => setServicesWebPage(p => Math.max(p - 1, 1))}
+                    onClick={() =>
+                      setServicesWebPage((p) => Math.max(p - 1, 1))
+                    }
                     className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
                       servicesWebPage === 1
-                        ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                        : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
                     }`}
                   >
                     Previous
@@ -1481,18 +1487,18 @@ const AdminPayments = () => {
                       Math.ceil(filteredWebsites.length / itemsPerPage)
                     }
                     onClick={() =>
-                      setServicesWebPage(p =>
+                      setServicesWebPage((p) =>
                         Math.min(
                           p + 1,
-                          Math.ceil(filteredWebsites.length / itemsPerPage)
-                        )
+                          Math.ceil(filteredWebsites.length / itemsPerPage),
+                        ),
                       )
                     }
                     className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
                       servicesWebPage >=
                       Math.ceil(filteredWebsites.length / itemsPerPage)
-                        ? 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                        : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
                     }`}
                   >
                     Next
@@ -1504,7 +1510,7 @@ const AdminPayments = () => {
         </div>
       )}
 
-      {paymentsView === 'orders' && (
+      {paymentsView === "orders" && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-800">Orders</h3>
@@ -1526,9 +1532,9 @@ const AdminPayments = () => {
                 {orders
                   .slice(
                     (ordersPage - 1) * itemsPerPage,
-                    ordersPage * itemsPerPage
+                    ordersPage * itemsPerPage,
                   )
-                  .map(o => (
+                  .map((o) => (
                     <tr key={o.id} className="border-t">
                       <td className="px-3 py-2 font-medium text-gray-900">
                         {o.id}
@@ -1541,7 +1547,7 @@ const AdminPayments = () => {
                       <td className="px-3 py-2 text-gray-700">{o.date}</td>
                       <td className="px-3 py-2">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${o.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}
+                          className={`px-2 py-1 rounded text-xs ${o.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
                         >
                           {o.status}
                         </span>
@@ -1553,25 +1559,25 @@ const AdminPayments = () => {
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
             <span className="text-gray-600">
-              Page {ordersPage} of{' '}
+              Page {ordersPage} of{" "}
               {Math.max(Math.ceil(orders.length / itemsPerPage), 1)}
             </span>
             <div className="flex gap-2">
               <button
                 disabled={ordersPage === 1}
-                onClick={() => setOrdersPage(p => Math.max(p - 1, 1))}
-                className={`px-3 py-1.5 rounded-md border ${ordersPage === 1 ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                onClick={() => setOrdersPage((p) => Math.max(p - 1, 1))}
+                className={`px-3 py-1.5 rounded-md border ${ordersPage === 1 ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
               >
                 Prev
               </button>
               <button
                 disabled={ordersPage >= Math.ceil(orders.length / itemsPerPage)}
                 onClick={() =>
-                  setOrdersPage(p =>
-                    Math.min(p + 1, Math.ceil(orders.length / itemsPerPage))
+                  setOrdersPage((p) =>
+                    Math.min(p + 1, Math.ceil(orders.length / itemsPerPage)),
                   )
                 }
-                className={`px-3 py-1.5 rounded-md border ${ordersPage >= Math.ceil(orders.length / itemsPerPage) ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 rounded-md border ${ordersPage >= Math.ceil(orders.length / itemsPerPage) ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
               >
                 Next
               </button>
@@ -1590,7 +1596,7 @@ const AdminPayments = () => {
                 open: false,
                 type: null,
                 id: null,
-                message: '',
+                message: "",
               })
             }
           />
@@ -1610,7 +1616,7 @@ const AdminPayments = () => {
                     open: false,
                     type: null,
                     id: null,
-                    message: '',
+                    message: "",
                   })
                 }
                 className="px-4 py-2 rounded-lg border text-gray-700 bg-white hover:bg-gray-50 border-gray-300"
@@ -1628,7 +1634,7 @@ const AdminPayments = () => {
         </div>
       )}
 
-      {paymentsView === 'payments' && (
+      {paymentsView === "payments" && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-800">Payments</h3>
@@ -1650,9 +1656,9 @@ const AdminPayments = () => {
                 {payments
                   .slice(
                     (paymentsPage - 1) * itemsPerPage,
-                    paymentsPage * itemsPerPage
+                    paymentsPage * itemsPerPage,
                   )
-                  .map(p => (
+                  .map((p) => (
                     <tr key={p.id} className="border-t">
                       <td className="px-3 py-2 font-medium text-gray-900">
                         {p.id}
@@ -1667,7 +1673,7 @@ const AdminPayments = () => {
                       <td className="px-3 py-2 text-gray-700">{p.date}</td>
                       <td className="px-3 py-2">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${p.status === 'succeeded' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}
+                          className={`px-2 py-1 rounded text-xs ${p.status === "succeeded" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
                         >
                           {p.status}
                         </span>
@@ -1679,14 +1685,14 @@ const AdminPayments = () => {
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
             <span className="text-gray-600">
-              Page {paymentsPage} of{' '}
+              Page {paymentsPage} of{" "}
               {Math.max(Math.ceil(payments.length / itemsPerPage), 1)}
             </span>
             <div className="flex gap-2">
               <button
                 disabled={paymentsPage === 1}
-                onClick={() => setPaymentsPage(p => Math.max(p - 1, 1))}
-                className={`px-3 py-1.5 rounded-md border ${paymentsPage === 1 ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                onClick={() => setPaymentsPage((p) => Math.max(p - 1, 1))}
+                className={`px-3 py-1.5 rounded-md border ${paymentsPage === 1 ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
               >
                 Prev
               </button>
@@ -1695,11 +1701,11 @@ const AdminPayments = () => {
                   paymentsPage >= Math.ceil(payments.length / itemsPerPage)
                 }
                 onClick={() =>
-                  setPaymentsPage(p =>
-                    Math.min(p + 1, Math.ceil(payments.length / itemsPerPage))
+                  setPaymentsPage((p) =>
+                    Math.min(p + 1, Math.ceil(payments.length / itemsPerPage)),
                   )
                 }
-                className={`px-3 py-1.5 rounded-md border ${paymentsPage >= Math.ceil(payments.length / itemsPerPage) ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 rounded-md border ${paymentsPage >= Math.ceil(payments.length / itemsPerPage) ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
               >
                 Next
               </button>
@@ -1708,7 +1714,7 @@ const AdminPayments = () => {
         </div>
       )}
 
-      {paymentsView === 'subscriptions' && (
+      {paymentsView === "subscriptions" && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-gray-800">
@@ -1733,7 +1739,7 @@ const AdminPayments = () => {
               <tbody>
                 {subscriptions
                   .slice((subsPage - 1) * itemsPerPage, subsPage * itemsPerPage)
-                  .map(s => (
+                  .map((s) => (
                     <tr key={s.id} className="border-t">
                       <td className="px-3 py-2 font-medium text-gray-900">
                         {s.id}
@@ -1742,7 +1748,7 @@ const AdminPayments = () => {
                       <td className="px-3 py-2 text-gray-700">{s.plan}</td>
                       <td className="px-3 py-2">
                         <span
-                          className={`px-2 py-1 rounded text-xs ${s.status === 'active' ? 'bg-green-100 text-green-700' : s.status === 'past_due' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}
+                          className={`px-2 py-1 rounded text-xs ${s.status === "active" ? "bg-green-100 text-green-700" : s.status === "past_due" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}
                         >
                           {s.status}
                         </span>
@@ -1758,14 +1764,14 @@ const AdminPayments = () => {
           </div>
           <div className="mt-2 flex items-center justify-between text-sm">
             <span className="text-gray-600">
-              Page {subsPage} of{' '}
+              Page {subsPage} of{" "}
               {Math.max(Math.ceil(subscriptions.length / itemsPerPage), 1)}
             </span>
             <div className="flex gap-2">
               <button
                 disabled={subsPage === 1}
-                onClick={() => setSubsPage(p => Math.max(p - 1, 1))}
-                className={`px-3 py-1.5 rounded-md border ${subsPage === 1 ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                onClick={() => setSubsPage((p) => Math.max(p - 1, 1))}
+                className={`px-3 py-1.5 rounded-md border ${subsPage === 1 ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
               >
                 Prev
               </button>
@@ -1774,14 +1780,14 @@ const AdminPayments = () => {
                   subsPage >= Math.ceil(subscriptions.length / itemsPerPage)
                 }
                 onClick={() =>
-                  setSubsPage(p =>
+                  setSubsPage((p) =>
                     Math.min(
                       p + 1,
-                      Math.ceil(subscriptions.length / itemsPerPage)
-                    )
+                      Math.ceil(subscriptions.length / itemsPerPage),
+                    ),
                   )
                 }
-                className={`px-3 py-1.5 rounded-md border ${subsPage >= Math.ceil(subscriptions.length / itemsPerPage) ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 rounded-md border ${subsPage >= Math.ceil(subscriptions.length / itemsPerPage) ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
               >
                 Next
               </button>
@@ -1790,14 +1796,14 @@ const AdminPayments = () => {
         </div>
       )}
 
-      {paymentsView === 'credits' && (
+      {paymentsView === "credits" && (
         <div className="space-y-6">
           <div className="border border-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <div className="flex-1 min-w-[220px]">
                 <input
                   value={usersSearch}
-                  onChange={e => setUsersSearch(e.target.value)}
+                  onChange={(e) => setUsersSearch(e.target.value)}
                   placeholder="Search users by name, email, or ID"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
@@ -1809,30 +1815,30 @@ const AdminPayments = () => {
                     if (selectedUserIds.length === 0) {
                       return;
                     }
-                    setGrantCreditsAmount('');
+                    setGrantCreditsAmount("");
                     setGrantModal({ open: true });
                   }}
                   className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
                     selectedUserIds.length === 0
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}
                 >
                   <FaCoins /> Grant credits
                   {selectedUserIds.length > 0
                     ? ` (${selectedUserIds.length})`
-                    : ''}
+                    : ""}
                 </button>
                 <button
                   disabled={selectedUserIds.length !== 1}
                   onClick={() => {
                     if (selectedUserIds.length === 0) {
-                      alert('Please select one user to deduct credits from.');
+                      alert("Please select one user to deduct credits from.");
                       return;
                     }
                     if (selectedUserIds.length > 1) {
                       alert(
-                        'Please select only one user to deduct credits from.'
+                        "Please select only one user to deduct credits from.",
                       );
                       return;
                     }
@@ -1840,19 +1846,19 @@ const AdminPayments = () => {
                   }}
                   className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
                     selectedUserIds.length !== 1
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700 text-white'
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
                   }`}
                 >
                   <FaCoins /> Deduct credits
-                  {selectedUserIds.length === 1 ? ' (1)' : ''}
+                  {selectedUserIds.length === 1 ? " (1)" : ""}
                 </button>
               </div>
             </div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-800">Users</h3>
               <span className="text-sm text-gray-600">
-                {usersLoading ? 'Loading…' : `${filteredUsers.length} users`}
+                {usersLoading ? "Loading…" : `${filteredUsers.length} users`}
               </span>
             </div>
             {usersError && (
@@ -1866,17 +1872,19 @@ const AdminPayments = () => {
                       <input
                         type="checkbox"
                         aria-label="Select page"
-                        onChange={e => {
-                          const pageIds = pagedUsers.map(u => u.id);
-                          setSelectedUserIds(prev =>
+                        onChange={(e) => {
+                          const pageIds = pagedUsers.map((u) => u.id);
+                          setSelectedUserIds((prev) =>
                             e.target.checked
                               ? [...new Set([...prev, ...pageIds])]
-                              : prev.filter(id => !pageIds.includes(id))
+                              : prev.filter((id) => !pageIds.includes(id)),
                           );
                         }}
                         checked={
                           pagedUsers.length > 0 &&
-                          pagedUsers.every(u => selectedUserIds.includes(u.id))
+                          pagedUsers.every((u) =>
+                            selectedUserIds.includes(u.id),
+                          )
                         }
                       />
                     </th>
@@ -1910,7 +1918,7 @@ const AdminPayments = () => {
                       </td>
                     </tr>
                   ) : (
-                    pagedUsers.map(u => {
+                    pagedUsers.map((u) => {
                       const checked = selectedUserIds.includes(u.id);
                       return (
                         <tr key={u.id} className="border-t hover:bg-gray-50">
@@ -1918,11 +1926,11 @@ const AdminPayments = () => {
                             <input
                               type="checkbox"
                               checked={checked}
-                              onChange={e => {
-                                setSelectedUserIds(prev =>
+                              onChange={(e) => {
+                                setSelectedUserIds((prev) =>
                                   e.target.checked
                                     ? [...new Set([...prev, u.id])]
-                                    : prev.filter(id => id !== u.id)
+                                    : prev.filter((id) => id !== u.id),
                                 );
                               }}
                             />
@@ -1948,40 +1956,40 @@ const AdminPayments = () => {
                               const value = (
                                 localMembership[u.id] ||
                                 u.membership ||
-                                'active'
+                                "active"
                               )
                                 .toString()
                                 .toLowerCase();
                               return (
                                 <select
                                   value={value}
-                                  onChange={async e => {
+                                  onChange={async (e) => {
                                     const v = e.target.value;
                                     const userId = u.id;
 
                                     // Update local state immediately
-                                    setLocalMembership(prev => ({
+                                    setLocalMembership((prev) => ({
                                       ...prev,
                                       [userId]: v,
                                     }));
-                                    setRealUsers(prev =>
-                                      prev.map(r =>
+                                    setRealUsers((prev) =>
+                                      prev.map((r) =>
                                         r.id === userId
                                           ? { ...r, membership: v }
-                                          : r
-                                      )
+                                          : r,
+                                      ),
                                     );
 
                                     // Call backend API when setting to "not active" (cancelled)
-                                    if (v === 'cancelled') {
+                                    if (v === "cancelled") {
                                       try {
                                         await api.patch(
                                           `/payment-order/membership/${userId}/cancel`,
                                           {},
-                                          { withCredentials: true }
+                                          { withCredentials: true },
                                         );
                                         console.log(
-                                          `Membership cancelled for user ${userId}`
+                                          `Membership cancelled for user ${userId}`,
                                         );
                                         // Refresh current user's membership status if this is the current user
                                         try {
@@ -1989,54 +1997,54 @@ const AdminPayments = () => {
                                         } catch {}
                                       } catch (err) {
                                         console.error(
-                                          'Failed to cancel membership:',
-                                          err
+                                          "Failed to cancel membership:",
+                                          err,
                                         );
                                         // Revert local state on error
-                                        setLocalMembership(prev => ({
+                                        setLocalMembership((prev) => ({
                                           ...prev,
-                                          [userId]: 'active',
+                                          [userId]: "active",
                                         }));
-                                        setRealUsers(prev =>
-                                          prev.map(r =>
+                                        setRealUsers((prev) =>
+                                          prev.map((r) =>
                                             r.id === userId
-                                              ? { ...r, membership: 'active' }
-                                              : r
-                                          )
+                                              ? { ...r, membership: "active" }
+                                              : r,
+                                          ),
                                         );
                                       }
-                                    } else if (v === 'active') {
+                                    } else if (v === "active") {
                                       // Use subscription API to activate membership
                                       try {
                                         const subscriptionData = {
-                                          plan_type: 'MONTHLY',
+                                          plan_type: "MONTHLY",
                                           total_amount: 69,
-                                          type: 'MEMBERSHIP',
+                                          type: "MEMBERSHIP",
                                         };
                                         console.log(
                                           `Activating membership for user ${userId} with data:`,
-                                          subscriptionData
+                                          subscriptionData,
                                         );
                                         console.log(
-                                          `Making POST request to: /payment-order/membership/subscribe/${userId}`
+                                          `Making POST request to: /payment-order/membership/subscribe/${userId}`,
                                         );
 
                                         const response = await api.post(
                                           `/payment-order/membership/subscribe/${userId}`,
                                           subscriptionData,
-                                          { withCredentials: true }
+                                          { withCredentials: true },
                                         );
                                         console.log(
                                           `Membership activation response:`,
-                                          response?.data
+                                          response?.data,
                                         );
                                         console.log(
                                           `Response status:`,
-                                          response?.status
+                                          response?.status,
                                         );
                                         console.log(
                                           `Full response object:`,
-                                          response
+                                          response,
                                         );
 
                                         // Refresh current user's membership status if this is the current user
@@ -2052,11 +2060,11 @@ const AdminPayments = () => {
                                               await fetchAllUsersAdmin();
                                             const usersWithMembership =
                                               await Promise.all(
-                                                fetched.map(async u => {
+                                                fetched.map(async (u) => {
                                                   const userId =
                                                     u.id || u.user_id || u._id;
                                                   let membershipStatus =
-                                                    'cancelled';
+                                                    "cancelled";
 
                                                   try {
                                                     const membershipRes =
@@ -2064,7 +2072,7 @@ const AdminPayments = () => {
                                                         `/payment-order/membership/status/${userId}`,
                                                         {
                                                           withCredentials: true,
-                                                        }
+                                                        },
                                                       );
                                                     const membershipData =
                                                       membershipRes?.data?.data;
@@ -2074,59 +2082,59 @@ const AdminPayments = () => {
                                                     ) {
                                                       membershipStatus =
                                                         membershipData?.status?.toLowerCase() ||
-                                                        'cancelled';
+                                                        "cancelled";
                                                     }
                                                   } catch (err) {
                                                     console.warn(
                                                       `Failed to fetch membership for user ${userId}:`,
-                                                      err
+                                                      err,
                                                     );
                                                   }
 
                                                   return {
                                                     id: userId,
                                                     name:
-                                                      `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
+                                                      `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() ||
                                                       u.name ||
                                                       u.username ||
                                                       u.email ||
-                                                      'Unknown',
+                                                      "Unknown",
                                                     email:
                                                       u.email ||
                                                       u.user_email ||
-                                                      '',
+                                                      "",
                                                     membership:
                                                       membershipStatus,
                                                     credits:
                                                       Number(u.total_credits) ||
                                                       0,
                                                   };
-                                                })
+                                                }),
                                               );
                                             setRealUsers(usersWithMembership);
                                           } catch (err) {
                                             console.error(
-                                              'Failed to refresh users:',
-                                              err
+                                              "Failed to refresh users:",
+                                              err,
                                             );
                                           }
                                         }, 1000);
                                       } catch (err) {
                                         console.error(
-                                          'Failed to activate membership:',
-                                          err?.response?.data || err?.message
+                                          "Failed to activate membership:",
+                                          err?.response?.data || err?.message,
                                         );
                                         console.error(
-                                          'Full error object:',
-                                          err
+                                          "Full error object:",
+                                          err,
                                         );
                                         console.error(
-                                          'Error status:',
-                                          err?.response?.status
+                                          "Error status:",
+                                          err?.response?.status,
                                         );
                                         console.error(
-                                          'Error config:',
-                                          err?.config
+                                          "Error config:",
+                                          err?.config,
                                         );
                                         // Don't revert local state - keep it as "active" to show the attempt
                                         // The user can manually refresh to see the real status
@@ -2159,17 +2167,17 @@ const AdminPayments = () => {
               <div className="flex gap-2">
                 <button
                   disabled={usersPage === 1}
-                  onClick={() => setUsersPage(p => Math.max(p - 1, 1))}
-                  className={`px-3 py-1.5 rounded-md border ${usersPage === 1 ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                  onClick={() => setUsersPage((p) => Math.max(p - 1, 1))}
+                  className={`px-3 py-1.5 rounded-md border ${usersPage === 1 ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
                 >
                   Prev
                 </button>
                 <button
                   disabled={usersPage >= totalUserPages}
                   onClick={() =>
-                    setUsersPage(p => Math.min(p + 1, totalUserPages))
+                    setUsersPage((p) => Math.min(p + 1, totalUserPages))
                   }
-                  className={`px-3 py-1.5 rounded-md border ${usersPage >= totalUserPages ? 'text-gray-400 bg-gray-50' : 'hover:bg-gray-50'}`}
+                  className={`px-3 py-1.5 rounded-md border ${usersPage >= totalUserPages ? "text-gray-400 bg-gray-50" : "hover:bg-gray-50"}`}
                 >
                   Next
                 </button>
@@ -2195,7 +2203,7 @@ const AdminPayments = () => {
                 </label>
                 <input
                   value={grantCreditsAmount}
-                  onChange={e => setGrantCreditsAmount(e.target.value)}
+                  onChange={(e) => setGrantCreditsAmount(e.target.value)}
                   type="number"
                   min="1"
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4"
@@ -2219,29 +2227,29 @@ const AdminPayments = () => {
                     onClick={async () => {
                       if (isGranting) return;
                       try {
-                        setGrantMessage('');
+                        setGrantMessage("");
                         const creditsValue = Number(grantCreditsAmount);
                         if (
                           !Number.isFinite(creditsValue) ||
                           creditsValue < 1
                         ) {
-                          setGrantMessage('Enter at least 1 credit.');
+                          setGrantMessage("Enter at least 1 credit.");
                           setIsGranting(false);
                           return;
                         }
                         setIsGranting(true);
                         // Call backend to grant credits
                         await api.post(
-                          '/payment-order/admin/credits/grant',
+                          "/payment-order/admin/credits/grant",
                           {
                             userIds: selectedUserIds,
                             credits: creditsValue,
                           },
-                          { withCredentials: true }
+                          { withCredentials: true },
                         );
                         // Reflect change locally
-                        setRealUsers(prev =>
-                          prev.map(u =>
+                        setRealUsers((prev) =>
+                          prev.map((u) =>
                             selectedUserIds.includes(u.id)
                               ? {
                                   ...u,
@@ -2249,32 +2257,32 @@ const AdminPayments = () => {
                                     (Number(u.credits) || 0) +
                                     (Number(creditsValue) || 0),
                                 }
-                              : u
-                          )
+                              : u,
+                          ),
                         );
                         try {
                           debouncedRefreshBalance();
                         } catch {}
                         setGrantMessage(
-                          `Granted ${creditsValue} credits to ${selectedUserIds.length} user(s).`
+                          `Granted ${creditsValue} credits to ${selectedUserIds.length} user(s).`,
                         );
                         // Optionally clear selection
                         setSelectedUserIds([]);
                         // Close after brief delay
                         setTimeout(() => {
                           setGrantModal({ open: false });
-                          setGrantCreditsAmount('');
-                          setGrantMessage('');
+                          setGrantCreditsAmount("");
+                          setGrantMessage("");
                         }, 800);
                       } catch (e) {
-                        alert('Failed to grant credits.');
+                        alert("Failed to grant credits.");
                       } finally {
                         setIsGranting(false);
                       }
                     }}
-                    className={`px-4 py-2 rounded-md text-white ${isGranting ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    className={`px-4 py-2 rounded-md text-white ${isGranting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
                   >
-                    {isGranting ? 'Granting…' : 'Grant'}
+                    {isGranting ? "Granting…" : "Grant"}
                   </button>
                 </div>
               </div>
@@ -2292,19 +2300,19 @@ const AdminPayments = () => {
                   Deduct Credits
                 </h4>
                 <p className="text-sm text-gray-600 mb-4">
-                  Selected user:{' '}
+                  Selected user:{" "}
                   {selectedUserIds.length === 1
-                    ? realUsers.find(u => u.id === selectedUserIds[0])?.name ||
-                      'Unknown'
-                    : 'None'}
+                    ? realUsers.find((u) => u.id === selectedUserIds[0])
+                        ?.name || "Unknown"
+                    : "None"}
                 </p>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Credits to Deduct
                 </label>
                 <input
                   value={deductCreditsAmount}
-                  onChange={e =>
-                    setDeductCreditsAmount(parseInt(e.target.value || '0', 10))
+                  onChange={(e) =>
+                    setDeductCreditsAmount(parseInt(e.target.value || "0", 10))
                   }
                   type="number"
                   min="1"
@@ -2329,54 +2337,54 @@ const AdminPayments = () => {
                     onClick={async () => {
                       if (isDeducting) return;
                       try {
-                        setDeductMessage('');
+                        setDeductMessage("");
                         setIsDeducting(true);
                         // Call backend to deduct credits
                         await api.post(
-                          '/payment-order/admin/credits/deduct',
+                          "/payment-order/admin/credits/deduct",
                           {
                             userId: selectedUserIds[0],
                             credits: deductCreditsAmount,
                           },
-                          { withCredentials: true }
+                          { withCredentials: true },
                         );
                         // Reflect change locally
-                        setRealUsers(prev =>
-                          prev.map(u =>
+                        setRealUsers((prev) =>
+                          prev.map((u) =>
                             selectedUserIds.includes(u.id)
                               ? {
                                   ...u,
                                   credits: Math.max(
                                     0,
                                     (Number(u.credits) || 0) -
-                                      (Number(deductCreditsAmount) || 0)
+                                      (Number(deductCreditsAmount) || 0),
                                   ),
                                 }
-                              : u
-                          )
+                              : u,
+                          ),
                         );
                         try {
                           debouncedRefreshBalance();
                         } catch {}
                         setDeductMessage(
-                          `Deducted ${deductCreditsAmount} credits from user.`
+                          `Deducted ${deductCreditsAmount} credits from user.`,
                         );
                         // Optionally clear selection
                         setSelectedUserIds([]);
                         // Close after brief delay
                         setTimeout(() => {
                           setDeductModal({ open: false });
-                          setDeductMessage('');
+                          setDeductMessage("");
                         }, 800);
                       } catch (e) {
-                        alert('Failed to deduct credits.');
+                        alert("Failed to deduct credits.");
                       } finally {
                         setIsDeducting(false);
                       }
                     }}
-                    className={`px-4 py-2 rounded-md text-white ${isDeducting ? 'bg-red-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                    className={`px-4 py-2 rounded-md text-white ${isDeducting ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
                   >
-                    {isDeducting ? 'Deducting…' : 'Deduct'}
+                    {isDeducting ? "Deducting…" : "Deduct"}
                   </button>
                 </div>
               </div>
@@ -2398,69 +2406,69 @@ const AdminPayments = () => {
                   const u = userDetailModal.user;
                   const userOrders = [
                     {
-                      id: 'ord_1001',
+                      id: "ord_1001",
                       amount: 49,
-                      currency: 'USD',
-                      date: '2025-06-02',
-                      status: 'paid',
+                      currency: "USD",
+                      date: "2025-06-02",
+                      status: "paid",
                     },
                     {
-                      id: 'ord_1010',
+                      id: "ord_1010",
                       amount: 98,
-                      currency: 'USD',
-                      date: '2025-08-15',
-                      status: 'paid',
+                      currency: "USD",
+                      date: "2025-08-15",
+                      status: "paid",
                     },
                   ];
                   const purchasedLessons = [
                     {
-                      course: 'Operate Private Merchant',
-                      lesson: 'Getting Started',
+                      course: "Operate Private Merchant",
+                      lesson: "Getting Started",
                     },
                     {
-                      course: 'Remedy Masterclass',
-                      lesson: 'Dispute Strategy',
+                      course: "Remedy Masterclass",
+                      lesson: "Dispute Strategy",
                     },
                   ];
                   const membershipEnd =
-                    u.membership === 'active' ? '2025-12-01' : '—';
+                    u.membership === "active" ? "2025-12-01" : "—";
                   const creditSummary = {
                     current: u.credits,
                     grantedTotal: 120,
                     usedTotal: 85,
-                    lastGrantDate: '2025-09-01',
+                    lastGrantDate: "2025-09-01",
                   };
                   const creditHistory = [
                     {
-                      date: '2025-09-01',
-                      type: 'grant',
+                      date: "2025-09-01",
+                      type: "grant",
                       amount: 20,
-                      note: 'Promo bonus',
+                      note: "Promo bonus",
                     },
                     {
-                      date: '2025-08-20',
-                      type: 'use',
+                      date: "2025-08-20",
+                      type: "use",
                       amount: 10,
-                      note: 'Lesson: Getting Started',
+                      note: "Lesson: Getting Started",
                     },
                     {
-                      date: '2025-08-05',
-                      type: 'grant',
+                      date: "2025-08-05",
+                      type: "grant",
                       amount: 50,
-                      note: 'Manual grant',
+                      note: "Manual grant",
                     },
                     {
-                      date: '2025-07-28',
-                      type: 'use',
+                      date: "2025-07-28",
+                      type: "use",
                       amount: 15,
-                      note: 'Quiz attempts',
+                      note: "Quiz attempts",
                     },
                   ];
                   const meta = {
-                    role: 'member',
-                    lastLogin: '2025-09-07 14:22',
-                    plan: 'Pro Monthly',
-                    nextBilling: '2025-10-01',
+                    role: "member",
+                    lastLogin: "2025-09-07 14:22",
+                    plan: "Pro Monthly",
+                    nextBilling: "2025-10-01",
                     totalOrders: userOrders.length,
                     totalSpend: userOrders.reduce((s, o) => s + o.amount, 0),
                   };
@@ -2482,40 +2490,40 @@ const AdminPayments = () => {
                               const value = (
                                 localMembership[u.id] ||
                                 u.membership ||
-                                'active'
+                                "active"
                               )
                                 .toString()
                                 .toLowerCase();
                               return (
                                 <select
                                   value={value}
-                                  onChange={async e => {
+                                  onChange={async (e) => {
                                     const v = e.target.value;
                                     const userId = u.id;
 
                                     // Update local state immediately
-                                    setLocalMembership(prev => ({
+                                    setLocalMembership((prev) => ({
                                       ...prev,
                                       [userId]: v,
                                     }));
-                                    setRealUsers(prev =>
-                                      prev.map(r =>
+                                    setRealUsers((prev) =>
+                                      prev.map((r) =>
                                         r.id === userId
                                           ? { ...r, membership: v }
-                                          : r
-                                      )
+                                          : r,
+                                      ),
                                     );
 
                                     // Call backend API when setting to "not active" (cancelled)
-                                    if (v === 'cancelled') {
+                                    if (v === "cancelled") {
                                       try {
                                         await api.patch(
                                           `/payment-order/membership/${userId}/cancel`,
                                           {},
-                                          { withCredentials: true }
+                                          { withCredentials: true },
                                         );
                                         console.log(
-                                          `Membership cancelled for user ${userId}`
+                                          `Membership cancelled for user ${userId}`,
                                         );
                                         // Refresh current user's membership status if this is the current user
                                         try {
@@ -2523,54 +2531,54 @@ const AdminPayments = () => {
                                         } catch {}
                                       } catch (err) {
                                         console.error(
-                                          'Failed to cancel membership:',
-                                          err
+                                          "Failed to cancel membership:",
+                                          err,
                                         );
                                         // Revert local state on error
-                                        setLocalMembership(prev => ({
+                                        setLocalMembership((prev) => ({
                                           ...prev,
-                                          [userId]: 'active',
+                                          [userId]: "active",
                                         }));
-                                        setRealUsers(prev =>
-                                          prev.map(r =>
+                                        setRealUsers((prev) =>
+                                          prev.map((r) =>
                                             r.id === userId
-                                              ? { ...r, membership: 'active' }
-                                              : r
-                                          )
+                                              ? { ...r, membership: "active" }
+                                              : r,
+                                          ),
                                         );
                                       }
-                                    } else if (v === 'active') {
+                                    } else if (v === "active") {
                                       // Use subscription API to activate membership
                                       try {
                                         const subscriptionData = {
-                                          plan_type: 'MONTHLY',
+                                          plan_type: "MONTHLY",
                                           total_amount: 69,
-                                          type: 'MEMBERSHIP',
+                                          type: "MEMBERSHIP",
                                         };
                                         console.log(
                                           `Activating membership for user ${userId} with data:`,
-                                          subscriptionData
+                                          subscriptionData,
                                         );
                                         console.log(
-                                          `Making POST request to: /payment-order/membership/subscribe/${userId}`
+                                          `Making POST request to: /payment-order/membership/subscribe/${userId}`,
                                         );
 
                                         const response = await api.post(
                                           `/payment-order/membership/subscribe/${userId}`,
                                           subscriptionData,
-                                          { withCredentials: true }
+                                          { withCredentials: true },
                                         );
                                         console.log(
                                           `Membership activation response:`,
-                                          response?.data
+                                          response?.data,
                                         );
                                         console.log(
                                           `Response status:`,
-                                          response?.status
+                                          response?.status,
                                         );
                                         console.log(
                                           `Full response object:`,
-                                          response
+                                          response,
                                         );
 
                                         // Refresh current user's membership status if this is the current user
@@ -2586,11 +2594,11 @@ const AdminPayments = () => {
                                               await fetchAllUsersAdmin();
                                             const usersWithMembership =
                                               await Promise.all(
-                                                fetched.map(async u => {
+                                                fetched.map(async (u) => {
                                                   const userId =
                                                     u.id || u.user_id || u._id;
                                                   let membershipStatus =
-                                                    'cancelled';
+                                                    "cancelled";
 
                                                   try {
                                                     const membershipRes =
@@ -2598,7 +2606,7 @@ const AdminPayments = () => {
                                                         `/payment-order/membership/status/${userId}`,
                                                         {
                                                           withCredentials: true,
-                                                        }
+                                                        },
                                                       );
                                                     const membershipData =
                                                       membershipRes?.data?.data;
@@ -2608,59 +2616,59 @@ const AdminPayments = () => {
                                                     ) {
                                                       membershipStatus =
                                                         membershipData?.status?.toLowerCase() ||
-                                                        'cancelled';
+                                                        "cancelled";
                                                     }
                                                   } catch (err) {
                                                     console.warn(
                                                       `Failed to fetch membership for user ${userId}:`,
-                                                      err
+                                                      err,
                                                     );
                                                   }
 
                                                   return {
                                                     id: userId,
                                                     name:
-                                                      `${u.first_name || u.firstName || u.given_name || ''} ${u.last_name || u.lastName || u.family_name || ''}`.trim() ||
+                                                      `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() ||
                                                       u.name ||
                                                       u.username ||
                                                       u.email ||
-                                                      'Unknown',
+                                                      "Unknown",
                                                     email:
                                                       u.email ||
                                                       u.user_email ||
-                                                      '',
+                                                      "",
                                                     membership:
                                                       membershipStatus,
                                                     credits:
                                                       Number(u.total_credits) ||
                                                       0,
                                                   };
-                                                })
+                                                }),
                                               );
                                             setRealUsers(usersWithMembership);
                                           } catch (err) {
                                             console.error(
-                                              'Failed to refresh users:',
-                                              err
+                                              "Failed to refresh users:",
+                                              err,
                                             );
                                           }
                                         }, 1000);
                                       } catch (err) {
                                         console.error(
-                                          'Failed to activate membership:',
-                                          err?.response?.data || err?.message
+                                          "Failed to activate membership:",
+                                          err?.response?.data || err?.message,
                                         );
                                         console.error(
-                                          'Full error object:',
-                                          err
+                                          "Full error object:",
+                                          err,
                                         );
                                         console.error(
-                                          'Error status:',
-                                          err?.response?.status
+                                          "Error status:",
+                                          err?.response?.status,
                                         );
                                         console.error(
-                                          'Error config:',
-                                          err?.config
+                                          "Error config:",
+                                          err?.config,
                                         );
                                         // Don't revert local state - keep it as "active" to show the attempt
                                         // The user can manually refresh to see the real status
@@ -2691,22 +2699,22 @@ const AdminPayments = () => {
                             Recent Orders
                           </div>
                           <div className="space-y-1">
-                            {userOrders.map(o => (
+                            {userOrders.map((o) => (
                               <div key={o.id} className="flex justify-between">
                                 <span className="text-gray-600">{o.id}</span>
                                 <span className="text-gray-800">
-                                  ${o.amount} {o.currency} • {o.status} •{' '}
+                                  ${o.amount} {o.currency} • {o.status} •{" "}
                                   {o.date}
                                 </span>
                               </div>
                             ))}
                           </div>
                           <div className="mt-2 text-xs text-gray-600">
-                            Total Orders:{' '}
+                            Total Orders:{" "}
                             <span className="font-medium text-gray-800">
                               {meta.totalOrders}
-                            </span>{' '}
-                            • Total Spend:{' '}
+                            </span>{" "}
+                            • Total Spend:{" "}
                             <span className="font-medium text-gray-800">
                               ${meta.totalSpend}
                             </span>
@@ -2779,7 +2787,7 @@ const AdminPayments = () => {
                                     <td className="py-1">{h.date}</td>
                                     <td className="py-1 capitalize">
                                       <span
-                                        className={`px-2 py-0.5 rounded text-[10px] ${h.type === 'grant' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}
+                                        className={`px-2 py-0.5 rounded text-[10px] ${h.type === "grant" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
                                       >
                                         {h.type}
                                       </span>
@@ -2809,15 +2817,7 @@ const AdminPayments = () => {
                     </div>
                   );
                 })()}
-                <div className="mt-5 flex justify-between">
-                  <button
-                    onClick={() => {
-                      alert('Cancel membership (mock). No API call.');
-                    }}
-                    className="px-4 py-2 rounded-md border text-red-700 border-red-200 hover:bg-red-50"
-                  >
-                    Cancel Membership
-                  </button>
+                <div className="mt-5 flex justify-end">
                   <div className="flex gap-2">
                     <button
                       onClick={() =>

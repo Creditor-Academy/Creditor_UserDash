@@ -1,26 +1,28 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles } from 'lucide-react';
-import SponsorAdCreate from '@/pages/admin/SponsorAdCreate';
-import SponsorAdManage from '@/pages/admin/SponsorAdManage';
-import SponsorAdAnalytics from '@/pages/admin/SponsorAdAnalytics';
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles } from "lucide-react";
+import SponsorAdCreate from "@/pages/admin/SponsorAdCreate";
+import SponsorAdManage from "@/pages/admin/SponsorAdManage";
+import SponsorAdAnalytics from "@/pages/admin/SponsorAdAnalytics";
+import SponsorAdRequests from "@/pages/admin/SponsorAdRequests";
 
-const BASE_PATH = '/instructor/sponsor-ads';
+const BASE_PATH = "/instructor/sponsor-ads";
 
 const tabConfig = [
-  { value: 'create', label: 'Create Ad', href: `${BASE_PATH}/create` },
-  { value: 'manage', label: 'Manage Ads', href: `${BASE_PATH}/manage` },
+  { value: "create", label: "Create Ad", href: `${BASE_PATH}/create` },
+  { value: "manage", label: "Manage Ads", href: `${BASE_PATH}/manage` },
+  { value: "requests", label: "Ad Requests", href: `${BASE_PATH}/requests` },
   {
-    value: 'analytics',
-    label: 'Sponsor Analytics',
+    value: "analytics",
+    label: "Sponsor Analytics",
     href: `${BASE_PATH}/analytics`,
   },
 ];
@@ -30,11 +32,11 @@ const SponsorAdsAdminPanel = () => {
   const navigate = useNavigate();
 
   const currentTab =
-    tabConfig.find(tab => location.pathname.startsWith(tab.href))?.value ||
-    'create';
+    tabConfig.find((tab) => location.pathname.startsWith(tab.href))?.value ||
+    "create";
 
-  const handleTabChange = value => {
-    const target = tabConfig.find(tab => tab.value === value);
+  const handleTabChange = (value) => {
+    const target = tabConfig.find((tab) => tab.value === value);
     if (target) {
       navigate(target.href);
     }
@@ -42,11 +44,13 @@ const SponsorAdsAdminPanel = () => {
 
   const renderTabContent = () => {
     switch (currentTab) {
-      case 'manage':
+      case "manage":
         return <SponsorAdManage />;
-      case 'analytics':
+      case "requests":
+        return <SponsorAdRequests />;
+      case "analytics":
         return <SponsorAdAnalytics />;
-      case 'create':
+      case "create":
       default:
         return <SponsorAdCreate />;
     }
@@ -74,8 +78,8 @@ const SponsorAdsAdminPanel = () => {
             </Badge>
           </div>
           <Tabs value={currentTab} onValueChange={handleTabChange}>
-            <TabsList className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-gray-50">
-              {tabConfig.map(tab => (
+            <TabsList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 bg-gray-50">
+              {tabConfig.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}

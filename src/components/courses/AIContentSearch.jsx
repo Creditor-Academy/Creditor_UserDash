@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Search,
   Wand2,
@@ -19,25 +19,25 @@ import {
   Loader2,
   Code,
   FileText,
-} from 'lucide-react';
-import LoadingBuffer from '../LoadingBuffer';
-import aiProxyService from '../../services/aiProxyService';
-import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
+} from "lucide-react";
+import LoadingBuffer from "../LoadingBuffer";
+import secureAIService from "../../services/secureAIService";
+import { useAIFeatureAccess, withAIFeatureAccess } from "./AIFeatureAccess";
 
 const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
   const { hasAccess, trackUsage } = useAIFeatureAccess();
 
   const quickPrompts = [
-    { text: 'What is React?', category: 'Programming' },
-    { text: 'Explain machine learning basics', category: 'AI/ML' },
-    { text: 'How to create effective presentations?', category: 'Skills' },
-    { text: 'Database design principles', category: 'Database' },
-    { text: 'Project management methodologies', category: 'Management' },
-    { text: 'Digital marketing strategies', category: 'Marketing' },
+    { text: "What is React?", category: "Programming" },
+    { text: "Explain machine learning basics", category: "AI/ML" },
+    { text: "How to create effective presentations?", category: "Skills" },
+    { text: "Database design principles", category: "Database" },
+    { text: "Project management methodologies", category: "Management" },
+    { text: "Digital marketing strategies", category: "Marketing" },
   ];
 
   const performSearch = async (query = searchQuery) => {
@@ -52,17 +52,17 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
 
     try {
       // Use Bytez API for real content search
-      const response = await aiProxyService.answerQuestion(query, '', {
+      const response = await secureAIService.answerQuestion(query, "", {
         max_answer_length: 300,
       });
 
       // Extract answer text properly from response object
       let answer;
-      if (typeof response.answer === 'string') {
+      if (typeof response.answer === "string") {
         answer = response.answer;
       } else if (
         response.answer &&
-        typeof response.answer === 'object' &&
+        typeof response.answer === "object" &&
         response.answer.answer
       ) {
         answer = response.answer.answer;
@@ -77,17 +77,17 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
         {
           id: 1,
           title: `Understanding ${query}`,
-          type: 'concept',
+          type: "concept",
           content: answer,
           keyPoints: [
-            'Core definition and principles',
-            'Real-world applications',
-            'Best practices and guidelines',
-            'Common use cases and examples',
+            "Core definition and principles",
+            "Real-world applications",
+            "Best practices and guidelines",
+            "Common use cases and examples",
           ],
-          difficulty: 'Beginner',
-          readTime: '5 min',
-          source: 'Bytez AI Knowledge Base',
+          difficulty: "Beginner",
+          readTime: "5 min",
+          source: "Bytez AI Knowledge Base",
         },
       ];
 
@@ -96,41 +96,41 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
         results.push({
           id: 2,
           title: `${query} - Practical Guide`,
-          type: 'tutorial',
+          type: "tutorial",
           content: `Step-by-step guide to implementing and working with ${query}. ${answer.substring(0, 150)}...`,
           keyPoints: [
-            'Getting started guide',
-            'Implementation examples',
-            'Common patterns and solutions',
-            'Troubleshooting tips',
+            "Getting started guide",
+            "Implementation examples",
+            "Common patterns and solutions",
+            "Troubleshooting tips",
           ],
-          difficulty: 'Intermediate',
-          readTime: '10 min',
-          source: 'Bytez AI Knowledge Base',
+          difficulty: "Intermediate",
+          readTime: "10 min",
+          source: "Bytez AI Knowledge Base",
         });
       }
 
       setSearchResults(results);
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error("Search failed:", error);
 
       // Fallback results
       const fallbackResults = [
         {
           id: Date.now(),
           title: `About ${query}`,
-          type: 'concept',
+          type: "concept",
           content: `Here's what I found about "${query}": This topic involves key concepts and principles that are important for understanding the subject matter. Consider exploring related resources and materials to gain deeper insights.`,
           keyPoints: [
-            'Basic overview and introduction',
-            'Key concepts to understand',
-            'Practical applications',
-            'Further learning resources',
+            "Basic overview and introduction",
+            "Key concepts to understand",
+            "Practical applications",
+            "Further learning resources",
           ],
-          difficulty: 'Beginner',
-          readTime: '3 min',
-          source: 'Fallback Content',
-          error: 'AI search failed, showing fallback',
+          difficulty: "Beginner",
+          readTime: "3 min",
+          source: "Fallback Content",
+          error: "AI search failed, showing fallback",
         },
       ];
 
@@ -140,53 +140,53 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
     setIsSearching(false);
   };
 
-  const deleteResult = id => {
-    setSearchResults(searchResults.filter(result => result.id !== id));
+  const deleteResult = (id) => {
+    setSearchResults(searchResults.filter((result) => result.id !== id));
   };
 
-  const copyResult = content => {
+  const copyResult = (content) => {
     navigator.clipboard.writeText(content);
   };
 
   const downloadResult = (content, query) => {
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `search-result-${query.slice(0, 20).replace(/\s+/g, '-')}.txt`;
+    link.download = `search-result-${query.slice(0, 20).replace(/\s+/g, "-")}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  const insertIntoCourse = result => {
+  const insertIntoCourse = (result) => {
     // This would integrate with the course content editor
-    console.log('Inserting search result into course:', result);
+    console.log("Inserting search result into course:", result);
     // Implementation would depend on the course editor structure
   };
 
-  const getTypeIcon = type => {
+  const getTypeIcon = (type) => {
     switch (type) {
-      case 'concept':
+      case "concept":
         return BookOpen;
-      case 'tutorial':
+      case "tutorial":
         return Code;
-      case 'advanced':
+      case "advanced":
         return Lightbulb;
       default:
         return FileText;
     }
   };
 
-  const getDifficultyColor = difficulty => {
+  const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
-      case 'Beginner':
-        return 'bg-green-100 text-green-700';
-      case 'Intermediate':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'Advanced':
-        return 'bg-red-100 text-red-700';
+      case "Beginner":
+        return "bg-green-100 text-green-700";
+      case "Intermediate":
+        return "bg-yellow-100 text-yellow-700";
+      case "Advanced":
+        return "bg-red-100 text-red-700";
       default:
-        return 'bg-gray-100 text-gray-700';
+        return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -204,8 +204,8 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
             <input
               type="text"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && performSearch()}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && performSearch()}
               placeholder="Ask anything... (e.g., 'What is React?', 'Explain machine learning')"
               className="w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
@@ -276,7 +276,7 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
       {searchResults.length > 0 && !isSearching && (
         <div className="space-y-4">
           <h4 className="text-lg font-semibold">Search Results</h4>
-          {searchResults.map(result => {
+          {searchResults.map((result) => {
             const TypeIcon = getTypeIcon(result.type);
             return (
               <motion.div
@@ -377,4 +377,4 @@ const AIContentSearch = ({ onFeatureUse, usageInfo }) => {
 };
 
 // Export with AI Feature Access protection
-export default withAIFeatureAccess(AIContentSearch, 'CONTENT_QA');
+export default withAIFeatureAccess(AIContentSearch, "CONTENT_QA");

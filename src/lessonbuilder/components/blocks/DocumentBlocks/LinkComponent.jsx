@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link as LinkIcon, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Link as LinkIcon, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const LinkComponent = ({
   showLinkDialog,
@@ -16,23 +16,23 @@ const LinkComponent = ({
   onLinkUpdate,
   editingLinkBlock,
 }) => {
-  const [linkTitle, setLinkTitle] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-  const [linkDescription, setLinkDescription] = useState('');
-  const [linkButtonText, setLinkButtonText] = useState('Visit Link');
-  const [linkButtonStyle, setLinkButtonStyle] = useState('primary');
-  const [linkError, setLinkError] = useState('');
+  const [linkTitle, setLinkTitle] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkDescription, setLinkDescription] = useState("");
+  const [linkButtonText, setLinkButtonText] = useState("Visit Link");
+  const [linkButtonStyle, setLinkButtonStyle] = useState("primary");
+  const [linkError, setLinkError] = useState("");
 
   // Reset form when dialog opens/closes or when editing a different block
   useEffect(() => {
     if (showLinkDialog && editingLinkBlock) {
       // Editing mode - populate with existing data
-      setLinkTitle(editingLinkBlock.linkTitle || '');
-      setLinkUrl(editingLinkBlock.linkUrl || '');
-      setLinkDescription(editingLinkBlock.linkDescription || '');
-      setLinkButtonText(editingLinkBlock.linkButtonText || 'Visit Link');
-      setLinkButtonStyle(editingLinkBlock.linkButtonStyle || 'primary');
-      setLinkError('');
+      setLinkTitle(editingLinkBlock.linkTitle || "");
+      setLinkUrl(editingLinkBlock.linkUrl || "");
+      setLinkDescription(editingLinkBlock.linkDescription || "");
+      setLinkButtonText(editingLinkBlock.linkButtonText || "Visit Link");
+      setLinkButtonStyle(editingLinkBlock.linkButtonStyle || "primary");
+      setLinkError("");
     } else if (showLinkDialog && !editingLinkBlock) {
       // New link mode - reset form
       resetForm();
@@ -40,12 +40,12 @@ const LinkComponent = ({
   }, [showLinkDialog, editingLinkBlock]);
 
   const resetForm = () => {
-    setLinkTitle('');
-    setLinkUrl('');
-    setLinkDescription('');
-    setLinkButtonText('Visit Link');
-    setLinkButtonStyle('primary');
-    setLinkError('');
+    setLinkTitle("");
+    setLinkUrl("");
+    setLinkDescription("");
+    setLinkButtonText("Visit Link");
+    setLinkButtonStyle("primary");
+    setLinkError("");
   };
 
   const handleLinkDialogClose = () => {
@@ -53,24 +53,24 @@ const LinkComponent = ({
     resetForm();
   };
 
-  const handleLinkInputChange = e => {
+  const handleLinkInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'title') {
+    if (name === "title") {
       setLinkTitle(value);
-    } else if (name === 'url') {
+    } else if (name === "url") {
       setLinkUrl(value);
-    } else if (name === 'description') {
+    } else if (name === "description") {
       setLinkDescription(value);
-    } else if (name === 'buttonText') {
+    } else if (name === "buttonText") {
       setLinkButtonText(value);
-    } else if (name === 'buttonStyle') {
+    } else if (name === "buttonStyle") {
       setLinkButtonStyle(value);
     }
   };
 
   const handleAddLink = () => {
     if (!linkTitle || !linkUrl || !linkButtonText) {
-      setLinkError('Please fill in all required fields');
+      setLinkError("Please fill in all required fields");
       return;
     }
 
@@ -78,22 +78,22 @@ const LinkComponent = ({
       // This will throw if URL is invalid
       new URL(linkUrl);
     } catch (e) {
-      setLinkError('Please enter a valid URL (e.g., https://example.com)');
+      setLinkError("Please enter a valid URL (e.g., https://example.com)");
       return;
     }
 
     // Generate HTML content for display
     const buttonStyles = {
-      primary: 'background-color: #3B82F6; color: white; border: none;',
-      secondary: 'background-color: #6B7280; color: white; border: none;',
+      primary: "background-color: #3B82F6; color: white; border: none;",
+      secondary: "background-color: #6B7280; color: white; border: none;",
       outline:
-        'background-color: transparent; color: #3B82F6; border: 2px solid #3B82F6;',
+        "background-color: transparent; color: #3B82F6; border: 2px solid #3B82F6;",
     };
 
     const htmlContent = `
       <div style="padding: 16px; border: 1px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB;">
         <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">${linkTitle}</h3>
-        ${linkDescription ? `<p style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">${linkDescription}</p>` : ''}
+        ${linkDescription ? `<p style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">${linkDescription}</p>` : ""}
         <a href="${linkUrl}" target="_blank" rel="noopener noreferrer"
            style="display: inline-block; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; ${buttonStyles[linkButtonStyle] || buttonStyles.primary}">
           ${linkButtonText}
@@ -104,8 +104,8 @@ const LinkComponent = ({
     const newBlock = {
       id: editingLinkBlock?.id || `link-${Date.now()}`,
       block_id: editingLinkBlock?.id || `link-${Date.now()}`,
-      type: 'link',
-      title: 'Link',
+      type: "link",
+      title: "Link",
       linkTitle: linkTitle,
       linkUrl: linkUrl,
       linkDescription: linkDescription,
@@ -113,7 +113,6 @@ const LinkComponent = ({
       linkButtonStyle: linkButtonStyle,
       timestamp: new Date().toISOString(),
       html_css: htmlContent,
-      order: 0, // Will be set by parent
     };
 
     // Call the parent's onLinkUpdate callback
@@ -130,12 +129,12 @@ const LinkComponent = ({
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingLinkBlock ? 'Edit Link' : 'Add Link'}
+              {editingLinkBlock ? "Edit Link" : "Add Link"}
             </DialogTitle>
             <DialogDescription>
               {editingLinkBlock
-                ? 'Update the link details and settings.'
-                : 'Add a link to an external resource or website.'}
+                ? "Update the link details and settings."
+                : "Add a link to an external resource or website."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -231,7 +230,7 @@ const LinkComponent = ({
               onClick={handleAddLink}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {editingLinkBlock ? 'Save' : 'Add Link'}
+              {editingLinkBlock ? "Save" : "Add Link"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -240,6 +239,6 @@ const LinkComponent = ({
   );
 };
 
-LinkComponent.displayName = 'LinkComponent';
+LinkComponent.displayName = "LinkComponent";
 
 export default LinkComponent;

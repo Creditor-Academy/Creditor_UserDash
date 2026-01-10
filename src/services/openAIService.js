@@ -1,13 +1,12 @@
-// OpenAI Service - Single Provider Solution
-// Simplified AI service using only OpenAI for all AI operations
-// import OpenAI from 'openai';
+// AI Service Wrapper
+// Proxies all AI operations through backend
 
-import secureAIService from './secureAIService.js';
+import secureAIService from "./secureAIService.js";
 
 /**
- * OpenAI Service - Backend Proxy Wrapper
+ * AI Service - Backend Proxy Wrapper
  * - All AI operations now go through backend API
- * - No direct OpenAI client (secure, tracked, billed)
+ * - No direct provider client (secure, tracked, billed)
  * - Token tracking and cost calculation on backend
  * - Maintains same interface for backward compatibility
  */
@@ -29,9 +28,7 @@ const clientLogger = {
 class OpenAIService {
   constructor() {
     this.backend = secureAIService;
-    clientLogger.debug(
-      '✅ OpenAI service initialized (using secure backend proxy)'
-    );
+    clientLogger.debug("AI service initialized (using secure backend proxy)");
   }
 
   /**
@@ -63,7 +60,7 @@ class OpenAIService {
     return await this.backend.generateStructured(
       systemPrompt,
       userPrompt,
-      options
+      options,
     );
   }
 
@@ -86,7 +83,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseOutline(courseData);
     } catch (error) {
-      clientLogger.error('❌ Course outline generation failed:', error);
+      clientLogger.error("Course outline generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -104,7 +101,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseBlueprint(blueprintInput);
     } catch (error) {
-      clientLogger.error('❌ Course blueprint generation failed:', error);
+      clientLogger.error("Course blueprint generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -122,7 +119,7 @@ class OpenAIService {
     try {
       return await this.backend.generateComprehensiveCourse(courseData);
     } catch (error) {
-      clientLogger.error('❌ Comprehensive course generation failed:', error);
+      clientLogger.error("Comprehensive course generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -141,7 +138,7 @@ class OpenAIService {
     try {
       return await this.backend.generateCourseImage(prompt, options);
     } catch (error) {
-      clientLogger.error('❌ Course image generation failed:', error);
+      clientLogger.error("Course image generation failed:", error);
       return {
         success: false,
         error: error.message,
@@ -162,13 +159,13 @@ class OpenAIService {
     lessonData,
     moduleData,
     courseData,
-    options = {}
+    options = {},
   ) {
     return await this.backend.generateLessonContent(
       lessonData,
       moduleData,
       courseData,
-      options
+      options,
     );
   }
 

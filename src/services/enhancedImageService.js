@@ -1,7 +1,7 @@
 // Enhanced Image Generation Service with Multi-API Support
-import enhancedAIService from './enhancedAIService';
-import aiService from './aiService';
-import { uploadImage } from './imageUploadService';
+import enhancedAIService from "./enhancedAIService";
+import aiService from "./aiService";
+import { uploadImage } from "./imageUploadService";
 
 /**
  * Generate and upload course image using multi-API system
@@ -11,18 +11,16 @@ import { uploadImage } from './imageUploadService';
  */
 export async function generateAndUploadCourseImage(prompt, options = {}) {
   try {
-    console.log('🎨 Generating course image with multi-API system:', prompt);
+    console.log("🎨 Generating course image with multi-API system:", prompt);
 
     // Use enhanced AI service for image generation
     const imageResult = await enhancedAIService.generateCourseImage(
       prompt,
-      options
+      options,
     );
 
     if (imageResult.success && imageResult.data?.url) {
-      console.log(
-        `✅ Image generated successfully with ${imageResult.data.provider}`
-      );
+      console.log("✅ Image generated successfully");
 
       // Try to upload the generated image to S3 (works for both blob and URL images)
       try {
@@ -30,33 +28,33 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
 
         if (imageResult.data.blob) {
           // Convert blob to file for upload (HuggingFace images)
-          file = new File([imageResult.data.blob], 'ai-generated-image.png', {
-            type: 'image/png',
+          file = new File([imageResult.data.blob], "ai-generated-image.png", {
+            type: "image/png",
           });
-          console.log('📤 Uploading blob-based image to S3...');
+          console.log("📤 Uploading blob-based image to S3...");
         } else if (imageResult.data.url) {
           // Convert URL to blob then to file for upload (OpenAI/HuggingFace images)
-          console.log('📤 Converting URL-based image to file for S3 upload...');
+          console.log("📤 Converting URL-based image to file for S3 upload...");
           const response = await fetch(imageResult.data.url);
           if (response.ok) {
             const blob = await response.blob();
             file = new File([blob], `ai-course-image-${Date.now()}.png`, {
-              type: 'image/png',
+              type: "image/png",
             });
           }
         }
 
         if (file) {
           const uploadResult = await uploadImage(file, {
-            folder: 'course-thumbnails',
+            folder: "course-thumbnails",
             public: true,
-            type: 'image',
+            type: "image",
           });
 
           if (uploadResult?.success && uploadResult.imageUrl) {
             console.log(
-              '✅ Image successfully uploaded to S3:',
-              uploadResult.imageUrl
+              "✅ Image successfully uploaded to S3:",
+              uploadResult.imageUrl,
             );
             return {
               success: true,
@@ -66,8 +64,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
                 s3Url: uploadResult.imageUrl,
                 fileName: uploadResult.fileName,
                 fileSize: uploadResult.fileSize,
-                provider: imageResult.data.provider,
-                model: imageResult.data.model,
                 prompt: prompt,
                 uploaded: true,
                 uploadedToS3: true,
@@ -78,8 +74,8 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
         }
       } catch (uploadError) {
         console.warn(
-          '📤 S3 upload failed, using original URL:',
-          uploadError.message
+          "📤 S3 upload failed, using original URL:",
+          uploadError.message,
         );
       }
 
@@ -88,8 +84,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
         success: true,
         data: {
           url: imageResult.data.url,
-          provider: imageResult.data.provider,
-          model: imageResult.data.model,
           prompt: prompt,
           uploaded: false,
           uploadedToS3: false,
@@ -98,30 +92,30 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
       };
     } else {
       // Fallback to legacy AI service
-      console.log('🔄 Enhanced AI failed, trying legacy AI service...');
+      console.log("🔄 Enhanced AI failed, trying legacy AI service...");
       const legacyResult = await aiService.generateCourseImage(prompt, options);
 
       if (legacyResult.success && legacyResult.data?.url) {
         // Try to upload legacy result to S3 as well
         try {
-          console.log('📤 Uploading legacy AI image to S3...');
+          console.log("📤 Uploading legacy AI image to S3...");
           const response = await fetch(legacyResult.data.url);
           if (response.ok) {
             const blob = await response.blob();
             const file = new File([blob], `legacy-ai-image-${Date.now()}.png`, {
-              type: 'image/png',
+              type: "image/png",
             });
 
             const uploadResult = await uploadImage(file, {
-              folder: 'course-thumbnails',
+              folder: "course-thumbnails",
               public: true,
-              type: 'image',
+              type: "image",
             });
 
             if (uploadResult?.success && uploadResult.imageUrl) {
               console.log(
-                '✅ Legacy AI image uploaded to S3:',
-                uploadResult.imageUrl
+                "✅ Legacy AI image uploaded to S3:",
+                uploadResult.imageUrl,
               );
               return {
                 success: true,
@@ -132,7 +126,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
                   s3Url: uploadResult.imageUrl,
                   fileName: uploadResult.fileName,
                   fileSize: uploadResult.fileSize,
-                  provider: 'openai-legacy',
                   uploaded: true,
                   uploadedToS3: true,
                   createdAt: new Date().toISOString(),
@@ -141,7 +134,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
             }
           }
         } catch (uploadError) {
-          console.warn('📤 Legacy AI S3 upload failed:', uploadError.message);
+          console.warn("📤 Legacy AI S3 upload failed:", uploadError.message);
         }
 
         // Return original URL if upload failed
@@ -149,7 +142,6 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
           success: true,
           data: {
             ...legacyResult.data,
-            provider: 'deepai-legacy',
             uploaded: false,
             uploadedToS3: false,
           },
@@ -157,21 +149,21 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
       }
 
       throw new Error(
-        legacyResult.error || 'All image generation methods failed'
+        legacyResult.error || "All image generation methods failed",
       );
     }
   } catch (error) {
-    console.error('❌ Course image generation failed:', error);
+    console.error("❌ Course image generation failed:", error);
 
     // Return placeholder image
-    const placeholderColor = '6366f1';
-    const placeholderText = encodeURIComponent('Course Image');
+    const placeholderColor = "6366f1";
+    const placeholderText = encodeURIComponent("Course Image");
 
     return {
       success: false,
       data: {
         url: `https://via.placeholder.com/1024x1024/${placeholderColor}/ffffff?text=${placeholderText}`,
-        provider: 'fallback',
+        provider: "fallback",
         prompt: prompt,
         uploaded: false,
         createdAt: new Date().toISOString(),
@@ -189,7 +181,7 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
  */
 export async function generateMultipleImages(
   prompt,
-  styles = ['realistic', 'illustration', 'modern']
+  styles = ["realistic", "illustration", "modern"],
 ) {
   const results = [];
 
@@ -221,7 +213,7 @@ export async function generateMultipleImages(
  * @returns {Promise<Object>} Test results for each provider
  */
 export async function testImageProviders() {
-  const testPrompt = 'test course thumbnail';
+  const testPrompt = "test course thumbnail";
   const results = {};
 
   try {
@@ -242,7 +234,7 @@ export async function testImageProviders() {
     const legacyResult = await aiService.generateCourseImage(testPrompt);
     results.legacyService = {
       available: legacyResult.success,
-      provider: 'openai',
+      provider: "openai",
       error: legacyResult.success ? null : legacyResult.error,
     };
   } catch (error) {

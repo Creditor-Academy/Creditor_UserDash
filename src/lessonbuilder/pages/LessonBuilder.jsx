@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { SidebarContext } from '@/layouts/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import VideoComponent from '@lessonbuilder/components/blocks/MediaBlocks/VideoComponent';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect, useContext } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { SidebarContext } from "@/layouts/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import VideoComponent from "@lessonbuilder/components/blocks/MediaBlocks/VideoComponent";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Plus,
@@ -30,64 +30,64 @@ import {
   AlertTriangle,
   ExternalLink,
   Sparkles,
-} from 'lucide-react';
-import AIContentGeneratorDialog from '@lessonbuilder/components/ai/AIContentGeneratorDialog';
-import RegenerateComparisonDialog from '@lessonbuilder/components/ai/RegenerateComparisonDialog';
-import { contentBlockAIService } from '@lessonbuilder/services/contentBlockAIService';
+} from "lucide-react";
+import AIContentGeneratorDialog from "@lessonbuilder/components/ai/AIContentGeneratorDialog";
+import RegenerateComparisonDialog from "@lessonbuilder/components/ai/RegenerateComparisonDialog";
+import { contentBlockAIService } from "@lessonbuilder/services/contentBlockAIService";
 import {
   getTemplatesForBlockType,
   getCourseContext,
   formatAIContentForBlock,
   generateImageHTML,
-} from '@lessonbuilder/utils/aiContentHelpers';
-import { gradientOptions } from '@lessonbuilder/constants/textTypesConfig';
-import { toast } from 'react-hot-toast';
-import QuoteComponent from '@lessonbuilder/components/blocks/QuoteBlock/QuoteComponent';
-import TableComponent from '@lessonbuilder/components/blocks/TableBlock/TableComponent';
-import ListComponent from '@lessonbuilder/components/blocks/ListBlock/ListComponent';
-import InteractiveComponent from '@lessonbuilder/components/blocks/InteractiveBlock/InteractiveComponent';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import StatementComponent from '@lessonbuilder/components/blocks/StatementBlock/StatementComponent';
-import DividerComponent from '@lessonbuilder/components/blocks/Shared/DividerComponent';
-import AudioComponent from '@lessonbuilder/components/blocks/MediaBlocks/AudioComponent';
-import YouTubeComponent from '@lessonbuilder/components/blocks/MediaBlocks/YouTubeComponent';
-import PDFComponent from '@lessonbuilder/components/blocks/DocumentBlocks/PDFComponent';
-import LinkComponent from '@lessonbuilder/components/blocks/DocumentBlocks/LinkComponent';
-import ImageBlockComponent from '@lessonbuilder/components/blocks/MediaBlocks/ImageBlockComponent';
-import TextBlockComponent from '@lessonbuilder/components/blocks/TextBlock/TextBlockComponent';
-import InteractiveListRenderer from '@lessonbuilder/components/blocks/ListBlock/InteractiveListRenderer';
-import useLessonBlocks from '@lessonbuilder/hooks/useLessonBlocks';
-import useLessonDialogs from '@lessonbuilder/hooks/useLessonDialogs';
-import useLessonLoader from '@lessonbuilder/hooks/useLessonLoader';
-import useLessonAutosave from '@lessonbuilder/hooks/useLessonAutosave';
+} from "@lessonbuilder/utils/aiContentHelpers";
+import { gradientOptions } from "@lessonbuilder/constants/textTypesConfig";
+import { toast } from "react-hot-toast";
+import QuoteComponent from "@lessonbuilder/components/blocks/QuoteBlock/QuoteComponent";
+import TableComponent from "@lessonbuilder/components/blocks/TableBlock/TableComponent";
+import ListComponent from "@lessonbuilder/components/blocks/ListBlock/ListComponent";
+import InteractiveComponent from "@lessonbuilder/components/blocks/InteractiveBlock/InteractiveComponent";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import StatementComponent from "@lessonbuilder/components/blocks/StatementBlock/StatementComponent";
+import DividerComponent from "@lessonbuilder/components/blocks/Shared/DividerComponent";
+import AudioComponent from "@lessonbuilder/components/blocks/MediaBlocks/AudioComponent";
+import YouTubeComponent from "@lessonbuilder/components/blocks/MediaBlocks/YouTubeComponent";
+import PDFComponent from "@lessonbuilder/components/blocks/DocumentBlocks/PDFComponent";
+import LinkComponent from "@lessonbuilder/components/blocks/DocumentBlocks/LinkComponent";
+import ImageBlockComponent from "@lessonbuilder/components/blocks/MediaBlocks/ImageBlockComponent";
+import TextBlockComponent from "@lessonbuilder/components/blocks/TextBlock/TextBlockComponent";
+import InteractiveListRenderer from "@lessonbuilder/components/blocks/ListBlock/InteractiveListRenderer";
+import useLessonBlocks from "@lessonbuilder/hooks/useLessonBlocks";
+import useLessonDialogs from "@lessonbuilder/hooks/useLessonDialogs";
+import useLessonLoader from "@lessonbuilder/hooks/useLessonLoader";
+import useLessonAutosave from "@lessonbuilder/hooks/useLessonAutosave";
 import {
   injectStyles,
   initializeGlobalFunctions,
-} from '@lessonbuilder/utils/styleSheets';
-import '@lessonbuilder/utils/quillConfig';
-import { getToolbarModules } from '@lessonbuilder/utils/quillConfig';
-import { buildLessonUpdatePayload } from '@lessonbuilder/utils/payloadUtils';
-import devLogger from '@lessonbuilder/utils/devLogger';
+} from "@lessonbuilder/utils/styleSheets";
+import "@lessonbuilder/utils/quillConfig";
+import { getToolbarModules } from "@lessonbuilder/utils/quillConfig";
+import { buildLessonUpdatePayload } from "@lessonbuilder/utils/payloadUtils";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 const BLOCK_GRADIENTS = {
-  text: 'from-indigo-500 to-purple-500',
-  statement: 'from-fuchsia-500 to-pink-500',
-  quote: 'from-sky-500 to-cyan-500',
-  image: 'from-amber-500 to-orange-500',
-  youtube: 'from-red-500 to-rose-500',
-  video: 'from-violet-500 to-indigo-500',
-  audio: 'from-emerald-500 to-teal-500',
-  link: 'from-blue-500 to-indigo-500',
-  pdf: 'from-slate-500 to-slate-700',
-  list: 'from-teal-500 to-emerald-500',
-  tables: 'from-orange-500 to-amber-500',
-  interactive: 'from-purple-500 to-indigo-500',
-  divider: 'from-zinc-500 to-slate-500',
+  text: "from-indigo-500 to-purple-500",
+  statement: "from-fuchsia-500 to-pink-500",
+  quote: "from-sky-500 to-cyan-500",
+  image: "from-amber-500 to-orange-500",
+  youtube: "from-red-500 to-rose-500",
+  video: "from-violet-500 to-indigo-500",
+  audio: "from-emerald-500 to-teal-500",
+  link: "from-blue-500 to-indigo-500",
+  pdf: "from-slate-500 to-slate-700",
+  list: "from-teal-500 to-emerald-500",
+  tables: "from-orange-500 to-amber-500",
+  interactive: "from-purple-500 to-indigo-500",
+  divider: "from-zinc-500 to-slate-500",
 };
 
-const getBlockGradient = id =>
-  BLOCK_GRADIENTS[id] || 'from-indigo-500 to-purple-500';
+const getBlockGradient = (id) =>
+  BLOCK_GRADIENTS[id] || "from-indigo-500 to-purple-500";
 
 // Initialize styles and global functions
 injectStyles();
@@ -118,7 +118,7 @@ function LessonBuilder() {
   const [imageUploading, setImageUploading] = useState({});
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState('saved');
+  const [autoSaveStatus, setAutoSaveStatus] = useState("saved");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const {
     showVideoDialog,
@@ -205,80 +205,80 @@ function LessonBuilder() {
 
   const contentBlockTypes = [
     {
-      id: 'text',
-      title: 'Text',
+      id: "text",
+      title: "Text",
       icon: <FileTextIcon className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'statement',
-      title: 'Statement',
+      id: "statement",
+      title: "Statement",
       icon: <MessageSquare className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'quote',
-      title: 'Quote',
+      id: "quote",
+      title: "Quote",
       icon: <Quote className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'image',
-      title: 'Image',
+      id: "image",
+      title: "Image",
       icon: <Image className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'youtube',
-      title: 'YouTube',
+      id: "youtube",
+      title: "YouTube",
       icon: <Youtube className="h-5 w-5" />,
       supportsAI: false,
     },
     {
-      id: 'video',
-      title: 'Video',
+      id: "video",
+      title: "Video",
       icon: <Video className="h-5 w-5" />,
       supportsAI: false,
     },
     {
-      id: 'audio',
-      title: 'Audio',
+      id: "audio",
+      title: "Audio",
       icon: <Volume2 className="h-5 w-5" />,
       supportsAI: false,
     },
     {
-      id: 'link',
-      title: 'Link',
+      id: "link",
+      title: "Link",
       icon: <LinkIcon className="h-5 w-5" />,
       supportsAI: false,
     },
     {
-      id: 'pdf',
-      title: 'PDF',
+      id: "pdf",
+      title: "PDF",
       icon: <FileTextIcon className="h-5 w-5" />,
       supportsAI: false,
     },
     {
-      id: 'list',
-      title: 'List',
+      id: "list",
+      title: "List",
       icon: <List className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'table', // Use singular to match backend and most frontend code
-      title: 'Tables',
+      id: "table", // Use singular to match backend and most frontend code
+      title: "Tables",
       icon: <Table className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'interactive',
-      title: 'Interactive',
+      id: "interactive",
+      title: "Interactive",
       icon: <Layers className="h-5 w-5" />,
       supportsAI: true,
     },
     {
-      id: 'divider',
-      title: 'Divider',
+      id: "divider",
+      title: "Divider",
       icon: <Minus className="h-5 w-5" />,
       supportsAI: true,
     },
@@ -386,20 +386,20 @@ function LessonBuilder() {
     lessonData?.lesson?.scormUrl ||
     null;
   const hasScormRestriction =
-    typeof scormUrl === 'string' && scormUrl.trim() !== '';
+    typeof scormUrl === "string" && scormUrl.trim() !== "";
 
   // Warn user before leaving page with unsaved changes
   React.useEffect(() => {
-    const handleBeforeUnload = e => {
-      if (hasUnsavedChanges || autoSaveStatus === 'saving') {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges || autoSaveStatus === "saving") {
         e.preventDefault();
-        e.returnValue = '';
-        return '';
+        e.returnValue = "";
+        return "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges, autoSaveStatus]);
 
   const handleBlockClick = (blockType, position = null) => {
@@ -417,32 +417,32 @@ function LessonBuilder() {
   };
 
   // Handle manual creation (existing logic)
-  const handleManualCreation = blockType => {
-    if (blockType.id === 'text') {
+  const handleManualCreation = (blockType) => {
+    if (blockType.id === "text") {
       setShowTextTypeSidebar(true);
-    } else if (blockType.id === 'statement') {
+    } else if (blockType.id === "statement") {
       setShowStatementSidebar(true);
-    } else if (blockType.id === 'quote') {
+    } else if (blockType.id === "quote") {
       setShowQuoteTemplateSidebar(true);
-    } else if (blockType.id === 'list') {
+    } else if (blockType.id === "list") {
       setShowListTemplateSidebar(true);
-    } else if (blockType.id === 'video') {
+    } else if (blockType.id === "video") {
       setShowVideoDialog(true);
-    } else if (blockType.id === 'youtube') {
+    } else if (blockType.id === "youtube") {
       setShowYouTubeDialog(true);
-    } else if (blockType.id === 'audio') {
+    } else if (blockType.id === "audio") {
       setShowAudioDialog(true);
-    } else if (blockType.id === 'image') {
+    } else if (blockType.id === "image") {
       setShowImageTemplateSidebar(true);
-    } else if (blockType.id === 'table' || blockType.id === 'tables') {
+    } else if (blockType.id === "table" || blockType.id === "tables") {
       setShowTableComponent(true);
-    } else if (blockType.id === 'link') {
+    } else if (blockType.id === "link") {
       setShowLinkDialog(true);
-    } else if (blockType.id === 'pdf') {
+    } else if (blockType.id === "pdf") {
       setShowPdfDialog(true);
-    } else if (blockType.id === 'interactive') {
+    } else if (blockType.id === "interactive") {
       setShowInteractiveTemplateSidebar(true);
-    } else if (blockType.id === 'divider') {
+    } else if (blockType.id === "divider") {
       setShowDividerTemplateSidebar(true);
     } else {
       // For simple blocks that don't need dialogs, insert immediately
@@ -456,12 +456,12 @@ function LessonBuilder() {
   };
 
   // Handle AI creation (for NEW blocks, not replacements)
-  const handleAICreation = blockType => {
+  const handleAICreation = (blockType) => {
     setCurrentAIBlockType(blockType);
     // CRITICAL: Clear blockToReplace when creating NEW blocks (not replacing)
     setBlockToReplace(null);
     blockToReplaceRef.current = null;
-    devLogger.debug('Creating NEW AI block - cleared blockToReplace');
+    devLogger.debug("Creating NEW AI block - cleared blockToReplace");
     setShowAIGeneratorDialog(true);
   };
 
@@ -470,24 +470,24 @@ function LessonBuilder() {
     if (!originalBlock) return newBlock.html_css;
 
     // For text blocks, preserve textType and regenerate HTML accordingly
-    if (originalBlock.type === 'text' && originalBlock.textType) {
+    if (originalBlock.type === "text" && originalBlock.textType) {
       const textType = originalBlock.textType || originalBlock.text_type;
-      const content = newBlock.content || newBlock.text || '';
+      const content = newBlock.content || newBlock.text || "";
 
       // For master_heading, preserve gradient
-      if (textType === 'master_heading') {
+      if (textType === "master_heading") {
         // Get gradient from original block
-        let gradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // default
+        let gradient = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"; // default
 
         if (originalBlock.gradient) {
           const gradientOption = gradientOptions.find(
-            g => g.id === originalBlock.gradient
+            (g) => g.id === originalBlock.gradient,
           );
           gradient = gradientOption?.gradient || gradient;
         } else if (originalBlock.html_css) {
           // Try to extract gradient from existing HTML
           const gradientMatch = originalBlock.html_css.match(
-            /background:\s*([^;'"]+)/
+            /background:\s*([^;'"]+)/,
           );
           if (gradientMatch) {
             gradient = gradientMatch[1].trim();
@@ -496,7 +496,7 @@ function LessonBuilder() {
 
         // Extract just the text content (remove HTML tags)
         const textContent =
-          content.replace(/<[^>]*>/g, '').trim() || content.trim();
+          content.replace(/<[^>]*>/g, "").trim() || content.trim();
 
         return `<div class="rounded-xl p-6 text-white font-extrabold text-3xl md:text-4xl leading-tight tracking-tight text-center" style="background: ${gradient}">
           ${textContent}
@@ -504,18 +504,18 @@ function LessonBuilder() {
       }
 
       // For heading with background color
-      if (textType === 'heading' && originalBlock.headingBgColor) {
+      if (textType === "heading" && originalBlock.headingBgColor) {
         const textContent =
-          content.replace(/<[^>]*>/g, '').trim() || content.trim();
+          content.replace(/<[^>]*>/g, "").trim() || content.trim();
         return `<div class="relative rounded-2xl shadow-md p-6" style="background-color: ${originalBlock.headingBgColor};">
           <h2 class="text-2xl font-bold text-gray-900 leading-tight">${textContent}</h2>
         </div>`;
       }
 
       // For subheading with background color
-      if (textType === 'subheading' && originalBlock.subheadingBgColor) {
+      if (textType === "subheading" && originalBlock.subheadingBgColor) {
         const textContent =
-          content.replace(/<[^>]*>/g, '').trim() || content.trim();
+          content.replace(/<[^>]*>/g, "").trim() || content.trim();
         return `<div class="relative rounded-2xl shadow-md p-6" style="background-color: ${originalBlock.subheadingBgColor};">
           <h3 class="text-xl font-semibold text-gray-800 leading-snug">${textContent}</h3>
         </div>`;
@@ -527,13 +527,13 @@ function LessonBuilder() {
     }
 
     // For statement blocks, preserve statementType
-    if (originalBlock.type === 'statement' && originalBlock.statementType) {
+    if (originalBlock.type === "statement" && originalBlock.statementType) {
       // The html_css should already be generated with the correct statementType
       return newBlock.html_css;
     }
 
     // For image blocks, preserve layout and alignment
-    if (originalBlock.type === 'image') {
+    if (originalBlock.type === "image") {
       // The formatAIContentForBlock should handle this, but ensure layout is preserved
       return newBlock.html_css;
     }
@@ -550,22 +550,22 @@ function LessonBuilder() {
     generatedContent,
   }) => {
     try {
-      devLogger.debug('🎯 Generating AI content for', currentAIBlockType.id);
+      devLogger.debug("🎯 Generating AI content for", currentAIBlockType.id);
 
       // Get course context
       const courseContext = getCourseContext(lessonData, lessonContent);
 
       let aiResponse = generatedContent?.rawData || generatedContent || null;
 
-      if (aiResponse && currentAIBlockType.id === 'image') {
+      if (aiResponse && currentAIBlockType.id === "image") {
         const templateKey =
           aiResponse.templateId || aiResponse.template || templateId;
         const imageContent =
-          typeof aiResponse.content === 'string'
+          typeof aiResponse.content === "string"
             ? aiResponse.content
             : JSON.stringify(aiResponse.content || {});
         aiResponse = {
-          type: 'image',
+          type: "image",
           templateId: templateKey,
           content: imageContent,
         };
@@ -575,15 +575,15 @@ function LessonBuilder() {
       let templateToUse = templateId;
       if (blockToReplace) {
         // Preserve the original block's template/type
-        if (blockToReplace.type === 'text' && blockToReplace.textType) {
+        if (blockToReplace.type === "text" && blockToReplace.textType) {
           templateToUse =
             blockToReplace.textType || blockToReplace.text_type || templateId;
           devLogger.debug(
-            'Preserving original textType for regeneration:',
-            templateToUse
+            "Preserving original textType for regeneration:",
+            templateToUse,
           );
         } else if (
-          blockToReplace.type === 'statement' &&
+          blockToReplace.type === "statement" &&
           blockToReplace.statementType
         ) {
           templateToUse =
@@ -591,8 +591,8 @@ function LessonBuilder() {
             blockToReplace.statement_type ||
             templateId;
           devLogger.debug(
-            'Preserving original statementType for regeneration:',
-            templateToUse
+            "Preserving original statementType for regeneration:",
+            templateToUse,
           );
         } else if (blockToReplace.templateType || blockToReplace.template) {
           templateToUse =
@@ -600,8 +600,8 @@ function LessonBuilder() {
             blockToReplace.template ||
             templateId;
           devLogger.debug(
-            'Preserving original templateType for regeneration:',
-            templateToUse
+            "Preserving original templateType for regeneration:",
+            templateToUse,
           );
         }
       }
@@ -618,32 +618,32 @@ function LessonBuilder() {
       } else if (
         templateToUse &&
         !aiResponse.templateId &&
-        currentAIBlockType.id !== 'image'
+        currentAIBlockType.id !== "image"
       ) {
         aiResponse.templateId = templateToUse; // Use preserved template
       }
 
-      devLogger.debug('✅ AI generated:', aiResponse);
+      devLogger.debug("✅ AI generated:", aiResponse);
 
       // Ensure block type is correct - normalize to 'table' (singular) to match backend
       let blockTypeToUse = currentAIBlockType.id;
-      if (blockTypeToUse === 'tables') {
-        blockTypeToUse = 'table'; // Normalize to singular to match backend storage
+      if (blockTypeToUse === "tables") {
+        blockTypeToUse = "table"; // Normalize to singular to match backend storage
       }
 
       // Format the AI response to match block structure
       let newBlock = formatAIContentForBlock(aiResponse, blockTypeToUse);
 
       // CRITICAL: For image blocks, ensure image is uploaded to S3 if not already
-      if (newBlock.type === 'image' && newBlock.imageUrl) {
+      if (newBlock.type === "image" && newBlock.imageUrl) {
         const isS3Url =
-          newBlock.imageUrl.includes('s3.amazonaws.com') ||
-          newBlock.imageUrl.includes('.s3.') ||
-          newBlock.imageUrl.includes('amazonaws.com');
+          newBlock.imageUrl.includes("s3.amazonaws.com") ||
+          newBlock.imageUrl.includes(".s3.") ||
+          newBlock.imageUrl.includes("amazonaws.com");
         const isOpenAIUrl =
-          newBlock.imageUrl.includes('oaidalleapiprodscus') ||
-          newBlock.imageUrl.includes('dalle') ||
-          (newBlock.imageUrl.startsWith('https://') && !isS3Url);
+          newBlock.imageUrl.includes("oaidalleapiprodscus") ||
+          newBlock.imageUrl.includes("dalle") ||
+          (newBlock.imageUrl.startsWith("https://") && !isS3Url);
 
         // If image needs S3 upload and not already uploaded, upload it
         if (
@@ -651,7 +651,7 @@ function LessonBuilder() {
           !isS3Url &&
           !newBlock.uploadedToS3
         ) {
-          devLogger.debug('🔄 AI-generated image needs S3 upload:', {
+          devLogger.debug("🔄 AI-generated image needs S3 upload:", {
             imageUrl: newBlock.imageUrl,
             isOpenAIUrl,
             isS3Url,
@@ -661,21 +661,21 @@ function LessonBuilder() {
           try {
             // Import uploadAIGeneratedImage dynamically to avoid circular dependencies
             const { uploadAIGeneratedImage } = await import(
-              '@/services/aiUploadService'
+              "@/services/aiUploadService"
             );
 
             const uploadResult = await uploadAIGeneratedImage(
               newBlock.imageUrl,
               {
-                folder: 'lessonbuilder-content-images',
+                folder: "lessonbuilder-content-images",
                 public: true,
-              }
+              },
             );
 
             if (uploadResult.success && uploadResult.imageUrl) {
               devLogger.debug(
-                '✅ AI image uploaded to S3:',
-                uploadResult.imageUrl
+                "✅ AI image uploaded to S3:",
+                uploadResult.imageUrl,
               );
 
               // Update block with S3 URL
@@ -693,22 +693,22 @@ function LessonBuilder() {
               newBlock.html_css = generateImageHTML(newBlock);
             } else {
               devLogger.warn(
-                '⚠️ S3 upload failed, using original URL:',
-                newBlock.imageUrl
+                "⚠️ S3 upload failed, using original URL:",
+                newBlock.imageUrl,
               );
             }
           } catch (uploadError) {
-            devLogger.error('❌ Error uploading AI image to S3:', uploadError);
+            devLogger.error("❌ Error uploading AI image to S3:", uploadError);
             // Continue with original URL - don't fail the entire operation
           }
         } else if (isS3Url || newBlock.uploadedToS3) {
-          devLogger.debug('✅ Image already on S3:', newBlock.imageUrl);
+          devLogger.debug("✅ Image already on S3:", newBlock.imageUrl);
         }
       }
 
       // CRITICAL: If replacing a block, preserve the original block's type, styling, and structure
       if (blockToReplace) {
-        devLogger.debug('Preserving original block properties:', {
+        devLogger.debug("Preserving original block properties:", {
           originalType: blockToReplace.type,
           originalTextType: blockToReplace.textType,
           originalStatementType: blockToReplace.statementType,
@@ -764,13 +764,13 @@ function LessonBuilder() {
           // Regenerate html_css with preserved styling
           html_css: regenerateHTMLWithPreservedStyling(
             newBlock,
-            blockToReplace
+            blockToReplace,
           ),
         };
       }
 
       // Ensure the block type is correctly set (formatAIContentForBlock may auto-detect)
-      devLogger.debug('📦 Formatted block:', {
+      devLogger.debug("📦 Formatted block:", {
         originalBlockType: blockTypeToUse,
         finalBlockType: newBlock.type,
         blockId: newBlock.id,
@@ -842,27 +842,27 @@ function LessonBuilder() {
       // Only check for duplicates if this is a NEW block (not a replacement)
       if (!blockToReplace && !blockToReplaceRef.current) {
         const existingIds = new Set(
-          blocksToUse.map(b => b.id || b.block_id).filter(Boolean)
+          blocksToUse.map((b) => b.id || b.block_id).filter(Boolean),
         );
         if (existingIds.has(newBlock.id || newBlock.block_id)) {
           // Generate a new unique ID if duplicate
           newBlock.id = `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           newBlock.block_id = newBlock.id;
-          devLogger.warn('Generated new ID for duplicate block:', {
+          devLogger.warn("Generated new ID for duplicate block:", {
             oldId: existingIds.has(newBlock.id || newBlock.block_id),
             newId: newBlock.id,
           });
         }
       } else {
         // For replacements, preserve the original ID (handled in replacement logic)
-        devLogger.debug('Skipping duplicate check for block replacement');
+        devLogger.debug("Skipping duplicate check for block replacement");
       }
 
       // Replace existing block or add new one
       if (blockToReplace || blockToReplaceRef.current) {
         const originalBlock = blockToReplaceRef.current || blockToReplace;
 
-        devLogger.debug('Block to replace found, showing comparison dialog:', {
+        devLogger.debug("Block to replace found, showing comparison dialog:", {
           blockToReplaceId: originalBlock.id,
           blockToReplaceIdAlt: originalBlock.block_id,
           blockToReplaceType: originalBlock.type,
@@ -892,10 +892,10 @@ function LessonBuilder() {
         const finalBlockToReplace = blockToReplaceRef.current || blockToReplace;
         if (!finalBlockToReplace) {
           devLogger.error(
-            '❌ CRITICAL: blockToReplace is null when trying to show comparison dialog'
+            "❌ CRITICAL: blockToReplace is null when trying to show comparison dialog",
           );
           toast.error(
-            'Error: Could not find original block. Please try again.'
+            "Error: Could not find original block. Please try again.",
           );
           // Clear and proceed as new block instead
           setBlockToReplace(null);
@@ -906,7 +906,7 @@ function LessonBuilder() {
           // This ensures it persists even if blockToReplace state changes
           setOldBlockForComparison(finalBlockToReplace);
 
-          devLogger.debug('✅ Showing comparison dialog with block:', {
+          devLogger.debug("✅ Showing comparison dialog with block:", {
             blockId: finalBlockToReplace.id || finalBlockToReplace.block_id,
             blockType: finalBlockToReplace.type,
             hasHtmlCss: !!finalBlockToReplace.html_css,
@@ -926,7 +926,7 @@ function LessonBuilder() {
       // Clear any lingering blockToReplace state to prevent confusion
       if (blockToReplace || blockToReplaceRef.current) {
         devLogger.warn(
-          '⚠️ blockToReplace was set but block was not found - clearing and adding as new block'
+          "⚠️ blockToReplace was set but block was not found - clearing and adding as new block",
         );
         setBlockToReplace(null);
         blockToReplaceRef.current = null;
@@ -938,7 +938,7 @@ function LessonBuilder() {
         // Check for duplicates before inserting
         const updatedBlocks = [...contentBlocks];
         const duplicateIndex = updatedBlocks.findIndex(
-          b => (b.id || b.block_id) === (newBlock.id || newBlock.block_id)
+          (b) => (b.id || b.block_id) === (newBlock.id || newBlock.block_id),
         );
         if (duplicateIndex === -1) {
           updatedBlocks.splice(insertionPosition, 0, newBlock);
@@ -946,7 +946,7 @@ function LessonBuilder() {
 
           // Also update lessonContent if it exists
           if (lessonContent?.data?.content) {
-            setLessonContent(prev => {
+            setLessonContent((prev) => {
               const newContent = [...prev.data.content];
               newContent.splice(insertionPosition, 0, newBlock);
               return {
@@ -959,21 +959,21 @@ function LessonBuilder() {
             });
           }
         } else {
-          devLogger.warn('Skipping duplicate block insertion');
+          devLogger.warn("Skipping duplicate block insertion");
         }
         setInsertionPosition(null);
       } else {
         // Adding at the end
         // Check for duplicates before adding
         const hasDuplicate = contentBlocks.some(
-          b => (b.id || b.block_id) === (newBlock.id || newBlock.block_id)
+          (b) => (b.id || b.block_id) === (newBlock.id || newBlock.block_id),
         );
         if (!hasDuplicate) {
-          setContentBlocks(prev => [...prev, newBlock]);
+          setContentBlocks((prev) => [...prev, newBlock]);
 
           // CRITICAL: Also update lessonContent if it exists (for AI-generated blocks from course creation)
           if (lessonContent?.data?.content) {
-            setLessonContent(prev => ({
+            setLessonContent((prev) => ({
               ...prev,
               data: {
                 ...prev.data,
@@ -982,33 +982,33 @@ function LessonBuilder() {
             }));
           }
         } else {
-          devLogger.warn('Skipping duplicate block addition');
+          devLogger.warn("Skipping duplicate block addition");
         }
       }
 
       setHasUnsavedChanges(true);
-      devLogger.debug('✅ Block added to lesson');
+      devLogger.debug("✅ Block added to lesson");
     } catch (error) {
-      devLogger.error('AI generation error:', error);
+      devLogger.error("AI generation error:", error);
       throw error; // Re-throw to be handled by dialog
     }
   };
 
   const handlePreview = () => {
     navigate(
-      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/preview`
+      `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/preview`,
     );
   };
 
   const handleUpdate = async () => {
     if (!lessonId) {
-      toast.error('No lesson ID found. Please save the lesson first.');
+      toast.error("No lesson ID found. Please save the lesson first.");
       return;
     }
 
     try {
       setIsUploading(true);
-      setAutoSaveStatus('saving');
+      setAutoSaveStatus("saving");
 
       const { lessonDataToUpdate, payloadSize, blocksCount } =
         buildLessonUpdatePayload({
@@ -1022,58 +1022,58 @@ function LessonBuilder() {
       if (payloadSize > 10 * 1024 * 1024) {
         toast.warning(
           `⚠️ Large content detected (${payloadSizeMB}MB). If save fails, contact your administrator to increase server limits.`,
-          { duration: 6000 }
+          { duration: 6000 },
         );
       } else if (payloadSize > 5 * 1024 * 1024) {
         devLogger.warn(
-          '⚠️ Large payload detected:',
+          "⚠️ Large payload detected:",
           payloadSizeMB,
-          'MB - May need higher backend limits'
+          "MB - May need higher backend limits",
         );
       }
 
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
-      const token = localStorage.getItem('token');
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:9000";
+      const token = localStorage.getItem("token");
 
       if (!token) {
-        throw new Error('Authentication token not found');
+        throw new Error("Authentication token not found");
       }
 
       const response = await fetch(
         `${baseUrl}/api/lessoncontent/update/${lessonId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(lessonDataToUpdate),
-        }
+        },
       );
 
       let responseData = null;
       try {
         responseData = await response.json();
       } catch (jsonError) {
-        devLogger.warn('Response body was not JSON:', jsonError);
+        devLogger.warn("Response body was not JSON:", jsonError);
       }
 
       if (!response.ok) {
-        let errorMessage = 'Failed to update lesson content';
+        let errorMessage = "Failed to update lesson content";
 
         if (response.status === 413) {
           errorMessage =
-            'Content is too large. Please reduce the size of your content and try again.';
+            "Content is too large. Please reduce the size of your content and try again.";
         } else if (response.status === 400) {
           errorMessage =
-            'Invalid content format. Please check your content and try again.';
+            "Invalid content format. Please check your content and try again.";
         } else if (response.status === 401) {
-          errorMessage = 'Authentication failed. Please log in again.';
+          errorMessage = "Authentication failed. Please log in again.";
         } else if (response.status === 403) {
-          errorMessage = 'You do not have permission to update this lesson.';
+          errorMessage = "You do not have permission to update this lesson.";
         } else if (response.status >= 500) {
-          errorMessage = 'Server error. Please try again later.';
+          errorMessage = "Server error. Please try again later.";
         } else if (responseData?.errorMessage) {
           errorMessage = responseData.errorMessage;
         } else if (responseData?.message) {
@@ -1087,76 +1087,76 @@ function LessonBuilder() {
         throw new Error(errorMessage);
       }
 
-      devLogger.debug('Lesson content updated', {
+      devLogger.debug("Lesson content updated", {
         lessonId,
         payloadSizeMB,
         blocksCount,
       });
 
-      const isManualSave = autoSaveStatus === 'error';
+      const isManualSave = autoSaveStatus === "error";
       toast.success(
         isManualSave
-          ? 'Changes saved successfully!'
-          : 'Lesson updated successfully!'
+          ? "Changes saved successfully!"
+          : "Lesson updated successfully!",
       );
-      setAutoSaveStatus('saved');
+      setAutoSaveStatus("saved");
       setHasUnsavedChanges(false);
 
       setTimeout(() => {
-        setAutoSaveStatus('saved');
+        setAutoSaveStatus("saved");
       }, 2000);
     } catch (error) {
-      devLogger.error('Error updating lesson:', error);
-      devLogger.error('Error details:', {
+      devLogger.error("Error updating lesson:", error);
+      devLogger.error("Error details:", {
         message: error.message,
         response: error.response,
         request: error.request,
         config: error.config,
       });
 
-      let errorMessage = 'Failed to update lesson. Please try again.';
+      let errorMessage = "Failed to update lesson. Please try again.";
 
-      if (error.message === 'PAYLOAD_TOO_LARGE') {
+      if (error.message === "PAYLOAD_TOO_LARGE") {
         errorMessage =
           '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit (typically in server configuration: app.use(express.json({ limit: "50mb" }))).';
-        devLogger.error('PAYLOAD TOO LARGE - Backend configuration needed');
+        devLogger.error("PAYLOAD TOO LARGE - Backend configuration needed");
       } else if (error.response) {
         const status = error.response.status;
         const responseData = error.response.data;
 
-        devLogger.debug('Server error response:', {
+        devLogger.debug("Server error response:", {
           status,
           data: responseData,
         });
 
         const isHtmlError =
-          typeof responseData === 'string' &&
-          responseData.trim().startsWith('<!DOCTYPE html>');
+          typeof responseData === "string" &&
+          responseData.trim().startsWith("<!DOCTYPE html>");
 
         if (isHtmlError) {
           if (
-            responseData.includes('PayloadTooLargeError') ||
-            responseData.includes('request entity too large')
+            responseData.includes("PayloadTooLargeError") ||
+            responseData.includes("request entity too large")
           ) {
             errorMessage =
-              '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit.';
-            devLogger.error('413 Payload Too Large - HTML error page received');
+              "⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit.";
+            devLogger.error("413 Payload Too Large - HTML error page received");
           } else {
-            errorMessage = 'Server error. Please try again later.';
+            errorMessage = "Server error. Please try again later.";
           }
         } else if (status === 413) {
           errorMessage =
-            '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator.';
-          devLogger.debug('Setting 413 error message:', errorMessage);
+            "⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator.";
+          devLogger.debug("Setting 413 error message:", errorMessage);
         } else if (status === 400) {
           errorMessage =
-            'Invalid content format. Please check your content and try again.';
+            "Invalid content format. Please check your content and try again.";
         } else if (status === 401) {
-          errorMessage = 'Authentication failed. Please log in again.';
+          errorMessage = "Authentication failed. Please log in again.";
         } else if (status === 403) {
-          errorMessage = 'You do not have permission to update this lesson.';
+          errorMessage = "You do not have permission to update this lesson.";
         } else if (status >= 500) {
-          errorMessage = 'Server error. Please try again later.';
+          errorMessage = "Server error. Please try again later.";
         } else if (responseData?.errorMessage) {
           errorMessage = responseData.errorMessage;
         } else if (responseData?.message) {
@@ -1164,21 +1164,21 @@ function LessonBuilder() {
         } else if (responseData?.error) {
           errorMessage = responseData.error;
         } else {
-          errorMessage = `HTTP ${status}: ${error.response.statusText || 'Request failed'}`;
+          errorMessage = `HTTP ${status}: ${error.response.statusText || "Request failed"}`;
         }
       } else if (error.request) {
-        devLogger.debug('Network error - no response received:', error.request);
+        devLogger.debug("Network error - no response received:", error.request);
         errorMessage =
-          'Network error. Please check your connection and try again.';
+          "Network error. Please check your connection and try again.";
       } else if (error.message) {
-        devLogger.debug('Other error:', error.message);
+        devLogger.debug("Other error:", error.message);
         errorMessage = error.message;
       }
 
-      devLogger.error('Final error message:', errorMessage);
-      devLogger.debug('Setting auto-save status to error and showing toast');
+      devLogger.error("Final error message:", errorMessage);
+      devLogger.debug("Setting auto-save status to error and showing toast");
       toast.error(errorMessage);
-      setAutoSaveStatus('error');
+      setAutoSaveStatus("error");
     } finally {
       setIsUploading(false);
     }
@@ -1218,7 +1218,7 @@ function LessonBuilder() {
         <div
           className="fixed top-16 h-[calc(100vh-4rem)] z-40 bg-gradient-to-b from-indigo-50/80 via-purple-50/60 to-white/90 shadow-lg border-r border-indigo-100/50 overflow-y-auto w-72 flex-shrink-0 backdrop-blur-sm"
           style={{
-            left: sidebarCollapsed ? '4.5rem' : '17rem',
+            left: sidebarCollapsed ? "4.5rem" : "17rem",
           }}
         >
           <div className="w-72 bg-transparent flex flex-col h-full">
@@ -1236,7 +1236,7 @@ function LessonBuilder() {
             {/* Shimmer Content Block List */}
             <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4">
               <div className="space-y-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(index => (
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
                   <div
                     key={index}
                     className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-4 py-3 flex items-center gap-3"
@@ -1257,8 +1257,8 @@ function LessonBuilder() {
         <div
           className={`flex-1 transition-all duration-300 relative ${
             sidebarCollapsed
-              ? 'ml-[calc(4.5rem+18rem)]'
-              : 'ml-[calc(17rem+18rem)]'
+              ? "ml-[calc(4.5rem+18rem)]"
+              : "ml-[calc(17rem+18rem)]"
           }`}
         >
           {/* Shimmer Fixed Header */}
@@ -1266,8 +1266,8 @@ function LessonBuilder() {
             className="fixed top-16 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm px-6 py-4 z-30"
             style={{
               left: sidebarCollapsed
-                ? 'calc(4.5rem + 18rem)'
-                : 'calc(17rem + 18rem)',
+                ? "calc(4.5rem + 18rem)"
+                : "calc(17rem + 18rem)",
             }}
           >
             <div className="w-full px-6 flex items-center justify-between">
@@ -1292,7 +1292,7 @@ function LessonBuilder() {
             <div className="py-4">
               <div className="space-y-6 w-full max-w-none">
                 {/* Shimmer Content Blocks */}
-                {[1, 2, 3].map(index => (
+                {[1, 2, 3].map((index) => (
                   <div key={index} className="relative bg-white rounded-lg p-6">
                     {/* Master Heading Shimmer */}
                     {index === 1 && (
@@ -1348,7 +1348,7 @@ function LessonBuilder() {
             </div>
             {scormUrl && (
               <div className="w-full rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700 break-all border border-amber-200">
-                <span className="font-medium">SCORM URL:</span>{' '}
+                <span className="font-medium">SCORM URL:</span>{" "}
                 <span>{scormUrl}</span>
               </div>
             )}
@@ -1363,7 +1363,7 @@ function LessonBuilder() {
               </Button>
               <Button
                 onClick={() =>
-                  window.open(scormUrl, '_blank', 'noopener,noreferrer')
+                  window.open(scormUrl, "_blank", "noopener,noreferrer")
                 }
                 className="flex items-center justify-center gap-2"
               >
@@ -1381,14 +1381,14 @@ function LessonBuilder() {
     <>
       <div
         className="fixed inset-0 bg-[#fafafa] overflow-hidden"
-        style={{ top: '4rem' }}
+        style={{ top: "4rem" }}
       >
         {/* Content Blocks Sidebar - Only visible when showContentLibrarySidebar is true */}
         {showContentLibrarySidebar ? (
           <div
             className="fixed top-16 h-[calc(100vh-4rem)] z-40 bg-gradient-to-b from-indigo-50/80 via-purple-50/60 to-white/90 shadow-lg border-r border-indigo-100/50 overflow-y-auto w-72 flex-shrink-0 backdrop-blur-sm transition-all duration-500 ease-in-out ring-4 ring-indigo-400/60 shadow-2xl"
             style={{
-              left: sidebarCollapsed ? '4.5rem' : '17rem',
+              left: sidebarCollapsed ? "4.5rem" : "17rem",
             }}
           >
             <div className="w-72 bg-transparent flex flex-col h-full">
@@ -1422,7 +1422,7 @@ function LessonBuilder() {
 
               <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4">
                 <div className="space-y-2">
-                  {contentBlockTypes.map(blockType => (
+                  {contentBlockTypes.map((blockType) => (
                     <Card
                       key={blockType.id}
                       title={blockType.title}
@@ -1434,7 +1434,7 @@ function LessonBuilder() {
                       <CardContent className="px-4 py-3 flex items-center gap-3">
                         <div
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${getBlockGradient(
-                            blockType.id
+                            blockType.id,
                           )} shadow-md shadow-black/10 group-hover:shadow-lg group-hover:scale-105 transition-all duration-300`}
                         >
                           <div className="text-white text-sm">
@@ -1462,25 +1462,26 @@ function LessonBuilder() {
 
         {/* Main Content */}
         <div
-          className="fixed transition-all duration-500 ease-in-out"
+          className="fixed transition-all duration-500 ease-in-out overflow-y-auto"
           style={{
-            left: (() => {
+            left: 0,
+            right: 0,
+            top: "4rem",
+            bottom: 0,
+            marginLeft: (() => {
               // Ensure consistent calculation to prevent blank spaces
               const sidebarWidth = showContentLibrarySidebar ? 18 : 0;
               const mainSidebarWidth = sidebarCollapsed ? 4.5 : 17;
               return `${mainSidebarWidth + sidebarWidth}rem`;
             })(),
-            right: 0,
-            top: '4rem',
-            bottom: 0,
-            overflowY: 'auto',
+            scrollbarGutter: "stable",
           }}
         >
           {/* Fixed Header */}
           <div
             className="fixed top-16 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm px-4 py-4 z-30 transition-all duration-500 ease-in-out"
             style={{
-              left: (() => {
+              marginLeft: (() => {
                 // Ensure consistent calculation to prevent blank spaces
                 const sidebarWidth = showContentLibrarySidebar ? 18 : 0;
                 const mainSidebarWidth = sidebarCollapsed ? 4.5 : 17;
@@ -1500,7 +1501,7 @@ function LessonBuilder() {
                   <span>Back</span>
                 </Button>
                 <h1 className="text-lg font-bold">
-                  {lessonData?.title || lessonTitle || 'Untitled Lesson'}
+                  {lessonData?.title || lessonTitle || "Untitled Lesson"}
                 </h1>
               </div>
 
@@ -1508,7 +1509,7 @@ function LessonBuilder() {
                 {/* Auto-save status indicator */}
                 <div className="flex flex-col items-end">
                   <div className="flex items-center gap-2 text-sm">
-                    {autoSaveStatus === 'saving' && (
+                    {autoSaveStatus === "saving" && (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                         <span className="text-blue-600 font-medium">
@@ -1516,7 +1517,7 @@ function LessonBuilder() {
                         </span>
                       </>
                     )}
-                    {autoSaveStatus === 'saved' &&
+                    {autoSaveStatus === "saved" &&
                       hasUnsavedChanges === false && (
                         <>
                           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -1525,7 +1526,7 @@ function LessonBuilder() {
                           </span>
                         </>
                       )}
-                    {autoSaveStatus === 'error' && (
+                    {autoSaveStatus === "error" && (
                       <>
                         <X className="h-4 w-4 text-red-600" />
                         <span className="text-red-600 font-medium">
@@ -1534,7 +1535,7 @@ function LessonBuilder() {
                       </>
                     )}
                   </div>
-                  {autoSaveStatus !== 'saving' && (
+                  {autoSaveStatus !== "saving" && (
                     <span className="text-xs text-gray-500 mt-0.5">
                       Auto-save enabled
                     </span>
@@ -1554,28 +1555,28 @@ function LessonBuilder() {
                 <Button
                   size="sm"
                   onClick={handleUpdate}
-                  disabled={isUploading || autoSaveStatus === 'saving'}
+                  disabled={isUploading || autoSaveStatus === "saving"}
                   title={
-                    autoSaveStatus === 'error'
-                      ? 'Auto-save failed - click to save manually'
-                      : 'Manually save changes now'
+                    autoSaveStatus === "error"
+                      ? "Auto-save failed - click to save manually"
+                      : "Manually save changes now"
                   }
                   variant={
-                    autoSaveStatus === 'error' ? 'destructive' : 'default'
+                    autoSaveStatus === "error" ? "destructive" : "default"
                   }
                 >
-                  {isUploading || autoSaveStatus === 'saving' ? (
+                  {isUploading || autoSaveStatus === "saving" ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Saving...
                     </>
-                  ) : autoSaveStatus === 'error' ? (
+                  ) : autoSaveStatus === "error" ? (
                     <>
                       <X className="h-4 w-4 mr-2" />
                       Save Now
                     </>
                   ) : (
-                    'Save Now'
+                    "Save Now"
                   )}
                 </Button>
               </div>
@@ -1583,7 +1584,10 @@ function LessonBuilder() {
           </div>
 
           {/* Main Content Canvas with top padding for fixed header */}
-          <div className="w-full h-full bg-gradient-to-br from-gray-50 via-[#fafafa] to-gray-50 pt-20">
+          <div
+            className="w-full h-full bg-gradient-to-br from-gray-50 via-[#fafafa] to-gray-50 pt-20"
+            style={{ scrollbarGutter: "stable" }}
+          >
             <div className="py-6 px-3 lg:px-4">
               <div className="w-full">
                 {/* Always show edit interface since View mode is replaced by Modern Preview */}
@@ -1623,7 +1627,7 @@ function LessonBuilder() {
                             <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-bounce"></div>
                             <div
                               className="absolute -bottom-1 -left-3 w-4 h-4 bg-green-400 rounded-full animate-bounce"
-                              style={{ animationDelay: '0.5s' }}
+                              style={{ animationDelay: "0.5s" }}
                             ></div>
                           </div>
 
@@ -1769,11 +1773,11 @@ function LessonBuilder() {
                             : contentBlocks;
 
                         // Normalize block types and ensure IDs exist
-                        const normalizedBlocks = blocksToRender.map(block => {
+                        const normalizedBlocks = blocksToRender.map((block) => {
                           // Normalize table type: backend and most code use 'table' (singular)
                           // But some UI checks use 'tables' (plural) - normalize to 'table'
-                          if (block.type === 'tables') {
-                            return { ...block, type: 'table' };
+                          if (block.type === "tables") {
+                            return { ...block, type: "table" };
                           }
                           // Ensure block_id exists
                           if (!block.block_id && block.id) {
@@ -1788,19 +1792,21 @@ function LessonBuilder() {
 
                         // Remove duplicate blocks based on ID to prevent outline issues
                         const seenBlockIds = new Set();
-                        const uniqueBlocks = normalizedBlocks.filter(block => {
-                          const blockId = block.id || block.block_id;
-                          if (!blockId) return true; // Keep blocks without IDs
-                          if (seenBlockIds.has(blockId)) {
-                            devLogger.warn(
-                              'Filtering duplicate block:',
-                              blockId
-                            );
-                            return false;
-                          }
-                          seenBlockIds.add(blockId);
-                          return true;
-                        });
+                        const uniqueBlocks = normalizedBlocks.filter(
+                          (block) => {
+                            const blockId = block.id || block.block_id;
+                            if (!blockId) return true; // Keep blocks without IDs
+                            if (seenBlockIds.has(blockId)) {
+                              devLogger.warn(
+                                "Filtering duplicate block:",
+                                blockId,
+                              );
+                              return false;
+                            }
+                            seenBlockIds.add(blockId);
+                            return true;
+                          },
+                        );
 
                         // Sort blocks by order to preserve 10-section structure
                         const sortedBlocks = [...uniqueBlocks].sort((a, b) => {
@@ -1822,34 +1828,34 @@ function LessonBuilder() {
                         });
 
                         // Filter out empty blocks that create white blocks
-                        const filteredBlocks = sortedBlocks.filter(block => {
+                        const filteredBlocks = sortedBlocks.filter((block) => {
                           // Skip empty text blocks
-                          if (block.type === 'text') {
-                            const htmlCss = (block.html_css || '').trim();
-                            const content = (block.content || '').trim();
+                          if (block.type === "text") {
+                            const htmlCss = (block.html_css || "").trim();
+                            const content = (block.content || "").trim();
 
                             // Always keep master headings (they have gradient backgrounds)
-                            if (block.textType === 'master_heading') {
+                            if (block.textType === "master_heading") {
                               return true;
                             }
 
                             // Remove HTML tags to check for actual text content
                             const textContent = (htmlCss || content)
-                              .replace(/<[^>]*>/g, '')
-                              .replace(/&nbsp;/g, ' ')
-                              .replace(/\s+/g, ' ')
+                              .replace(/<[^>]*>/g, "")
+                              .replace(/&nbsp;/g, " ")
+                              .replace(/\s+/g, " ")
                               .trim();
 
                             // Filter out blocks with no meaningful content
                             // This removes empty white blocks
                             if (textContent.length === 0) {
                               devLogger.debug(
-                                'Filtering out empty text block:',
+                                "Filtering out empty text block:",
                                 {
                                   blockId: block.id || block.block_id,
                                   htmlCss: htmlCss.substring(0, 50),
                                   content: content.substring(0, 50),
-                                }
+                                },
                               );
                               return false;
                             }
@@ -1861,20 +1867,20 @@ function LessonBuilder() {
                         });
 
                         devLogger.debug(
-                          'Rendering blocks from single source:',
+                          "Rendering blocks from single source:",
                           {
                             source:
                               lessonContent?.data?.content?.length > 0
-                                ? 'lessonContent'
-                                : 'contentBlocks',
+                                ? "lessonContent"
+                                : "contentBlocks",
                             totalBlocks: blocksToRender.length,
                             filteredBlocks: filteredBlocks.length,
                             filteredOut:
                               blocksToRender.length - filteredBlocks.length,
                             blockIds: filteredBlocks.map(
-                              b => b.id || b.block_id
+                              (b) => b.id || b.block_id,
                             ),
-                          }
+                          },
                         );
 
                         // If no blocks, show empty state with + button
@@ -1892,8 +1898,8 @@ function LessonBuilder() {
                                 className={`flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${
                                   showContentLibrarySidebar &&
                                   insertionPosition === 0
-                                    ? 'border-red-500 bg-red-50 scale-105'
-                                    : 'border-blue-300 bg-blue-50 hover:border-blue-500 hover:bg-blue-100'
+                                    ? "border-red-500 bg-red-50 scale-105"
+                                    : "border-blue-300 bg-blue-50 hover:border-blue-500 hover:bg-blue-100"
                                 }`}
                               >
                                 {showContentLibrarySidebar &&
@@ -1940,7 +1946,7 @@ function LessonBuilder() {
                                     data-block-id={blockId}
                                     className="relative group transition-all duration-300 animate-block-enter"
                                     onDragOver={handleDragOver}
-                                    onDrop={e => handleDrop(e, blockId)}
+                                    onDrop={(e) => handleDrop(e, blockId)}
                                   >
                                     <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                       {!block.isEditing && (
@@ -1950,21 +1956,21 @@ function LessonBuilder() {
                                             // Normalize block type for checking (handle table/tables inconsistency)
                                             // Backend and most code use 'table' (singular), but check both
                                             const normalizedType =
-                                              block.type === 'tables'
-                                                ? 'table'
-                                                : block.type === 'table'
-                                                  ? 'table'
+                                              block.type === "tables"
+                                                ? "table"
+                                                : block.type === "table"
+                                                  ? "table"
                                                   : block.type;
 
                                             const blockTypeConfig =
                                               contentBlockTypes.find(
-                                                bt =>
+                                                (bt) =>
                                                   bt.id === normalizedType ||
                                                   bt.id === block.type ||
-                                                  (bt.id === 'table' &&
-                                                    block.type === 'tables') ||
-                                                  (bt.id === 'tables' &&
-                                                    block.type === 'table')
+                                                  (bt.id === "table" &&
+                                                    block.type === "tables") ||
+                                                  (bt.id === "tables" &&
+                                                    block.type === "table"),
                                               );
 
                                             // Also check if block is AI-generated (from course creation)
@@ -1998,11 +2004,11 @@ function LessonBuilder() {
                                                       html_css:
                                                         block.html_css ||
                                                         block.content ||
-                                                        '',
+                                                        "",
                                                       content:
                                                         block.content ||
                                                         block.html_css ||
-                                                        '',
+                                                        "",
                                                       // Preserve details object completely
                                                       details: block.details
                                                         ? { ...block.details }
@@ -2036,7 +2042,7 @@ function LessonBuilder() {
                                                     };
 
                                                     devLogger.debug(
-                                                      'Setting blockToReplace with full data:',
+                                                      "Setting blockToReplace with full data:",
                                                       {
                                                         blockId:
                                                           fullBlock.id ||
@@ -2057,29 +2063,29 @@ function LessonBuilder() {
                                                         detailsKeys:
                                                           fullBlock.details
                                                             ? Object.keys(
-                                                                fullBlock.details
+                                                                fullBlock.details,
                                                               )
                                                             : [],
                                                         allBlockKeys:
                                                           Object.keys(
-                                                            fullBlock
+                                                            fullBlock,
                                                           ),
-                                                      }
+                                                      },
                                                     );
 
                                                     setCurrentAIBlockType(
                                                       contentBlockTypes.find(
-                                                        bt =>
-                                                          bt.id === block.type
-                                                      )
+                                                        (bt) =>
+                                                          bt.id === block.type,
+                                                      ),
                                                     );
                                                     setBlockToReplace(
-                                                      fullBlock
+                                                      fullBlock,
                                                     ); // Set FULL block to replace
                                                     blockToReplaceRef.current =
                                                       fullBlock; // Also store in ref for persistence
                                                     setShowAIGeneratorDialog(
-                                                      true
+                                                      true,
                                                     );
                                                   }}
                                                   title={`Regenerate ${block.type} with AI`}
@@ -2095,19 +2101,19 @@ function LessonBuilder() {
                                             className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
                                             onClick={() => {
                                               // For image blocks, always use handleEditImage from ImageBlockComponent
-                                              if (block.type === 'image') {
+                                              if (block.type === "image") {
                                                 if (
                                                   imageBlockComponentRef.current &&
                                                   imageBlockComponentRef.current
                                                     .handleEditImage
                                                 ) {
                                                   imageBlockComponentRef.current.handleEditImage(
-                                                    block.id || block.block_id
+                                                    block.id || block.block_id,
                                                   );
                                                 } else {
                                                   // Fallback: toggle inline editing
                                                   toggleImageBlockEditing(
-                                                    block.id
+                                                    block.id,
                                                   );
                                                 }
                                               } else {
@@ -2134,7 +2140,7 @@ function LessonBuilder() {
                                       <div
                                         className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
                                         draggable
-                                        onDragStart={e =>
+                                        onDragStart={(e) =>
                                           handleDragStart(e, blockId)
                                         }
                                         onDragEnd={handleDragEnd}
@@ -2144,7 +2150,7 @@ function LessonBuilder() {
                                     </div>
 
                                     <div className="relative">
-                                      {block.type === 'text' && (
+                                      {block.type === "text" && (
                                         <div>
                                           {block.html_css ? (
                                             <div
@@ -2164,7 +2170,7 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'statement' && (
+                                      {block.type === "statement" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
@@ -2196,7 +2202,7 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'interactive' && (
+                                      {block.type === "interactive" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
@@ -2228,7 +2234,7 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'link' && (
+                                      {block.type === "link" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
@@ -2253,34 +2259,34 @@ function LessonBuilder() {
                                               onClick={() =>
                                                 window.open(
                                                   block.linkUrl,
-                                                  '_blank',
-                                                  'noopener,noreferrer'
+                                                  "_blank",
+                                                  "noopener,noreferrer",
                                                 )
                                               }
                                               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                                                 block.linkButtonStyle ===
-                                                'primary'
-                                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                                "primary"
+                                                  ? "bg-blue-600 text-white hover:bg-blue-700"
                                                   : block.linkButtonStyle ===
-                                                      'secondary'
-                                                    ? 'bg-gray-600 text-white hover:bg-gray-700'
+                                                      "secondary"
+                                                    ? "bg-gray-600 text-white hover:bg-gray-700"
                                                     : block.linkButtonStyle ===
-                                                        'success'
-                                                      ? 'bg-green-600 text-white hover:bg-green-700'
+                                                        "success"
+                                                      ? "bg-green-600 text-white hover:bg-green-700"
                                                       : block.linkButtonStyle ===
-                                                          'warning'
-                                                        ? 'bg-orange-600 text-white hover:bg-orange-700'
+                                                          "warning"
+                                                        ? "bg-orange-600 text-white hover:bg-orange-700"
                                                         : block.linkButtonStyle ===
-                                                            'danger'
-                                                          ? 'bg-red-600 text-white hover:bg-red-700'
+                                                            "danger"
+                                                          ? "bg-red-600 text-white hover:bg-red-700"
                                                           : block.linkButtonStyle ===
-                                                              'outline'
-                                                            ? 'border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white'
-                                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                              "outline"
+                                                            ? "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                                                            : "bg-blue-600 text-white hover:bg-blue-700"
                                               }`}
                                             >
                                               {block.linkButtonText ||
-                                                'Visit Link'}
+                                                "Visit Link"}
                                               <svg
                                                 className="ml-2 h-3 w-3"
                                                 fill="none"
@@ -2299,16 +2305,16 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'video' && (
+                                      {block.type === "video" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
                                               {block.title
                                                 ?.replace(
                                                   /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
-                                                  ''
+                                                  "",
                                                 )
-                                                .trim() || 'Video'}
+                                                .trim() || "Video"}
                                             </h3>
                                             <Badge
                                               variant="secondary"
@@ -2323,24 +2329,24 @@ function LessonBuilder() {
                                             let videoUrl =
                                               block.videoUrl ||
                                               block.details?.video_url ||
-                                              '';
+                                              "";
                                             let videoTitle = (
                                               block.videoTitle ||
                                               block.details?.caption ||
-                                              'Video'
+                                              "Video"
                                             )
                                               .replace(
                                                 /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
-                                                ''
+                                                "",
                                               )
                                               .trim();
                                             let videoDescription =
                                               block.videoDescription ||
                                               block.details?.description ||
-                                              '';
+                                              "";
 
                                             devLogger.debug(
-                                              'Video block edit rendering:',
+                                              "Video block edit rendering:",
                                               {
                                                 blockId: block.id,
                                                 videoUrl,
@@ -2348,7 +2354,7 @@ function LessonBuilder() {
                                                 videoDescription,
                                                 blockDetails: block.details,
                                                 hasUrl: !!videoUrl,
-                                              }
+                                              },
                                             );
 
                                             // Check if we have a valid video URL
@@ -2356,7 +2362,7 @@ function LessonBuilder() {
                                               // Check if it's a YouTube URL by looking at the content or checking if it's an embed URL
                                               const isYouTubeVideo =
                                                 videoUrl.includes(
-                                                  'youtube.com/embed'
+                                                  "youtube.com/embed",
                                                 ) ||
                                                 (block.content &&
                                                   JSON.parse(block.content)
@@ -2379,8 +2385,8 @@ function LessonBuilder() {
                                                         title={videoTitle}
                                                         className="w-full max-w-full"
                                                         style={{
-                                                          height: '400px',
-                                                          borderRadius: '8px',
+                                                          height: "400px",
+                                                          borderRadius: "8px",
                                                         }}
                                                         frameBorder="0"
                                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -2391,7 +2397,7 @@ function LessonBuilder() {
                                                         controls
                                                         className="w-full max-w-full"
                                                         style={{
-                                                          maxHeight: '400px',
+                                                          maxHeight: "400px",
                                                         }}
                                                         preload="metadata"
                                                       >
@@ -2418,7 +2424,7 @@ function LessonBuilder() {
                                             } else {
                                               // Fallback: Use html_css if video URL not found
                                               devLogger.debug(
-                                                'No URL in video block, falling back to html_css'
+                                                "No URL in video block, falling back to html_css",
                                               );
                                               if (
                                                 block.html_css &&
@@ -2439,9 +2445,9 @@ function LessonBuilder() {
                                                       Video URL not found
                                                     </p>
                                                     <p className="text-xs text-gray-400 mt-1">
-                                                      Block details:{' '}
+                                                      Block details:{" "}
                                                       {JSON.stringify(
-                                                        block.details
+                                                        block.details,
                                                       )}
                                                     </p>
                                                   </div>
@@ -2452,11 +2458,11 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'audio' && (
+                                      {block.type === "audio" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                              {block.title || 'Audio'}
+                                              {block.title || "Audio"}
                                             </h3>
                                             <Badge
                                               variant="secondary"
@@ -2469,16 +2475,16 @@ function LessonBuilder() {
                                           {(() => {
                                             try {
                                               const audioContent = JSON.parse(
-                                                block.content || '{}'
+                                                block.content || "{}",
                                               );
                                               devLogger.debug(
-                                                'Audio block edit rendering:',
+                                                "Audio block edit rendering:",
                                                 {
                                                   blockId: block.id,
                                                   audioContent,
                                                   hasUrl: !!audioContent.url,
                                                   url: audioContent.url,
-                                                }
+                                                },
                                               );
 
                                               // Check if we have a valid audio URL
@@ -2536,7 +2542,7 @@ function LessonBuilder() {
                                                                 .uploadedData
                                                                 .fileSize /
                                                               (1024 * 1024)
-                                                            ).toFixed(2)}{' '}
+                                                            ).toFixed(2)}{" "}
                                                             MB)
                                                           </span>
                                                         </div>
@@ -2547,7 +2553,7 @@ function LessonBuilder() {
                                               } else {
                                                 // Fallback: Use html_css if JSON doesn't have URL
                                                 devLogger.debug(
-                                                  'No URL in audio content, falling back to html_css'
+                                                  "No URL in audio content, falling back to html_css",
                                                 );
                                                 if (
                                                   block.html_css &&
@@ -2568,9 +2574,9 @@ function LessonBuilder() {
                                                         Audio URL not found
                                                       </p>
                                                       <p className="text-xs text-gray-400 mt-1">
-                                                        Content:{' '}
+                                                        Content:{" "}
                                                         {JSON.stringify(
-                                                          audioContent
+                                                          audioContent,
                                                         )}
                                                       </p>
                                                     </div>
@@ -2579,8 +2585,8 @@ function LessonBuilder() {
                                               }
                                             } catch (e) {
                                               devLogger.error(
-                                                'Error parsing audio content in edit mode:',
-                                                e
+                                                "Error parsing audio content in edit mode:",
+                                                e,
                                               );
                                               // Fallback: Use html_css if JSON parsing fails
                                               if (
@@ -2613,11 +2619,11 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'youtube' && (
+                                      {block.type === "youtube" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                              {block.title || 'YouTube Video'}
+                                              {block.title || "YouTube Video"}
                                             </h3>
                                             <Badge
                                               variant="secondary"
@@ -2630,16 +2636,16 @@ function LessonBuilder() {
                                           {(() => {
                                             try {
                                               const youTubeContent = JSON.parse(
-                                                block.content || '{}'
+                                                block.content || "{}",
                                               );
                                               devLogger.debug(
-                                                'YouTube block edit rendering:',
+                                                "YouTube block edit rendering:",
                                                 {
                                                   blockId: block.id,
                                                   youTubeContent,
                                                   hasUrl: !!youTubeContent.url,
                                                   url: youTubeContent.url,
-                                                }
+                                                },
                                               );
 
                                               // Check if we have a valid YouTube URL
@@ -2665,17 +2671,17 @@ function LessonBuilder() {
                                                             youTubeContent.embedUrl ||
                                                             youTubeContent.url
                                                               .replace(
-                                                                'watch?v=',
-                                                                'embed/'
+                                                                "watch?v=",
+                                                                "embed/",
                                                               )
                                                               .replace(
-                                                                'youtu.be/',
-                                                                'youtube.com/embed/'
+                                                                "youtu.be/",
+                                                                "youtube.com/embed/",
                                                               )
                                                           }
                                                           title={
                                                             youTubeContent.title ||
-                                                            'YouTube Video'
+                                                            "YouTube Video"
                                                           }
                                                           frameBorder="0"
                                                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -2700,9 +2706,9 @@ function LessonBuilder() {
                                                       YouTube URL not found
                                                     </p>
                                                     <p className="text-xs text-gray-400 mt-1">
-                                                      Content:{' '}
+                                                      Content:{" "}
                                                       {JSON.stringify(
-                                                        youTubeContent
+                                                        youTubeContent,
                                                       )}
                                                     </p>
                                                   </div>
@@ -2710,8 +2716,8 @@ function LessonBuilder() {
                                               }
                                             } catch (e) {
                                               devLogger.error(
-                                                'Error parsing YouTube content in edit mode:',
-                                                e
+                                                "Error parsing YouTube content in edit mode:",
+                                                e,
                                               );
                                               // No fallback to html_css to prevent duplication
                                               return (
@@ -2730,11 +2736,11 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'quote' && (
+                                      {block.type === "quote" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                              {block.title || 'Quote'}
+                                              {block.title || "Quote"}
                                             </h3>
                                             <Badge
                                               variant="secondary"
@@ -2758,31 +2764,31 @@ function LessonBuilder() {
                                                 {(() => {
                                                   try {
                                                     const content = JSON.parse(
-                                                      block.content || '{}'
+                                                      block.content || "{}",
                                                     );
                                                     return (
                                                       content.quote ||
-                                                      'Sample quote text'
+                                                      "Sample quote text"
                                                     );
                                                   } catch {
-                                                    return 'Sample quote text';
+                                                    return "Sample quote text";
                                                   }
                                                 })()}
                                                 "
                                               </blockquote>
                                               <cite className="text-sm font-medium text-gray-500">
-                                                —{' '}
+                                                —{" "}
                                                 {(() => {
                                                   try {
                                                     const content = JSON.parse(
-                                                      block.content || '{}'
+                                                      block.content || "{}",
                                                     );
                                                     return (
                                                       content.author ||
-                                                      'Author Name'
+                                                      "Author Name"
                                                     );
                                                   } catch {
-                                                    return 'Author Name';
+                                                    return "Author Name";
                                                   }
                                                 })()}
                                               </cite>
@@ -2791,12 +2797,12 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {(block.type === 'table' ||
-                                        block.type === 'tables') && (
+                                      {(block.type === "table" ||
+                                        block.type === "tables") && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                              {block.title || 'Table'}
+                                              {block.title || "Table"}
                                             </h3>
                                             <Badge
                                               variant="secondary"
@@ -2826,11 +2832,11 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'list' && (
+                                      {block.type === "list" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
-                                              {block.title || 'List'}
+                                              {block.title || "List"}
                                             </h3>
                                             <Badge
                                               variant="secondary"
@@ -2843,20 +2849,20 @@ function LessonBuilder() {
                                           {(() => {
                                             // Check if this is a checkbox list
                                             const isCheckboxList =
-                                              block.listType === 'checkbox' ||
+                                              block.listType === "checkbox" ||
                                               (block.details &&
                                                 block.details.listType ===
-                                                  'checkbox') ||
+                                                  "checkbox") ||
                                               (block.details &&
                                                 block.details.list_type ===
-                                                  'checkbox') ||
+                                                  "checkbox") ||
                                               (block.html_css &&
                                                 block.html_css.includes(
-                                                  'checkbox-container'
+                                                  "checkbox-container",
                                                 ));
 
                                             devLogger.debug(
-                                              'List block debug:',
+                                              "List block debug:",
                                               {
                                                 blockId: block.id,
                                                 listType: block.listType,
@@ -2866,10 +2872,10 @@ function LessonBuilder() {
                                                 htmlCssSnippet: block.html_css
                                                   ? block.html_css.substring(
                                                       0,
-                                                      100
+                                                      100,
                                                     )
-                                                  : 'none',
-                                              }
+                                                  : "none",
+                                              },
                                             );
 
                                             if (
@@ -2877,8 +2883,8 @@ function LessonBuilder() {
                                               block.html_css
                                             ) {
                                               devLogger.debug(
-                                                'Using InteractiveListRenderer for block:',
-                                                block.id
+                                                "Using InteractiveListRenderer for block:",
+                                                block.id,
                                               );
                                               return (
                                                 <InteractiveListRenderer
@@ -2886,12 +2892,12 @@ function LessonBuilder() {
                                                   onCheckboxToggle={(
                                                     blockId,
                                                     itemIndex,
-                                                    checked
+                                                    checked,
                                                   ) =>
                                                     handleCheckboxToggle(
                                                       blockId,
                                                       itemIndex,
-                                                      checked
+                                                      checked,
                                                     )
                                                   }
                                                 />
@@ -2921,7 +2927,7 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'pdf' && (
+                                      {block.type === "pdf" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
@@ -2951,7 +2957,7 @@ function LessonBuilder() {
                                                 className="w-full h-[400px]"
                                                 title={
                                                   block.pdfTitle ||
-                                                  'PDF Document'
+                                                  "PDF Document"
                                                 }
                                               />
                                             </div>
@@ -2959,11 +2965,11 @@ function LessonBuilder() {
                                         </div>
                                       )}
 
-                                      {block.type === 'image' &&
+                                      {block.type === "image" &&
                                         (() => {
                                           // Debug logging for image blocks
                                           devLogger.debug(
-                                            '🖼️ Image block detected:',
+                                            "🖼️ Image block detected:",
                                             {
                                               id: block.id || block.block_id,
                                               hasImageUrl: !!block.imageUrl,
@@ -2975,7 +2981,7 @@ function LessonBuilder() {
                                               title: block.title,
                                               alignment: block.alignment,
                                               layout: block.layout,
-                                            }
+                                            },
                                           );
                                           // Render if has imageUrl OR html_css (for AI-generated images)
                                           return (
@@ -2994,15 +3000,48 @@ function LessonBuilder() {
                                                 variant="secondary"
                                                 className="text-xs"
                                               >
-                                                {block.layout === 'side-by-side'
-                                                  ? 'Image & text'
-                                                  : block.layout === 'overlay'
-                                                    ? 'Text on image'
+                                                {block.layout === "side-by-side"
+                                                  ? "Image & text"
+                                                  : block.layout === "overlay"
+                                                    ? "Text on image"
                                                     : block.layout ===
-                                                        'full-width'
-                                                      ? 'Image full width'
-                                                      : 'Image centered'}
+                                                        "full-width"
+                                                      ? "Image full width"
+                                                      : "Image centered"}
                                               </Badge>
+                                              {/* Show alignment for non-full-width standalone images */}
+                                              {block.layout !==
+                                                "side-by-side" &&
+                                                block.layout !== "overlay" &&
+                                                block.layout !==
+                                                  "full-width" && (
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="text-xs"
+                                                  >
+                                                    {block.alignment === "left"
+                                                      ? "Left aligned"
+                                                      : block.alignment ===
+                                                          "right"
+                                                        ? "Right aligned"
+                                                        : block.alignment ===
+                                                            "center"
+                                                          ? "Center aligned"
+                                                          : "Default"}
+                                                  </Badge>
+                                                )}
+                                              {/* Show alignment for side-by-side layouts */}
+                                              {block.layout ===
+                                                "side-by-side" && (
+                                                <Badge
+                                                  variant="outline"
+                                                  className="text-xs"
+                                                >
+                                                  {block.alignment === "right"
+                                                    ? "Image right"
+                                                    : "Image left"}
+                                                </Badge>
+                                              )}
                                             </div>
 
                                             {block.isEditing ? (
@@ -3023,13 +3062,13 @@ function LessonBuilder() {
                                                             block.id
                                                           ]
                                                         }
-                                                        onChange={e => {
+                                                        onChange={(e) => {
                                                           const file =
                                                             e.target.files[0];
                                                           if (file) {
                                                             handleInlineImageFileUpload(
                                                               block.id,
-                                                              file
+                                                              file,
                                                             );
                                                           }
                                                         }}
@@ -3060,11 +3099,11 @@ function LessonBuilder() {
                                                     <input
                                                       type="url"
                                                       value={block.imageUrl}
-                                                      onChange={e =>
+                                                      onChange={(e) =>
                                                         handleImageBlockEdit(
                                                           block.id,
-                                                          'imageUrl',
-                                                          e.target.value
+                                                          "imageUrl",
+                                                          e.target.value,
                                                         )
                                                       }
                                                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -3102,34 +3141,34 @@ function LessonBuilder() {
                                                   <ReactQuill
                                                     theme="snow"
                                                     value={block.text}
-                                                    onChange={value =>
+                                                    onChange={(value) =>
                                                       handleImageBlockEdit(
                                                         block.id,
-                                                        'text',
-                                                        value
+                                                        "text",
+                                                        value,
                                                       )
                                                     }
                                                     modules={getToolbarModules(
-                                                      'image'
+                                                      "image",
                                                     )}
                                                     formats={[
-                                                      'font',
-                                                      'size',
-                                                      'bold',
-                                                      'italic',
-                                                      'underline',
-                                                      'color',
-                                                      'list',
+                                                      "font",
+                                                      "size",
+                                                      "bold",
+                                                      "italic",
+                                                      "underline",
+                                                      "color",
+                                                      "list",
                                                     ]}
                                                     style={{
-                                                      minHeight: '100px',
+                                                      minHeight: "100px",
                                                     }}
                                                   />
                                                 </div>
 
                                                 {/* Image Alignment Options for side-by-side layout */}
                                                 {block.layout ===
-                                                  'side-by-side' && (
+                                                  "side-by-side" && (
                                                   <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                       Image Alignment
@@ -3142,13 +3181,13 @@ function LessonBuilder() {
                                                           value="left"
                                                           checked={
                                                             block.alignment ===
-                                                            'left'
+                                                            "left"
                                                           }
-                                                          onChange={e =>
+                                                          onChange={(e) =>
                                                             handleImageBlockEdit(
                                                               block.id,
-                                                              'alignment',
-                                                              e.target.value
+                                                              "alignment",
+                                                              e.target.value,
                                                             )
                                                           }
                                                           className="mr-2"
@@ -3164,13 +3203,13 @@ function LessonBuilder() {
                                                           value="right"
                                                           checked={
                                                             block.alignment ===
-                                                            'right'
+                                                            "right"
                                                           }
-                                                          onChange={e =>
+                                                          onChange={(e) =>
                                                             handleImageBlockEdit(
                                                               block.id,
-                                                              'alignment',
-                                                              e.target.value
+                                                              "alignment",
+                                                              e.target.value,
                                                             )
                                                           }
                                                           className="mr-2"
@@ -3190,7 +3229,7 @@ function LessonBuilder() {
                                                     size="sm"
                                                     onClick={() =>
                                                       toggleImageBlockEditing(
-                                                        block.id
+                                                        block.id,
                                                       )
                                                     }
                                                     className="px-4"
@@ -3201,7 +3240,7 @@ function LessonBuilder() {
                                                     size="sm"
                                                     onClick={() =>
                                                       saveImageTemplateChanges(
-                                                        block.id
+                                                        block.id,
                                                       )
                                                     }
                                                     disabled={
@@ -3217,7 +3256,7 @@ function LessonBuilder() {
                                                         Uploading...
                                                       </>
                                                     ) : (
-                                                      'Save Changes'
+                                                      "Save Changes"
                                                     )}
                                                   </Button>
                                                 </div>
@@ -3247,13 +3286,13 @@ function LessonBuilder() {
                                                   (block.details
                                                     ?.caption_html &&
                                                     block.details.caption_html.toString()) ||
-                                                  '';
+                                                  "";
                                                 const fallbackCaption =
                                                   (block.imageDescription &&
                                                     block.imageDescription.toString()) ||
                                                   (block.details?.caption &&
                                                     block.details.caption.toString()) ||
-                                                  '';
+                                                  "";
                                                 const captionMarkup =
                                                   rawCaptionHtml &&
                                                   rawCaptionHtml.trim()
@@ -3271,12 +3310,12 @@ function LessonBuilder() {
 
                                                 if (
                                                   block.layout ===
-                                                  'side-by-side'
+                                                  "side-by-side"
                                                 ) {
                                                   return (
                                                     <div className="flex gap-3 items-start">
                                                       {block.alignment ===
-                                                      'right' ? (
+                                                      "right" ? (
                                                         <>
                                                           <div className="w-1/2">
                                                             {captionElement}
@@ -3312,7 +3351,7 @@ function LessonBuilder() {
                                                 }
 
                                                 if (
-                                                  block.layout === 'overlay'
+                                                  block.layout === "overlay"
                                                 ) {
                                                   return (
                                                     <div className="relative">
@@ -3337,16 +3376,16 @@ function LessonBuilder() {
                                                 }
 
                                                 if (
-                                                  block.layout === 'centered'
+                                                  block.layout === "centered"
                                                 ) {
                                                   return (
                                                     <div
-                                                      className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}
+                                                      className={`space-y-3 ${block.alignment === "left" ? "text-left" : block.alignment === "right" ? "text-right" : "text-center"}`}
                                                     >
                                                       <img
                                                         src={block.imageUrl}
                                                         alt="Image"
-                                                        className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
+                                                        className={`h-20 object-cover rounded ${block.alignment === "center" ? "mx-auto" : ""}`}
                                                       />
                                                       {captionMarkup && (
                                                         <div
@@ -3384,7 +3423,7 @@ function LessonBuilder() {
                                         )}
 
                                       {/* Divider Content */}
-                                      {block.type === 'divider' && (
+                                      {block.type === "divider" && (
                                         <div className="space-y-3">
                                           <div className="flex items-center gap-2 mb-3">
                                             <h3 className="text-lg font-semibold text-gray-900">
@@ -3394,7 +3433,7 @@ function LessonBuilder() {
                                               variant="secondary"
                                               className="text-xs"
                                             >
-                                              {block.subtype || 'Divider'}
+                                              {block.subtype || "Divider"}
                                             </Badge>
                                           </div>
 
@@ -3435,14 +3474,14 @@ function LessonBuilder() {
                                         className={`flex items-center justify-center w-8 h-8 rounded-full text-white shadow-md hover:shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 ${
                                           showContentLibrarySidebar &&
                                           insertionPosition === index + 1
-                                            ? 'bg-red-500 hover:bg-red-600 animate-pulse ring-2 ring-red-400 ring-offset-2'
-                                            : 'bg-blue-500 hover:bg-blue-600'
+                                            ? "bg-red-500 hover:bg-red-600 animate-pulse ring-2 ring-red-400 ring-offset-2"
+                                            : "bg-blue-500 hover:bg-blue-600"
                                         }`}
                                         title={
                                           showContentLibrarySidebar &&
                                           insertionPosition === index + 1
-                                            ? 'Cancel insertion'
-                                            : 'Insert block here'
+                                            ? "Cancel insertion"
+                                            : "Insert block here"
                                         }
                                       >
                                         {showContentLibrarySidebar &&
@@ -3641,7 +3680,7 @@ function LessonBuilder() {
         courseContext={getCourseContext(lessonData, lessonContent)}
         onGenerate={handleAIGenerate}
         availableTemplates={getTemplatesForBlockType(
-          currentAIBlockType?.id || ''
+          currentAIBlockType?.id || "",
         )}
       />
 
@@ -3660,7 +3699,7 @@ function LessonBuilder() {
         }
         newBlock={regeneratedBlock}
         blockType={currentAIBlockType}
-        onKeepOld={oldBlock => {
+        onKeepOld={(oldBlock) => {
           // Keep the original block - do nothing
           setShowComparisonDialog(false);
           setRegeneratedBlock(null);
@@ -3668,7 +3707,7 @@ function LessonBuilder() {
           setBlockToReplace(null);
           blockToReplaceRef.current = null;
         }}
-        onUseNew={newBlock => {
+        onUseNew={(newBlock) => {
           // Use the stored old block from comparison dialog state (most reliable)
           const originalBlock =
             oldBlockForComparison ||
@@ -3678,17 +3717,17 @@ function LessonBuilder() {
           // Replace the old block with the new one
           if (!originalBlock || !newBlock) {
             devLogger.error(
-              'Cannot replace: missing blockToReplace or newBlock',
+              "Cannot replace: missing blockToReplace or newBlock",
               {
                 hasBlockToReplace: !!originalBlock,
                 hasNewBlock: !!newBlock,
                 hasOldBlockForComparison: !!oldBlockForComparison,
                 blockToReplaceFromState: !!blockToReplace,
                 blockToReplaceFromRef: !!blockToReplaceRef.current,
-              }
+              },
             );
             toast.error(
-              'Error: Could not find original block. The new content was not applied.'
+              "Error: Could not find original block. The new content was not applied.",
             );
             setShowComparisonDialog(false);
             setRegeneratedBlock(null);
@@ -3699,7 +3738,7 @@ function LessonBuilder() {
           }
 
           if (originalBlock && newBlock) {
-            devLogger.debug('Replacing block:', {
+            devLogger.debug("Replacing block:", {
               oldBlockId: originalBlock.id,
               oldBlockIdAlt: originalBlock.block_id,
               newBlockId: newBlock.id,
@@ -3747,8 +3786,8 @@ function LessonBuilder() {
             };
 
             // Replace in contentBlocks - check both id and block_id
-            setContentBlocks(prev => {
-              const updated = prev.map(block => {
+            setContentBlocks((prev) => {
+              const updated = prev.map((block) => {
                 const matchesId =
                   block.id === originalBlock.id ||
                   block.block_id === originalBlock.id ||
@@ -3756,7 +3795,7 @@ function LessonBuilder() {
                   block.block_id === originalBlock.block_id;
 
                 if (matchesId) {
-                  devLogger.debug('Found matching block in contentBlocks:', {
+                  devLogger.debug("Found matching block in contentBlocks:", {
                     blockId: block.id,
                     blockIdAlt: block.block_id,
                   });
@@ -3765,10 +3804,10 @@ function LessonBuilder() {
                 return block;
               });
 
-              devLogger.debug('Updated contentBlocks:', {
+              devLogger.debug("Updated contentBlocks:", {
                 originalLength: prev.length,
                 updatedLength: updated.length,
-                replaced: updated.some(b => b.id === finalBlock.id),
+                replaced: updated.some((b) => b.id === finalBlock.id),
               });
 
               return updated;
@@ -3776,8 +3815,8 @@ function LessonBuilder() {
 
             // Replace in lessonContent if it exists
             if (lessonContent?.data?.content) {
-              setLessonContent(prev => {
-                const updatedContent = prev.data.content.map(block => {
+              setLessonContent((prev) => {
+                const updatedContent = prev.data.content.map((block) => {
                   const matchesId =
                     (block.block_id || block.id) ===
                       (originalBlock.block_id || originalBlock.id) ||
@@ -3786,7 +3825,7 @@ function LessonBuilder() {
                     block.block_id === originalBlock.block_id;
 
                   if (matchesId) {
-                    devLogger.debug('Found matching block in lessonContent:', {
+                    devLogger.debug("Found matching block in lessonContent:", {
                       blockId: block.id,
                       blockIdAlt: block.block_id,
                     });
@@ -3798,7 +3837,7 @@ function LessonBuilder() {
                   return block;
                 });
 
-                devLogger.debug('Updated lessonContent:', {
+                devLogger.debug("Updated lessonContent:", {
                   originalLength: prev.data.content.length,
                   updatedLength: updatedContent.length,
                 });
@@ -3814,19 +3853,19 @@ function LessonBuilder() {
             }
 
             setHasUnsavedChanges(true);
-            toast.success('Content replaced successfully!');
-            devLogger.debug('✅ Block replaced with regenerated version');
+            toast.success("Content replaced successfully!");
+            devLogger.debug("✅ Block replaced with regenerated version");
           } else {
             devLogger.warn(
-              'Cannot replace: missing blockToReplace or newBlock',
+              "Cannot replace: missing blockToReplace or newBlock",
               {
                 hasBlockToReplace: !!originalBlock,
                 hasNewBlock: !!newBlock,
                 blockToReplaceFromState: !!blockToReplace,
                 blockToReplaceFromRef: !!blockToReplaceRef.current,
-              }
+              },
             );
-            toast.error('Failed to replace content. Please try again.');
+            toast.error("Failed to replace content. Please try again.");
           }
 
           setShowComparisonDialog(false);
@@ -3843,7 +3882,7 @@ function LessonBuilder() {
             const originalBlock = blockToReplaceRef.current || blockToReplace;
 
             if (!originalBlock) {
-              toast.error('Original block data not found. Please try again.');
+              toast.error("Original block data not found. Please try again.");
               setIsRegenerating(false);
               return;
             }
@@ -3854,13 +3893,13 @@ function LessonBuilder() {
             // Preserve the original block's template/type
             let templateToUse =
               regeneratedBlock?.templateType || regeneratedBlock?.template;
-            if (originalBlock.type === 'text' && originalBlock.textType) {
+            if (originalBlock.type === "text" && originalBlock.textType) {
               templateToUse =
                 originalBlock.textType ||
                 originalBlock.text_type ||
                 templateToUse;
             } else if (
-              originalBlock.type === 'statement' &&
+              originalBlock.type === "statement" &&
               originalBlock.statementType
             ) {
               templateToUse =
@@ -3874,7 +3913,7 @@ function LessonBuilder() {
                 templateToUse;
             }
 
-            devLogger.debug('Regenerating with preserved template:', {
+            devLogger.debug("Regenerating with preserved template:", {
               templateToUse,
               originalType: originalBlock.type,
               originalTextType: originalBlock.textType,
@@ -3886,16 +3925,16 @@ function LessonBuilder() {
                 blockType: currentAIBlockType?.id || originalBlock.type,
                 templateId: templateToUse,
                 userPrompt: `Regenerate ${currentAIBlockType?.title?.toLowerCase() || originalBlock.type} content`,
-                instructions: '',
+                instructions: "",
                 courseContext,
-              }
+              },
             );
 
             const blockTypeToUse =
-              currentAIBlockType?.id || originalBlock.type || 'text';
+              currentAIBlockType?.id || originalBlock.type || "text";
             let newRegeneratedBlock = formatAIContentForBlock(
               aiResponse,
-              blockTypeToUse
+              blockTypeToUse,
             );
 
             // Preserve ID, order, type, and styling from originalBlock
@@ -3943,10 +3982,10 @@ function LessonBuilder() {
             // Regenerate HTML with preserved styling
             newRegeneratedBlock.html_css = regenerateHTMLWithPreservedStyling(
               newRegeneratedBlock,
-              originalBlock
+              originalBlock,
             );
 
-            devLogger.debug('Regenerated block with preserved properties:', {
+            devLogger.debug("Regenerated block with preserved properties:", {
               type: newRegeneratedBlock.type,
               textType: newRegeneratedBlock.textType,
               gradient: newRegeneratedBlock.gradient,
@@ -3954,10 +3993,10 @@ function LessonBuilder() {
             });
 
             setRegeneratedBlock(newRegeneratedBlock);
-            toast.success('Content regenerated!');
+            toast.success("Content regenerated!");
           } catch (error) {
-            devLogger.error('Regeneration error:', error);
-            toast.error('Failed to regenerate content');
+            devLogger.error("Regeneration error:", error);
+            toast.error("Failed to regenerate content");
           } finally {
             setIsRegenerating(false);
           }

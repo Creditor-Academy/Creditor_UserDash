@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -7,14 +7,14 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-} from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+} from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const SponsorLineChart = ({ data }) => {
   return (
-    <Card className="rounded-3xl border border-gray-100 shadow-sm">
-      <CardHeader>
-        <CardTitle>Impressions over time</CardTitle>
+    <Card className="rounded-xl border border-gray-100 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Impressions Over Time</CardTitle>
       </CardHeader>
       <CardContent className="h-64">
         <ResponsiveContainer width="100%" height="100%">

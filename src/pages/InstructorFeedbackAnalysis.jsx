@@ -4,24 +4,24 @@
  * Shows ratings, satisfaction, and content performance
  */
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import api from "@/services/apiClient";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   RefreshCw,
   TrendingUp,
@@ -31,9 +31,9 @@ import {
   Star,
   Users,
   Target,
-} from 'lucide-react';
-import CourseAnalyticsDashboard from '@/components/courses/CourseAnalyticsDashboard';
-import { toast } from 'sonner';
+} from "lucide-react";
+import CourseAnalyticsDashboard from "@/components/courses/CourseAnalyticsDashboard";
+import { toast } from "sonner";
 
 export function InstructorFeedbackAnalysis() {
   const [myCourses, setMyCourses] = useState([]);
@@ -50,10 +50,7 @@ export function InstructorFeedbackAnalysis() {
   const fetchMyCourses = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/user/getMyCourses', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/api/user/getMyCourses");
 
       const courses = response.data.data || [];
       setMyCourses(courses);
@@ -64,8 +61,8 @@ export function InstructorFeedbackAnalysis() {
 
       toast.success(`Loaded ${courses.length} course(s)`);
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      toast.error('Failed to load courses');
+      console.error("Error fetching courses:", error);
+      toast.error("Failed to load courses");
     } finally {
       setLoading(false);
     }
@@ -75,9 +72,9 @@ export function InstructorFeedbackAnalysis() {
     try {
       setRefreshing(true);
       await fetchMyCourses();
-      toast.success('Data refreshed successfully');
+      toast.success("Data refreshed successfully");
     } catch (error) {
-      toast.error('Failed to refresh data');
+      toast.error("Failed to refresh data");
     } finally {
       setRefreshing(false);
     }
@@ -85,25 +82,27 @@ export function InstructorFeedbackAnalysis() {
 
   const fetchComparisonData = async () => {
     try {
-      const token = localStorage.getItem('token');
-
       // Fetch AI vs Manual comparison
-      const response = await axios.get(
-        '/api/feedback/compare-creation-methods',
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await api.get("/api/feedback/compare-creation-methods");
 
       setComparisonData(response.data.data);
     } catch (error) {
-      console.error('Error fetching comparison:', error);
+      console.error("Error fetching comparison:", error);
     }
   };
 
   useEffect(() => {
     fetchComparisonData();
   }, []);
+
+  // Precompute safe comparison metrics to avoid undefined access
+  const aiRating = comparisonData?.AI?.avg_rating ?? 0;
+  const manualRating = comparisonData?.MANUAL?.avg_rating ?? 0;
+  const ratingDelta = Math.abs(aiRating - manualRating).toFixed(1);
+  const ratingInsight =
+    aiRating >= manualRating
+      ? `AI-generated courses have ${ratingDelta} higher average rating`
+      : `Manual courses have ${ratingDelta} higher average rating`;
 
   if (loading) {
     return (
@@ -144,7 +143,7 @@ export function InstructorFeedbackAnalysis() {
           className="gap-2"
         >
           <RefreshCw
-            className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
+            className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
           />
           Refresh
         </Button>
@@ -162,9 +161,9 @@ export function InstructorFeedbackAnalysis() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Select
-                value={selectedCourse?.id || ''}
-                onValueChange={courseId => {
-                  const course = myCourses.find(c => c.id === courseId);
+                value={selectedCourse?.id || ""}
+                onValueChange={(courseId) => {
+                  const course = myCourses.find((c) => c.id === courseId);
                   setSelectedCourse(course);
                 }}
               >
@@ -172,14 +171,14 @@ export function InstructorFeedbackAnalysis() {
                   <SelectValue placeholder="Select a course..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {myCourses.map(course => (
-                    <SelectItem key={course.id} value={course.id}>
+                  {myCourses.map((course, index) => (
+                    <SelectItem key={course.id || index} value={course.id}>
                       <div className="flex items-center gap-2">
                         <span>{course.title}</span>
                         <Badge variant="outline" className="ml-2">
-                          {course.creation_method === 'AI'
-                            ? '🤖 AI'
-                            : '✍️ Manual'}
+                          {course.creation_method === "AI"
+                            ? "🤖 AI"
+                            : "✍️ Manual"}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -193,14 +192,14 @@ export function InstructorFeedbackAnalysis() {
                 <Badge
                   variant="outline"
                   className={
-                    selectedCourse.creation_method === 'AI'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
+                    selectedCourse.creation_method === "AI"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-green-100 text-green-800"
                   }
                 >
-                  {selectedCourse.creation_method === 'AI'
-                    ? '🤖 AI Generated'
-                    : '✍️ Manual'}
+                  {selectedCourse.creation_method === "AI"
+                    ? "🤖 AI Generated"
+                    : "✍️ Manual"}
                 </Badge>
               </div>
             )}
@@ -256,7 +255,7 @@ export function InstructorFeedbackAnalysis() {
                     <span className="text-gray-600">Engagement Score</span>
                     <span className="text-lg font-semibold text-blue-600">
                       {(comparisonData.AI?.avg_engagement_score || 0).toFixed(
-                        1
+                        1,
                       )}
                       %
                     </span>
@@ -331,12 +330,7 @@ export function InstructorFeedbackAnalysis() {
                   <p className="text-sm font-medium text-blue-900">
                     Performance Insight
                   </p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    {comparisonData.AI?.avg_rating >
-                    comparisonData.MANUAL?.avg_rating
-                      ? `AI-generated courses have ${(comparisonData.AI.avg_rating - comparisonData.MANUAL.avg_rating).toFixed(1)} higher average rating`
-                      : `Manual courses have ${(comparisonData.MANUAL.avg_rating - comparisonData.AI.avg_rating).toFixed(1)} higher average rating`}
-                  </p>
+                  <p className="text-sm text-blue-700 mt-1">{ratingInsight}</p>
                 </div>
               </div>
             </div>

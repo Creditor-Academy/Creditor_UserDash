@@ -1,85 +1,85 @@
-import React, { useContext } from 'react';
-import { Card } from '@/components/ui/card';
-import { CheckSquare, ListTodo, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { motion } from 'framer-motion';
-import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import React, { useContext } from "react";
+import { Card } from "@/components/ui/card";
+import { CheckSquare, ListTodo, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion } from "framer-motion";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 const todoItems = [
   {
     id: 1,
-    title: 'Complete Constitutional Law quiz',
+    title: "Complete Constitutional Law quiz",
     completed: false,
-    priority: 'high',
+    priority: "high",
   },
   {
     id: 2,
-    title: 'Review legal cases',
+    title: "Review legal cases",
     completed: true,
-    priority: 'medium',
+    priority: "medium",
   },
   {
     id: 3,
-    title: 'Prepare debate arguments',
+    title: "Prepare debate arguments",
     completed: false,
-    priority: 'high',
+    priority: "high",
   },
   {
     id: 4,
-    title: 'Read chapter on Civil Procedure',
+    title: "Read chapter on Civil Procedure",
     completed: false,
-    priority: 'low',
+    priority: "low",
   },
   {
     id: 5,
-    title: 'Submit legal brief draft',
+    title: "Submit legal brief draft",
     completed: false,
-    priority: 'high',
+    priority: "high",
   },
 ];
 
 export function DashboardTodo() {
-  const { isChristmasMode } = useContext(SeasonalThemeContext);
-  const titleText = isChristmasMode ? '✅ Holiday To-Do' : 'Task List';
-  const helperText = isChristmasMode
-    ? '🎅 Stay on Santa’s List'
-    : 'Stay on Task';
+  const { activeTheme } = useContext(SeasonalThemeContext);
+  const titleText =
+    activeTheme === "newYear" ? "🎯 New Year Goals" : "Task List";
+  const helperText =
+    activeTheme === "newYear" ? "🎯 Achieve Your Goals" : "Stay on Task";
   const [todos, setTodos] = React.useState(todoItems);
 
-  const toggleTodo = id => {
+  const toggleTodo = (id) => {
     setTodos(
-      todos.map(todo =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
+      ),
     );
   };
 
-  const getPriorityColor = priority => {
+  const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'bg-red-100 dark:bg-red-950/30';
-      case 'medium':
-        return 'bg-amber-100 dark:bg-amber-950/30';
-      case 'low':
-        return 'bg-green-100 dark:bg-green-950/30';
+      case "high":
+        return "bg-red-100 dark:bg-red-950/30";
+      case "medium":
+        return "bg-amber-100 dark:bg-amber-950/30";
+      case "low":
+        return "bg-green-100 dark:bg-green-950/30";
       default:
-        return '';
+        return "";
     }
   };
 
-  const getPriorityHoverColor = priority => {
+  const getPriorityHoverColor = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'hover:bg-red-200 dark:hover:bg-red-950/50';
-      case 'medium':
-        return 'hover:bg-amber-200 dark:hover:bg-amber-950/50';
-      case 'low':
-        return 'hover:bg-green-200 dark:hover:bg-green-950/50';
+      case "high":
+        return "hover:bg-red-200 dark:hover:bg-red-950/50";
+      case "medium":
+        return "hover:bg-amber-200 dark:hover:bg-amber-950/50";
+      case "low":
+        return "hover:bg-green-200 dark:hover:bg-green-950/50";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -100,7 +100,9 @@ export function DashboardTodo() {
   };
 
   return (
-    <Card className="border h-full shadow hover:shadow-lg transition-all duration-300 hover:border-primary/20 group">
+    <Card
+      className={`border h-full shadow hover:shadow-lg transition-all duration-300 hover:border-primary/20 group ${activeTheme === "newYear" ? "dashboard-newyear-card" : ""}`}
+    >
       <div className="p-3 flex items-center justify-between border-b">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
@@ -133,14 +135,14 @@ export function DashboardTodo() {
           initial="hidden"
           animate="show"
         >
-          {todos.map(todo => (
+          {todos.map((todo) => (
             <motion.div
               key={todo.id}
               variants={item}
               whileHover={{ scale: 1.01, x: 3 }}
               className={`flex items-center gap-2 p-1.5 rounded-md transition-all duration-300 cursor-pointer ${
                 todo.completed
-                  ? 'bg-muted/30 hover:bg-muted/50'
+                  ? "bg-muted/30 hover:bg-muted/50"
                   : `${getPriorityColor(todo.priority)} ${getPriorityHoverColor(todo.priority)} bg-opacity-30`
               }`}
             >
@@ -153,7 +155,7 @@ export function DashboardTodo() {
               <label
                 htmlFor={`todo-${todo.id}`}
                 className={`flex-1 text-xs select-none cursor-pointer group/label ${
-                  todo.completed ? 'line-through text-muted-foreground' : ''
+                  todo.completed ? "line-through text-muted-foreground" : ""
                 }`}
               >
                 <span className="inline-block transition-all duration-500 group-hover/label:text-primary">

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardFooter,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
   Clock,
@@ -23,17 +23,19 @@ import {
   Upload,
   Link,
   ExternalLink,
-} from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+  FolderOpen,
+  Trash2 as Trash2Icon,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -41,17 +43,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
-import { getAuthHeader } from '@/services/authHeader';
-import { MoreVertical, Edit, Trash2, Settings } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import { getAuthHeader } from "@/services/authHeader";
+import { MoreVertical, Edit, Trash2, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,10 +63,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import ImageEditor from '@lessonbuilder/components/blocks/MediaBlocks/ImageEditor';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { uploadImage } from '@/services/imageUploadService';
+} from "@/components/ui/alert-dialog";
+import ImageEditor from "@lessonbuilder/components/blocks/MediaBlocks/ImageEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { uploadImage } from "@/services/imageUploadService";
+import {
+  getLessonResources,
+  uploadLessonResource,
+  deleteLessonResource,
+  updateLessonResource,
+} from "@/services/lessonResourceService";
 
 const ModuleLessonsView = () => {
   const { courseId, moduleId } = useParams();
@@ -75,17 +83,17 @@ const ModuleLessonsView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [moduleDetails, setModuleDetails] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Lesson creation state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newLesson, setNewLesson] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     order: 1,
-    status: 'DRAFT',
-    thumbnail: '',
+    status: "DRAFT",
+    thumbnail: "",
   });
 
   // Lesson deletion state
@@ -100,11 +108,11 @@ const ModuleLessonsView = () => {
   // SCORM addition state
   const [showAddScormDialog, setShowAddScormDialog] = useState(false);
   const [scormLesson, setScormLesson] = useState(null);
-  const [scormUrl, setScormUrl] = useState('');
+  const [scormUrl, setScormUrl] = useState("");
   const [isAddingScorm, setIsAddingScorm] = useState(false);
   const [scormFile, setScormFile] = useState(null);
   const [isUploadingScorm, setIsUploadingScorm] = useState(false);
-  const [existingScormUrl, setExistingScormUrl] = useState('');
+  const [existingScormUrl, setExistingScormUrl] = useState("");
   const [isFetchingScorm, setIsFetchingScorm] = useState(false);
   const [isDeletingScorm, setIsDeletingScorm] = useState(false);
   const [scormUploadProgress, setScormUploadProgress] = useState(0);
@@ -119,8 +127,27 @@ const ModuleLessonsView = () => {
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [thumbnailMode, setThumbnailMode] = useState('url'); // 'url' or 'upload'
+  const [thumbnailMode, setThumbnailMode] = useState("url"); // 'url' or 'upload'
   const [editingContext, setEditingContext] = useState(null); // 'create' or 'update'
+
+  // Lesson resources state
+  const [showResourcesDialog, setShowResourcesDialog] = useState(false);
+  const [selectedLessonForResources, setSelectedLessonForResources] =
+    useState(null);
+  const [lessonResources, setLessonResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+  const [uploadingResource, setUploadingResource] = useState(false);
+  const [resourceFile, setResourceFile] = useState(null);
+  const [resourceTitle, setResourceTitle] = useState("");
+  const [resourceDescription, setResourceDescription] = useState("");
+  const [resourceType, setResourceType] = useState("");
+  const [deletingResourceId, setDeletingResourceId] = useState(null);
+  const [showEditResourceDialog, setShowEditResourceDialog] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
+  const [editResourceTitle, setEditResourceTitle] = useState("");
+  const [editResourceDescription, setEditResourceDescription] = useState("");
+  const [editResourceType, setEditResourceType] = useState("");
+  const [updatingResourceId, setUpdatingResourceId] = useState(null);
 
   // Fetch module and lessons data
   useEffect(() => {
@@ -144,14 +171,14 @@ const ModuleLessonsView = () => {
           {
             headers: getAuthHeader(),
             withCredentials: true,
-          }
+          },
         ),
         axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
           {
             headers: getAuthHeader(),
             withCredentials: true,
-          }
+          },
         ),
       ]);
 
@@ -160,7 +187,7 @@ const ModuleLessonsView = () => {
       setModuleDetails(moduleData);
 
       // Handle lessons response
-      console.log('Lessons API Response:', lessonsResponse.data);
+      console.log("Lessons API Response:", lessonsResponse.data);
 
       let lessonsData = [];
       if (Array.isArray(lessonsResponse.data)) {
@@ -176,27 +203,27 @@ const ModuleLessonsView = () => {
           : [lessonsResponse.data.lessons];
       }
 
-      console.log('Extracted lessons data:', lessonsData);
+      console.log("Extracted lessons data:", lessonsData);
 
       // Normalize lesson data to ensure consistent field names
-      const normalizedLessons = lessonsData.map(lesson => ({
+      const normalizedLessons = lessonsData.map((lesson) => ({
         ...lesson,
-        status: lesson.status || lesson.lesson_status || 'DRAFT',
+        status: lesson.status || lesson.lesson_status || "DRAFT",
       }));
 
-      console.log('Normalized lessons:', normalizedLessons);
+      console.log("Normalized lessons:", normalizedLessons);
       setLessons(normalizedLessons);
 
       // Set the next order number for new lessons
       const maxOrder =
         lessonsData.length > 0
-          ? Math.max(...lessonsData.map(l => l.order || 0))
+          ? Math.max(...lessonsData.map((l) => l.order || 0))
           : 0;
-      setNewLesson(prev => ({ ...prev, order: maxOrder + 1 }));
+      setNewLesson((prev) => ({ ...prev, order: maxOrder + 1 }));
     } catch (err) {
-      console.error('Error fetching module lessons:', err);
-      console.error('Error details:', err.response?.data || err.message);
-      setError('Failed to load module lessons. Please try again later.');
+      console.error("Error fetching module lessons:", err);
+      console.error("Error details:", err.response?.data || err.message);
+      setError("Failed to load module lessons. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -221,10 +248,10 @@ const ModuleLessonsView = () => {
         {
           headers: {
             ...getAuthHeader(),
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           withCredentials: true,
-        }
+        },
       );
 
       // Add the new lesson to the list with normalized status field
@@ -237,26 +264,26 @@ const ModuleLessonsView = () => {
           createdLesson.status ||
           newLesson.status,
       };
-      setLessons(prev => [...prev, normalizedLesson]);
+      setLessons((prev) => [...prev, normalizedLesson]);
 
       // Reset form and close dialog
       setNewLesson({
-        title: '',
-        description: '',
+        title: "",
+        description: "",
         order: newLesson.order + 1, // Increment order for next lesson
-        status: 'DRAFT',
-        thumbnail: '',
+        status: "DRAFT",
+        thumbnail: "",
       });
 
       setShowCreateDialog(false);
 
       toast({
-        title: 'Success',
-        description: 'Lesson created successfully!',
+        title: "Success",
+        description: "Lesson created successfully!",
       });
     } catch (error) {
-      console.error('Error creating lesson:', error);
-      let errorMessage = 'Failed to create lesson. Please try again.';
+      console.error("Error creating lesson:", error);
+      let errorMessage = "Failed to create lesson. Please try again.";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -265,9 +292,9 @@ const ModuleLessonsView = () => {
       }
 
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsCreating(false);
@@ -298,30 +325,30 @@ const ModuleLessonsView = () => {
         {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-        }
+        },
       );
 
       // Update the lesson in the state with the current lesson data (user's changes)
-      setLessons(prev =>
-        prev.map(lesson =>
+      setLessons((prev) =>
+        prev.map((lesson) =>
           lesson.id === currentLesson.id
             ? { ...lesson, ...currentLesson }
-            : lesson
-        )
+            : lesson,
+        ),
       );
 
       setShowUpdateDialog(false);
 
       toast({
-        title: 'Success',
-        description: 'Lesson updated successfully!',
+        title: "Success",
+        description: "Lesson updated successfully!",
       });
     } catch (error) {
-      console.error('Error updating lesson:', error);
-      let errorMessage = 'Failed to update lesson. Please try again.';
+      console.error("Error updating lesson:", error);
+      let errorMessage = "Failed to update lesson. Please try again.";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -332,35 +359,35 @@ const ModuleLessonsView = () => {
       }
 
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleOpenUpdateDialog = lesson => {
+  const handleOpenUpdateDialog = (lesson) => {
     setCurrentLesson({
       ...lesson,
       order: lesson.order || 1,
-      status: lesson.status || 'DRAFT',
-      thumbnail: lesson.thumbnail || '',
+      status: lesson.status || "DRAFT",
+      thumbnail: lesson.thumbnail || "",
     });
     setShowUpdateDialog(true);
   };
 
-  const handleInputChange = e => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewLesson(prev => ({
+    setNewLesson((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
   const handleSelectChange = (name, value) => {
-    setNewLesson(prev => ({
+    setNewLesson((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -375,19 +402,19 @@ const ModuleLessonsView = () => {
     const maxSize = 500 * 1024 * 1024; // 500MB in bytes
     if (file.size > maxSize) {
       toast({
-        title: 'File Too Large',
-        description: 'Please select an image under 500MB.',
-        variant: 'destructive',
+        title: "File Too Large",
+        description: "Please select an image under 500MB.",
+        variant: "destructive",
       });
       return;
     }
 
     // Check if it's an image
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast({
-        title: 'Invalid File Type',
-        description: 'Please select an image file.',
-        variant: 'destructive',
+        title: "Invalid File Type",
+        description: "Please select an image file.",
+        variant: "destructive",
       });
       return;
     }
@@ -398,45 +425,45 @@ const ModuleLessonsView = () => {
   };
 
   // Handle image save from editor
-  const handleImageEditorSave = async editedFile => {
+  const handleImageEditorSave = async (editedFile) => {
     setShowImageEditor(false);
     setIsUploadingImage(true);
 
     try {
       // Use the same upload service as InteractiveComponent
       const uploadResult = await uploadImage(editedFile, {
-        folder: 'lesson-thumbnails',
+        folder: "lesson-thumbnails",
         public: true,
       });
 
       if (uploadResult.success && uploadResult.imageUrl) {
         // Set the thumbnail URL based on context
-        if (editingContext === 'create') {
-          setNewLesson(prev => ({
+        if (editingContext === "create") {
+          setNewLesson((prev) => ({
             ...prev,
             thumbnail: uploadResult.imageUrl,
           }));
-        } else if (editingContext === 'update') {
-          setCurrentLesson(prev => ({
+        } else if (editingContext === "update") {
+          setCurrentLesson((prev) => ({
             ...prev,
             thumbnail: uploadResult.imageUrl,
           }));
         }
 
         toast({
-          title: 'Success',
-          description: 'Image uploaded successfully!',
+          title: "Success",
+          description: "Image uploaded successfully!",
         });
       } else {
-        throw new Error('Upload failed - no image URL returned');
+        throw new Error("Upload failed - no image URL returned");
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error("Error uploading image:", error);
       toast({
-        title: 'Upload Failed',
+        title: "Upload Failed",
         description:
-          error.message || 'Failed to upload image. Please try again.',
-        variant: 'destructive',
+          error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsUploadingImage(false);
@@ -453,11 +480,11 @@ const ModuleLessonsView = () => {
   };
 
   const filteredLessons = useMemo(() => {
-    console.log('filteredLessons - lessons:', lessons);
-    console.log('filteredLessons - searchQuery:', searchQuery);
+    console.log("filteredLessons - lessons:", lessons);
+    console.log("filteredLessons - searchQuery:", searchQuery);
 
     if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
-      console.log('No lessons found or lessons is not an array');
+      console.log("No lessons found or lessons is not an array");
       return [];
     }
 
@@ -468,33 +495,33 @@ const ModuleLessonsView = () => {
       return orderA - orderB;
     });
 
-    console.log('Sorted lessons:', sortedLessons);
+    console.log("Sorted lessons:", sortedLessons);
 
     // Then apply search filter if there's a query
     const query = searchQuery.toLowerCase().trim();
     if (!query) {
-      console.log('No search query, returning sorted lessons');
+      console.log("No search query, returning sorted lessons");
       return sortedLessons;
     }
 
-    const filtered = sortedLessons.filter(lesson => {
+    const filtered = sortedLessons.filter((lesson) => {
       if (!lesson) return false;
-      const title = (lesson.title || '').toLowerCase();
-      const description = (lesson.description || '').toLowerCase();
+      const title = (lesson.title || "").toLowerCase();
+      const description = (lesson.description || "").toLowerCase();
       return title.includes(query) || description.includes(query);
     });
 
-    console.log('Filtered lessons:', filtered);
+    console.log("Filtered lessons:", filtered);
     return filtered;
   }, [lessons, searchQuery]);
 
-  const handleLessonClick = lesson => {
+  const handleLessonClick = (lesson) => {
     // Navigate to the builder - DashboardLayout will auto-collapse sidebar for lesson builder pages
     navigate(
       `/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`,
       {
         state: { lessonData: lesson },
-      }
+      },
     );
   };
 
@@ -502,7 +529,7 @@ const ModuleLessonsView = () => {
     setShowCreateDialog(true);
   };
 
-  const fetchLessonScormDetails = async lessonId => {
+  const fetchLessonScormDetails = async (lessonId) => {
     if (!lessonId) return;
 
     try {
@@ -516,7 +543,7 @@ const ModuleLessonsView = () => {
           headers: {
             ...getAuthHeader(),
           },
-        }
+        },
       );
 
       const data = response.data?.data || response.data;
@@ -526,26 +553,26 @@ const ModuleLessonsView = () => {
         data?.scormUrl ||
         lessonData?.scorm_url ||
         lessonData?.scormUrl ||
-        '';
+        "";
 
       setExistingScormUrl(fetchedScormUrl);
-      setScormUrl(prev => prev || fetchedScormUrl || '');
+      setScormUrl((prev) => prev || fetchedScormUrl || "");
 
       if (fetchedScormUrl) {
-        setLessons(prev =>
-          prev.map(lesson =>
+        setLessons((prev) =>
+          prev.map((lesson) =>
             lesson.id === lessonId
               ? { ...lesson, scormUrl: fetchedScormUrl }
-              : lesson
-          )
+              : lesson,
+          ),
         );
       }
     } catch (error) {
-      console.error('Error fetching SCORM details:', error);
+      console.error("Error fetching SCORM details:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load existing SCORM details.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load existing SCORM details.",
+        variant: "destructive",
       });
     } finally {
       setIsFetchingScorm(false);
@@ -630,13 +657,13 @@ const ModuleLessonsView = () => {
   //   scormProgressIntervalRef.current = setInterval(poll, 1500);
   // };
 
-  const handleOpenScormDialog = lesson => {
+  const handleOpenScormDialog = (lesson) => {
     stopScormProgressPolling(true);
     setScormUploadProgress(0);
     setScormLesson(lesson);
-    setScormUrl(lesson?.scormUrl || '');
+    setScormUrl(lesson?.scormUrl || "");
     setScormFile(null);
-    setExistingScormUrl(lesson?.scormUrl || '');
+    setExistingScormUrl(lesson?.scormUrl || "");
     setShowAddScormDialog(true);
     fetchLessonScormDetails(lesson?.id);
   };
@@ -644,34 +671,34 @@ const ModuleLessonsView = () => {
   const handleCloseScormDialog = () => {
     setShowAddScormDialog(false);
     setScormLesson(null);
-    setScormUrl('');
+    setScormUrl("");
     setScormFile(null);
-    setExistingScormUrl('');
+    setExistingScormUrl("");
     setIsFetchingScorm(false);
     setScormUploadProgress(0);
     setScormServerProgress(null);
     stopScormProgressPolling(true);
   };
 
-  const handleScormFileChange = event => {
+  const handleScormFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const maxSize = 1024 * 1024 * 1200; // 1200MB
     if (file.size > maxSize) {
       toast({
-        title: 'File Too Large',
-        description: 'Please select a SCORM package under 1200MB.',
-        variant: 'destructive',
+        title: "File Too Large",
+        description: "Please select a SCORM package under 1200MB.",
+        variant: "destructive",
       });
       return;
     }
 
-    if (!file.name.toLowerCase().endsWith('.zip')) {
+    if (!file.name.toLowerCase().endsWith(".zip")) {
       toast({
-        title: 'Invalid File Type',
-        description: 'SCORM packages must be provided as .zip files.',
-        variant: 'destructive',
+        title: "Invalid File Type",
+        description: "SCORM packages must be provided as .zip files.",
+        variant: "destructive",
       });
       return;
     }
@@ -682,28 +709,28 @@ const ModuleLessonsView = () => {
   const handleUploadScormFile = async () => {
     if (!scormLesson) {
       toast({
-        title: 'Select a Lesson',
-        description: 'Choose a lesson before uploading a SCORM package.',
-        variant: 'destructive',
+        title: "Select a Lesson",
+        description: "Choose a lesson before uploading a SCORM package.",
+        variant: "destructive",
       });
       return;
     }
 
     if (existingScormUrl) {
       toast({
-        title: 'Remove Existing SCORM',
+        title: "Remove Existing SCORM",
         description:
-          'Delete the currently attached SCORM package before uploading a new one.',
-        variant: 'destructive',
+          "Delete the currently attached SCORM package before uploading a new one.",
+        variant: "destructive",
       });
       return;
     }
 
     if (!scormFile) {
       toast({
-        title: 'Select a File',
-        description: 'Choose a SCORM package before uploading.',
-        variant: 'destructive',
+        title: "Select a File",
+        description: "Choose a SCORM package before uploading.",
+        variant: "destructive",
       });
       return;
     }
@@ -715,8 +742,8 @@ const ModuleLessonsView = () => {
       // startScormProgressPolling(scormLesson.id);
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
       const formData = new FormData();
-      formData.append('scorm', scormFile);
-      formData.append('lesson_id', scormLesson.id);
+      formData.append("scorm", scormFile);
+      formData.append("lesson_id", scormLesson.id);
 
       const response = await axios.post(
         `${apiBaseUrl}/api/scorm/upload`,
@@ -725,16 +752,16 @@ const ModuleLessonsView = () => {
           withCredentials: true,
           headers: {
             ...getAuthHeader(),
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
-          onUploadProgress: progressEvent => {
+          onUploadProgress: (progressEvent) => {
             if (!progressEvent.total) return;
             const percent = Math.round(
-              (progressEvent.loaded / progressEvent.total) * 100
+              (progressEvent.loaded / progressEvent.total) * 100,
             );
             setScormUploadProgress(percent);
           },
-        }
+        },
       );
 
       const uploadedUrl =
@@ -744,27 +771,27 @@ const ModuleLessonsView = () => {
         response.data?.url;
 
       if (!uploadedUrl) {
-        throw new Error('Upload succeeded but no SCORM URL was returned.');
+        throw new Error("Upload succeeded but no SCORM URL was returned.");
       }
 
       setScormUrl(uploadedUrl);
       setExistingScormUrl(uploadedUrl);
-      setLessons(prev =>
-        prev.map(lesson =>
+      setLessons((prev) =>
+        prev.map((lesson) =>
           lesson.id === scormLesson.id
             ? { ...lesson, scormUrl: uploadedUrl }
-            : lesson
-        )
+            : lesson,
+        ),
       );
       setScormUploadProgress(100);
       toast({
-        title: 'Upload Successful',
-        description: 'SCORM package uploaded and linked to this lesson.',
+        title: "Upload Successful",
+        description: "SCORM package uploaded and linked to this lesson.",
       });
       setTimeout(() => setScormServerProgress(null), 1500);
     } catch (error) {
-      console.error('Error uploading SCORM package:', error);
-      let errorMessage = 'Failed to upload SCORM package. Please try again.';
+      console.error("Error uploading SCORM package:", error);
+      let errorMessage = "Failed to upload SCORM package. Please try again.";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -776,9 +803,9 @@ const ModuleLessonsView = () => {
 
       setScormServerProgress(null);
       toast({
-        title: 'Upload Failed',
+        title: "Upload Failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsUploadingScorm(false);
@@ -802,27 +829,27 @@ const ModuleLessonsView = () => {
         {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-        }
+        },
       );
 
-      setExistingScormUrl('');
-      setScormUrl('');
-      setLessons(prev =>
-        prev.map(lesson =>
-          lesson.id === scormLesson.id ? { ...lesson, scormUrl: null } : lesson
-        )
+      setExistingScormUrl("");
+      setScormUrl("");
+      setLessons((prev) =>
+        prev.map((lesson) =>
+          lesson.id === scormLesson.id ? { ...lesson, scormUrl: null } : lesson,
+        ),
       );
 
       toast({
-        title: 'Deleted',
-        description: 'Existing SCORM package removed.',
+        title: "Deleted",
+        description: "Existing SCORM package removed.",
       });
     } catch (error) {
-      console.error('Error deleting SCORM package:', error);
-      let errorMessage = 'Failed to delete SCORM package. Please try again.';
+      console.error("Error deleting SCORM package:", error);
+      let errorMessage = "Failed to delete SCORM package. Please try again.";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -833,9 +860,9 @@ const ModuleLessonsView = () => {
       }
 
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsDeletingScorm(false);
@@ -845,9 +872,9 @@ const ModuleLessonsView = () => {
   const handleAddScorm = async () => {
     if (!scormLesson) {
       toast({
-        title: 'Select a Lesson',
-        description: 'Please select a lesson before adding SCORM package.',
-        variant: 'destructive',
+        title: "Select a Lesson",
+        description: "Please select a lesson before adding SCORM package.",
+        variant: "destructive",
       });
       return;
     }
@@ -855,10 +882,10 @@ const ModuleLessonsView = () => {
     // Check if at least one field is provided
     if (!scormUrl.trim() && !scormFile) {
       toast({
-        title: 'SCORM Required',
+        title: "SCORM Required",
         description:
-          'Please either upload a SCORM package or provide a SCORM URL.',
-        variant: 'destructive',
+          "Please either upload a SCORM package or provide a SCORM URL.",
+        variant: "destructive",
       });
       return;
     }
@@ -866,10 +893,10 @@ const ModuleLessonsView = () => {
     // If file is selected but URL is not set yet, user needs to upload first
     if (scormFile && !scormUrl.trim()) {
       toast({
-        title: 'Upload Required',
+        title: "Upload Required",
         description:
-          'Please upload the SCORM package first, or provide a URL directly.',
-        variant: 'destructive',
+          "Please upload the SCORM package first, or provide a URL directly.",
+        variant: "destructive",
       });
       return;
     }
@@ -890,30 +917,30 @@ const ModuleLessonsView = () => {
         {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-        }
+        },
       );
 
-      setLessons(prev =>
-        prev.map(lesson =>
+      setLessons((prev) =>
+        prev.map((lesson) =>
           lesson.id === scormLesson.id
             ? { ...lesson, scormUrl: payload.scorm_url }
-            : lesson
-        )
+            : lesson,
+        ),
       );
 
       toast({
-        title: 'Success',
-        description: 'SCORM package added successfully.',
+        title: "Success",
+        description: "SCORM package added successfully.",
       });
 
       setExistingScormUrl(payload.scorm_url);
       handleCloseScormDialog();
     } catch (error) {
-      console.error('Error adding SCORM package:', error);
-      let errorMessage = 'Failed to add SCORM package. Please try again.';
+      console.error("Error adding SCORM package:", error);
+      let errorMessage = "Failed to add SCORM package. Please try again.";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -924,9 +951,9 @@ const ModuleLessonsView = () => {
       }
 
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsAddingScorm(false);
@@ -945,24 +972,24 @@ const ModuleLessonsView = () => {
         {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             ...getAuthHeader(),
           },
-        }
+        },
       );
 
       // Remove the deleted lesson from the state
-      setLessons(prev =>
-        prev.filter(lesson => lesson.id !== lessonToDelete.id)
+      setLessons((prev) =>
+        prev.filter((lesson) => lesson.id !== lessonToDelete.id),
       );
 
       toast({
-        title: 'Success',
-        description: 'Lesson deleted successfully!',
+        title: "Success",
+        description: "Lesson deleted successfully!",
       });
     } catch (error) {
-      console.error('Error deleting lesson:', error);
-      let errorMessage = 'Failed to delete lesson. Please try again.';
+      console.error("Error deleting lesson:", error);
+      let errorMessage = "Failed to delete lesson. Please try again.";
 
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -973,13 +1000,310 @@ const ModuleLessonsView = () => {
       }
 
       toast({
-        title: 'Error',
+        title: "Error",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
       setLessonToDelete(null);
+    }
+  };
+
+  // Lesson Resources Handlers
+  const handleOpenResourcesDialog = async (lesson) => {
+    setSelectedLessonForResources(lesson);
+    setShowResourcesDialog(true);
+    setResourceFile(null);
+    setResourceTitle("");
+    setResourceDescription("");
+    await fetchLessonResources(lesson.id);
+  };
+
+  const handleCloseResourcesDialog = () => {
+    setShowResourcesDialog(false);
+    setSelectedLessonForResources(null);
+    setLessonResources([]);
+    setResourceFile(null);
+    setResourceTitle("");
+    setResourceDescription("");
+  };
+
+  const fetchLessonResources = async (lessonId) => {
+    try {
+      setLoadingResources(true);
+      const resources = await getLessonResources(courseId, moduleId, lessonId);
+      setLessonResources(Array.isArray(resources) ? resources : []);
+    } catch (error) {
+      console.error("Error fetching lesson resources:", error);
+      // Set empty array on error
+      setLessonResources([]);
+      toast({
+        title: "Error",
+        description: "Failed to load resources.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingResources(false);
+    }
+  };
+
+  const handleResourceFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!resourceType) {
+      toast({
+        title: "Select Type First",
+        description: "Please choose the resource type before selecting a file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const maxSize = 1024 * 1024 * 1024; // 1GB (backend limit)
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Please select a file under 1GB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic MIME validation based on selected type
+    const mime = file.type.toLowerCase();
+    if (resourceType === "IMAGE" && !mime.startsWith("image/")) {
+      toast({
+        title: "Invalid File Type",
+        description: "Selected type is Image, but the file is not an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (resourceType === "VIDEO" && !mime.startsWith("video/")) {
+      toast({
+        title: "Invalid File Type",
+        description: "Selected type is Video, but the file is not a video.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (resourceType === "PDF" && mime !== "application/pdf") {
+      toast({
+        title: "Invalid File Type",
+        description: "Selected type is PDF, but the file is not a PDF.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResourceFile(file);
+    if (!resourceTitle) {
+      setResourceTitle(file.name);
+    }
+  };
+
+  const handleUploadResource = async () => {
+    if (!selectedLessonForResources) {
+      toast({
+        title: "Select a Lesson",
+        description: "Please select a lesson before uploading resources.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!resourceFile) {
+      toast({
+        title: "Select a File",
+        description: "Please choose a file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!resourceTitle.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title for the resource.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!resourceType) {
+      toast({
+        title: "Resource Type Required",
+        description: "Please select the type of resource.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUploadingResource(true);
+
+      await uploadLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        resourceFile,
+        {
+          title: resourceTitle,
+          description: resourceDescription,
+          resource_type: resourceType,
+        },
+      );
+
+      toast({
+        title: "Success",
+        description: "Resource uploaded successfully!",
+      });
+
+      // Refresh resources list
+      await fetchLessonResources(selectedLessonForResources.id);
+
+      // Reset form
+      setResourceFile(null);
+      setResourceTitle("");
+      setResourceDescription("");
+      setResourceType("");
+      if (document.getElementById("resource-file-input")) {
+        document.getElementById("resource-file-input").value = "";
+      }
+    } catch (error) {
+      console.error("Error uploading resource:", error);
+      let errorMessage = "Failed to upload resource. Please try again.";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingResource(false);
+    }
+  };
+
+  const handleDeleteResource = async (resourceId) => {
+    if (!selectedLessonForResources) return;
+
+    try {
+      setDeletingResourceId(resourceId);
+      await deleteLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        resourceId,
+      );
+
+      toast({
+        title: "Success",
+        description: "Resource deleted successfully!",
+      });
+
+      // Refresh resources list
+      await fetchLessonResources(selectedLessonForResources.id);
+    } catch (error) {
+      console.error("Error deleting resource:", error);
+      let errorMessage = "Failed to delete resource. Please try again.";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingResourceId(null);
+    }
+  };
+
+  const openEditResourceDialog = (resource) => {
+    setEditingResource(resource);
+    setEditResourceTitle(resource.title || "");
+    setEditResourceDescription(resource.description || "");
+    setEditResourceType(resource.resource_type || "TEXT");
+    setShowEditResourceDialog(true);
+  };
+
+  const handleUpdateResource = async () => {
+    if (!selectedLessonForResources || !editingResource) return;
+
+    if (!editResourceTitle.trim()) {
+      toast({
+        title: "Title Required",
+        description: "Please enter a title for the resource.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editResourceType) {
+      toast({
+        title: "Resource Type Required",
+        description: "Please select the type of resource.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUpdatingResourceId(editingResource.id);
+
+      await updateLessonResource(
+        courseId,
+        moduleId,
+        selectedLessonForResources.id,
+        editingResource.id,
+        {
+          title: editResourceTitle,
+          description: editResourceDescription,
+          resource_type: editResourceType,
+        },
+      );
+
+      toast({
+        title: "Updated",
+        description: "Resource updated successfully!",
+      });
+
+      await fetchLessonResources(selectedLessonForResources.id);
+      setShowEditResourceDialog(false);
+      setEditingResource(null);
+    } catch (error) {
+      console.error("Error updating resource:", error);
+      let errorMessage = "Failed to update resource. Please try again.";
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingResourceId(null);
     }
   };
 
@@ -996,7 +1320,7 @@ const ModuleLessonsView = () => {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {moduleDetails?.title || 'Module Lessons'}
+            {moduleDetails?.title || "Module Lessons"}
           </h1>
           {moduleDetails?.description && (
             <p className="text-gray-600 mt-1">{moduleDetails.description}</p>
@@ -1012,7 +1336,7 @@ const ModuleLessonsView = () => {
             placeholder="Search lessons..."
             className="pl-10 w-full"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <Button onClick={handleAddLesson} className="w-full sm:w-auto">
@@ -1022,7 +1346,7 @@ const ModuleLessonsView = () => {
 
       {loading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map(index => (
+          {[1, 2, 3, 4, 5, 6].map((index) => (
             <Card key={index} className="overflow-hidden">
               {/* Shimmer Thumbnail */}
               <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
@@ -1088,16 +1412,16 @@ const ModuleLessonsView = () => {
                 <div className="relative w-full h-48 bg-gray-100 rounded-t-lg overflow-hidden">
                   <img
                     src={lesson.thumbnail}
-                    alt={lesson.title || 'Lesson thumbnail'}
+                    alt={lesson.title || "Lesson thumbnail"}
                     className="w-full h-full object-cover"
-                    onError={e => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
                     }}
                   />
                   <div
                     className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
-                    style={{ display: 'none' }}
+                    style={{ display: "none" }}
                   >
                     Image failed to load
                   </div>
@@ -1106,24 +1430,24 @@ const ModuleLessonsView = () => {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start gap-2">
                   <CardTitle className="text-lg line-clamp-2">
-                    {lesson.title || 'Untitled Lesson'}
+                    {lesson.title || "Untitled Lesson"}
                   </CardTitle>
                   <Badge
                     variant={
-                      lesson.status === 'PUBLISHED' ? 'default' : 'secondary'
+                      lesson.status === "PUBLISHED" ? "default" : "secondary"
                     }
                     className="whitespace-nowrap"
                   >
-                    {lesson.status || 'DRAFT'}
+                    {lesson.status || "DRAFT"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pb-4">
                 <p className="text-sm text-gray-600 line-clamp-3 mb-4">
-                  {lesson.description || 'No description provided.'}
+                  {lesson.description || "No description provided."}
                 </p>
                 <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>Order: {lesson.order || 'N/A'}</span>
+                  <span>Order: {lesson.order || "N/A"}</span>
                   {lesson.updatedAt && (
                     <span>
                       Updated: {new Date(lesson.updatedAt).toLocaleDateString()}
@@ -1131,7 +1455,7 @@ const ModuleLessonsView = () => {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="pt-0">
+              <CardFooter className="pt-0 flex flex-col gap-2">
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2"
@@ -1140,14 +1464,14 @@ const ModuleLessonsView = () => {
                   <Play className="h-4 w-4" /> View Lesson
                 </Button>
                 <div
-                  className="flex items-center space-x-2 ml-4"
-                  onClick={e => e.stopPropagation()}
+                  className="flex items-center justify-center gap-2 w-full"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
-                    onClick={e => {
+                    className="h-8 w-8 flex-shrink-0 text-blue-600 hover:bg-blue-50 border-blue-200"
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleOpenUpdateDialog(lesson);
                     }}
@@ -1158,8 +1482,8 @@ const ModuleLessonsView = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-red-600 hover:bg-red-50 border-red-200"
-                    onClick={e => {
+                    className="h-8 w-8 flex-shrink-0 text-red-600 hover:bg-red-50 border-red-200"
+                    onClick={(e) => {
                       e.stopPropagation();
                       setLessonToDelete(lesson);
                     }}
@@ -1170,14 +1494,26 @@ const ModuleLessonsView = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8 text-green-600 hover:bg-green-50 border-green-200"
-                    onClick={e => {
+                    className="h-8 w-8 flex-shrink-0 text-green-600 hover:bg-green-50 border-green-200"
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleOpenScormDialog(lesson);
                     }}
                   >
                     <Plus className="h-4 w-4" />
                     <span className="sr-only">Add SCORM</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0 text-purple-600 hover:bg-purple-50 border-purple-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenResourcesDialog(lesson);
+                    }}
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="sr-only">Upload Resources</span>
                   </Button>
                 </div>
               </CardFooter>
@@ -1189,17 +1525,17 @@ const ModuleLessonsView = () => {
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {searchQuery
-              ? 'No matching lessons found'
-              : 'No lessons available yet'}
+              ? "No matching lessons found"
+              : "No lessons available yet"}
           </h3>
           <p className="text-gray-600 mb-6">
             {searchQuery
-              ? 'Try a different search term.'
-              : 'Create your first lesson to get started.'}
+              ? "Try a different search term."
+              : "Create your first lesson to get started."}
           </p>
           <Button onClick={handleAddLesson}>
             <Plus className="mr-2 h-4 w-4" />
-            {searchQuery ? 'Clear Search' : 'Create Your First Lesson'}
+            {searchQuery ? "Clear Search" : "Create Your First Lesson"}
           </Button>
         </div>
       )}
@@ -1276,7 +1612,7 @@ const ModuleLessonsView = () => {
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={e => handleFileSelect(e, 'create')}
+                      onChange={(e) => handleFileSelect(e, "create")}
                       className="cursor-pointer"
                       disabled={isUploadingImage}
                     />
@@ -1303,7 +1639,7 @@ const ModuleLessonsView = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        setNewLesson(prev => ({ ...prev, thumbnail: '' }))
+                        setNewLesson((prev) => ({ ...prev, thumbnail: "" }))
                       }
                       className="h-6 text-xs"
                     >
@@ -1316,14 +1652,14 @@ const ModuleLessonsView = () => {
                       src={newLesson.thumbnail}
                       alt="Thumbnail preview"
                       className="w-full h-full object-cover"
-                      onError={e => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
                       }}
                     />
                     <div
                       className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
-                      style={{ display: 'none' }}
+                      style={{ display: "none" }}
                     >
                       Invalid image URL
                     </div>
@@ -1352,7 +1688,7 @@ const ModuleLessonsView = () => {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={newLesson.status}
-                onValueChange={value => handleSelectChange('status', value)}
+                onValueChange={(value) => handleSelectChange("status", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -1387,7 +1723,7 @@ const ModuleLessonsView = () => {
                   Creating...
                 </>
               ) : (
-                'Create Lesson'
+                "Create Lesson"
               )}
             </Button>
           </DialogFooter>
@@ -1411,8 +1747,11 @@ const ModuleLessonsView = () => {
                 id="title"
                 name="title"
                 value={currentLesson?.title}
-                onChange={e =>
-                  setCurrentLesson(prev => ({ ...prev, title: e.target.value }))
+                onChange={(e) =>
+                  setCurrentLesson((prev) => ({
+                    ...prev,
+                    title: e.target.value,
+                  }))
                 }
                 placeholder="Enter lesson title"
                 required
@@ -1425,8 +1764,8 @@ const ModuleLessonsView = () => {
                 id="description"
                 name="description"
                 value={currentLesson?.description}
-                onChange={e =>
-                  setCurrentLesson(prev => ({
+                onChange={(e) =>
+                  setCurrentLesson((prev) => ({
                     ...prev,
                     description: e.target.value,
                   }))
@@ -1458,9 +1797,9 @@ const ModuleLessonsView = () => {
                   <Input
                     id="thumbnail"
                     name="thumbnail"
-                    value={currentLesson?.thumbnail || ''}
-                    onChange={e =>
-                      setCurrentLesson(prev => ({
+                    value={currentLesson?.thumbnail || ""}
+                    onChange={(e) =>
+                      setCurrentLesson((prev) => ({
                         ...prev,
                         thumbnail: e.target.value,
                       }))
@@ -1478,7 +1817,7 @@ const ModuleLessonsView = () => {
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={e => handleFileSelect(e, 'update')}
+                      onChange={(e) => handleFileSelect(e, "update")}
                       className="cursor-pointer"
                       disabled={isUploadingImage}
                     />
@@ -1505,7 +1844,7 @@ const ModuleLessonsView = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        setCurrentLesson(prev => ({ ...prev, thumbnail: '' }))
+                        setCurrentLesson((prev) => ({ ...prev, thumbnail: "" }))
                       }
                       className="h-6 text-xs"
                     >
@@ -1518,14 +1857,14 @@ const ModuleLessonsView = () => {
                       src={currentLesson.thumbnail}
                       alt="Thumbnail preview"
                       className="w-full h-full object-cover"
-                      onError={e => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
                       }}
                     />
                     <div
                       className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
-                      style={{ display: 'none' }}
+                      style={{ display: "none" }}
                     >
                       Invalid image URL
                     </div>
@@ -1543,8 +1882,8 @@ const ModuleLessonsView = () => {
                   type="number"
                   min="1"
                   value={currentLesson?.order}
-                  onChange={e =>
-                    setCurrentLesson(prev => ({
+                  onChange={(e) =>
+                    setCurrentLesson((prev) => ({
                       ...prev,
                       order: e.target.value,
                     }))
@@ -1558,8 +1897,8 @@ const ModuleLessonsView = () => {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={currentLesson?.status}
-                  onValueChange={value =>
-                    setCurrentLesson(prev => ({ ...prev, status: value }))
+                  onValueChange={(value) =>
+                    setCurrentLesson((prev) => ({ ...prev, status: value }))
                   }
                 >
                   <SelectTrigger>
@@ -1598,7 +1937,7 @@ const ModuleLessonsView = () => {
                   Updating...
                 </>
               ) : (
-                'Update Lesson'
+                "Update Lesson"
               )}
             </Button>
           </DialogFooter>
@@ -1608,7 +1947,7 @@ const ModuleLessonsView = () => {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!lessonToDelete}
-        onOpenChange={open => !open && setLessonToDelete(null)}
+        onOpenChange={(open) => !open && setLessonToDelete(null)}
       >
         <DialogContent>
           <DialogHeader>
@@ -1637,7 +1976,7 @@ const ModuleLessonsView = () => {
                   Deleting...
                 </>
               ) : (
-                'Delete'
+                "Delete"
               )}
             </Button>
           </DialogFooter>
@@ -1647,14 +1986,14 @@ const ModuleLessonsView = () => {
       {/* Add SCORM Dialog */}
       <Dialog
         open={showAddScormDialog}
-        onOpenChange={open => !open && handleCloseScormDialog()}
+        onOpenChange={(open) => !open && handleCloseScormDialog()}
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
               {scormLesson
-                ? `Add SCORM Package to "${scormLesson.title || 'Lesson'}"`
-                : 'Add SCORM Package'}
+                ? `Add SCORM Package to "${scormLesson.title || "Lesson"}"`
+                : "Add SCORM Package"}
             </DialogTitle>
             <DialogDescription>
               Upload a SCORM package file or provide a SCORM package URL to
@@ -1685,8 +2024,8 @@ const ModuleLessonsView = () => {
                       onClick={() =>
                         window.open(
                           existingScormUrl,
-                          '_blank',
-                          'noopener,noreferrer'
+                          "_blank",
+                          "noopener,noreferrer",
                         )
                       }
                     >
@@ -1706,7 +2045,7 @@ const ModuleLessonsView = () => {
                           Deleting...
                         </>
                       ) : (
-                        'Delete Existing'
+                        "Delete Existing"
                       )}
                     </Button>
                   </div>
@@ -1737,8 +2076,8 @@ const ModuleLessonsView = () => {
                   <div className="flex items-center justify-between text-xs text-blue-700 font-medium">
                     <span>
                       {scormServerProgress
-                        ? 'Processing SCORM package'
-                        : 'Uploading to server'}
+                        ? "Processing SCORM package"
+                        : "Uploading to server"}
                     </span>
                     <span>
                       {scormServerProgress
@@ -1765,7 +2104,7 @@ const ModuleLessonsView = () => {
                       ).toLocaleString()}
                       {scormServerProgress.totalFiles
                         ? ` / ${scormServerProgress.totalFiles.toLocaleString()} files`
-                        : ''}{' '}
+                        : ""}{" "}
                       uploaded
                     </p>
                   )}
@@ -1783,7 +2122,7 @@ const ModuleLessonsView = () => {
                     Uploading...
                   </>
                 ) : (
-                  'Upload SCORM'
+                  "Upload SCORM"
                 )}
               </Button>
               <p className="text-xs text-gray-500">
@@ -1799,7 +2138,7 @@ const ModuleLessonsView = () => {
                 type="url"
                 placeholder="https://example.com/path/to/scorm-package"
                 value={scormUrl}
-                onChange={e => setScormUrl(e.target.value)}
+                onChange={(e) => setScormUrl(e.target.value)}
                 disabled={isUploadingScorm}
               />
               <p className="text-xs text-gray-500">
@@ -1831,7 +2170,7 @@ const ModuleLessonsView = () => {
                   Adding SCORM...
                 </>
               ) : (
-                'Add SCORM'
+                "Add SCORM"
               )}
             </Button>
           </DialogFooter>
@@ -1848,6 +2187,331 @@ const ModuleLessonsView = () => {
           title="Edit Thumbnail Image"
         />
       )}
+
+      {/* Upload Resources Dialog */}
+      <Dialog
+        open={showResourcesDialog}
+        onOpenChange={(open) => !open && handleCloseResourcesDialog()}
+      >
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedLessonForResources
+                ? `Manage Resources for "${selectedLessonForResources.title || "Lesson"}"`
+                : "Upload Resources"}
+            </DialogTitle>
+            <DialogDescription>
+              Upload and manage resources for this lesson. Students can download
+              these resources.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 py-4">
+            {/* Upload Section */}
+            <div className="space-y-4 border-b pb-4">
+              <h3 className="text-lg font-semibold">Upload New Resource</h3>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-type">Resource Type *</Label>
+                <Select
+                  value={resourceType}
+                  onValueChange={(value) => {
+                    setResourceType(value);
+                    // Clear any previously selected file when changing type
+                    setResourceFile(null);
+                    if (document.getElementById("resource-file-input")) {
+                      document.getElementById("resource-file-input").value = "";
+                    }
+                  }}
+                  disabled={uploadingResource}
+                >
+                  <SelectTrigger id="resource-type">
+                    <SelectValue placeholder="Select resource type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IMAGE">Image</SelectItem>
+                    <SelectItem value="VIDEO">Video</SelectItem>
+                    <SelectItem value="PDF">PDF</SelectItem>
+                    <SelectItem value="TEXT">
+                      Document (Text / Other)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Choose the type that best matches this file. This controls how
+                  it is validated and displayed to students.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-file-input">File *</Label>
+                <Input
+                  id="resource-file-input"
+                  type="file"
+                  onChange={handleResourceFileChange}
+                  disabled={uploadingResource}
+                  className="cursor-pointer"
+                />
+                {resourceFile && (
+                  <p className="text-xs text-gray-600">
+                    Selected: {resourceFile.name} (
+                    {(resourceFile.size / (1024 * 1024)).toFixed(2)} MB)
+                  </p>
+                )}
+                <p className="text-xs text-gray-500">
+                  Maximum file size: 1GB. Supported formats: PDF, Images,
+                  Videos, Documents.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-title">Title *</Label>
+                <Input
+                  id="resource-title"
+                  value={resourceTitle}
+                  onChange={(e) => setResourceTitle(e.target.value)}
+                  placeholder="Enter resource title"
+                  disabled={uploadingResource}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resource-description">Description</Label>
+                <Textarea
+                  id="resource-description"
+                  value={resourceDescription}
+                  onChange={(e) => setResourceDescription(e.target.value)}
+                  placeholder="Enter resource description (optional)"
+                  rows={3}
+                  disabled={uploadingResource}
+                />
+              </div>
+
+              <Button
+                onClick={handleUploadResource}
+                disabled={!resourceFile || !resourceTitle || uploadingResource}
+                className="w-full"
+              >
+                {uploadingResource ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Resource
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Existing Resources Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Existing Resources</h3>
+
+              {loadingResources ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : lessonResources.length > 0 ? (
+                <div className="space-y-2">
+                  {lessonResources.map((resource, index) => {
+                    // Backend response fields: id, title, description, url, resource_type
+                    const resourceUrl = resource.url;
+
+                    return (
+                      <Card key={resource.id || index}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm mb-1 line-clamp-1">
+                                {resource.title || "Untitled Resource"}
+                              </h4>
+                              {resource.description && (
+                                <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                                  {resource.description}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="capitalize">
+                                  {resource.resource_type
+                                    ?.replace("_", " ")
+                                    .toLowerCase() || "File"}
+                                </span>
+                                {(resource.created_at ||
+                                  resource.updated_at) && (
+                                  <span>
+                                    {new Date(
+                                      resource.created_at ||
+                                        resource.updated_at,
+                                    ).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {resourceUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(
+                                      resourceUrl,
+                                      "_blank",
+                                      "noopener,noreferrer",
+                                    )
+                                  }
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditResourceDialog(resource)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteResource(resource.id)
+                                }
+                                disabled={deletingResourceId === resource.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                {deletingResourceId === resource.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2Icon className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No resources uploaded yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCloseResourcesDialog}
+              disabled={uploadingResource}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Resource Dialog */}
+      <Dialog
+        open={showEditResourceDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowEditResourceDialog(false);
+            setEditingResource(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingResource
+                ? `Edit Resource "${editingResource.title || "Resource"}"`
+                : "Edit Resource"}
+            </DialogTitle>
+            <DialogDescription>
+              Update the title, description, or type of this resource.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-title">Title *</Label>
+              <Input
+                id="edit-resource-title"
+                value={editResourceTitle}
+                onChange={(e) => setEditResourceTitle(e.target.value)}
+                placeholder="Enter resource title"
+                disabled={!!updatingResourceId}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-type">Resource Type *</Label>
+              <Select
+                value={editResourceType}
+                onValueChange={(value) => setEditResourceType(value)}
+                disabled={!!updatingResourceId}
+              >
+                <SelectTrigger id="edit-resource-type">
+                  <SelectValue placeholder="Select resource type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IMAGE">Image</SelectItem>
+                  <SelectItem value="VIDEO">Video</SelectItem>
+                  <SelectItem value="PDF">PDF</SelectItem>
+                  <SelectItem value="TEXT">Document (Text / Other)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-resource-description">Description</Label>
+              <Textarea
+                id="edit-resource-description"
+                value={editResourceDescription}
+                onChange={(e) => setEditResourceDescription(e.target.value)}
+                placeholder="Enter resource description (optional)"
+                rows={3}
+                disabled={!!updatingResourceId}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditResourceDialog(false);
+                setEditingResource(null);
+              }}
+              disabled={!!updatingResourceId}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateResource}
+              disabled={
+                !!updatingResourceId || !editResourceTitle || !editResourceType
+              }
+            >
+              {updatingResourceId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -25,9 +25,9 @@ class ApiKeyManager {
    */
   getApiKey() {
     console.warn(
-      '⚠️ apiKeyManager.getApiKey() is deprecated.\n' +
-        'All AI operations now go through backend API.\n' +
-        'No client-side OpenAI keys are needed or used.'
+      "⚠️ apiKeyManager.getApiKey() is deprecated.\n" +
+        "All AI operations now go through backend API.\n" +
+        "No client-side AI provider keys are needed or used.",
     );
     return null; // Always return null - backend handles authentication
     // DEPRECATED: Old implementation disabled
@@ -40,7 +40,7 @@ class ApiKeyManager {
    * @returns {boolean} Whether key appears valid
    */
   isValidKey(key) {
-    if (!key || typeof key !== 'string') {
+    if (!key || typeof key !== "string") {
       return false;
     }
 
@@ -48,12 +48,12 @@ class ApiKeyManager {
 
     // Check for placeholder values
     const placeholders = [
-      'your_api_key_here',
-      'your_openai_api_key_here',
-      'sk-placeholder',
-      'test_key',
-      'demo_key',
-      '',
+      "your_api_key_here",
+      "your_openai_api_key_here",
+      "sk-placeholder",
+      "test_key",
+      "demo_key",
+      "",
     ];
 
     if (placeholders.includes(trimmed.toLowerCase())) {
@@ -75,15 +75,15 @@ class ApiKeyManager {
    */
   getServiceStatus() {
     console.warn(
-      '⚠️ apiKeyManager.getServiceStatus() is deprecated. Check backend API status instead.'
+      "⚠️ apiKeyManager.getServiceStatus() is deprecated. Check backend API status instead.",
     );
 
     return {
-      service: 'backend-proxy',
+      service: "backend-proxy",
       available: true,
       deprecated: true,
-      message: 'All AI operations go through backend API',
-      status: 'using_backend',
+      message: "All AI operations go through backend API",
+      status: "using_backend",
     };
   }
 
@@ -94,9 +94,9 @@ class ApiKeyManager {
    */
   setApiKey(key) {
     throw new Error(
-      'Setting client-side API keys is no longer supported.\n' +
-        'All AI operations go through backend API.\n' +
-        'Configure OpenAI keys on your backend server instead.'
+      "Setting client-side API keys is no longer supported.\n" +
+        "All AI operations go through backend API.\n" +
+        "Configure provider keys on your backend server instead.",
     );
   }
 
@@ -112,15 +112,15 @@ class ApiKeyManager {
    * @returns {Promise<string|null>} API key or null
    */
   async promptForApiKey() {
-    return new Promise(resolve => {
-      const key = prompt('Please enter your OpenAI API key:');
+    return new Promise((resolve) => {
+      const key = prompt("Please enter your AI provider API key:");
 
       if (key && this.isValidKey(key)) {
         try {
           this.setApiKey(key);
           resolve(key);
         } catch (error) {
-          console.warn('Failed to save OpenAI API key:', error.message);
+          console.warn("Failed to save API key:", error.message);
           resolve(null);
         }
       } else {
@@ -136,14 +136,14 @@ class ApiKeyManager {
    */
   async initializeKeys() {
     console.log(
-      '✅ AI services ready - using backend API proxy\n' +
-        'No client-side API key configuration needed.'
+      "✅ AI services ready - using backend API proxy\n" +
+        "No client-side API key configuration needed.",
     );
 
     return {
       success: true,
       status: this.getServiceStatus(),
-      message: 'Backend API handles all AI operations',
+      message: "Backend API handles all AI operations",
     };
   }
 }

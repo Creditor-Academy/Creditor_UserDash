@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   X,
   Plus,
@@ -15,8 +15,8 @@ import {
   Columns,
   Minus,
   MoreHorizontal,
-} from 'lucide-react';
-import devLogger from '@lessonbuilder/utils/devLogger';
+} from "lucide-react";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 const TableComponent = ({
   onTemplateSelect,
@@ -32,9 +32,9 @@ const TableComponent = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showBulkPasteDialog, setShowBulkPasteDialog] = useState(false);
-  const [bulkPasteText, setBulkPasteText] = useState('');
+  const [bulkPasteText, setBulkPasteText] = useState("");
   const [pasteSuccess, setPasteSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
   const componentRef = useRef();
 
   // Animation effect for smooth appearance
@@ -54,8 +54,8 @@ const TableComponent = ({
 
       // Initialize with default data first
       const defaultData = {
-        headers: ['Column 1', 'Column 2'],
-        data: [['', '']],
+        headers: ["Column 1", "Column 2"],
+        data: [["", ""]],
       };
 
       // Parse existing table data from the block
@@ -64,19 +64,19 @@ const TableComponent = ({
           const parsedData = JSON.parse(editingBlock.content);
           if (parsedData && parsedData.headers && parsedData.data) {
             setTableData(parsedData);
-            setSelectedTemplate(parsedData.templateId || 'two_columns');
+            setSelectedTemplate(parsedData.templateId || "two_columns");
           } else {
             setTableData(defaultData);
-            setSelectedTemplate('two_columns');
+            setSelectedTemplate("two_columns");
           }
         } else {
           setTableData(defaultData);
-          setSelectedTemplate('two_columns');
+          setSelectedTemplate("two_columns");
         }
       } catch (e) {
-        devLogger.error('Error parsing table data:', e);
+        devLogger.error("Error parsing table data:", e);
         setTableData(defaultData);
-        setSelectedTemplate('two_columns');
+        setSelectedTemplate("two_columns");
       }
     } else {
       setIsEditMode(false);
@@ -93,55 +93,55 @@ const TableComponent = ({
   // Table templates with different formats
   const tableTemplates = [
     {
-      id: 'two_columns',
-      title: 'Two Columns',
-      description: 'Responsive two-column layout for side-by-side content',
+      id: "two_columns",
+      title: "Two Columns",
+      description: "Responsive two-column layout for side-by-side content",
       icon: <Columns className="h-6 w-6" />,
-      type: 'layout',
+      type: "layout",
       defaultData: {
         columns: 2,
         rows: 1,
-        headers: ['Left Column', 'Right Column'],
+        headers: ["Left Column", "Right Column"],
         data: [
           [
-            'Add your content here. You can include text, lists, or images.',
-            'Add your content here. You can include text, lists, or images.',
+            "Add your content here. You can include text, lists, or images.",
+            "Add your content here. You can include text, lists, or images.",
           ],
         ],
       },
     },
     {
-      id: 'three_columns',
-      title: 'Three Columns',
-      description: 'Balanced three-column layout for features or highlights',
+      id: "three_columns",
+      title: "Three Columns",
+      description: "Balanced three-column layout for features or highlights",
       icon: <Grid className="h-6 w-6" />,
-      type: 'layout',
+      type: "layout",
       defaultData: {
         columns: 3,
         rows: 1,
-        headers: ['Column 1', 'Column 2', 'Column 3'],
+        headers: ["Column 1", "Column 2", "Column 3"],
         data: [
           [
-            'Feature or content description',
-            'Feature or content description',
-            'Feature or content description',
+            "Feature or content description",
+            "Feature or content description",
+            "Feature or content description",
           ],
         ],
       },
     },
     {
-      id: 'responsive_table',
-      title: 'Responsive Table',
-      description: 'Fully responsive table with add/remove functionality',
+      id: "responsive_table",
+      title: "Responsive Table",
+      description: "Fully responsive table with add/remove functionality",
       icon: <MoreHorizontal className="h-6 w-6" />,
-      type: 'responsive',
+      type: "responsive",
       defaultData: {
         columns: 4,
         rows: 2,
-        headers: ['Name', 'Position', 'Department', 'Email'],
+        headers: ["Name", "Position", "Department", "Email"],
         data: [
-          ['John Doe', 'Manager', 'Sales', 'john@example.com'],
-          ['Jane Smith', 'Developer', 'IT', 'jane@example.com'],
+          ["John Doe", "Manager", "Sales", "john@example.com"],
+          ["Jane Smith", "Developer", "IT", "jane@example.com"],
         ],
       },
     },
@@ -151,29 +151,29 @@ const TableComponent = ({
   useEffect(() => {
     if (isEditing && editingBlock) {
       try {
-        const parsedData = JSON.parse(editingBlock.content || '{}');
+        const parsedData = JSON.parse(editingBlock.content || "{}");
         setTableData(parsedData);
         setSelectedTemplate(parsedData.templateId);
         setIsEditMode(true);
       } catch (e) {
-        devLogger.error('Error parsing table data:', e);
+        devLogger.error("Error parsing table data:", e);
       }
     }
   }, [isEditing, editingBlock]);
 
-  const handleTemplateSelect = template => {
+  const handleTemplateSelect = (template) => {
     const htmlContent = generateTableHTML(
       template.defaultData,
       template.id,
-      false
+      false,
     );
 
     const tableBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
-      type: 'table',
+      type: "table",
       title: template.title,
-      textType: 'table',
+      textType: "table",
       templateId: template.id,
       tableType: template.id,
       content: JSON.stringify({
@@ -196,15 +196,15 @@ const TableComponent = ({
 
   const addRow = () => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
-      data: [...prev.data, new Array(prev.headers.length).fill('')],
+      data: [...prev.data, new Array(prev.headers.length).fill("")],
     }));
   };
 
-  const removeRow = rowIndex => {
+  const removeRow = (rowIndex) => {
     if (!tableData || tableData.data.length <= 1) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       data: prev.data.filter((_, index) => index !== rowIndex),
     }));
@@ -212,45 +212,47 @@ const TableComponent = ({
 
   const addColumn = () => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       headers: [...prev.headers, `Header ${prev.headers.length + 1}`],
-      data: prev.data.map(row => [...row, '']),
+      data: prev.data.map((row) => [...row, ""]),
     }));
   };
 
-  const removeColumn = colIndex => {
+  const removeColumn = (colIndex) => {
     if (!tableData || tableData.headers.length <= 1) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       headers: prev.headers.filter((_, index) => index !== colIndex),
-      data: prev.data.map(row => row.filter((_, index) => index !== colIndex)),
+      data: prev.data.map((row) =>
+        row.filter((_, index) => index !== colIndex),
+      ),
     }));
   };
 
   const updateCell = (rowIndex, colIndex, value) => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       data: prev.data.map((row, rIndex) =>
         rIndex === rowIndex
           ? row.map((cell, cIndex) => (cIndex === colIndex ? value : cell))
-          : row
+          : row,
       ),
     }));
   };
 
   const updateHeader = (colIndex, value) => {
     if (!tableData) return;
-    setTableData(prev => ({
+    setTableData((prev) => ({
       ...prev,
       headers: prev.headers.map((header, index) =>
-        index === colIndex ? value : header
+        index === colIndex ? value : header,
       ),
     }));
   };
 
-  const handleBulkPaste = pastedText => {
+  const handleBulkPaste = (pastedText) => {
     try {
       if (!pastedText || !pastedText.trim()) {
         return;
@@ -259,8 +261,8 @@ const TableComponent = ({
       // Split by newlines for rows and tabs for columns
       const rows = pastedText
         .trim()
-        .split('\n')
-        .filter(row => row.trim().length > 0);
+        .split("\n")
+        .filter((row) => row.trim().length > 0);
 
       if (rows.length === 0) {
         return;
@@ -268,18 +270,18 @@ const TableComponent = ({
 
       // Parse each row by tabs
       const parsedData = rows
-        .map(row => {
-          const cells = row.split('\t').map(cell => cell.trim());
+        .map((row) => {
+          const cells = row.split("\t").map((cell) => cell.trim());
           return cells.length > 0 ? cells : [];
         })
-        .filter(row => row.length > 0);
+        .filter((row) => row.length > 0);
 
       if (parsedData.length === 0 || parsedData[0].length === 0) {
         return;
       }
 
       // Determine the number of columns (max columns across all rows)
-      const numCols = Math.max(...parsedData.map(row => row.length));
+      const numCols = Math.max(...parsedData.map((row) => row.length));
       const numRows = parsedData.length;
 
       // Prepare new table data
@@ -295,7 +297,7 @@ const TableComponent = ({
         for (let i = 1; i < numRows; i++) {
           const row = [];
           for (let j = 0; j < numCols; j++) {
-            row.push(parsedData[i][j] || '');
+            row.push(parsedData[i][j] || "");
           }
           newData.push(row);
         }
@@ -309,10 +311,10 @@ const TableComponent = ({
 
       // Ensure we have valid data
       if (newData.length === 0) {
-        newData = [new Array(numCols).fill('')];
+        newData = [new Array(numCols).fill("")];
       }
 
-      setTableData(prev => ({
+      setTableData((prev) => ({
         ...(prev || {}),
         headers: newHeaders,
         data: newData,
@@ -322,39 +324,39 @@ const TableComponent = ({
 
       const dataRowCount = newData.length;
       setSuccessMessage(
-        `Pasted ${dataRowCount} data row(s) × ${numCols} column(s)`
+        `Pasted ${dataRowCount} data row(s) × ${numCols} column(s)`,
       );
       setPasteSuccess(true);
 
       // Auto-close dialog after 1.5 seconds
       setTimeout(() => {
         setShowBulkPasteDialog(false);
-        setBulkPasteText('');
+        setBulkPasteText("");
         setPasteSuccess(false);
-        setSuccessMessage('');
+        setSuccessMessage("");
       }, 1500);
     } catch (error) {
-      console.error('Paste error:', error);
+      console.error("Paste error:", error);
     }
   };
 
   const generateTableHTML = (data, templateId, isPreview = false) => {
-    const template = tableTemplates.find(t => t.id === templateId);
+    const template = tableTemplates.find((t) => t.id === templateId);
 
-    if (template?.type === 'layout') {
+    if (template?.type === "layout") {
       // Generate pure column layout HTML without containers
       const colClass = isPreview
-        ? 'grid-cols-1'
+        ? "grid-cols-1"
         : data.columns === 2
-          ? 'md:grid-cols-2'
+          ? "md:grid-cols-2"
           : data.columns === 3
-            ? 'md:grid-cols-3'
+            ? "md:grid-cols-3"
             : `md:grid-cols-${data.columns}`;
 
-      const gridGap = isPreview ? 'gap-1' : 'gap-6';
-      const padding = isPreview ? 'p-1.5' : 'p-4';
-      const textSize = isPreview ? 'text-[10px]' : 'text-sm';
-      const headerSize = isPreview ? 'text-[11px]' : 'text-base';
+      const gridGap = isPreview ? "gap-1" : "gap-6";
+      const padding = isPreview ? "p-1.5" : "p-4";
+      const textSize = isPreview ? "text-[10px]" : "text-sm";
+      const headerSize = isPreview ? "text-[11px]" : "text-base";
 
       return `
         <div class="grid ${colClass} ${gridGap}">
@@ -369,17 +371,17 @@ const TableComponent = ({
               </div>
               <div class="text-gray-700 leading-relaxed ${textSize} break-words line-clamp-3 overflow-hidden">${content.substring(0, 60)}</div>
             </div>
-          `
+          `,
             )
-            .join('')}
+            .join("")}
         </div>
       `;
     } else {
       // Generate responsive table HTML with proper mobile support
-      const padding = isPreview ? 'px-2 py-1' : 'px-6 py-4';
-      const textSize = isPreview ? 'text-[10px]' : 'text-sm';
-      const headerTextSize = isPreview ? 'text-[10px]' : 'text-sm';
-      const tableClass = isPreview ? 'w-full text-[10px]' : 'min-w-full';
+      const padding = isPreview ? "px-2 py-1" : "px-6 py-4";
+      const textSize = isPreview ? "text-[10px]" : "text-sm";
+      const headerTextSize = isPreview ? "text-[10px]" : "text-sm";
+      const tableClass = isPreview ? "w-full text-[10px]" : "min-w-full";
 
       return `
         <div class="relative w-full">
@@ -390,35 +392,35 @@ const TableComponent = ({
                 ${data.headers
                   .map(
                     (header, index) => `
-                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top whitespace-nowrap" style="min-width: ${isPreview ? '80px' : '150px'}; max-width: ${isPreview ? '120px' : '300px'};">
+                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top whitespace-nowrap" style="min-width: ${isPreview ? "80px" : "150px"}; max-width: ${isPreview ? "120px" : "300px"};">
                     <div class="flex items-start">
                       <div class="w-0.5 h-0.5 bg-blue-500 rounded-full mr-1 mt-1 flex-shrink-0"></div>
                       <span class="break-words leading-tight line-clamp-2">${header}</span>
                     </div>
                   </th>
-                `
+                `,
                   )
-                  .join('')}
+                  .join("")}
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-100">
               ${data.data
                 .map(
                   (row, rowIndex) => `
-                <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'}">
+                <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? "bg-white" : "bg-gray-25"}">
                   ${row
                     .map(
                       (cell, cellIndex) => `
-                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: ${isPreview ? '80px' : '150px'}; max-width: ${isPreview ? '120px' : '300px'};">
+                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: ${isPreview ? "80px" : "150px"}; max-width: ${isPreview ? "120px" : "300px"};">
                       <div class="font-medium ${textSize} break-words leading-relaxed line-clamp-2">${cell.substring(0, 40)}</div>
                     </td>
-                  `
+                  `,
                     )
-                    .join('')}
+                    .join("")}
                 </tr>
-              `
+              `,
                 )
-                .join('')}
+                .join("")}
             </tbody>
             </table>
           </div>
@@ -446,19 +448,27 @@ const TableComponent = ({
   const handleSave = () => {
     if (!tableData || !selectedTemplate) return;
 
-    const template = tableTemplates.find(t => t.id === selectedTemplate);
+    const template = tableTemplates.find((t) => t.id === selectedTemplate);
     const htmlContent = generateTableHTML(tableData, selectedTemplate, false);
 
     const tableBlock = {
       id: editingBlock?.id || `block_${Date.now()}`,
       block_id: editingBlock?.block_id || `block_${Date.now()}`,
-      type: 'table',
+      type: "table",
       title: template.title,
-      textType: 'table',
+      textType: "table",
       templateId: selectedTemplate,
       tableType: selectedTemplate,
+      tableData: {
+        headers: tableData.headers || [],
+        data: tableData.data || [],
+        templateId: selectedTemplate,
+        columns: tableData.headers?.length || 0,
+        rows: tableData.data?.length || 0,
+      },
       content: JSON.stringify({
-        ...tableData,
+        headers: tableData.headers || [],
+        data: tableData.data || [],
         templateId: selectedTemplate,
         tableType: selectedTemplate,
       }),
@@ -475,7 +485,7 @@ const TableComponent = ({
           tableType: selectedTemplate,
         }),
         htmlContent,
-        selectedTemplate
+        selectedTemplate,
       );
     } else if (onTemplateSelect) {
       onTemplateSelect(tableBlock);
@@ -493,7 +503,7 @@ const TableComponent = ({
       );
     }
 
-    const template = tableTemplates.find(t => t.id === selectedTemplate);
+    const template = tableTemplates.find((t) => t.id === selectedTemplate);
     if (!template) {
       return (
         <div className="p-4 text-center text-red-500">Template not found</div>
@@ -501,7 +511,7 @@ const TableComponent = ({
     }
 
     // Render different editors based on table type
-    if (template?.type === 'layout') {
+    if (template?.type === "layout") {
       return renderColumnEditor(template);
     } else {
       return renderDataTableEditor(template);
@@ -547,8 +557,8 @@ const TableComponent = ({
                     </label>
                     <input
                       type="text"
-                      value={header || ''}
-                      onChange={e => updateHeader(index, e.target.value)}
+                      value={header || ""}
+                      onChange={(e) => updateHeader(index, e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={`Column ${index + 1} Header`}
                     />
@@ -563,9 +573,9 @@ const TableComponent = ({
                         tableData.data[0] &&
                         tableData.data[0][index]
                           ? tableData.data[0][index]
-                          : ''
+                          : ""
                       }
-                      onChange={e => updateCell(0, index, e.target.value)}
+                      onChange={(e) => updateCell(0, index, e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       rows="4"
                       placeholder={`Add your content here. You can include text, lists, or images.`}
@@ -675,8 +685,8 @@ const TableComponent = ({
                   <div key={index} className="relative">
                     <input
                       type="text"
-                      value={header || ''}
-                      onChange={e => updateHeader(index, e.target.value)}
+                      value={header || ""}
+                      onChange={(e) => updateHeader(index, e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm w-full"
                       placeholder={`Header ${index + 1}`}
                     />
@@ -720,8 +730,8 @@ const TableComponent = ({
                         row.map((cell, cellIndex) => (
                           <div key={cellIndex} className="relative">
                             <textarea
-                              value={cell || ''}
-                              onChange={e =>
+                              value={cell || ""}
+                              onChange={(e) =>
                                 updateCell(rowIndex, cellIndex, e.target.value)
                               }
                               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm w-full"
@@ -796,7 +806,7 @@ const TableComponent = ({
           onClick={() => {
             onClose();
             if (onAICreation) {
-              onAICreation({ id: 'tables', title: 'Table' });
+              onAICreation({ id: "tables", title: "Table" });
             }
           }}
           className="group relative p-6 border-2 border-purple-200 rounded-2xl cursor-pointer hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50 hover:border-purple-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-purple-50 to-pink-50"
@@ -903,12 +913,12 @@ const TableComponent = ({
               </div>
               <div
                 className="w-full overflow-x-auto max-w-full text-xs"
-                style={{ maxWidth: '100%' }}
+                style={{ maxWidth: "100%" }}
                 dangerouslySetInnerHTML={{
                   __html: generateTableHTML(
                     template.defaultData,
                     template.id,
-                    true
+                    true,
                   ),
                 }}
               />
@@ -1024,7 +1034,7 @@ const TableComponent = ({
             </label>
             <textarea
               value={bulkPasteText}
-              onChange={e => setBulkPasteText(e.target.value)}
+              onChange={(e) => setBulkPasteText(e.target.value)}
               placeholder="Name	Age	City
 John	25	New York
 Jane	30	Los Angeles
@@ -1066,9 +1076,9 @@ Bob	28	Chicago"
             <Button
               onClick={() => {
                 setShowBulkPasteDialog(false);
-                setBulkPasteText('');
+                setBulkPasteText("");
                 setPasteSuccess(false);
-                setSuccessMessage('');
+                setSuccessMessage("");
               }}
               variant="outline"
               className="px-6 py-2 rounded-lg font-medium"
@@ -1142,14 +1152,14 @@ Bob	28	Chicago"
       );
     }
 
-    const template = tableTemplates.find(t => t.id === selectedTemplate);
+    const template = tableTemplates.find((t) => t.id === selectedTemplate);
 
     return (
       <>
         <Dialog open={true} onOpenChange={onClose}>
           <DialogContent
             className={`max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out transform ${
-              isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+              isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
             }`}
             aria-describedby={undefined}
           >
@@ -1177,7 +1187,7 @@ Bob	28	Chicago"
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-6">
-                {template?.type === 'layout'
+                {template?.type === "layout"
                   ? renderColumnEditor(template, true)
                   : renderDataTableEditor(template, true)}
               </div>
@@ -1195,14 +1205,14 @@ Bob	28	Chicago"
   return (
     <div
       className={`fixed inset-0 bg-black flex items-center justify-start z-50 transition-all duration-300 ease-out ${
-        isVisible ? 'bg-opacity-50' : 'bg-opacity-0'
+        isVisible ? "bg-opacity-50" : "bg-opacity-0"
       }`}
     >
       <div
         className={`bg-white h-full w-[480px] shadow-2xl flex flex-col transform transition-all duration-500 ease-out ${
           isVisible
-            ? 'translate-x-0 opacity-100'
-            : '-translate-x-full opacity-0'
+            ? "translate-x-0 opacity-100"
+            : "-translate-x-full opacity-0"
         }`}
       >
         {/* Header */}

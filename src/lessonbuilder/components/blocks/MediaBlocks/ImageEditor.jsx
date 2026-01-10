@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   RotateCcw,
   RotateCw,
@@ -16,16 +16,16 @@ import {
   ZoomOut,
   X,
   Check,
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import devLogger from '@lessonbuilder/utils/devLogger';
+} from "lucide-react";
+import { toast } from "react-hot-toast";
+import devLogger from "@lessonbuilder/utils/devLogger";
 
 const ImageEditor = ({
   isOpen,
   onClose,
   imageFile,
   onSave,
-  title = 'Edit Image',
+  title = "Edit Image",
 }) => {
   const canvasRef = useRef(null);
   const [image, setImage] = useState(null);
@@ -37,22 +37,87 @@ const ImageEditor = ({
   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragType, setDragType] = useState('move'); // 'move', 'resize-nw', 'resize-ne', 'resize-sw', 'resize-se'
+  const [dragType, setDragType] = useState("move"); // 'move', 'resize-nw', 'resize-ne', 'resize-sw', 'resize-se'
   const [imageScale, setImageScale] = useState(1);
 
   useEffect(() => {
     if (imageFile && isOpen) {
-      const reader = new FileReader();
-      reader.onload = e => {
+      // Handle both File/Blob objects and data URL strings
+      if (typeof imageFile === "string") {
+        // Check if it's an external URL (not a data URL)
+        if (
+          imageFile.startsWith("http://") ||
+          imageFile.startsWith("https://")
+        ) {
+          // It's an external URL - fetch it as blob to avoid CORS issues with canvas
+          fetch(imageFile, {
+            mode: "cors",
+            credentials: "omit", // Don't send cookies for external URLs
+          })
+            .then((response) => {
+              if (!response.ok) throw new Error("Failed to fetch image");
+              return response.blob();
+            })
+            .then((blob) => {
+              // Create a blob URL which the browser treats as same-origin
+              const blobUrl = URL.createObjectURL(blob);
+              const img = new Image();
+              img.onload = () => {
+                setImage(img);
+                setCropArea({
+                  x: 0,
+                  y: 0,
+                  width: img.width,
+                  height: img.height,
+                });
+                // Clean up the blob URL after the image is loaded
+                // Keep it alive in a ref so we can revoke it when component unmounts
+              };
+              img.onerror = () => {
+                URL.revokeObjectURL(blobUrl);
+                toast.error("Failed to load image");
+                devLogger.error("Failed to load image from blob URL");
+              };
+              img.src = blobUrl;
+            })
+            .catch((error) => {
+              devLogger.error("Failed to fetch external image:", error);
+              toast.error(
+                "Failed to load image. The image may be blocked by CORS policy. Try uploading a local file instead.",
+              );
+            });
+        } else {
+          // It's a data URL - use it directly
+          const img = new Image();
+          img.onload = () => {
+            setImage(img);
+            setCropArea({ x: 0, y: 0, width: img.width, height: img.height });
+          };
+          img.onerror = () => {
+            toast.error("Failed to load image");
+            devLogger.error("Failed to load image from data URL");
+          };
+          img.src = imageFile;
+        }
+      } else if (imageFile instanceof Blob || imageFile instanceof File) {
+        // It's a File or Blob object - create a blob URL which is always safe for canvas
+        const blobUrl = URL.createObjectURL(imageFile);
         const img = new Image();
         img.onload = () => {
           setImage(img);
-          // Initialize crop area to full image
           setCropArea({ x: 0, y: 0, width: img.width, height: img.height });
         };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(imageFile);
+        img.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          toast.error("Failed to load image");
+          devLogger.error("Failed to load image from blob");
+        };
+        img.src = blobUrl;
+      } else {
+        // Unknown type
+        toast.error("Invalid image type");
+        devLogger.error("Invalid imageFile type:", typeof imageFile, imageFile);
+      }
     }
   }, [imageFile, isOpen]);
 
@@ -60,7 +125,7 @@ const ImageEditor = ({
     const canvas = canvasRef.current;
     if (!canvas || !image) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
 
     // Set canvas size
     canvas.width = 600;
@@ -123,7 +188,7 @@ const ImageEditor = ({
       const cropH = cropArea.height * scaleY;
 
       // Draw dark overlay over areas that will be CUT OUT (cropped away)
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
 
       // Top area (above crop)
       ctx.fillRect(0, 0, canvas.width, cropY);
@@ -132,7 +197,7 @@ const ImageEditor = ({
         0,
         cropY + cropH,
         canvas.width,
-        canvas.height - (cropY + cropH)
+        canvas.height - (cropY + cropH),
       );
       // Left area (left of crop)
       ctx.fillRect(0, cropY, cropX, cropH);
@@ -140,14 +205,14 @@ const ImageEditor = ({
       ctx.fillRect(cropX + cropW, cropY, canvas.width - (cropX + cropW), cropH);
 
       // Draw bright border around the area that will be KEPT
-      ctx.strokeStyle = '#00ff00';
+      ctx.strokeStyle = "#00ff00";
       ctx.lineWidth = 3;
       ctx.strokeRect(cropX, cropY, cropW, cropH);
 
       // Draw corner handles
       const handleSize = 12;
-      ctx.fillStyle = '#00ff00';
-      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = "#00ff00";
+      ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
 
       // Corner handles
@@ -156,13 +221,13 @@ const ImageEditor = ({
         cropX - handleSize / 2,
         cropY - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX - handleSize / 2,
         cropY - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Top-right handle
@@ -170,13 +235,13 @@ const ImageEditor = ({
         cropX + cropW - handleSize / 2,
         cropY - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX + cropW - handleSize / 2,
         cropY - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Bottom-left handle
@@ -184,13 +249,13 @@ const ImageEditor = ({
         cropX - handleSize / 2,
         cropY + cropH - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX - handleSize / 2,
         cropY + cropH - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Bottom-right handle
@@ -198,13 +263,13 @@ const ImageEditor = ({
         cropX + cropW - handleSize / 2,
         cropY + cropH - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX + cropW - handleSize / 2,
         cropY + cropH - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Center edge handles
@@ -213,13 +278,13 @@ const ImageEditor = ({
         cropX + cropW / 2 - handleSize / 2,
         cropY - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX + cropW / 2 - handleSize / 2,
         cropY - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Bottom center handle
@@ -227,13 +292,13 @@ const ImageEditor = ({
         cropX + cropW / 2 - handleSize / 2,
         cropY + cropH - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX + cropW / 2 - handleSize / 2,
         cropY + cropH - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Left center handle
@@ -241,13 +306,13 @@ const ImageEditor = ({
         cropX - handleSize / 2,
         cropY + cropH / 2 - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX - handleSize / 2,
         cropY + cropH / 2 - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Right center handle
@@ -255,29 +320,29 @@ const ImageEditor = ({
         cropX + cropW - handleSize / 2,
         cropY + cropH / 2 - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
       ctx.strokeRect(
         cropX + cropW - handleSize / 2,
         cropY + cropH / 2 - handleSize / 2,
         handleSize,
-        handleSize
+        handleSize,
       );
 
       // Add text to show what will be kept
-      ctx.fillStyle = '#00ff00';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('KEEP THIS AREA', cropX + cropW / 2, cropY - 10);
+      ctx.fillStyle = "#00ff00";
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("KEEP THIS AREA", cropX + cropW / 2, cropY - 10);
     },
-    [image, cropArea]
+    [image, cropArea],
   );
 
   useEffect(() => {
     drawImage();
   }, [drawImage]);
 
-  const getMousePos = useCallback(e => {
+  const getMousePos = useCallback((e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
@@ -330,25 +395,25 @@ const ImageEditor = ({
         Math.abs(mouseX - canvasArea.x) < tolerance &&
         Math.abs(mouseY - canvasArea.y) < tolerance
       ) {
-        return 'resize-nw'; // Top-left
+        return "resize-nw"; // Top-left
       }
       if (
         Math.abs(mouseX - (canvasArea.x + canvasArea.width)) < tolerance &&
         Math.abs(mouseY - canvasArea.y) < tolerance
       ) {
-        return 'resize-ne'; // Top-right
+        return "resize-ne"; // Top-right
       }
       if (
         Math.abs(mouseX - canvasArea.x) < tolerance &&
         Math.abs(mouseY - (canvasArea.y + canvasArea.height)) < tolerance
       ) {
-        return 'resize-sw'; // Bottom-left
+        return "resize-sw"; // Bottom-left
       }
       if (
         Math.abs(mouseX - (canvasArea.x + canvasArea.width)) < tolerance &&
         Math.abs(mouseY - (canvasArea.y + canvasArea.height)) < tolerance
       ) {
-        return 'resize-se'; // Bottom-right
+        return "resize-se"; // Bottom-right
       }
 
       // Check center edge handles
@@ -357,28 +422,28 @@ const ImageEditor = ({
         Math.abs(mouseX - (canvasArea.x + canvasArea.width / 2)) < tolerance &&
         Math.abs(mouseY - canvasArea.y) < tolerance
       ) {
-        return 'resize-n'; // Top center
+        return "resize-n"; // Top center
       }
       // Bottom center handle
       if (
         Math.abs(mouseX - (canvasArea.x + canvasArea.width / 2)) < tolerance &&
         Math.abs(mouseY - (canvasArea.y + canvasArea.height)) < tolerance
       ) {
-        return 'resize-s'; // Bottom center
+        return "resize-s"; // Bottom center
       }
       // Left center handle
       if (
         Math.abs(mouseX - canvasArea.x) < tolerance &&
         Math.abs(mouseY - (canvasArea.y + canvasArea.height / 2)) < tolerance
       ) {
-        return 'resize-w'; // Left center
+        return "resize-w"; // Left center
       }
       // Right center handle
       if (
         Math.abs(mouseX - (canvasArea.x + canvasArea.width)) < tolerance &&
         Math.abs(mouseY - (canvasArea.y + canvasArea.height / 2)) < tolerance
       ) {
-        return 'resize-e'; // Right center
+        return "resize-e"; // Right center
       }
 
       // Check if inside crop area for moving
@@ -388,22 +453,22 @@ const ImageEditor = ({
         mouseY >= canvasArea.y &&
         mouseY <= canvasArea.y + canvasArea.height
       ) {
-        return 'move';
+        return "move";
       }
 
       return null;
     },
-    [getCropAreaInCanvas]
+    [getCropAreaInCanvas],
   );
 
   const handleMouseDown = useCallback(
-    e => {
+    (e) => {
       e.preventDefault();
       const mousePos = getMousePos(e);
       const handle = getHandleAt(mousePos.x, mousePos.y);
 
       if (handle) {
-        devLogger.debug('Mouse down on:', handle);
+        devLogger.debug("Mouse down on:", handle);
         setIsDragging(true);
         setDragType(handle);
         setDragStart(mousePos);
@@ -411,71 +476,71 @@ const ImageEditor = ({
         // Change cursor based on handle type
         const canvas = canvasRef.current;
         if (canvas) {
-          if (handle.startsWith('resize')) {
+          if (handle.startsWith("resize")) {
             // Set appropriate cursor based on resize direction
             switch (handle) {
-              case 'resize-nw':
-              case 'resize-se':
-                canvas.style.cursor = 'nw-resize';
+              case "resize-nw":
+              case "resize-se":
+                canvas.style.cursor = "nw-resize";
                 break;
-              case 'resize-ne':
-              case 'resize-sw':
-                canvas.style.cursor = 'ne-resize';
+              case "resize-ne":
+              case "resize-sw":
+                canvas.style.cursor = "ne-resize";
                 break;
-              case 'resize-n':
-              case 'resize-s':
-                canvas.style.cursor = 'ns-resize';
+              case "resize-n":
+              case "resize-s":
+                canvas.style.cursor = "ns-resize";
                 break;
-              case 'resize-w':
-              case 'resize-e':
-                canvas.style.cursor = 'ew-resize';
+              case "resize-w":
+              case "resize-e":
+                canvas.style.cursor = "ew-resize";
                 break;
               default:
-                canvas.style.cursor = 'nw-resize';
+                canvas.style.cursor = "nw-resize";
             }
-          } else if (handle === 'move') {
-            canvas.style.cursor = 'move';
+          } else if (handle === "move") {
+            canvas.style.cursor = "move";
           }
         }
       }
     },
-    [getMousePos, getHandleAt]
+    [getMousePos, getHandleAt],
   );
 
   const handleMouseMove = useCallback(
-    e => {
+    (e) => {
       const mousePos = getMousePos(e);
       const handle = getHandleAt(mousePos.x, mousePos.y);
 
       // Update cursor based on hover
       const canvas = canvasRef.current;
       if (canvas && !isDragging) {
-        if (handle && handle.startsWith('resize')) {
+        if (handle && handle.startsWith("resize")) {
           // Set appropriate cursor based on resize direction
           switch (handle) {
-            case 'resize-nw':
-            case 'resize-se':
-              canvas.style.cursor = 'nw-resize';
+            case "resize-nw":
+            case "resize-se":
+              canvas.style.cursor = "nw-resize";
               break;
-            case 'resize-ne':
-            case 'resize-sw':
-              canvas.style.cursor = 'ne-resize';
+            case "resize-ne":
+            case "resize-sw":
+              canvas.style.cursor = "ne-resize";
               break;
-            case 'resize-n':
-            case 'resize-s':
-              canvas.style.cursor = 'ns-resize';
+            case "resize-n":
+            case "resize-s":
+              canvas.style.cursor = "ns-resize";
               break;
-            case 'resize-w':
-            case 'resize-e':
-              canvas.style.cursor = 'ew-resize';
+            case "resize-w":
+            case "resize-e":
+              canvas.style.cursor = "ew-resize";
               break;
             default:
-              canvas.style.cursor = 'nw-resize';
+              canvas.style.cursor = "nw-resize";
           }
-        } else if (handle === 'move') {
-          canvas.style.cursor = 'move';
+        } else if (handle === "move") {
+          canvas.style.cursor = "move";
         } else {
-          canvas.style.cursor = 'default';
+          canvas.style.cursor = "default";
         }
       }
 
@@ -485,7 +550,7 @@ const ImageEditor = ({
       const deltaX = mousePos.x - dragStart.x;
       const deltaY = mousePos.y - dragStart.y;
 
-      devLogger.debug('Mouse move - delta:', deltaX, deltaY, 'type:', dragType);
+      devLogger.debug("Mouse move - delta:", deltaX, deltaY, "type:", dragType);
 
       // Convert canvas coordinates to image coordinates
       const canvasElement = canvasRef.current;
@@ -494,18 +559,18 @@ const ImageEditor = ({
       const scaleX = image.width / canvasElement.width;
       const scaleY = image.height / canvasElement.height;
 
-      if (dragType === 'move') {
+      if (dragType === "move") {
         // Move the entire crop area
-        setCropArea(prev => {
+        setCropArea((prev) => {
           const newX = Math.max(
             0,
-            Math.min(image.width - prev.width, prev.x + deltaX * scaleX)
+            Math.min(image.width - prev.width, prev.x + deltaX * scaleX),
           );
           const newY = Math.max(
             0,
-            Math.min(image.height - prev.height, prev.y + deltaY * scaleY)
+            Math.min(image.height - prev.height, prev.y + deltaY * scaleY),
           );
-          devLogger.debug('Moving crop area:', {
+          devLogger.debug("Moving crop area:", {
             x: newX,
             y: newY,
             width: prev.width,
@@ -518,88 +583,88 @@ const ImageEditor = ({
             height: prev.height,
           };
         });
-      } else if (dragType.startsWith('resize')) {
+      } else if (dragType.startsWith("resize")) {
         // Resize the crop area
-        setCropArea(prev => {
+        setCropArea((prev) => {
           let newX = prev.x;
           let newY = prev.y;
           let newWidth = prev.width;
           let newHeight = prev.height;
 
           switch (dragType) {
-            case 'resize-nw': // Top-left
+            case "resize-nw": // Top-left
               newX = Math.max(
                 0,
-                Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX)
+                Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX),
               );
               newY = Math.max(
                 0,
-                Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY)
+                Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY),
               );
               newWidth = prev.width - (newX - prev.x);
               newHeight = prev.height - (newY - prev.y);
               break;
-            case 'resize-ne': // Top-right
+            case "resize-ne": // Top-right
               newY = Math.max(
                 0,
-                Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY)
+                Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY),
               );
               newWidth = Math.max(
                 50,
-                Math.min(image.width - prev.x, prev.width + deltaX * scaleX)
+                Math.min(image.width - prev.x, prev.width + deltaX * scaleX),
               );
               newHeight = prev.height - (newY - prev.y);
               break;
-            case 'resize-sw': // Bottom-left
+            case "resize-sw": // Bottom-left
               newX = Math.max(
                 0,
-                Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX)
+                Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX),
               );
               newWidth = prev.width - (newX - prev.x);
               newHeight = Math.max(
                 50,
-                Math.min(image.height - prev.y, prev.height + deltaY * scaleY)
+                Math.min(image.height - prev.y, prev.height + deltaY * scaleY),
               );
               break;
-            case 'resize-se': // Bottom-right
+            case "resize-se": // Bottom-right
               newWidth = Math.max(
                 50,
-                Math.min(image.width - prev.x, prev.width + deltaX * scaleX)
+                Math.min(image.width - prev.x, prev.width + deltaX * scaleX),
               );
               newHeight = Math.max(
                 50,
-                Math.min(image.height - prev.y, prev.height + deltaY * scaleY)
+                Math.min(image.height - prev.y, prev.height + deltaY * scaleY),
               );
               break;
-            case 'resize-n': // Top center
+            case "resize-n": // Top center
               newY = Math.max(
                 0,
-                Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY)
+                Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY),
               );
               newHeight = prev.height - (newY - prev.y);
               break;
-            case 'resize-s': // Bottom center
+            case "resize-s": // Bottom center
               newHeight = Math.max(
                 50,
-                Math.min(image.height - prev.y, prev.height + deltaY * scaleY)
+                Math.min(image.height - prev.y, prev.height + deltaY * scaleY),
               );
               break;
-            case 'resize-w': // Left center
+            case "resize-w": // Left center
               newX = Math.max(
                 0,
-                Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX)
+                Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX),
               );
               newWidth = prev.width - (newX - prev.x);
               break;
-            case 'resize-e': // Right center
+            case "resize-e": // Right center
               newWidth = Math.max(
                 50,
-                Math.min(image.width - prev.x, prev.width + deltaX * scaleX)
+                Math.min(image.width - prev.x, prev.width + deltaX * scaleX),
               );
               break;
           }
 
-          devLogger.debug('Resizing crop area:', {
+          devLogger.debug("Resizing crop area:", {
             x: newX,
             y: newY,
             width: newWidth,
@@ -611,38 +676,38 @@ const ImageEditor = ({
 
       setDragStart(mousePos);
     },
-    [isDragging, image, dragType, dragStart, getMousePos, getHandleAt]
+    [isDragging, image, dragType, dragStart, getMousePos, getHandleAt],
   );
 
-  const handleMouseUp = useCallback(e => {
+  const handleMouseUp = useCallback((e) => {
     e.preventDefault();
-    devLogger.debug('Mouse up');
+    devLogger.debug("Mouse up");
     setIsDragging(false);
-    setDragType('move');
+    setDragType("move");
 
     // Reset cursor
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.style.cursor = 'default';
+      canvas.style.cursor = "default";
     }
   }, []);
 
   const rotateLeft = () => {
-    devLogger.debug('Rotate left');
-    setRotation(prev => prev - 90);
+    devLogger.debug("Rotate left");
+    setRotation((prev) => prev - 90);
   };
 
   const rotateRight = () => {
-    devLogger.debug('Rotate right');
-    setRotation(prev => prev + 90);
+    devLogger.debug("Rotate right");
+    setRotation((prev) => prev + 90);
   };
 
   const zoomIn = () => {
-    setImageScale(prev => Math.min(prev * 1.2, 3));
+    setImageScale((prev) => Math.min(prev * 1.2, 3));
   };
 
   const zoomOut = () => {
-    setImageScale(prev => Math.max(prev / 1.2, 0.5));
+    setImageScale((prev) => Math.max(prev / 1.2, 0.5));
   };
 
   const resetImage = () => {
@@ -662,8 +727,8 @@ const ImageEditor = ({
     setIsProcessing(true);
     try {
       // Create a new canvas for the final CROPPED image
-      const finalCanvas = document.createElement('canvas');
-      const finalCtx = finalCanvas.getContext('2d');
+      const finalCanvas = document.createElement("canvas");
+      const finalCtx = finalCanvas.getContext("2d");
 
       // Set final canvas size to the CROPPED area only
       finalCanvas.width = cropArea.width;
@@ -687,25 +752,47 @@ const ImageEditor = ({
         0,
         0,
         finalCanvas.width,
-        finalCanvas.height // Destination: full final canvas
+        finalCanvas.height, // Destination: full final canvas
       );
 
-      // Convert to blob
+      // Convert to blob - blob URLs are safe for canvas operations
       finalCanvas.toBlob(
-        blob => {
-          const editedFile = new File([blob], imageFile.name, {
-            type: imageFile.type,
-          });
+        (blob) => {
+          if (!blob) {
+            devLogger.error("Canvas to Blob conversion returned null");
+            toast.error("Failed to process image. Please try again.");
+            setIsProcessing(false);
+            return;
+          }
+
+          // Get filename and type from imageFile or use defaults
+          let fileName = "edited-image.jpg";
+          let fileType = "image/jpeg";
+
+          if (typeof imageFile === "object" && imageFile instanceof File) {
+            fileName = imageFile.name;
+            fileType = imageFile.type || "image/jpeg";
+          } else if (
+            typeof imageFile === "string" &&
+            !imageFile.startsWith("data:")
+          ) {
+            // For URLs, extract filename from URL
+            const urlParts = imageFile.split("/");
+            fileName =
+              urlParts[urlParts.length - 1].split("?")[0] || "edited-image.jpg";
+          }
+
+          const editedFile = new File([blob], fileName, { type: fileType });
           onSave(editedFile);
           setIsProcessing(false);
-          toast.success('Image cropped and edited successfully!');
+          toast.success("Image cropped and edited successfully!");
         },
-        imageFile.type,
-        0.9
+        "image/jpeg",
+        0.9,
       );
     } catch (error) {
-      devLogger.error('Error processing image:', error);
-      toast.error('Failed to process image. Please try again.');
+      devLogger.error("Error processing image:", error);
+      toast.error("Failed to process image. Please try again.");
       setIsProcessing(false);
     }
   };
@@ -740,7 +827,7 @@ const ImageEditor = ({
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                style={{ touchAction: 'none' }}
+                style={{ touchAction: "none" }}
               />
             </div>
 
@@ -801,7 +888,7 @@ const ImageEditor = ({
                 min="0"
                 max="200"
                 value={brightness}
-                onChange={e => setBrightness(parseInt(e.target.value))}
+                onChange={(e) => setBrightness(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
             </div>
@@ -815,7 +902,7 @@ const ImageEditor = ({
                 min="0"
                 max="200"
                 value={contrast}
-                onChange={e => setContrast(parseInt(e.target.value))}
+                onChange={(e) => setContrast(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
             </div>
@@ -829,7 +916,7 @@ const ImageEditor = ({
                 min="0"
                 max="200"
                 value={saturation}
-                onChange={e => setSaturation(parseInt(e.target.value))}
+                onChange={(e) => setSaturation(parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
               />
             </div>
@@ -858,7 +945,7 @@ const ImageEditor = ({
               </div>
               <div className="mt-3 text-xs text-gray-400">
                 <p>
-                  • <span className="text-green-600 font-bold">Green area</span>{' '}
+                  • <span className="text-green-600 font-bold">Green area</span>{" "}
                   = What you'll KEEP
                 </p>
                 <p>

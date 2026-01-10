@@ -1,10 +1,15 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, BookOpen, Clock, Trophy } from "lucide-react";
+import { SeasonalThemeContext } from "@/contexts/SeasonalThemeContext";
 
 export function ProgressStats() {
+  const { activeTheme } = useContext(SeasonalThemeContext);
+
   return (
-    <Card className="h-full">
+    <Card
+      className={`h-full ${activeTheme === "newYear" ? "dashboard-newyear-card" : ""}`}
+    >
       <CardContent className="grid grid-cols-2 gap-4 p-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -16,7 +21,7 @@ export function ProgressStats() {
             <p className="text-xs text-muted-foreground">+2 this month</p>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Complete</span>
@@ -27,7 +32,7 @@ export function ProgressStats() {
             <p className="text-xs text-muted-foreground">+1 this month</p>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Hours</span>
@@ -38,15 +43,17 @@ export function ProgressStats() {
             <p className="text-xs text-muted-foreground">+5.5 this week</p>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Progress</span>
+            <span className="text-sm font-medium">Your New Year Progress</span>
             <BarChart className="h-4 w-4 text-muted-foreground" />
           </div>
           <div>
             <div className="text-2xl font-bold">67%</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <p className="text-xs text-muted-foreground">
+              +12% from last month
+            </p>
           </div>
         </div>
       </CardContent>
