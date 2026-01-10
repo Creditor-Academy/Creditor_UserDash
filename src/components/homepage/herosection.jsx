@@ -362,114 +362,173 @@
 //   );
 // }
 
+
 "use client";
-import { motion } from "framer-motion";
-import { GraduationCap, Bot, BarChart3, Gamepad2 } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  GraduationCap,
+  Bot,
+  BarChart3,
+  Gamepad2,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
+
+const features = [
+  {
+    icon: GraduationCap,
+    title: "SCORM Builders",
+    label: "Compliance",
+    desc: "Architect enterprise-grade, interactive courses in a fraction of the traditional development cycle.",
+    gradient: "from-indigo-500 to-blue-600",
+  },
+  {
+    icon: Bot,
+    title: "AI Instructors",
+    label: "Scalability",
+    desc: "Deploy hyper-intelligent virtual trainers with context-aware guidance, available 24/7.",
+    gradient: "from-sky-500 to-indigo-500",
+  },
+  {
+    icon: Gamepad2,
+    title: "Gamified LMS",
+    label: "Engagement",
+    desc: "Drive completion and motivation using modern game mechanics and rewards.",
+    gradient: "from-blue-500 to-cyan-400",
+  },
+  {
+    icon: BarChart3,
+    title: "Advanced Analytics",
+    label: "Insights",
+    desc: "Turn learning data into measurable ROI and executive-ready insights.",
+    gradient: "from-indigo-600 to-purple-600",
+  },
+];
 
 export default function HeroSection() {
+  const [active, setActive] = useState(0);
+
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#050b1a] text-white">
+    <section className="relative min-h-screen overflow-hidden bg-[#96bbf3] text-slate-900">
 
-      {/* Ambient Glow */}
-      <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[140px]" />
-      <div className="absolute bottom-0 right-0 h-[400px] w-[400px] bg-indigo-500/20 blur-[120px]" />
+      {/* Soft ambient glows */}
+      {/* <div className="absolute -top-40 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-white/40 blur-[160px]" />
+      <div className="absolute bottom-[-20%] right-[-10%] h-[500px] w-[500px] rounded-full bg-indigo-400/30 blur-[160px]" /> */}
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 pt-32 pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
 
-        {/* LEFT — VALUE PROPOSITION */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="space-y-8"
-        >
-          <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1 text-sm text-blue-300">
-            World’s First L&D E-Commerce Marketplace
-          </span>
-
-          <h1 className="text-5xl xl:text-6xl font-semibold leading-tight tracking-tight">
-            Build, Buy & Deploy <br />
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-              Learning Like a Product
-            </span>
-          </h1>
-
-          <p className="max-w-xl text-lg text-white/70">
-            Athena helps L&D teams browse AI-powered tools, customize training
-            experiences, and launch enterprise learning in hours — not months.
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            <a href="/contact" className="rounded-xl bg-blue-600 px-7 py-3 font-medium hover:bg-blue-500 transition">
-              Start Free Trial
-            </a>
-
-            <a
-              href="https://scheduler.zoom.us/prerna-mishra/website-requirement-meeting"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-xl border border-white/20 px-7 py-3 font-medium hover:bg-white/10 transition"
+          {/* LEFT — VALUE */}
+          <div className="lg:col-span-7 space-y-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-600 shadow"
             >
-              Book a Demo
-            </a>
+              <Sparkles size={14} />
+              L&D E-Commerce Platform
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-6xl xl:text-6xl font-extrabold leading-[1.05] text-slate-900"
+            >
+              Build, Buy & Deploy <br />
+              <span className="bg-gradient-to-r xl:text-7xl from-indigo-700 to-blue-600 bg-clip-text text-transparent">
+                Learning as a Product
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="max-w-xl text-xl text-slate-700"
+            >
+              Athena enables modern L&D teams to assemble AI-powered learning
+              ecosystems that scale globally and deliver real business impact.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-wrap gap-5"
+            >
+              <button className="rounded-full bg-indigo-600 px-8 py-4 font-semibold text-white shadow-lg hover:bg-indigo-500 transition">
+                Start Free Trial
+              </button>
+
+              <button className="flex items-center gap-2 rounded-full bg-white/80 px-8 py-4 font-semibold text-indigo-700 hover:bg-white transition">
+                Book a Demo <ChevronRight size={18} />
+              </button>
+            </motion.div>
           </div>
-        </motion.div>
 
-        {/* RIGHT — ATHENA FEATURE STACK */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.1 }}
-          className="relative"
-        >
-          <div className="rounded-3xl border border-white/15 bg-white/5 backdrop-blur-xl p-8 shadow-2xl">
+          {/* RIGHT — INTERACTIVE STACK */}
+          <div className="lg:col-span-5 relative">
 
-            <h3 className="mb-6 text-sm uppercase tracking-widest text-white/50">
-              Athena Feature Stack
-            </h3>
-
-            <div className="space-y-5">
-              {[
-                {
-                  icon: GraduationCap,
-                  title: "SCORM Course Builders",
-                  desc: "Create compliant, interactive courses at scale",
-                },
-                {
-                  icon: Bot,
-                  title: "AI Virtual Instructors",
-                  desc: "Deliver lifelike, always-on learning support",
-                },
-                {
-                  icon: Gamepad2,
-                  title: "Gamified LMS",
-                  desc: "Increase engagement and completion rates",
-                },
-                {
-                  icon: BarChart3,
-                  title: "Advanced Analytics",
-                  desc: "Measure performance, ROI, and learner impact",
-                },
-              ].map(({ icon: Icon, title, desc }) => (
-                <div
-                  key={title}
-                  className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 hover:bg-white/5 transition"
+            {/* Feature Tabs */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {features.map((f, idx) => (
+                <button
+                  key={f.title}
+                  onMouseEnter={() => setActive(idx)}
+                  className={`rounded-2xl p-4 text-left transition-all ${
+                    active === idx
+                      ? "bg-white shadow-xl"
+                      : "bg-white/60 hover:bg-white"
+                  }`}
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/20 text-blue-400 group-hover:bg-blue-600/30 transition">
-                    <Icon size={20} />
-                  </div>
-
-                  <div>
-                    <p className="font-medium">{title}</p>
-                    <p className="text-sm text-white/60">{desc}</p>
-                  </div>
-                </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">
+                    {f.label}
+                  </span>
+                  <p className="text-sm font-semibold">{f.title}</p>
+                </button>
               ))}
             </div>
 
-          </div>
-        </motion.div>
+            {/* Feature Card */}
+            <div className="rounded-[2.5rem] bg-white/90 p-10 shadow-2xl backdrop-blur-xl">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={active}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-6"
+                >
+                  <div
+                    className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${features[active].gradient}`}
+                  >
+                    {(() => {
+                      const Icon = features[active].icon;
+                      return <Icon size={32} className="text-white" />;
+                    })()}
+                  </div>
 
+                  <div>
+                    <h3 className="text-3xl font-bold text-slate-900">
+                      {features[active].title}
+                    </h3>
+                    <p className="mt-3 text-lg text-slate-600">
+                      {features[active].desc}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 flex items-center gap-2 text-indigo-600 font-semibold cursor-pointer">
+                    Explore Capabilities
+                    <ChevronRight size={16} />
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

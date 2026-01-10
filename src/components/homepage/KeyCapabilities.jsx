@@ -1,157 +1,110 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import {
-  ShoppingCart,
-  CreditCard,
-  Layers,
-  BarChart3,
-  Brain,
-  Puzzle,
-} from 'lucide-react';
+"use client";
+import React, { useState } from 'react';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { ShoppingCart, CreditCard, Layers, BarChart3, Brain, Puzzle } from 'lucide-react';
 
-const features = [
-  {
-    title: 'E-Commerce Marketplace',
-    description:
-      'Shop like Amazon with intelligent search, curated categories, demos, reviews, ratings, and side-by-side comparisons.',
-    icon: ShoppingCart,
-  },
-  {
-    title: 'Flexible Purchasing Options',
-    description:
-      'Freemium trials, subscriptions, one-time purchases, AI credits, and bundled plans — all in one checkout flow.',
-    icon: CreditCard,
-  },
-  {
-    title: '8 Modular Flagship Products',
-    description:
-      'Choose exactly what you need. Each product integrates seamlessly into the Athena ecosystem.',
-    icon: Layers,
-  },
-  {
-    title: 'Centralized Dashboard',
-    description:
-      'Deploy tools, track usage, monitor learner progress, analyze performance, and measure ROI in one place.',
-    icon: BarChart3,
-  },
-  {
-    title: 'AI-Powered Automation',
-    description:
-      'Eliminate repetitive work across authoring, design, delivery, and management with intelligent automation.',
-    icon: Brain,
-  },
-  {
-    title: 'Scalability & Integration',
-    description:
-      'Built for solo creators to global enterprises with SCORM compliance and seamless LMS exports.',
-    icon: Puzzle,
-  },
-];
+const FeatureCard = ({ title, desc, icon: Icon, className = "" }) => {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
 
-const AthenaPlatformOffers = () => {
+  function onMouseMove({ currentTarget, clientX, clientY }) {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
+
   return (
-    <section className="relative py-28 px-4 overflow-hidden">
-
-      {/* 🌤 Light blue creative background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-50 via-white to-sky-50" />
-      <div className="absolute top-24 left-24 w-96 h-96 bg-sky-200/30 rounded-full blur-3xl" />
-      <div className="absolute bottom-24 right-24 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl" />
-
-      <div className="relative z-10 max-w-6xl mx-auto">
-
-        {/* Header */}
-        <motion.div
-          className="max-w-3xl mb-20"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-        >
-          <p className="text-sm uppercase tracking-widest text-slate-500 mb-4">
-            What Athena Platform Offers
-          </p>
-
-          <h2 className="text-4xl md:text-5xl font-normal text-slate-900 leading-tight mb-6">
-            A complete learning ecosystem,
-            <br />
-            <span className="text-sky-600">built for modern education</span>
-          </h2>
-
-          <p className="text-lg text-slate-600 leading-relaxed">
-            Athena is more than software — it’s a unified platform that brings
-            together commerce, creation, delivery, and analytics into a single,
-            intuitive experience.
-          </p>
-        </motion.div>
-
-        {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-14">
-          {features.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -6 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="
-                  group flex gap-6 items-start
-                  p-4 -m-4 rounded-xl
-                  transition-all duration-300
-                  hover:bg-white/70 hover:shadow-lg
-                "
-              >
-                {/* Icon */}
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  className="
-                    w-12 h-12 rounded-xl
-                    border border-slate-200
-                    bg-white
-                    flex items-center justify-center
-                    text-sky-600
-                    transition
-                  "
-                >
-                  <Icon className="w-6 h-6" />
-                </motion.div>
-
-                {/* Content */}
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-sky-700 transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed">
-                    {item.description}
-                  </p>
-
-                  {/* subtle underline on hover */}
-                  <div className="mt-3 h-px w-0 bg-sky-400 group-hover:w-16 transition-all duration-300" />
-                </div>
-              </motion.div>
-            );
-          })}
+    <motion.div
+      onMouseMove={onMouseMove}
+      whileHover={{ y: -5 }}
+      className={`group relative overflow-hidden rounded-3xl border border-slate-200 bg-white/50 p-8 shadow-sm transition-all hover:shadow-xl hover:shadow-sky-500/10 ${className}`}
+    >
+      {/* Spotlight Effect */}
+      <motion.div
+        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition group-hover:opacity-100"
+        style={{
+          background: useMotionValue(`radial-gradient(600px circle at ${mouseX}px ${mouseY}px, rgba(14, 165, 233, 0.1), transparent 80%)`),
+        }}
+      />
+      
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 transition-colors group-hover:bg-sky-600 group-hover:text-white">
+          <Icon size={24} />
         </div>
-
-        {/* Closing Statement */}
-        <motion.div
-          className="mt-24 max-w-3xl"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-        >
-          <p className="text-xl text-slate-700 leading-relaxed">
-            Athena eliminates fragmentation and puts professional-grade edtech
-            within reach of every budget — from individual creators to global
-            enterprises.
-          </p>
-        </motion.div>
+        <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">{desc}</p>
       </div>
-    </section>
+    </motion.div>
   );
 };
 
-export default AthenaPlatformOffers;
+export default function AthenaOffers() {
+  return (
+    <section className="bg-slate-50 py-24 px-6">
+      <div className="mx-auto max-w-7xl">
+        
+        {/* Simplified Header */}
+        <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+              One Platform. <span className="text-sky-600">Limitless Learning.</span>
+            </h2>
+            <p className="mt-4 text-lg text-slate-600">
+              The unified engine for creation, commerce, and enterprise-grade delivery.
+            </p>
+          </div>
+          {/* <button className="h-fit rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition">
+            View All Features
+          </button> */}
+        </div>
+
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          
+          <FeatureCard 
+            className="md:col-span-3"
+            icon={ShoppingCart}
+            title="Smart Marketplace"
+            desc="Amazon-style discovery for L&D tools. Compare, demo, and deploy with one click."
+          />
+
+          <FeatureCard 
+            className="md:col-span-3"
+            icon={Brain}
+            title="AI Automation"
+            desc="Remove the friction. Automate authoring, design, and delivery across your entire stack."
+          />
+
+          <FeatureCard 
+            className="md:col-span-2"
+            icon={CreditCard}
+            title="Fluid Billing"
+            desc="Freemium, credits, or subscriptions. One unified checkout."
+          />
+
+          <FeatureCard 
+            className="md:col-span-2"
+            icon={Layers}
+            title="Modular Flagships"
+            desc="8 flagship tools that work better together, but scale independently."
+          />
+
+          <FeatureCard 
+            className="md:col-span-2"
+            icon={BarChart3}
+            title="ROI Dashboard"
+            desc="Centralized analytics to track every learner and every dollar spent."
+          />
+
+          <FeatureCard 
+            className="md:col-span-6 border-sky-100 bg-sky-50/50"
+            icon={Puzzle}
+            title="Enterprise Scalability"
+            desc="Full SCORM compliance and seamless LMS exports for organizations of any size."
+          />
+        </div>
+
+      </div>
+    </section>
+  );
+}
