@@ -55,7 +55,6 @@ import {
 } from '../services/websiteService';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
 import CLogo from '@/assets/C-logo2.png';
-import FloatingMiniChatbot from '@/components/chatbot/FloatingMiniChatbot';
 
 export function Dashboard() {
   const importantUpdateStyles = `
@@ -909,7 +908,6 @@ export function Dashboard() {
         isChristmasMode ? 'christmas-surface' : ''
       }`}
     >
-      <FloatingMiniChatbot />
       {isChristmasMode && (
         <div
           className="snowfall-layer pointer-events-none"

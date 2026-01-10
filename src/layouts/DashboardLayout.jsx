@@ -6,6 +6,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import BackButton from '@/components/navigation/BackButton';
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import { SeasonalThemeContext } from '@/contexts/SeasonalThemeContext';
+import FloatingMiniChatbot from '@/components/chatbot/FloatingMiniChatbot';
 
 // Create a context for the sidebar state
 export const SidebarContext = React.createContext({
@@ -207,6 +208,8 @@ export function DashboardLayout() {
           open={creditModalOpen}
           onClose={() => setCreditModalOpen(false)}
         />
+        {/* Floating Mini Chatbot */}
+        <FloatingMiniChatbot />
       </SidebarContext.Provider>
     </SeasonalThemeContext.Provider>
   );

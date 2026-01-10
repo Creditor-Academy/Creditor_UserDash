@@ -52,6 +52,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@tabler/icons-react": "^3.35.0",
     "@tanstack/react-query": "^5.56.2",
+    "@tensorflow/tfjs": "^4.22.0",
     "@tiptap/extension-color": "^3.1.0",
     "@tiptap/extension-image": "^3.1.0",
     "@tiptap/extension-link": "^3.1.0",
@@ -101,6 +102,7 @@
     "speechify": "^0.1.0",
     "styled-components": "^6.1.19",
     "tailwind-merge": "^2.5.2",
+    "transformers": "^3.1.0",
     "vaul": "^0.9.3",
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
@@ -117,8 +119,8 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
-    "@vitest/coverage-v8": "^2.0.5",
-    "@vitest/ui": "^2.0.5",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
     "autoprefixer": "^10.4.21",
     "cypress": "^13.17.0",
     "eslint": "^9.9.0",
@@ -136,8 +138,8 @@
     "ts-migrate": "^0.0.0",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.1",
-    "vitest": "^2.0.5"
+    "vite": "^7.3.1",
+    "vitest": "^4.0.16"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
